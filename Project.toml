@@ -1,0 +1,12 @@
+name = "MRIReco"
+uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+authors = ["Tobias Knopp <tobias@knoppweb.de>"]
+version = "0.1.0"
+
+[deps]
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
