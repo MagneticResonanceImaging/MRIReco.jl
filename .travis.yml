@@ -18,7 +18,7 @@ git:
 #  - julia: nightly
 
 ## uncomment following lines to deploy documentation
-# jobs:
+# jobs: 
 #   include:
 #     - stage: Documentation
 #       julia: 1.0
