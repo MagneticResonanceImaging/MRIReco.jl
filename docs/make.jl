@@ -8,7 +8,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/tknopp/MRIReco.jl.git",
+    repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git",
     target = "build",
     julia = "1.0",
     deps = nothing,
