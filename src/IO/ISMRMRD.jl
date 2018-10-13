@@ -1,61 +1,165 @@
 export ISMRMRD
 
-# This is one of the most complicated file formats I have seen.
-
-struct ISMRMRD <: MRIFile
-  filename::String
-  header
-end
-
 struct ISMRMRDEncodingCounters
-  kspace_encode_step_1::UInt16
-  kspace_encode_step_2::UInt16
-  average::UInt16
-  slice::UInt16
-  contrast::UInt16
-  phase::UInt16
-  repetition::UInt16
-  set::UInt16
-  segment::UInt16
-  user::NTuple{8,UInt16}
+  kspace_encode_step_1::Int16
+  kspace_encode_step_2::Int16
+  average::Int16
+  slice::Int16
+  contrast::Int16
+  phase::Int16
+  repetition::Int16
+  set::Int16
+  segment::Int16
+  user::Vector{Int16}
 end
 
 struct ISMRMRDAcquisitionHeader
-  version::UInt16
-  flags::UInt64
-  measurement_uid::UInt32
-  scan_counter::UInt32
-  acquisition_time_stamp::UInt32
-  physiology_time_stamp::NTuple{3,UInt32}
-  number_of_samples::UInt16
-  available_channels::UInt16
-  active_channels::UInt16
-  channel_mask::NTuple{16,UInt64}
-  discard_pre::UInt16
-  discard_post::UInt16
-  center_sample::UInt16
-  encoding_space_ref::UInt16
-  trajectory_dimensions::UInt16
+  version::Int16
+  flags::Int64
+  measurement_uid::Int32
+  scan_counter::Int32
+  acquisition_time_stamp::Int32
+  physiology_time_stamp::Vector{Int32}
+  number_of_samples::Int16
+  available_channels::Int16
+  active_channels::Int16
+  channel_mask::Vector{Int64}
+  discard_pre::Int16
+  discard_post::Int16
+  center_sample::Int16
+  encoding_space_ref::Int16
+  trajectory_dimensions::Int16
   sample_time_us::Float32
-  position::NTuple{3,Float32}
-  read_dir::NTuple{3,Float32}
-  phase_dir::NTuple{3,Float32}
-  slice_dir::NTuple{3,Float32}
-  patient_table_position::NTuple{3,Float32}
+  position::Vector{Float32}
+  read_dir::Vector{Float32}
+  phase_dir::Vector{Float32}
+  slice_dir::Vector{Float32}
+  patient_table_position::Vector{Float32}
   idx::ISMRMRDEncodingCounters
-  user_int::NTuple{8,Int32}
-  user_float::NTuple{8,Float32}
+  user_int::Vector{Int32}
+  user_float::Vector{Float32}
 end
 
-#function Base.write(io::IO, p::ParamsType)
-#  write(io, reinterpret(Int8,[p]))
-#end
+
+struct ISMRMRD <: MRIFile
+  filename::String
+  params::Dict
+  head::Array{ISMRMRDAcquisitionHeader,1}
+  traj::Array{Float32,1}
+  data::Array{Complex{Float32},3}
+end
 
 function ISMRMRD(filename::String)
   headerStr = h5read(filename, "/dataset/xml")
   xdoc = parse_string(headerStr[1])
 
-  # This is a compouned type and HD5.jl cannot
-  # handle it
-  data = h5read(filename, "/dataset/data")
+  header = parse_xml_header(xdoc)
+
+  d = h5read(filename, "/dataset/data")
+
+  M = length(d)
+
+  head = ISMRMRDAcquisitionHeader[]
+  traj = Float32[]
+  data = Any[]
+
+  chan = header["receiverChannels"]
+
+  for m=1:M
+
+    push!(head, read_header(d[m].data[1]))
+
+    N = reinterpret(Int64, d[m].data[2][1:8])[1]
+    if N > 0
+      ptr = reinterpret(Int64, d[m].data[2][9:end])[1]
+      U = unsafe_wrap(Array,Ptr{Float32}(ptr),(N,))
+      append!(traj, U)
+    end
+
+    N = reinterpret(Int64, d[m].data[3][1:8])[1]
+    if N > 0
+      ptr = reinterpret(Int64, d[m].data[3][9:end])[1]
+      U = unsafe_wrap(Array,Ptr{ComplexF32}(ptr),(div(N,2),))
+      push!(data, reshape(U,div(N,2*chan),chan))
+    end
+  end
+
+  dataNew = zeros(ComplexF32, size(data[1],1), size(data[1],2), length(data) )
+  for m=1:M
+    dataNew[:,:,m] = data[m]
+  end
+
+  if !isempty(traj)
+    traj = reshape(traj,:,M)
+  end
+
+  return ISMRMRD(filename, header, head, traj, dataNew)
+end
+
+function parse_xml_header(xdoc)
+  header = Dict{String,Any}()
+
+  e = get_elements_by_tagname(LightXML.root(xdoc),"acquisitionSystemInformation")[1]
+
+  header["receiverChannels"] = parse(Int,content(get_elements_by_tagname(e,"receiverChannels")[1]))
+
+  return header
+end
+
+function read_header(header)
+  buf = IOBuffer(header)
+
+  version = read(buf,Int16)
+  flags = read(buf,Int64)
+  measurement_uid = read(buf,Int32)
+  scan_counter = read(buf,Int32)
+  acquisition_time_stamp = read(buf,Int32)
+  physiology_time_stamp = read!(buf,zeros(Int32,3))
+
+  # The following line does not really make sense. But there seems to be
+  # exactly 20 bytes that need to be read away.
+  read!(buf,zeros(Int32,5))
+
+  number_of_samples = read(buf,Int16)
+  available_channels = read(buf,Int16)
+  active_channels = read(buf,Int16)
+  channel_mask = read!(buf,zeros(Int64,16))
+  discard_pre = read(buf,Int16)
+  discard_post = read(buf,Int16)
+  center_sample = read(buf,Int16)
+  encoding_space_ref = read(buf,Int16)
+  trajectory_dimensions = read(buf,Int16)
+  sample_time_us = read(buf,Float32)
+  position = read!(buf,zeros(Float32,3))
+  read_dir = read!(buf,zeros(Float32,3))
+  phase_dir = read!(buf,zeros(Float32,3))
+  slice_dir = read!(buf,zeros(Float32,3))
+  patient_table_position = read!(buf,zeros(Float32,3))
+  ###
+  kspace_encode_step_1 = read(buf,Int16)
+  kspace_encode_step_2 = read(buf,Int16)
+  average = read(buf,Int16)
+  slice = read(buf,Int16)
+  contrast = read(buf,Int16)
+  phase = read(buf,Int16)
+  repetition = read(buf,Int16)
+  set = read(buf,Int16)
+  segment = read(buf,Int16)
+  user = read!(buf,zeros(Int16,8))
+  ###
+  idx = ISMRMRDEncodingCounters(kspace_encode_step_1,kspace_encode_step_2,
+                      average,slice,contrast,phase,repetition,set,segment,user)
+
+  user_int = read!(buf,zeros(Int32,8))
+  user_float = read!(buf,zeros(Float32,8))
+
+  head = ISMRMRDAcquisitionHeader( version, flags, measurement_uid,
+    scan_counter, acquisition_time_stamp, physiology_time_stamp, number_of_samples,
+    available_channels, active_channels, channel_mask, discard_pre, discard_post,
+    center_sample, encoding_space_ref, trajectory_dimensions,sample_time_us,
+    position, read_dir, phase_dir, slice_dir, patient_table_position, idx, user_int,
+    user_float
+    )
+
+  return head
 end

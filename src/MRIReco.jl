@@ -17,6 +17,7 @@ using Graphics: @mustimplement
 using ColorTypes
 using ColorVectorSpace
 using Wavelets
+using LightXML
 
 
 include("Trajectories/Trajectories.jl")
