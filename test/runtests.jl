@@ -9,3 +9,5 @@ include("testReconstruction.jl")
 testSimulation()
 testOperators()
 testReco()
+
+include("testISMRMRD.jl")

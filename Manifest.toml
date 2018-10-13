@@ -193,6 +193,12 @@ git-tree-sha1 = "8c3bcdb44db436cd20106e2381e1c1ac96aa0ee3"
 uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 version = "0.10.2"
 
+[[HTTP]]
+deps = ["Base64", "Dates", "Distributed", "IniFile", "MbedTLS", "Sockets", "Test"]
+git-tree-sha1 = "b881f69331e85642be315c63d05ed65d6fc8a05b"
+uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+version = "0.7.1"
+
 [[HTTPClient]]
 deps = ["Compat", "LibCURL"]
 git-tree-sha1 = "161d5776ae8e585ac0b8c20fb81f17ab755b3671"
@@ -269,6 +275,12 @@ version = "0.16.0"
 deps = ["Compat", "Pkg", "Test"]
 git-tree-sha1 = "b6e249be10a3381b2c72ac82f2d13d70067cb2bd"
 uuid = "9b13fd28-a010-5f03-acff-a1bbcff69959"
+version = "0.5.0"
+
+[[IniFile]]
+deps = ["Test"]
+git-tree-sha1 = "098e4d2c533924c921f9f9847274f2ad89e018b8"
+uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 version = "0.5.0"
 
 [[InteractiveUtils]]
@@ -365,6 +377,12 @@ version = "0.2.1"
 [[Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
+
+[[MbedTLS]]
+deps = ["BinaryProvider", "Libdl", "Pkg", "Random", "Sockets", "Test"]
+git-tree-sha1 = "3775d205b09b624aa06d39012a8920ba99cb3b8b"
+uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
+version = "0.6.3"
 
 [[Missings]]
 deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]

@@ -1,4 +1,4 @@
-export ISMRMRD
+export ISMRMRD, ISMRMRDEncodingCounters, ISMRMRDAcquisitionHeader
 
 struct ISMRMRDEncodingCounters
   kspace_encode_step_1::Int16
@@ -45,7 +45,7 @@ struct ISMRMRD <: MRIFile
   filename::String
   params::Dict
   head::Array{ISMRMRDAcquisitionHeader,1}
-  traj::Array{Float32,1}
+  traj::Array{Float32,2}
   data::Array{Complex{Float32},3}
 end
 
@@ -90,10 +90,12 @@ function ISMRMRD(filename::String)
   end
 
   if !isempty(traj)
-    traj = reshape(traj,:,M)
+    trajNew = reshape(traj,:,M)
+  else
+    trajNew = zeros(Float32,0,0)
   end
 
-  return ISMRMRD(filename, header, head, traj, dataNew)
+  return ISMRMRD(filename, header, head, trajNew, dataNew)
 end
 
 function parse_xml_header(xdoc)
