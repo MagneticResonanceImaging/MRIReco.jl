@@ -1,10 +1,8 @@
 import Base: hcat, vcat, \
 export hcat, vcat, \, diagOp, A_mul_B
 
-include("WaveletOp.jl")
 include("NFFTOp.jl")
 include("NFFTToeplitzOp.jl")
-include("FFTOp.jl")
 include("SensitivityMapOp.jl")
 include("SamplingOp.jl")
 include("MapSliceOp.jl")

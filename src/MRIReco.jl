@@ -7,7 +7,7 @@ using Reexport
 using NFFT
 using Distributions
 using LinearOperators
-using LinearSolver
+@reexport using LinearSolver
 using StatsBase
 using LinearAlgebra
 using Random
