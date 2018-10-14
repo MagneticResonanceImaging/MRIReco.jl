@@ -1,6 +1,6 @@
 using HTTP
 
-@testset "ISMRMD" begin
+@testset "ISMRMRD" begin
 
 filename = "simple_gre.h5"
 
