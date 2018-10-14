@@ -4,7 +4,11 @@ makedocs(
     modules = [MRIReco],
     format = :html,
     sitename = "MRIReco.jl",
-    pages = Any["index.md"]
+    authors = "Tobias Knopp, Mirco Grosser",
+    pages = [
+        "Home" => "index.md",
+        "Getting Started" => "gettingStarted.md",
+    ],
 )
 
 deploydocs(
