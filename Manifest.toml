@@ -151,6 +151,18 @@ git-tree-sha1 = "c24e9b6500c037673f0241a2783472b8c3d080c7"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
 version = "0.16.4"
 
+[[DocStringExtensions]]
+deps = ["LibGit2", "Markdown", "Pkg", "Test"]
+git-tree-sha1 = "a016e0bfe98a748c4488e2248c2ef4c67d6fdd35"
+uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+version = "0.5.0"
+
+[[Documenter]]
+deps = ["Compat", "DocStringExtensions", "Logging", "REPL"]
+git-tree-sha1 = "7534ff3c50333a69ae0778d4d869e6f5c9ec022a"
+uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+version = "0.19.6"
+
 [[FFTViews]]
 deps = ["CustomUnitRanges", "FFTW", "Test"]
 git-tree-sha1 = "9d7993227ca7c0fdb6b31deef193adbba11c8f4e"
