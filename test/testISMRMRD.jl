@@ -39,3 +39,15 @@ f = ISMRMRD(filename)
 # 3D_partial_fourier.h5
 
 end
+
+#=
+
+For our own reference: Here is code that can be used with Python to load an
+ISMRMRD file
+
+import h5py
+f = h5py.File('simple_gre.h5', 'r')
+dset = f['/dataset/data']
+dset[0]['head']
+
+=#
