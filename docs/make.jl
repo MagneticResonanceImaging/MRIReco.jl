@@ -3,7 +3,7 @@ using Documenter, MRIReco
 makedocs(
     modules = [MRIReco],
     format = :html,
-    sitename = "MRIReco.jl",
+    sitename = "flexible reconstruction",
     authors = "Tobias Knopp, Mirco Grosser",
     pages = [
         "Home" => "index.md",

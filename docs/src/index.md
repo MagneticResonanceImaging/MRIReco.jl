@@ -4,10 +4,24 @@
 
 ## Introduction
 
-MRIReco.jl is a Julia package for Magnetic Resonance Imaging (MRI). The Library
-provides a simulation and reconstruction framework where common and specific
-problems can be formulated and solved by direct or iterative
-optimization algorithms.
+MPIReco is a Julia packet for magnetic resonance imaging. It contains algorithms for the simulation and reconstruction of MRT data and is both easy to use and flexibly expandable.
+
+Both direct and iterative methods are available for image reconstruction. In particular, modern compressed sensing algorithms such as ADMM can be used.
+
+The MRT imaging operator can be set up for a variety of scanning patterns (cartesian, spiral, radial, ...) and can take into account field inhomogeneity as well as the use of coil arrays. The operator can be quickly evaluated using NFFT-based methods.
+
+One strength of the package is that it is strongly modular and uses high quality Julia packages. These are e.g.
+ * NFFT.jl and FFTW.jl for fast Fourier transformations
+ * Wavelets.jl for sparsification
+ * LinearOperators.jl in order to be able to divide the imaging operator modularly into individual parts
+ * LinearSolver.jl for modern algorithms for solving linear optimization problems
+
+This interaction allows new algorithms to be easily integrated into the software framework. It is not necessary to program in C/C++ but the advantages of the scientific high-level language Julia can be used.
+
+## Status
+
+MRIReco.jl is work in progress and in some parts not entirely optimized. In particular the FFT and NFFT implementation are currently limited to the CPU and do not support
+GPU acceleration yet.
 
 ## Installation
 
@@ -16,8 +30,4 @@ Start julia and open the package mode by entering `]`. The enter
 add https://github.com/tknopp/LinearSolver.jl
 add https://github.com/MagneticResonanceImaging/MRIReco.jl
 ```
-This will install the packages `LinearSolver.jl`, `MRIReco.jl`
-
-## Usage
-
-  * See [Getting Started](@ref) for an introduction to using the package
+This will install the packages `LinearSolver.jl`, `MRIReco.jl`, and all its dependencies.
