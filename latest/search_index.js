@@ -56,4 +56,36 @@ var documenterSearchIndex = {"docs": [
     "text": "We will start with a very simple example and perform simple simulation and reconstruction based on a shepp logan phantom. The programm looks like this# image\nN = 256\nx = shepp_logan(N)\n\n# simulation\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"nfft\"\nparams[:trajName] = \"Cartesian\"\nparams[:numProfiles] = floor(Int64, N)\nparams[:numSamplingPerProfile] = N\n\naqData = simulation(x, params)\naqData = MRIReco.sample_kspace(aqData, redFac, \"poisson\", calsize=5)\naqData = convertUndersampledData(aqData)\n\n# reco\nparams[:reco] = \"simple\"    # encoding model\nparams[:shape] = (N,N)\nparams[:sparseTrafoName] = \"Wavelet\" #sparse trafo\nparams[:regularization] = \"L1\"       # regularization\nparams[:lambdL1] = 1.e-3\nparams[:solver] = \"admm\"    # solver\nparams[:iterations] = 1000\nparams[:ρ] = 1.0e-1\n\nx_reco = reconstruction(aqData, params)We will go through the program step by step. First we create a 2D shepp logan phantom of size N=256. Then we setup a dictionary that defines the simulation parameters. Here, we chose a simple Cartesian trajectory ..."
 },
 
+{
+    "location": "simulation.html#",
+    "page": "Simulation",
+    "title": "Simulation",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "simulation.html#Simulation-1",
+    "page": "Simulation",
+    "title": "Simulation",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "reconstruction.html#",
+    "page": "Reconstruction",
+    "title": "Reconstruction",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "reconstruction.html#Reconstruction-1",
+    "page": "Reconstruction",
+    "title": "Reconstruction",
+    "category": "section",
+    "text": ""
+},
+
 ]}
