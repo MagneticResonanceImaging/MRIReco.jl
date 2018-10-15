@@ -1,8 +1,9 @@
-export reconstruction2
+export reconstruction
 
 ################################################################################
 include("DirectReconstruction.jl")
 include("IterativeReconstruction.jl")
+include("RecoParameters.jl")
 
 
 #### Factory method ###

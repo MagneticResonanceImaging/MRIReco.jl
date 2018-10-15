@@ -26,7 +26,6 @@ include("Sequences/Sequence.jl")
 include("Simulation/Simulation.jl")
 include("LinearOp/LinearOp.jl")
 include("Reconstruction/Reconstruction.jl")
-include("Reconstruction/RecoParameters.jl")
 include("IO/IO.jl")
 include("Sampling/Sampling.jl")
 

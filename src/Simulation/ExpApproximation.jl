@@ -1,5 +1,4 @@
 
-
 """
   Returns the a_j,k and c_k,p Coefficients considering the approximation of the
   exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )

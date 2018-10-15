@@ -1,15 +1,7 @@
 export quadraticFieldmap, stairsFieldmap, polarFieldmap
 
 """
-
 Computes a parabolic fieldmap.
-
-...
-# Arguments
-* `Nx::Int64` : size in x-direction
-* `Ny::Int64` : size in y-direction
-* `maxOffresonance::Float64=￼125.0` : maximum offset measured in [Hz]
-...
 """
 function quadraticFieldmap(Nx::Int64, Ny::Int64, maxOffresonance::Float64=125.0)
   xx = range(-1, stop=1, length=Nx)
@@ -24,16 +16,7 @@ function quadraticFieldmap(Nx::Int64, Ny::Int64, maxOffresonance::Float64=125.0)
 end
 
 """
-
 Computes a polaroid fieldmap.
-
-...
-# Arguments
-* `Nx::Int64` : size in x-direction
-* `Ny::Int64` : size in y-direction
-* `xCenter::Int64=0` : x-coordinate of the Epicenter
-* `yCenter::Int64=0` : y-coordinate of the Epicenter
-...
 """
 function polarFieldmap(Nx::Int64, Ny::Int64
                         , maxOffresonance::Float64=125.0
@@ -53,19 +36,8 @@ end
 
 
 """
-
 Computes a fieldmap consisting of stairs, which has discrete linear
 ascending/descending values
-
-...
-# Arguments
-* `Nx::Int64` : size in x-direction
-* `Ny::Int64` : size in y-direction
-* `numStairs::Int64=8` : number of stairs
-* `minOffresonance::Float64=-125.0` : minimum offset measured in [Hz]
-* `maxOffresonance::Float64=125.0` : maximum offset measured in [Hz]
-* `ascending=true` : ascending or descending values
-...
 """
 function stairsFieldmap(Nx::Int64, Ny::Int64
                         ; numStairs::Int64=8

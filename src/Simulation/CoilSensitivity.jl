@@ -1,20 +1,12 @@
 export birdcageSensitivity
-"""
 
+"""
 Computes the sensitivity maps for each coils that arranged
 in a birdcage manner.
-
-...
-# Arguments
-* `matrix_size::Int64` : quadratic size of a sensitivity map
-* `ncoils::Int64` : the number of coils used
-* `relative_radius::Float64` : the relative radius of the birdcage
-...
 """
-function birdcageSensitivity(matrix_size::Int64
-                            , ncoils::Int64
-                            , relative_radius::Float64
-                            )
+function birdcageSensitivity(matrix_size::Int64,
+                             ncoils::Int64,
+                             relative_radius::Float64)
 
   out = zeros(ComplexF64,matrix_size,matrix_size,ncoils)
   for c=0:ncoils-1
