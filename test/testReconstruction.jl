@@ -94,6 +94,6 @@ function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
     testCSReco()
-    #testCSSenseReco()
+    testCSSenseReco()
   end
 end

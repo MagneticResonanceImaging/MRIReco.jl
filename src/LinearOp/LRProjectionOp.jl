@@ -29,7 +29,7 @@ function LRMapOp(phi, N)
     return invLRMap(y,phi_t,PCmap)
   end
 
-  return LRMapOp{ComplexF64}(K*L*N, N*T, false, false
+  return LRMapOp{ComplexF64,Function,Nothing,Function}(K*L*N, N*T, false, false
                           , mul
                           , nothing
                           , ctmul

@@ -31,7 +31,7 @@ function sensOpBackward(sensMaps::Matrix, y::Vector{T}, numEchoes::Int=1) where 
 end
 
 function SensitivityOp(sensMaps::Matrix{T}, numEchoes::Int=1) where T
-  return LinearOperator{T}(length(sensMaps)*numEchoes, size(sensMaps,1)*numEchoes, false, false
+  return LinearOperator{T,Function,Nothing,Function}(length(sensMaps)*numEchoes, size(sensMaps,1)*numEchoes, false, false
       , x->sensOpForeward(sensMaps, x, numEchoes)
       , nothing
       , y-> sensOpBackward(sensMaps, y, numEchoes) )
