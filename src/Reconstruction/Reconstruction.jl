@@ -21,8 +21,6 @@ function reconstruction(aqData::AquisitionData, recoParams::Dict)
     return reconstruction_multiCoil(aqData, recoParams)
   elseif recoParams[:reco] == "multiCoilMultiEcho"
     return reconstruction_multiCoilMultiEcho(aqData, recoParams)
-  elseif recoParams[:reco] == "lowRank"
-    return reconstruction_lowRank(aqData, recoParams)
   else
     error("RecoModel $(recoParams[:reco]) not found.")
   end

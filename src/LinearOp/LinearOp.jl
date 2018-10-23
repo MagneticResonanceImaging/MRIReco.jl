@@ -2,12 +2,10 @@ import Base: hcat, vcat, \
 export hcat, vcat, \, diagOp, A_mul_B
 
 include("NFFTOp.jl")
-include("NFFTToeplitzOp.jl")
 include("SensitivityMapOp.jl")
 include("SamplingOp.jl")
 include("MapSliceOp.jl")
 include("FieldmapNFFTOp.jl")
-include("FieldmapToeplitzOp.jl")
 include("LRProjectionOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")

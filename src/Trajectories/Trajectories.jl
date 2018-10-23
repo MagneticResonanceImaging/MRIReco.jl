@@ -1,5 +1,5 @@
 export AbstractTrajectory,
-       Abstract2DTrajectory, Abstract3DTrajectory,
+       Abstract2DTrajectory, Abstract3DTrajectory, CartesianTrajectory,
        StackedTrajectory, Real3DTrajectory,
        kspaceNodes, string, echoTime, acqTimePerProfile, readoutTimes,
        numSamplingPerProfile, numProfiles, findCenters
@@ -20,14 +20,11 @@ include("2D/Radial2D.jl")
 include("2D/Spiral2D.jl")
 include("2D/OneLine2D.jl")
 include("2D/Spiral2DVariableDens.jl")
-include("2D/RandomCartesian2D.jl")
 include("2D/EPI.jl")
-include("2D/Spiral2DVarDensPeturb.jl")
 
 include("3D/Kooshball.jl")
 include("3D/Cartesian3D.jl")
 include("3D/StackofStars.jl")
-include("3D/RandomKooshball.jl")
 
 include("UndersampledTrajectory.jl")
 include("CustomTrajectory.jl")
@@ -47,20 +44,14 @@ function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerPr
     return EPITrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "OneLine"
     return OneLine2DTrajectory(numProfiles, numSamplingPerProfile; kargs...)
-  elseif trajName == "RandomCartesian"
-    return RandomCartesianTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "SpiralVarDens"
     return SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile; kargs...)
-  elseif trajName == "SpiralVarDensPeturb"
-    return SpiralTrajectoryVarDensPeturb(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Cartesian3D"
     return CartesianTrajectory3D(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "StackofStars"
     return StackOfStarsTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Kooshball"
     return KooshballTrajectory(numProfiles, numSamplingPerProfile; kargs...)
-  elseif trajName == "RandomKooshball"
-    return RandomKooshballTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   else
     error("The trajectory $trajName is not yet supported!")
   end
