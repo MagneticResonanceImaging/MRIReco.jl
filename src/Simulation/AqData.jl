@@ -109,7 +109,8 @@ function convertUndersampledData(aqData::AquisitionData)
   # replace trajectories by Undersampled Trajectories
   for i = 1:aqData.numEchoes
     tr = trajectory(aqData.seq,i)
-    setTrajectory!(aqDataCopy.seq, UndersampledTrajectory(tr, aqData.idx[:,i]), i)
+    # assume that coils and slices experience the same trajectory
+    setTrajectory!(aqDataCopy.seq, UndersampledTrajectory(tr, aqData.idx[:,i,1,1]), i)
   end
 
   return aqDataCopy
