@@ -1,4 +1,4 @@
-export ISMRMRD, ISMRMRDEncodingCounters, ISMRMRDAcquisitionHeader
+export ISMRMRD, ISMRMRDEncodingCounters, ISMRMRDAcquisitionHeader, numRepetitions
 
 struct ISMRMRDEncodingCounters
   kspace_encode_step_1::Int16
@@ -47,6 +47,7 @@ struct ISMRMRD <: MRIFile
   head::Array{ISMRMRDAcquisitionHeader,1}
   traj::Array{Float32,2}
   data::Array{Complex{Float32},3}
+  xdoc
 end
 
 function ISMRMRD(filename::String)
@@ -95,7 +96,7 @@ function ISMRMRD(filename::String)
     trajNew = zeros(Float32,0,0)
   end
 
-  return ISMRMRD(filename, header, head, trajNew, dataNew)
+  return ISMRMRD(filename, header, head, trajNew, dataNew, xdoc)
 end
 
 function parse_xml_header(xdoc)
@@ -104,6 +105,14 @@ function parse_xml_header(xdoc)
   e = get_elements_by_tagname(LightXML.root(xdoc),"acquisitionSystemInformation")[1]
 
   header["receiverChannels"] = parse(Int,content(get_elements_by_tagname(e,"receiverChannels")[1]))
+
+  e = get_elements_by_tagname(LightXML.root(xdoc),"encoding")[1]
+  header["trajectory"] = content(get_elements_by_tagname(e,"trajectory")[1])
+
+  e = LightXML.root(xdoc)["encoding"][1]["encodedSpace"][1]["matrixSize"][1]
+  header["encodedMatrixSize"] = [parse(Int,content(e["x"][1])),
+                          parse(Int,content(e["y"][1])),
+                          parse(Int,content(e["z"][1]))]
 
   return header
 end
@@ -164,4 +173,55 @@ function read_header(header)
     )
 
   return head
+end
+
+
+function trajectory(f::ISMRMRD)
+  if f.params["trajectory"] == "cartesian"
+    return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
+                                   f.params["encodedMatrixSize"][1])
+  elseif f.params["trajectory"] == "spiral"
+    
+    return nothing
+  end
+  return nothing
+end
+
+
+function sequence(f::ISMRMRD)
+  # TODO
+end
+
+function numRepetitions(f::ISMRMRD)
+  f.head[end].idx.repetition - f.head[1].idx.repetition + 1
+end
+
+function numChannels(f::ISMRMRD)
+  return f.params["receiverChannels"]
+end
+
+function findIndices(f::ISMRMRD, repetition=1, slice=1)
+  idx = zeros(Int,f.params["encodedMatrixSize"][2])
+  i = 1
+  for l=1:length(f.head)
+    if f.head[l].idx.slice+1 == slice &&
+       f.head[l].idx.repetition+1 == repetition
+      idx[ f.head[l].idx.kspace_encode_step_1+1 ] = l
+    end
+  end
+  return idx
+end
+
+function rawdata(f::ISMRMRD, repetition=1)
+  return permutedims(f.data[:,:,findIndices(f,repetition)],(1,3,2))
+end
+
+function aquisitionData(f::ISMRMRD)
+  #=return AquisitionData(sequence(f),
+                        rawdata(f),
+                        h5read(f.filename, "sequence/numEchoes"),
+                        h5read(f.filename, "numCoils"),
+                        h5read(f.filename, "numSlices"),
+                        h5read(f.filename, "samplePointer"),
+                        h5read(f.filename, "samplingIdx")) =#
 end
