@@ -47,7 +47,7 @@ function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
   return kspace[patOut],patOut
 end
 
-function sample_kspace(aqData::AquisitionData,redFac::Float64, patFunc::AbstractString;rand=true, profiles=false, kargs...)
+function sample_kspace(aqData::AcquisitionData,redFac::Float64, patFunc::AbstractString;rand=true, profiles=false, kargs...)
   numEchoes = aqData.numEchoes
   numCoils = aqData.numCoils
   numSlices = aqData.numSlices
@@ -79,7 +79,7 @@ function sample_kspace(aqData::AquisitionData,redFac::Float64, patFunc::Abstract
     end
     rand && (seed += 1)
   end
-  return AquisitionData(aqData.seq, vec(kdata_sub), aqData.numEchoes, aqData.numCoils, aqData.numSlices, samplePointer, idx)
+  return AcquisitionData(aqData.seq, vec(kdata_sub), aqData.numEchoes, aqData.numCoils, aqData.numSlices, samplePointer, idx)
 end
 
 function shuffle_vector(vec::Vector{T};patFunc::AbstractString="poisson",redFac::Float64=one(Float64),kargs...) where T

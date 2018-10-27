@@ -1,10 +1,9 @@
-export simulation,createSimulationProblem,simulation_nfft,simulation_explicit,simulation_dynamic, simulateTempSubspace, simulation_dynamic_rigid, simulation_dynamic_rigid_parallel, AquisitionData
+export simulation,createSimulationProblem,simulation_fast,simulation_explicit,simulation_dynamic, simulateTempSubspace, simulation_dynamic_rigid, simulation_dynamic_rigid_parallel, AcquisitionData
 
 include("Fieldmap.jl")
 include("RelaxationMap.jl")
 include("CoilSensitivity.jl")
 include("ExpApproximation.jl")
-include("AqData.jl")
 
 #####################################################################
 # simulation interface
@@ -15,15 +14,15 @@ function simulation(image::Array{Float64}, simParams::Dict)
   if simParams[:simulation] == "explicit"
     tr = trajectory(simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
     return simulation_explicit(tr, image, cmap; simParams...)
-  elseif simParams[:simulation] == "nfft"
+  elseif simParams[:simulation] == "fast"
     tr = trajectory(simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return simulation_nfft(tr, image, cmap; simParams...)
+    return simulation_fast(tr, image, cmap; simParams...)
   elseif simParams[:simulation] == "epgExplicit"
     seq = sequence(simParams[:seqName], simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
     return   simulation_explicit(seq, image; r2map=real(cmap), fmap = imag(cmap), simParams...)
   elseif simParams[:simulation] == "epgNFFT"
     seq = sequence(simParams[:seqName], simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return   simulation_nfft(seq, image; r2map=real(cmap), fmap = imag(cmap), simParams...)
+    return   simulation_fast(seq, image; r2map=real(cmap), fmap = imag(cmap), simParams...)
   else
     error("simulation $(simParams[:simulation]) is not known...")
   end
@@ -96,7 +95,7 @@ function simulation_explicit(tr::Abstract2DTrajectory, image::Matrix, correction
   end
 
 
-  return AquisitionData(tr, kdata)
+  return AcquisitionData(tr, kdata)
 
 end
 
@@ -151,7 +150,7 @@ function simulation_explicit(tr::Abstract3DTrajectory, image::Array{Float64,3}, 
     end
   end
 
-  return AquisitionData(tr, out)
+  return AcquisitionData(tr, out)
 end
 
 function simulation_explicit(seq::AbstractSequence
@@ -215,7 +214,7 @@ function simulation_explicit(seq::AbstractSequence
     end
   end
 
-  return AquisitionData(seq, vec(out), numEchoes=numEchoes)
+  return AcquisitionData(seq, vec(out), numEchoes=numEchoes)
 end
 
 function simulation_explicit(seq::AbstractSequence
@@ -274,10 +273,10 @@ function simulation_explicit(seq::AbstractSequence
     end
   end
 
-  return AquisitionData(seq, vec(out), numEchoes=numEchoes)
+  return AcquisitionData(seq, vec(out), numEchoes=numEchoes)
 end
 
-function simulation_nfft(seq::AbstractSequence
+function simulation_fast(seq::AbstractSequence
                       , image::Array{Float64,2}
                       ; r1map=[]
                       , r2map=[]
@@ -318,10 +317,10 @@ function simulation_nfft(seq::AbstractSequence
     tr = trajectory(seq,i)
     # include correction map and compensate for relaxation before TE,
     # which is taken into account by the EPG-Simulation
-    out[:,i,:] = simulation_nfft(tr, ampl[:,:,i].*exp(r2map*tr.TE).*image, r2map+1im*fmap, senseMaps=senseMaps).kdata
+    out[:,i,:] = simulation_fast(tr, ampl[:,:,i].*exp(r2map*tr.TE).*image, r2map+1im*fmap, senseMaps=senseMaps).kdata
   end
 
-  return AquisitionData(seq, vec(out), numEchoes=numEchoes(seq), numCoils=numCoils)
+  return AcquisitionData(seq, vec(out), numEchoes=numEchoes(seq), numCoils=numCoils)
 end
 
 #
@@ -365,7 +364,7 @@ end
 ...
 
 """
-function simulation_nfft(tr::Abstract2DTrajectory
+function simulation_fast(tr::Abstract2DTrajectory
                         , image::Matrix
                         , correctionMap = []
                         ; alpha::Float64 = 1.75
@@ -392,14 +391,14 @@ function simulation_nfft(tr::Abstract2DTrajectory
 
   if isempty(senseMaps)
     kdata = nfftOp * vec(complex(image))
-    return AquisitionData(tr, kdata)
+    return AcquisitionData(tr, kdata)
   else
     senseMaps = reshape(senseMaps,length(image),:)
     kdata = zeros(ComplexF64, numOfNodes, size(senseMaps,2))
     for l=1:size(senseMaps,2)
       kdata[:,l] = nfftOp * (vec(complex(image)) .* vec(senseMaps[:,l]))
     end
-    return AquisitionData(tr, vec(kdata), numCoils=size(senseMaps,3))
+    return AcquisitionData(tr, vec(kdata), numCoils=size(senseMaps,3))
   end
 
 end
@@ -422,10 +421,10 @@ function addNoise(x::Vector, snr::Float64, complex= true)
   return x+noise
 end
 
-function addNoise(aqData::AquisitionData, snr::Float64)
+function addNoise(aqData::AcquisitionData, snr::Float64)
   noisyData = addNoise(aqData.kdata, snr, true)
 
-  return AquisitionData(aqData.seq, noisyData, aqData.numEchoes, aqData.numCoils, aqData.numSlices, aqData.samplePointer, aqData.idx)
+  return AcquisitionData(aqData.seq, noisyData, aqData.numEchoes, aqData.numCoils, aqData.numSlices, aqData.samplePointer, aqData.idx)
 end
 
 """

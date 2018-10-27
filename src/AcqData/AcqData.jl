@@ -1,4 +1,4 @@
-export AquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightData!, weightedData
+export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightData!, weightedData
 
 #=
  contains all relevant info for the aquired data.
@@ -10,7 +10,7 @@ export AquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightDa
  3. dim : coils
  4. slices
 =#
-mutable struct AquisitionData
+mutable struct AcquisitionData
   seq::AbstractSequence
   kdata::Vector{ComplexF64}
   numEchoes::Int64
@@ -26,19 +26,21 @@ end
 #
 # constructor function for single trajectories
 #
-function AquisitionData(tr::AbstractTrajectory, kdata::Vector{ComplexF64}; numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
+function AcquisitionData(tr::AbstractTrajectory, kdata::Vector{ComplexF64};
+                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
   seq = SESequence(tr)
-  return AquisitionData(seq, kdata, numCoils=numCoils, numEchoes=numEchoes, numSlices=numSlices)
+  return AcquisitionData(seq, kdata, numCoils=numCoils, numEchoes=numEchoes, numSlices=numSlices)
 end
 
 #
 # aquisition data for single sequences
 #
-function AquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64}; numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
+function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
+                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
   idx==nothing && ( idx = collect(1:length(kdata)) )
   numSamplesPerShot = length(kdata)/(numEchoes*numCoils*numSlices)
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
-  return AquisitionData(seq, kdata, numEchoes, numCoils, numSlices, samplePointer, idx)
+  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices, samplePointer, idx)
 end
 
 ######################
@@ -48,7 +50,7 @@ end
 #
 # return kdata for a given coil, echo and image slice
 #
-function kData(aqData::AquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1)
+function kData(aqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1)
   setNumber = ((slice-1)*aqData.numCoils+coil-1)*aqData.numEchoes+echo
   numSets = aqData.numEchoes*aqData.numCoils*aqData.numSlices
   if length(aqData.samplePointer) >1
@@ -65,7 +67,7 @@ end
 #
 # return multi-echo-data for a given coil and image slice
 #
-function multiEchoData(aqData::AquisitionData, coil::Int64, slice::Int64)
+function multiEchoData(aqData::AcquisitionData, coil::Int64, slice::Int64)
   numNodesPerSet = div(length(aqData.kdata),aqData.numSlices*aqData.numCoils)
   kdata = reshape(aqData.kdata, numNodesPerSet, aqData.numCoils, aqData.numSlices)
   return kdata[:,coil,slice]
@@ -74,7 +76,7 @@ end
 #
 # return multi-coil-data for a given echo and image slice
 #
-function multiCoilData(aqData::AquisitionData, echo::Int64, slice::Int64)
+function multiCoilData(aqData::AcquisitionData, echo::Int64, slice::Int64)
   numNodesPerSet = div(length(aqData.kdata),aqData.numCoils*aqData.numEchoes*aqData.numSlices)
   kdata = reshape(aqData.kdata, numNodesPerSet, aqData.numEchoes, aqData.numCoils, aqData.numSlices)
   return vec(kdata[:,echo,:,slice])
@@ -84,7 +86,7 @@ end
 #
 # return multi-coil-multi-echo-data for a given slice (for all coils and echoes)
 #
-function multiCoilMultiEchoData(aqData::AquisitionData,slice::Int64)
+function multiCoilMultiEchoData(aqData::AcquisitionData,slice::Int64)
   numNodesPerSlice = div(length(aqData.kdata),aqData.numSlices)
   return aqData.kdata[(slice-1)*numNodesPerSlice+1:slice*numNodesPerSlice]
 end
@@ -95,10 +97,10 @@ end
 ######################################
 
 #
-# convert undersampled AquisitionData, where only profiles contained in aqData.idx are sampled,
+# convert undersampled AcquisitionData, where only profiles contained in aqData.idx are sampled,
 # into a format where trajectories only contain the sampled profiles
 #
-function convertUndersampledData(aqData::AquisitionData)
+function convertUndersampledData(aqData::AcquisitionData)
 
   aqDataCopy = deepcopy(aqData)
 
@@ -119,13 +121,13 @@ end
 #
 # weight kdata with the sampling density of the trajectories used
 #
-function weightedData(aqData::AquisitionData, shape::Tuple)
+function weightedData(aqData::AcquisitionData, shape::Tuple)
   res = deepcopy(aqData)
   weightData!(res, shape)
   return res
 end
 
-function weightData!(aqData::AquisitionData, shape::Tuple)
+function weightData!(aqData::AcquisitionData, shape::Tuple)
   ft = [ NFFTOp(shape,trajectory(aqData.seq,i)) for i=1:aqData.numEchoes]
   for i = 1:aqData.numSlices
     for j = 1:aqData.numCoils

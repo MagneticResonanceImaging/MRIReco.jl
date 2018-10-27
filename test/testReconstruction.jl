@@ -5,7 +5,7 @@ function testGriddingReco(N=32)
 
   # simulation
   params = Dict{Symbol, Any}()
-  params[:simulation] = "nfft"
+  params[:simulation] = "fast"
   params[:trajName] = "Cartesian"
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
@@ -27,7 +27,7 @@ function testCSReco(N=32,redFac=1.1)
 
   # simulation
   params = Dict{Symbol, Any}()
-  params[:simulation] = "nfft"
+  params[:simulation] = "fast"
   params[:trajName] = "Cartesian"
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
@@ -62,7 +62,7 @@ function testCSSenseReco(N=32,redFac=1.1)
 
   # simulation
   params = Dict{Symbol, Any}()
-  params[:simulation] = "nfft"
+  params[:simulation] = "fast"
   params[:trajName] = "Cartesian"
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N

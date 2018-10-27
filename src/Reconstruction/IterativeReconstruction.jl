@@ -3,7 +3,7 @@ export reconstruction_simple, reconstruction_multiEcho, reconstruction_multiCoil
 """
   CS-Sense Reconstruction using sparsity in the wavelet domain
 """
-function reconstruction_simple(aqData::AquisitionData, recoParams::Dict)
+function reconstruction_simple(aqData::AcquisitionData, recoParams::Dict)
 
   # operators
   F = EncodingOp(aqData, recoParams;numEchoes=aqData.numEchoes)
@@ -48,7 +48,7 @@ end
   CS Reconstruction using a joint encoding operator for the different echos
   and regularization on the multi-echo data
 """
-function reconstruction_multiEcho(aqData::AquisitionData, recoParams::Dict)
+function reconstruction_multiEcho(aqData::AcquisitionData, recoParams::Dict)
 
   # encoding operator and trafo into sparse domain
   F = EncodingOp(aqData,recoParams; numEchoes=aqData.numEchoes, multiEcho=true)
@@ -93,7 +93,7 @@ end
 """
   CS-Sense Reconstruction
 """
-function reconstruction_multiCoil(aqData::AquisitionData, recoParams::Dict)
+function reconstruction_multiCoil(aqData::AcquisitionData, recoParams::Dict)
 
   # encoding operator and trafo into sparse domain
   E = EncodingOp(aqData, recoParams; numEchoes=aqData.numEchoes, parallel=true)
@@ -132,7 +132,7 @@ function reconstruction_multiCoil(aqData::AquisitionData, recoParams::Dict)
   Ireco = reshape(Ireco, recoParams[:shape]..., aqData.numSlices, aqData.numEchoes, 1)
 end
 
-function reconstruction_multiCoilMultiEcho(aqData::AquisitionData, recoParams::Dict)
+function reconstruction_multiCoilMultiEcho(aqData::AcquisitionData, recoParams::Dict)
 
   # signal encoding transformation
   E = EncodingOp(aqData, recoParams, numEchoes=aqData.numEchoes, parallel=true, multiEcho=true)

@@ -9,7 +9,7 @@ include("RecoParameters.jl")
 #### Factory method ###
 # dispatch on the different reconstructions and generate the correct
 # reconstruction
-function reconstruction(aqData::AquisitionData, recoParams::Dict)
+function reconstruction(aqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
   if recoParams[:reco] == "nfft" || recoParams[:reco] == "explicit"
     return reconstruction_direct(aqData, recoParams)
@@ -27,7 +27,7 @@ function reconstruction(aqData::AquisitionData, recoParams::Dict)
 end
 
 # This version stores the reconstructed data into a file
-function reconstruction(aqData::AquisitionData, recoParams::Dict, filename::String;
+function reconstruction(aqData::AcquisitionData, recoParams::Dict, filename::String;
                         force=false)
   if !force && isfile(filename)
     return recoImage( RecoFileIBI(filename) )

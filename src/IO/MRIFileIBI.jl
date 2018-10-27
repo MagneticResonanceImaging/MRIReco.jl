@@ -1,4 +1,4 @@
-export saveasIBIFile, trajectory, sequence, rawdata, aquisitionData,
+export saveasIBIFile, trajectory, sequence, rawdata, acquisitionData,
        loadIBIFile, loadParams, saveParams
 
 using HDF5
@@ -53,8 +53,8 @@ function rawdata(f::MRIFileIBI)
   return reshape(reinterpret(Complex{eltype(data)}, vec(data)), (size(data)[2:end]...,) )
 end
 
-function aquisitionData(f::MRIFileIBI)
-  return AquisitionData(sequence(f),
+function acquisitionData(f::MRIFileIBI)
+  return AcquisitionData(sequence(f),
                         rawdata(f),
                         h5read(f.filename, "sequence/numEchoes"),
                         h5read(f.filename, "numCoils"),
@@ -83,7 +83,7 @@ function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr:
   end
 end
 
-function saveasIBIFile(filename::AbstractString, aqData::AquisitionData)
+function saveasIBIFile(filename::AbstractString, aqData::AcquisitionData)
 
   h5open(filename, "w") do file
 
@@ -125,7 +125,7 @@ function convertIBIFile(fileIn::AbstractString, fileOut::AbstractString)
   numSamplesPerShot = length(kdata)/(numEchoes*numCoils*numSlices)
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
 
-  aqData = AquisitionData(seq, vec(kdata), numEchoes, numCoils, numSlices
+  aqData = AcquisitionData(seq, vec(kdata), numEchoes, numCoils, numSlices
                           , samplePointer, samplingIdx)
 
   saveasIBIFile(fileOut, aqData)
@@ -134,7 +134,7 @@ function convertIBIFile(fileIn::AbstractString, fileOut::AbstractString)
 end
 
 function loadIBIFile(filename::AbstractString)
-  acq = aquisitionData(MRIFileIBI(filename))
+  acq = acquisitionData(MRIFileIBI(filename))
   return acq
 end
 

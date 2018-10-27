@@ -23,6 +23,16 @@ f = ISMRMRD(filename)
 
 @test size(f.data) == (256, 32, 1281)
 
+params = Dict{Symbol, Any}()
+params[:reco] = "nfft"
+params[:shape] = (256,128) #this should be clear from context
+
+
+#@test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-2
+
+Ireco = vec(reconstruction(acquisitionData(f), params))
+#exportImage("recogre.png", abs.(reshape(Ireco,256,128,32))[:,:,1] ) #TODO
+
 
 filename = "simple_spiral.h5"
 if !isfile(filename)
@@ -35,6 +45,8 @@ end
 
 f = ISMRMRD(filename)
 @test size(f.data) == (1000, 32, 160)
+
+
 
 # 3D_partial_fourier.h5
 

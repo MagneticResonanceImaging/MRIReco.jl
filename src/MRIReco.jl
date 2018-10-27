@@ -23,6 +23,7 @@ using LightXML
 include("Trajectories/Trajectories.jl")
 include("Tools/Tools.jl")
 include("Sequences/Sequence.jl")
+include("AcqData/AcqData.jl")
 include("Simulation/Simulation.jl")
 include("LinearOp/LinearOp.jl")
 include("Reconstruction/Reconstruction.jl")

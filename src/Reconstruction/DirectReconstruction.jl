@@ -1,7 +1,7 @@
 export reconstruction_direct, reconstruction
 
 
-function reconstruction_direct(aqData::AquisitionData, recoParams::Dict)
+function reconstruction_direct(aqData::AcquisitionData, recoParams::Dict)
   numEchoes = aqData.numEchoes
   numCoils = aqData.numCoils
   numSlices = aqData.numSlices

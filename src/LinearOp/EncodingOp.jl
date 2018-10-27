@@ -3,7 +3,7 @@ export EncodingOp, lrEncodingOp
 #
 # Encoding operator for one slice
 #
-function EncodingOp(aqData::AquisitionData, params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false, multiEcho::Bool=false)
+function EncodingOp(aqData::AcquisitionData, params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false, multiEcho::Bool=false)
   # Fourier Operators
   ft = Array{AbstractLinearOperator,1}(undef,numEchoes)
   for i = 1:numEchoes
@@ -39,7 +39,7 @@ function EncodingOp(aqData::AquisitionData, params::Dict; set::Int64=1, numEchoe
 end
 
 
-function lrEncodingOp(aqData::AquisitionData,params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false,)
+function lrEncodingOp(aqData::AcquisitionData,params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false,)
 
   # low rank operator
   N=prod(params[:shape])

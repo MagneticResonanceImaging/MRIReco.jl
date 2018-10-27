@@ -181,7 +181,19 @@ function trajectory(f::ISMRMRD)
     return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
                                    f.params["encodedMatrixSize"][1])
   elseif f.params["trajectory"] == "spiral"
-    
+
+
+    #=function trajectory(f::DFFile)
+      numSamplingPerProfile, numProfiles, nodes = open(f.trajfilename,"r") do fd
+        tmp1,numSamplingPerProfile,numProfiles,tmp2= read!(fd,Array{Int32}(undef,4))
+        nodes = read!(fd, Array{Float32}(undef, 2, numSamplingPerProfile,numProfiles))
+        return numSamplingPerProfile, numProfiles, nodes
+      end
+
+      return CustomTrajectory(numProfiles, numSamplingPerProfile, vec(nodes))
+    end=#
+
+
     return nothing
   end
   return nothing
@@ -213,15 +225,10 @@ function findIndices(f::ISMRMRD, repetition=1, slice=1)
 end
 
 function rawdata(f::ISMRMRD, repetition=1)
-  return permutedims(f.data[:,:,findIndices(f,repetition)],(1,3,2))
+  return map(ComplexF64,vec(permutedims(f.data[:,:,findIndices(f,repetition)],(1,3,2))))
 end
 
-function aquisitionData(f::ISMRMRD)
-  #=return AquisitionData(sequence(f),
-                        rawdata(f),
-                        h5read(f.filename, "sequence/numEchoes"),
-                        h5read(f.filename, "numCoils"),
-                        h5read(f.filename, "numSlices"),
-                        h5read(f.filename, "samplePointer"),
-                        h5read(f.filename, "samplingIdx")) =#
+function acquisitionData(f::ISMRMRD)
+  return AcquisitionData(trajectory(f), rawdata(f),
+                          numCoils=numChannels(f), numEchoes=1, numSlices=1)
 end
