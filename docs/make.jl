@@ -3,11 +3,14 @@ using Documenter, MRIReco
 makedocs(
     modules = [MRIReco],
     format = :html,
-    sitename = "flexible reconstruction",
+    sitename = "Julia MRI Package",
     authors = "Tobias Knopp, Mirco Grosser",
     pages = [
         "Home" => "index.md",
         "Getting Started" => "gettingStarted.md",
+        "Trajectory" => "trajectories.md",
+        "Acquisition Data" => "acquisitionData.md",
+        "Operators" => "operators.md",
         "Simulation" => "simulation.md",
         "Reconstruction" => "reconstruction.md",
     ],

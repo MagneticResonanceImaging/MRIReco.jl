@@ -10,8 +10,8 @@ export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightD
  3. dim : coils
  4. slices
 =#
-mutable struct AcquisitionData
-  seq::AbstractSequence
+mutable struct AcquisitionData{S<:AbstractSequence}
+  seq::S
   kdata::Vector{ComplexF64}
   numEchoes::Int64
   numCoils::Int64
@@ -38,7 +38,7 @@ end
 function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
                         numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
   idx==nothing && ( idx = collect(1:length(kdata)) )
-  numSamplesPerShot = length(kdata)/(numEchoes*numCoils*numSlices)
+  numSamplesPerShot = div(length(kdata),(numEchoes*numCoils*numSlices))
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
   return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices, samplePointer, idx)
 end

@@ -47,25 +47,26 @@ function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
   return kspace[patOut],patOut
 end
 
-function sample_kspace(aqData::AcquisitionData,redFac::Float64, patFunc::AbstractString;rand=true, profiles=false, kargs...)
+function sample_kspace(aqData::AcquisitionData,redFac::Float64,
+                       patFunc::AbstractString;rand=true, profiles=false, kargs...)
   numEchoes = aqData.numEchoes
   numCoils = aqData.numCoils
   numSlices = aqData.numSlices
-  numNodes = length(aqData.kdata)/(numEchoes*numCoils*numSlices)
+  numNodes = div(length(aqData.kdata), numEchoes*numCoils*numSlices)
 
   tr = trajectory(aqData.seq)
 
   if profiles
-    numNodes = tr.numSamplingPerProfile*floor(Int64, tr.numProfiles/redFac)
-    kdata_sub = zeros(ComplexF64, floor(Int64, numNodes), numEchoes, numCoils, numSlices)
+    numNodes = tr.numSamplingPerProfile * Int(div(tr.numProfiles, redFac))
+    kdata_sub = zeros(ComplexF64, numNodes, numEchoes, numCoils, numSlices)
     samplePointer = collect(1:numNodes:length(kdata_sub)-numNodes+1)
   else
-    numNodes = div(numNodes,redFac)
-    kdata_sub = zeros(ComplexF64, floor(Int64, numNodes), numEchoes, numCoils, numSlices)
+    numNodes = Int(div(numNodes, redFac))
+    kdata_sub = zeros(ComplexF64, numNodes, numEchoes, numCoils, numSlices)
     samplePointer = collect(1:numNodes:length(kdata_sub)-numNodes+1)
   end
 
-  idx = zeros(Int64, floor(Int64, numNodes), numEchoes, numCoils, numSlices)
+  idx = zeros(Int64, numNodes, numEchoes, numCoils, numSlices)
   seed = 1234
 
   for i = 1:numEchoes

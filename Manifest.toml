@@ -369,14 +369,6 @@ git-tree-sha1 = "ce557a70f2f6a96e32ec05d2b308bbfdf50070b0"
 uuid = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 version = "0.5.1"
 
-[[LinearSolver]]
-deps = ["Compat", "FFTW", "LinearAlgebra", "LinearOperators", "Random", "SparseArrays", "Test", "Wavelets"]
-git-tree-sha1 = "4b088d11684946b0320493ee4f60daeb1c14ff8b"
-repo-rev = "master"
-repo-url = "https://github.com/tknopp/LinearSolver.jl"
-uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
-version = "0.0.0"
-
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
@@ -510,6 +502,14 @@ deps = ["Pkg"]
 git-tree-sha1 = "7b1d07f411bc8ddb7977ec7f377b97b158514fe0"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
+
+[[RegularizedLeastSquares]]
+deps = ["FFTW", "LinearAlgebra", "LinearOperators", "SparseArrays", "Wavelets"]
+git-tree-sha1 = "e3458e261de24e257104df527411598d8fe30279"
+repo-rev = "master"
+repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
+uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
+version = "0.0.0"
 
 [[Requires]]
 deps = ["Test"]
