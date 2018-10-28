@@ -22,13 +22,13 @@ using ImageMagick
 using QuartzImageIO
 using FileIO
 using NIfTI
-
+@reexport using Unitful
 
 
 include("Trajectories/Trajectories.jl")
 include("Tools/Tools.jl")
 include("Sequences/Sequence.jl")
-include("AcqData/AcqData.jl")
+include("Datatypes/Datatypes.jl")
 include("Simulation/Simulation.jl")
 include("LinearOp/LinearOp.jl")
 include("Reconstruction/Reconstruction.jl")

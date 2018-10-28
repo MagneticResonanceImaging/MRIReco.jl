@@ -42,6 +42,7 @@ function reconstruction_simple(aqData::AcquisitionData, recoParams::Dict)
   end
 
   Ireco = reshape(Ireco, recoParams[:shape]..., aqData.numSlices, aqData.numEchoes, aqData.numCoils)
+  return makeAxisArray(Ireco, aqData)
 end
 
 """
@@ -87,7 +88,7 @@ function reconstruction_multiEcho(aqData::AcquisitionData, recoParams::Dict)
   end
 
   Ireco = reshape(Ireco, recoParams[:shape]..., aqData.numEchoes, aqData.numCoils, aqData.numSlices)
-  return permutedims(Ireco,[1,2,5,3,4])
+  return makeAxisArray(permutedims(Ireco,[1,2,5,3,4]), aqData)
 end
 
 """

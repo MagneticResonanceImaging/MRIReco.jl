@@ -43,6 +43,10 @@ function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
   return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices, samplePointer, idx)
 end
 
+function Images.pixelspacing(acqData::AcquisitionData)
+  return [1.0,1.0,1.0]*Unitful.mm
+end
+
 ######################
 # getting k-space data
 ######################

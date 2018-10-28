@@ -6,18 +6,6 @@ function loadImage(filename::String)
   return  ni.raw #makeImage(ni.raw, pixelspacing)
 end
 
-#=
-function makeImage{T}(a::AbstractArray{T,3}, pixelspacing)
-  dims = (:x,:y,:z, :coils, :slices)
-  im = AxisArray(a, (:x,:y,:z),
-                      tuple(pixelspacing...),
-                      tuple(0.0, 0.0, 0.0))
-
-  imMeta = ImageMeta(im, Dict{String,Any}())
-  return imMeta
-end
-=#
-
 function saveImage(filename::String, im::AbstractArray)
   voxel_size = pixelspacing(im)
 

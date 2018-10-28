@@ -46,8 +46,8 @@ function testCSReco(N=32,redFac=1.1)
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
 
-  x_approx = vec(reconstruction(aqData, params))
-  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
+  x_approx = reconstruction(aqData, params)
+  @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-1
 end
 
 # test CSSense Reco

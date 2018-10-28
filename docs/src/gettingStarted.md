@@ -33,3 +33,8 @@ x_reco = reconstruction(aqData, params)
 We will go through the program step by step. First we create a 2D shepp logan
 phantom of size N=256. Then we setup a dictionary that defines the simulation
 parameters. Here, we chose a simple Cartesian trajectory ...
+
+
+### 2D Reconstruction
+![Phantom](./assets/phantom.png)
+![Reconstruction](./assets/simpleReco.png)
