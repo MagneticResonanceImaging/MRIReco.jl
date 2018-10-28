@@ -1,7 +1,7 @@
 var documenterSearchIndex = {"docs": [
 
 {
-    "location": "#",
+    "location": "index.html#",
     "page": "Home",
     "title": "Home",
     "category": "page",
@@ -9,7 +9,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#MRIReco.jl-1",
+    "location": "index.html#MRIReco.jl-1",
     "page": "Home",
     "title": "MRIReco.jl",
     "category": "section",
@@ -17,7 +17,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Introduction-1",
+    "location": "index.html#Introduction-1",
     "page": "Home",
     "title": "Introduction",
     "category": "section",
@@ -25,7 +25,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Status-1",
+    "location": "index.html#Status-1",
     "page": "Home",
     "title": "Status",
     "category": "section",
@@ -33,7 +33,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Installation-1",
+    "location": "index.html#Installation-1",
     "page": "Home",
     "title": "Installation",
     "category": "section",
@@ -41,7 +41,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "gettingStarted/#",
+    "location": "gettingStarted.html#",
     "page": "Getting Started",
     "title": "Getting Started",
     "category": "page",
@@ -49,7 +49,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "gettingStarted/#Getting-Started-1",
+    "location": "gettingStarted.html#Getting-Started-1",
     "page": "Getting Started",
     "title": "Getting Started",
     "category": "section",
@@ -57,7 +57,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "acquisitionData/#",
+    "location": "acquisitionData.html#",
     "page": "Acquisition Data",
     "title": "Acquisition Data",
     "category": "page",
@@ -65,15 +65,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "acquisitionData/#Acquisition-Data-1",
+    "location": "acquisitionData.html#Acquisition-Data-1",
     "page": "Acquisition Data",
     "title": "Acquisition Data",
     "category": "section",
-    "text": "All acquisition data is stored in the a type that looks like thismutable struct AcquisitionData{S<:AbstractSequence}\n  seq::S\n  kdata::Vector{ComplexF64}\n  numEchoes::Int64\n  numCoils::Int64\n  numSlices::Int64\n  samplePointer::Vector{Int64}\n  idx::Array{Int64}\nendThe composite type thus consists of the imaging sequence, the k-space data, several parameters describing the dimension of the data and some additional index vectors."
+    "text": "All acquisition data is stored in the a type that looks like thismutable struct AcquisitionData{S<:AbstractSequence}\n  seq::S\n  kdata::Vector{ComplexF64}\n  numEchoes::Int64\n  numCoils::Int64\n  numSlices::Int64\n  samplePointer::Vector{Int64}\n  idx::Array{Int64}\nendThe composite type consists of the imaging sequence, the k-space data, several parameters describing the dimension of the data and some additional index vectors."
 },
 
 {
-    "location": "image/#",
+    "location": "image.html#",
     "page": "Images",
     "title": "Images",
     "category": "page",
@@ -81,15 +81,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "image/#Images-1",
+    "location": "image.html#Images-1",
     "page": "Images",
     "title": "Images",
     "category": "section",
-    "text": "All reconstructed data is stored as an AxisArray. The AxisArrays package is part of the Images package family, which groups all image processing related functionality together. We note that the term Image does not restrict the dimensionality of the data types to 2D but in fact images can be of arbitrary dimensionality.The reconstructed MRI image I is an AxisArray and has five dimensions. The first three are the spatial dimension x, y, and z, whereas dimension four encodes the number of echos that have been reconstructed, while dimension five encodes individual coils that may have been reconstructed independently. By using an AxisArray the object does not only consist of the data but it additionally encodes the physical size of the image as well as the echo times. To extract the ordinary Julia array one can simply use Ireco.data.The advantage of encoding the physical dimensions is the image data can be stored without loosing the dimensions of the data. For instance one can callsaveImage(filename, I)to store the image andI = loadImage(filename)to load the image. Currently, MRIReco does NIfTI and a custom HDF5 based data format."
+    "text": "All reconstructed data is stored as an AxisArray. The AxisArrays package is part of the Images package family, which groups all image processing related functionality together. We note that the term Image does not restrict the dimensionality of the data types to 2D but in fact images can be of arbitrary dimensionality.The reconstructed MRI image I is an AxisArray and has five dimensions. The first three are the spatial dimension x, y, and z, whereas dimension four encodes the number of echos that have been reconstructed, while dimension five encodes individual coils that may have been reconstructed independently. By using an AxisArray the object does not only consist of the data but it additionally encodes the physical size of the image as well as the echo times. To extract the ordinary Julia array one can simply use Ireco.data.The advantage of encoding the physical dimensions is the image data can be stored without loosing the dimensions of the data. For instance one can callsaveImage(filename, I)to store the image andI = loadImage(filename)to load the image. Currently, MRIReco does support the NIfTI file format. By default, saveImage stores the data complex valued if the image I is complex valued. To store the magnitude image one can callsaveImage(filename, I, true)"
 },
 
 {
-    "location": "simulation/#",
+    "location": "simulation.html#",
     "page": "Simulation",
     "title": "Simulation",
     "category": "page",
@@ -97,7 +97,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "simulation/#Simulation-1",
+    "location": "simulation.html#Simulation-1",
     "page": "Simulation",
     "title": "Simulation",
     "category": "section",
@@ -105,7 +105,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "reconstruction/#",
+    "location": "reconstruction.html#",
     "page": "Reconstruction",
     "title": "Reconstruction",
     "category": "page",
@@ -113,7 +113,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "reconstruction/#Reconstruction-1",
+    "location": "reconstruction.html#Reconstruction-1",
     "page": "Reconstruction",
     "title": "Reconstruction",
     "category": "section",
@@ -121,7 +121,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "trajectories/#",
+    "location": "trajectories.html#",
     "page": "Trajectory",
     "title": "Trajectory",
     "category": "page",
@@ -129,7 +129,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "operators/#",
+    "location": "trajectories.html#Trajectory-1",
+    "page": "Trajectory",
+    "title": "Trajectory",
+    "category": "section",
+    "text": "Several typical MRI k-space trajectories are available:Cartesian\nEPI\nRadial\nSpiralIn addition, there is a CustomTrajectory type for implementing arbitrary k-space trajectories. Currently, most of the trajectories are only available in 2D. Each trajectory is of type AbstractTrajectory and implements the following functionsstring(tr::AbstractTrajectory)\nkspaceNodes(tr::AbstractTrajectory)\nreadoutTimes(tr::AbstractTrajectory)For instance we can define a spiral trajectory using ... "
+},
+
+{
+    "location": "operators.html#",
     "page": "Operators",
     "title": "Operators",
     "category": "page",
