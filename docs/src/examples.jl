@@ -3,7 +3,7 @@ using ImageView
 
 ##### simple example ####
 
-N = 128
+N = 256
 I = shepp_logan(N)
 
 # simulation parameters
