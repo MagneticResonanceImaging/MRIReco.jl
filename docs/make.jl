@@ -8,18 +8,16 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Getting Started" => "gettingStarted.md",
-        "Trajectory" => "trajectories.md",
         "Acquisition Data" => "acquisitionData.md",
-        "Operators" => "operators.md",
+        "Images" => "image.md",
         "Simulation" => "simulation.md",
         "Reconstruction" => "reconstruction.md",
+        "Trajectory" => "trajectories.md",
+        "Operators" => "operators.md",
     ],
 )
 
 deploydocs(
     repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git",
     target = "build",
-    julia = "1.0",
-    deps = nothing,
-    make = nothing,
 )
