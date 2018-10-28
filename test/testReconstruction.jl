@@ -16,8 +16,8 @@ function testGriddingReco(N=32)
   params[:reco] = "nfft"
   params[:shape] = (N,N)
 
-  x_approx = vec(reconstruction(aqData, params))
-  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-2
+  x_approx = reconstruction(aqData, params)
+  @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
 # test CS reco

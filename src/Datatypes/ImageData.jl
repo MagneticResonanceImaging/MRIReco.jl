@@ -18,3 +18,19 @@ function makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
   #return imMeta
   return im
 end
+
+function makeAxisArray(I::AbstractArray{T,5}, spacing::Vector{Float64}) where T
+
+  offset = [0.0, 0.0, 0.0]*Unitful.mm
+
+  sp = uconvert.(Unitful.mm, spacing*Unitful.m)
+
+  im = AxisArray(I,
+		   Axis{:x}(range(offset[1], step=sp[1], length=size(I,1))),
+		   Axis{:y}(range(offset[2], step=sp[2], length=size(I,2))),
+		   Axis{:z}(range(offset[3], step=sp[3], length=size(I,3))),
+		   Axis{:echos}(1:size(I,4)),
+       Axis{:coils}(1:size(I,5)))
+
+  return im
+end

@@ -15,6 +15,7 @@ makedocs(
         "Trajectory" => "trajectories.md",
         "Operators" => "operators.md",
     ],
+    html_prettyurls = false, #!("local" in ARGS),
 )
 
 deploydocs(

@@ -22,4 +22,9 @@ to store the image and
 ```julia
 I = loadImage(filename)
 ```
-to load the image. Currently, MRIReco does NIfTI and a custom `HDF5` based data format.
+to load the image. Currently, MRIReco does support the NIfTI file format. By default,
+`saveImage` stores the data complex valued if the image `I` is complex valued.
+To store the magnitude image one can call
+```julia
+saveImage(filename, I, true)
+```

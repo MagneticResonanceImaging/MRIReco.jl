@@ -2,3 +2,4 @@
 docs/build/*
 *.h5
 test/*.png
+test/*.nii

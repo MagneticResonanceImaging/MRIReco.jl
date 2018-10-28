@@ -12,6 +12,6 @@ mutable struct AcquisitionData{S<:AbstractSequence}
   idx::Array{Int64}
 end
 ```
-The composite type thus consists of the imaging sequence, the k-space data,
+The composite type consists of the imaging sequence, the k-space data,
 several parameters describing the dimension of the data and some additional
 index vectors.
