@@ -1,5 +1,3 @@
-using NIfTI, Images
-
 export loadImage, saveImage, makeImage
 
 function loadImage(filename::String)

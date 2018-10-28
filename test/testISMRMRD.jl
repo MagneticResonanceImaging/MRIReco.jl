@@ -30,8 +30,9 @@ params[:shape] = (256,128) #this should be clear from context
 
 #@test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-2
 
-Ireco = vec(reconstruction(acquisitionData(f), params))
-#exportImage("recogre.png", abs.(reshape(Ireco,256,128,32))[:,:,1] ) #TODO
+Ireco = abs.(vec(reconstruction(acquisitionData(f), params)))
+Icolored = colorview(Gray, Ireco./maximum(Ireco))
+#save("recogre.png", reshape(Icolored,256,128,32)[:,:,1] )
 
 
 filename = "simple_spiral.h5"

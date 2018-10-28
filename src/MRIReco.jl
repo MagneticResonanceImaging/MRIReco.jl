@@ -18,6 +18,11 @@ using ColorTypes
 using ColorVectorSpace
 using Wavelets
 using LightXML
+using ImageMagick
+using QuartzImageIO
+using FileIO
+using NIfTI
+
 
 
 include("Trajectories/Trajectories.jl")
