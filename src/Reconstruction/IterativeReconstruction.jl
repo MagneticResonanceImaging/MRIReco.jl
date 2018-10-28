@@ -25,7 +25,7 @@ function reconstruction_simple(aqData::AcquisitionData, recoParams::Dict)
   reg = getRegularization(regName; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
-    LinearSolver.normalize!(reg, aqData2.kdata)
+    RegularizedLeastSquares.normalize!(reg, aqData2.kdata)
   end
 
   # reconstruction
@@ -72,7 +72,7 @@ function reconstruction_multiEcho(aqData::AcquisitionData, recoParams::Dict)
   reg = getRegularization(regName; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
-    LinearSolver.normalize!(reg, aqData2.kdata)
+    RegularizedLeastSquares.normalize!(reg, aqData2.kdata)
   end
 
   # reconstruction
@@ -115,7 +115,7 @@ function reconstruction_multiCoil(aqData::AcquisitionData, recoParams::Dict)
   reg = getRegularization(regName; multiEcho=true, recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
-    LinearSolver.normalize!(reg, aqData2.kdata)
+    RegularizedLeastSquares.normalize!(reg, aqData2.kdata)
   end
 
   # solve optimization problem
@@ -156,7 +156,7 @@ function reconstruction_multiCoilMultiEcho(aqData::AcquisitionData, recoParams::
   reg = getRegularization(regName; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
-    LinearSolver.normalize!(reg, aqData2.kdata)
+    RegularizedLeastSquares.normalize!(reg, aqData2.kdata)
   end
 
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), aqData.numEchoes, aqData.numSlices)

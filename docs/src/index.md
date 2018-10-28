@@ -14,7 +14,7 @@ One strength of the package is that it is strongly modular and uses high quality
  * NFFT.jl and FFTW.jl for fast Fourier transformations
  * Wavelets.jl for sparsification
  * LinearOperators.jl in order to be able to divide the imaging operator modularly into individual parts
- * LinearSolver.jl for modern algorithms for solving linear optimization problems
+ * RegularizedLeastSquares.jl for modern algorithms for solving linear optimization problems
 
 This interaction allows new algorithms to be easily integrated into the software framework. It is not necessary to program in C/C++ but the advantages of the scientific high-level language Julia can be used.
 
@@ -27,7 +27,7 @@ GPU acceleration yet.
 
 Start julia and open the package mode by entering `]`. The enter
 ```julia
-add https://github.com/tknopp/LinearSolver.jl
+add https://github.com/tknopp/RegularizedLeastSquares.jl
 add https://github.com/MagneticResonanceImaging/MRIReco.jl
 ```
-This will install the packages `LinearSolver.jl`, `MRIReco.jl`, and all its dependencies.
+This will install the packages `RegularizedLeastSquares.jl`, `MRIReco.jl`, and all its dependencies.
