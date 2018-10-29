@@ -1,6 +1,9 @@
 module MRIReco
 
 #using Compat
+using ImageMagick
+using QuartzImageIO
+using FileIO
 using ProgressMeter
 using Reexport
 @reexport using Images
@@ -18,9 +21,6 @@ using ColorTypes
 using ColorVectorSpace
 using Wavelets
 using LightXML
-using ImageMagick
-using QuartzImageIO
-using FileIO
 using NIfTI
 @reexport using Unitful
 
