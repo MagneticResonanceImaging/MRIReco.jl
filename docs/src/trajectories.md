@@ -13,4 +13,11 @@ string(tr::AbstractTrajectory)
 kspaceNodes(tr::AbstractTrajectory)
 readoutTimes(tr::AbstractTrajectory)
 ```
-For instance we can define a spiral trajectory using ... 
+For instance we can define a spiral trajectory using ...
+
+
+```julia
+...
+```
+
+![Phantom](./assets/trajectories.png)

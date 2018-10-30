@@ -16,7 +16,7 @@ string(tr::OneLine2DTrajectory) = "OneLine"
 function kspaceNodes(tr::OneLine2DTrajectory)
   nodes = zeros(2,tr.numSamplingPerProfile, tr.numProfiles)
   angles = zeros(Float64,tr.numProfiles)
-  angles[:] = tr.angle
+  angles[:] .= tr.angle
   pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
   for l = 1:tr.numProfiles
     for k = 1:tr.numSamplingPerProfile

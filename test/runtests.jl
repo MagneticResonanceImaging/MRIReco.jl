@@ -3,6 +3,7 @@ using MRIReco
 using Test
 using LinearAlgebra
 
+include("testTrajectories.jl")
 include("testIO.jl")
 include("testSimulation.jl")
 include("testOperators.jl")
