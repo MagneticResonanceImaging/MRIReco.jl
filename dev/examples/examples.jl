@@ -31,9 +31,7 @@ imshow(abs.(Ireco[:,:,1,1,1]))
 
 # export images
 Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("assets/simpleReco.png", Icolored[:,:,1,1,1] )
+save("../assets/simpleReco.png", Icolored[:,:,1,1,1] )
 
 Icolored = colorview(Gray, abs.(I)./maximum(abs.(I)))
-save("assets/phantom.png", Icolored[:,:] )
-
-#### trajectories ####
+save("../assets/phantom.png", Icolored[:,:] )
