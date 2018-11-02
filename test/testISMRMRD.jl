@@ -27,12 +27,9 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
-
-#@test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-2
-
 Ireco = abs.(vec(reconstruction(acquisitionData(f), params)))
 Icolored = colorview(Gray, Ireco./maximum(Ireco))
-#save("recogre.png", reshape(Icolored,256,128,32)[:,:,1] )
+save("recogre.png", reshape(Icolored,256,128,32)[:,:,1] )
 
 
 filename = "simple_spiral.h5"

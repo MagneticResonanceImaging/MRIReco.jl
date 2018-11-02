@@ -5,10 +5,10 @@ function test_kdata(N::Int64=32)
     I = shepp_logan(N)
     tr = RadialTrajectory(N,N)
     println("Simulating kdata using NFFT")
-    @time aqDataNFFT = simulation_fast(tr,I)
+    @time acqDataNFFT = simulation_fast(tr,I)
     @info "Simulating kdata rigorously"
-    @time aqDataExplicit = simulation_explicit(tr,I)
-    relError =  norm(aqDataExplicit.kdata[:]-aqDataNFFT.kdata[:]) / norm(aqDataExplicit.kdata[:])
+    @time acqDataExplicit = simulation_explicit(tr,I)
+    relError =  norm(acqDataExplicit.kdata[:]-acqDataNFFT.kdata[:]) / norm(acqDataExplicit.kdata[:])
     println("Relative error NFFT vs EXACT: ", relError)
     @test relError < 1e-2
 
@@ -24,17 +24,17 @@ function test_kdataWithCorrection(N::Int64=32)
     tr = SpiralTrajectory(N,2*N,TE=0.0,AQ=32e-3)
 
     println("Simulating kdata using NFFT to approx. correctionterm ...")
-    @time aqDataNFFT = simulation_fast(tr,I,cmap;method="nfft")
+    @time acqDataNFFT = simulation_fast(tr,I,cmap;method="nfft")
     println("Simulating kdata using Least Squares to approx. correctionterm...")
-    @time aqDataLSQR = simulation_fast(tr,I,cmap;method="leastsquare")
+    @time acqDataLSQR = simulation_fast(tr,I,cmap;method="leastsquare")
     println("Simulating kdata rigorously...")
-    @time aqDataExplicit = simulation_explicit(tr,I,cmap)
+    @time acqDataExplicit = simulation_explicit(tr,I,cmap)
     # Calculating and testing the relative error of kdata
-    relErrorLeastSquare = norm(aqDataExplicit.kdata[:]-aqDataLSQR.kdata[:]) / norm(aqDataExplicit.kdata[:])
+    relErrorLeastSquare = norm(acqDataExplicit.kdata[:]-acqDataLSQR.kdata[:]) / norm(acqDataExplicit.kdata[:])
     println("Relative Error of leastsquare method: ", relErrorLeastSquare)
     @test relErrorLeastSquare < 1e-3
 
-    relErrorNFFT = norm(aqDataExplicit.kdata[:] - aqDataNFFT.kdata[:]) / norm(aqDataExplicit.kdata[:])
+    relErrorNFFT = norm(acqDataExplicit.kdata[:] - acqDataNFFT.kdata[:]) / norm(acqDataExplicit.kdata[:])
     println("Relative Error of leastsquare method: ", relErrorNFFT)
     @test relErrorNFFT < 1e-3
 

@@ -12,7 +12,7 @@ params[:numProfiles] = floor(Int64, pi/2*N)
 params[:numSamplingPerProfile] = 2*N
 
 # do simulation
-aqData = simulation(I, params)
+acqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
@@ -21,7 +21,7 @@ params[:shape] = (N,N)
 params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28
-Ireco = reconstruction(aqData, params)
+Ireco = reconstruction(acqData, params)
 
 saveImage("testReco.nii", Ireco, false)
 IrecoLoaded = loadImage("testReco.nii")

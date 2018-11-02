@@ -47,14 +47,14 @@ function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
   return kspace[patOut],patOut
 end
 
-function sample_kspace(aqData::AcquisitionData,redFac::Float64,
+function sample_kspace(acqData::AcquisitionData,redFac::Float64,
                        patFunc::AbstractString;rand=true, profiles=false, kargs...)
-  numEchoes = aqData.numEchoes
-  numCoils = aqData.numCoils
-  numSlices = aqData.numSlices
-  numNodes = div(length(aqData.kdata), numEchoes*numCoils*numSlices)
+  numEchoes = acqData.numEchoes
+  numCoils = acqData.numCoils
+  numSlices = acqData.numSlices
+  numNodes = div(length(acqData.kdata), numEchoes*numCoils*numSlices)
 
-  tr = trajectory(aqData.seq)
+  tr = trajectory(acqData.seq)
 
   if profiles
     numNodes = tr.numSamplingPerProfile * Int(div(tr.numProfiles, redFac))
@@ -75,12 +75,12 @@ function sample_kspace(aqData::AcquisitionData,redFac::Float64,
     patOut = sample(samplingShape,redFac,pattern.patParams;kargs...)
     patOut = sort(patOut)
     for j=1:numCoils, k=1:numSlices
-      kdata_sub[:,i,j,k] = kData(aqData,i,j,k)[patOut]
+      kdata_sub[:,i,j,k] = kData(acqData,i,j,k)[patOut]
       idx[:,i,j,k] = patOut
     end
     rand && (seed += 1)
   end
-  return AcquisitionData(aqData.seq, vec(kdata_sub), aqData.numEchoes, aqData.numCoils, aqData.numSlices, samplePointer, idx)
+  return AcquisitionData(acqData.seq, vec(kdata_sub), acqData.numEchoes, acqData.numCoils, acqData.numSlices, samplePointer, idx)
 end
 
 function shuffle_vector(vec::Vector{T};patFunc::AbstractString="poisson",redFac::Float64=one(Float64),kargs...) where T

@@ -10,13 +10,13 @@ function testGriddingReco(N=32)
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
 
-  aqData = simulation(x, params)
+  acqData = simulation(x, params)
 
   #reco
   params[:reco] = "direct"
   params[:shape] = (N,N)
 
-  x_approx = reconstruction(aqData, params)
+  x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
@@ -32,9 +32,9 @@ function testCSReco(N=32,redFac=1.1)
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
 
-  aqData = simulation(x, params)
-  aqData = MRIReco.sample_kspace(aqData, redFac, "poisson", calsize=5)
-  aqData = convertUndersampledData(aqData)
+  acqData = simulation(x, params)
+  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+  acqData = convertUndersampledData(acqData)
 
   # reco
   params[:reco] = "standard"    # encoding model
@@ -46,7 +46,7 @@ function testCSReco(N=32,redFac=1.1)
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
 
-  x_approx = reconstruction(aqData, params)
+  x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-1
 end
 
@@ -67,13 +67,13 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
 
-  aqData = simulation( real(x.*reshape(sensMaps[:,1],N,N)), params )
-  aqData2 = simulation( real(x.*reshape(sensMaps[:,2],N,N)), params )
-  aqData.kdata = cat(aqData.kdata, aqData2.kdata, dims=1)
-  aqData.numCoils = 2
-  aqData.samplePointer = [1,N*N+1]
-  aqData = MRIReco.sample_kspace(aqData, redFac, "poisson", calsize=5)
-  aqData = convertUndersampledData(aqData)
+  acqData = simulation( real(x.*reshape(sensMaps[:,1],N,N)), params )
+  acqData2 = simulation( real(x.*reshape(sensMaps[:,2],N,N)), params )
+  acqData.kdata = cat(acqData.kdata, acqData2.kdata, dims=1)
+  acqData.numCoils = 2
+  acqData.samplePointer = [1,N*N+1]
+  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+  acqData = convertUndersampledData(acqData)
 
   # reco
   params[:reco] = "multiCoil"
@@ -86,7 +86,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
 
-  x_approx = vec(reconstruction(aqData, params))
+  x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
@@ -107,7 +107,7 @@ function testOffresonanceReco(N = 128)
   params[:correctionMap] = cmap[:,:,1]
 
   # do simulation
-  aqData = simulation(I, params)
+  acqData = simulation(I, params)
 
   # reco parameters
   params = Dict{Symbol, Any}()
@@ -118,7 +118,7 @@ function testOffresonanceReco(N = 128)
   params[:shape] = (N,N)
   params[:correctionMap] = cmap
 
-  Ireco = reconstruction(aqData, params)
+  Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end

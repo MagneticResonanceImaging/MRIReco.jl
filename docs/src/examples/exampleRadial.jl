@@ -14,13 +14,13 @@ params[:numProfiles] = floor(Int64, pi/2*N)
 params[:numSamplingPerProfile] = 2*N
 
 # do simulation
-aqData = simulation(I, params)
+acqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (N,N)
-Ireco = reconstruction(aqData, params)
+Ireco = reconstruction(acqData, params)
 
 # use ImageView for interactive display
 imshow(abs.(I))

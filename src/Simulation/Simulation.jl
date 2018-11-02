@@ -423,10 +423,10 @@ function addNoise(x::Vector, snr::Float64, complex= true)
   return x+noise
 end
 
-function addNoise(aqData::AcquisitionData, snr::Float64)
-  noisyData = addNoise(aqData.kdata, snr, true)
+function addNoise(acqData::AcquisitionData, snr::Float64)
+  noisyData = addNoise(acqData.kdata, snr, true)
 
-  return AcquisitionData(aqData.seq, noisyData, aqData.numEchoes, aqData.numCoils, aqData.numSlices, aqData.samplePointer, aqData.idx)
+  return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes, acqData.numCoils, acqData.numSlices, acqData.samplePointer, acqData.idx)
 end
 
 """

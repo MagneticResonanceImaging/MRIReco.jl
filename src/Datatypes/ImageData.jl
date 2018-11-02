@@ -1,6 +1,6 @@
 export makeAxisArray
 
-# x, y, z, aqData.numEchoes, aqData.numCoils
+# x, y, z, acqData.numEchoes, acqData.numCoils
 
 function makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 

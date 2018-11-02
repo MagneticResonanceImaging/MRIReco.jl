@@ -83,32 +83,32 @@ function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr:
   end
 end
 
-function saveasIBIFile(filename::AbstractString, aqData::AcquisitionData)
+function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
 
   h5open(filename, "w") do file
 
     # Sequence Information
-    write(file, "sequence/name", string(aqData.seq))
-    write(file, "sequence/trajectory/name", string(trajectory(aqData.seq)))
-    tr = trajectory(aqData.seq)
+    write(file, "sequence/name", string(acqData.seq))
+    write(file, "sequence/trajectory/name", string(trajectory(acqData.seq)))
+    tr = trajectory(acqData.seq)
     for field in fieldnames(tr)
       a = getfield(tr,field)
       write( file, "sequence/trajectory/"*string(field), a )
     end
 
-    write(file, "sequence/numEchoes", numEchoes(aqData.seq))
-    write(file, "sequence/flipAngles", flipAngles(aqData.seq))
+    write(file, "sequence/numEchoes", numEchoes(acqData.seq))
+    write(file, "sequence/flipAngles", flipAngles(acqData.seq))
 
     # number of Coils, and sampled points and number of slices
-    write(file, "numCoils", aqData.numCoils)
-    write(file, "samplingIdx", aqData.idx)
-    write(file, "numSlices", aqData.numSlices)
+    write(file, "numCoils", acqData.numCoils)
+    write(file, "samplingIdx", acqData.idx)
+    write(file, "numSlices", acqData.numSlices)
 
     # pointer to the data corresponding to a given echo, coil and slice
-    write(file, "samplePointer", aqData.samplePointer)
+    write(file, "samplePointer", acqData.samplePointer)
 
     # kspace data
-    rawdata_real = reshape(reinterpret(Float64, vec(aqData.kdata)), (2,size(aqData.kdata)...))
+    rawdata_real = reshape(reinterpret(Float64, vec(acqData.kdata)), (2,size(acqData.kdata)...))
     write(file, "/rawdata", rawdata_real)
 
   end
@@ -125,12 +125,12 @@ function convertIBIFile(fileIn::AbstractString, fileOut::AbstractString)
   numSamplesPerShot = length(kdata)/(numEchoes*numCoils*numSlices)
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
 
-  aqData = AcquisitionData(seq, vec(kdata), numEchoes, numCoils, numSlices
+  acqData = AcquisitionData(seq, vec(kdata), numEchoes, numCoils, numSlices
                           , samplePointer, samplingIdx)
 
-  saveasIBIFile(fileOut, aqData)
+  saveasIBIFile(fileOut, acqData)
 
-  return aqData
+  return acqData
 end
 
 function loadIBIFile(filename::AbstractString)

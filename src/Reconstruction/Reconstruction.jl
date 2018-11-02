@@ -6,33 +6,36 @@ include("IterativeReconstruction.jl")
 include("RecoParameters.jl")
 
 
-#### Factory method ###
-# dispatch on the different reconstructions and generate the correct
-# reconstruction
-function reconstruction(aqData::AcquisitionData, recoParams::Dict)
+"""
+  reconstruction(acqData::AcquisitionData, recoParams::Dict)
+
+The reconstruction method takes an AcquisitionData object and a parameter
+dictionary and calculates an image from the given raw data.
+"""
+function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
   if recoParams[:reco] == "direct"
-    return reconstruction_direct(aqData, recoParams)
+    return reconstruction_direct(acqData, recoParams)
   elseif recoParams[:reco] == "standard"
-    return reconstruction_simple(aqData, recoParams)
+    return reconstruction_simple(acqData, recoParams)
   elseif recoParams[:reco] == "multiEcho"
-    return reconstruction_multiEcho(aqData, recoParams)
+    return reconstruction_multiEcho(acqData, recoParams)
   elseif recoParams[:reco] == "multiCoil"
-    return reconstruction_multiCoil(aqData, recoParams)
+    return reconstruction_multiCoil(acqData, recoParams)
   elseif recoParams[:reco] == "multiCoilMultiEcho"
-    return reconstruction_multiCoilMultiEcho(aqData, recoParams)
+    return reconstruction_multiCoilMultiEcho(acqData, recoParams)
   else
     error("RecoModel $(recoParams[:reco]) not found.")
   end
 end
 
 # This version stores the reconstructed data into a file
-function reconstruction(aqData::AcquisitionData, recoParams::Dict, filename::String;
+function reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;
                         force=false)
   if !force && isfile(filename)
     return recoImage( RecoFileIBI(filename) )
   else
-    I = reconstruction(aqData, recoParams)
+    I = reconstruction(acqData, recoParams)
     saveasRecoFile(filename, I, recoParams)
     return I
   end
