@@ -18,13 +18,13 @@ params[:AQ] = 3.0e-2
 params[:correctionMap] = cmap[:,:,1]
 
 # do simulation
-aqData = simulation(I, params)
+acqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (N,N)
-Ireco = reconstruction(aqData, params)
+Ireco = reconstruction(acqData, params)
 
 # export image
 Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
@@ -40,7 +40,7 @@ params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28
 
-Ireco = reconstruction(aqData, params)
+Ireco = reconstruction(acqData, params)
 
 
 # export images

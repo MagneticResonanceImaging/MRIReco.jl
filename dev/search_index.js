@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Getting Started",
     "title": "Getting Started",
     "category": "section",
-    "text": "We will start with a very simple example and perform simple simulation and reconstruction based on a shepp logan phantom. The program looks like this# image\nN = 256\nI = shepp_logan(N)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Radial\"\nparams[:numProfiles] = floor(Int64, pi/2*N)\nparams[:numSamplingPerProfile] = 2*N\n\n# do simulation\naqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"direct\"\nparams[:shape] = (N,N)\nIreco = reconstruction(aqData, params)We will go through the program step by step. First we create a 2D shepp logan phantom of size N=256. Then we setup a dictionary that defines the simulation parameters. Here, we chose a simple radial trajectory with 402 spokes and 512 samples per profile. We use a gridding-based simulator by setting params[:simulation] = \"fast\"After setting up the parameter dictionary params, the simulation is performed by callingaqData = simulation(I, params)The result simulation function outputs an acquisition object that is discussed in more detail in the section Acquisition Data. The acquisition data can also be stored to or loaded from a file, which will be discussed in section File Handling.Using the acquisition data we can perform a reconstruction. To this end, again a parameter dictionary is setup and some basic configuration is done. In this case, for instance we specify that we want to apply a simple NFFT-based gridding reconstruction. The reconstruction is invoked by callingIreco = reconstruction(aqData, params)The resulting image is of type AxisArray and has 5 dimensions. One can display the image object by callingusing ImageView\nimshow(abs.(Ireco[:,:,1,1,1]))Alternatively one can store the image into a file, which will be discussed in the section on Images.The original phantom and the reconstructed image are shown below(Image: Phantom) (Image: Reconstruction)We will discuss reconstruction in more detail in the Reconstruction section. Simulation will be discussed in more detail in the Simulation section."
+    "text": "We will start with a very simple example and perform simple simulation and reconstruction based on a shepp logan phantom. The program looks like this# image\nN = 256\nI = shepp_logan(N)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Radial\"\nparams[:numProfiles] = floor(Int64, pi/2*N)\nparams[:numSamplingPerProfile] = 2*N\n\n# do simulation\nacqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"direct\"\nparams[:shape] = (N,N)\nIreco = reconstruction(acqData, params)We will go through the program step by step. First we create a 2D shepp logan phantom of size N=256. Then we setup a dictionary that defines the simulation parameters. Here, we chose a simple radial trajectory with 402 spokes and 512 samples per profile. We use a gridding-based simulator by setting params[:simulation] = \"fast\"After setting up the parameter dictionary params, the simulation is performed by callingacqData = simulation(I, params)The result simulation function outputs an acquisition object that is discussed in more detail in the section Acquisition Data. The acquisition data can also be stored to or loaded from a file, which will be discussed in section File Handling.Using the acquisition data we can perform a reconstruction. To this end, again a parameter dictionary is setup and some basic configuration is done. In this case, for instance we specify that we want to apply a simple NFFT-based gridding reconstruction. The reconstruction is invoked by callingIreco = reconstruction(acqData, params)The resulting image is of type AxisArray and has 5 dimensions. One can display the image object by callingusing ImageView\nimshow(abs.(Ireco[:,:,1,1,1]))Alternatively one can store the image into a file, which will be discussed in the section on Images.The original phantom and the reconstructed image are shown below(Image: Phantom) (Image: Reconstruction)We will discuss reconstruction in more detail in the Reconstruction section. Simulation will be discussed in more detail in the Simulation section."
 },
 
 {
@@ -70,6 +70,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Acquisition Data",
     "category": "section",
     "text": "All acquisition data is stored in the a type that looks like thismutable struct AcquisitionData{S<:AbstractSequence}\n  seq::S\n  kdata::Vector{ComplexF64}\n  numEchoes::Int64\n  numCoils::Int64\n  numSlices::Int64\n  samplePointer::Vector{Int64}\n  idx::Array{Int64}\nendThe composite type consists of the imaging sequence, the k-space data, several parameters describing the dimension of the data and some additional index vectors."
+},
+
+{
+    "location": "filehandling.html#",
+    "page": "File Handling",
+    "title": "File Handling",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "filehandling.html#File-Handling-1",
+    "page": "File Handling",
+    "title": "File Handling",
+    "category": "section",
+    "text": "MRI Acquisition Data can not only be generated from Simulation but also from files. Currently, MRIReco supports the ISMRMRD data format and a custom MRILib specific data format. Both formats are a subtype of MRIFile and implement the functionstrajectory(f::MRIFile)\nsequence(f::MRIFile)\nrawdata(f::MRIFile)\nacquisitionData(f::MRIFile)which allow to access specific parts of the MRIFile. The last function acquisitionData returns an AcquisitionData data object which can be used directly in the Reconstruction methods."
 },
 
 {
@@ -101,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Offresonance",
     "title": "Offresonance correction",
     "category": "section",
-    "text": "For trajectories with long readouts the MRI images are degraded by offresonance artifacts, if the offresonance is not taken into account during reconstruction. We provide fast algorithms that are capable of correcting offresonance artifacts provided that the offresonance map is known. Our framework is also capable of correcting T2* relaxation effects. The later are encoded in the real part of the correction map while the offresoanance is encoded in the imaginary part. The following example shows an example of a simulation and reconstruction of MRI data that takes offresonance due to an inhomogeneous fieldmap into account.using MRIReco\n\nN = 256\nI = shepp_logan(N)\nI = circularShutterFreq!(I,1)\ncmap = 1im*quadraticFieldmap(N,N,125*2pi)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Spiral\"\nparams[:numProfiles] = 1\nparams[:numSamplingPerProfile] = N*N\nparams[:windings] = 128\nparams[:AQ] = 3.0e-2\nparams[:correctionMap] = cmap[:,:,1]\n\n# do simulation\naqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"direct\"\nparams[:shape] = (N,N)\nparams[:correctionMap] = cmap\nparams[:alpha] = 1.75\nparams[:m] = 4.0\nparams[:K] = 28\nIreco = reconstruction(aqData, params)The considered quadratic fieldmap looks like this:(Image: Phantom)The reconstruction without and with offresonance correction are shown below:(Image: Phantom) (Image: Reconstruction)"
+    "text": "For trajectories with long readouts the MRI images are degraded by offresonance artifacts, if the offresonance is not taken into account during reconstruction. We provide fast algorithms that are capable of correcting offresonance artifacts provided that the offresonance map is known. Our framework is also capable of correcting T2* relaxation effects. The later are encoded in the real part of the correction map while the offresoanance is encoded in the imaginary part. The following example shows an example of a simulation and reconstruction of MRI data that takes offresonance due to an inhomogeneous fieldmap into account.using MRIReco\n\nN = 256\nI = shepp_logan(N)\nI = circularShutterFreq!(I,1)\ncmap = 1im*quadraticFieldmap(N,N,125*2pi)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Spiral\"\nparams[:numProfiles] = 1\nparams[:numSamplingPerProfile] = N*N\nparams[:windings] = 128\nparams[:AQ] = 3.0e-2\nparams[:correctionMap] = cmap[:,:,1]\n\n# do simulation\nacqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"direct\"\nparams[:shape] = (N,N)\nparams[:correctionMap] = cmap\nparams[:alpha] = 1.75\nparams[:m] = 4.0\nparams[:K] = 28\nIreco = reconstruction(acqData, params)The considered quadratic fieldmap looks like this:(Image: Phantom)The reconstruction without and with offresonance correction are shown below:(Image: Phantom) (Image: Reconstruction)"
 },
 
 {
@@ -138,15 +154,15 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "operators.html#",
-    "page": "Operators",
-    "title": "Operators",
+    "page": "Imaging Operators",
+    "title": "Imaging Operators",
     "category": "page",
     "text": ""
 },
 
 {
     "location": "operators.html#Imaging-Operators-1",
-    "page": "Operators",
+    "page": "Imaging Operators",
     "title": "Imaging Operators",
     "category": "section",
     "text": "The mapping between the proton density and the recorded signal is linear in MRI and can be described in the continuous case as an integral equation and in the discrete case as a matrix vector multiplication.Depending on the imaging scenario, the MRI system matrix can have various different forms. It may encode a Cartesian, or a spiral trajectory. It may take offresonance into account, and it may also encode the sensitivity of the receive coil.MRIReco implements various MRI imaging operators. In all cases, the operators have a dedicated Julia type that acts as a matrix. The operator E thus can be applied to a vector x by calling E*x. Similarly, the adjoint can be applied by adjoint(E)*x. We note at this point that the adjoint operation is lazy in Julia and thus the matrix adjoint(E) is never explicitly arranged.MRIReco currently implements the following operators:FFTOp: A multidimensional FFT operator\nNFFTOp: A multidimensional operator for non-equidistant FFTs\nFieldmapNFFTOp: An operator that takes complex correction terms into account\nSensitivityMapOp: An operator for building a SENSE reconstruction. Has to be combined with one of the former encoding operators\nSamplingOp: An operator that describes the (sub)sampling of full trajectories. The operator is used for Compressed Sensing reconstruction\nWaveletOp: A multidimensional operator for applying Wavelet transformationsEach of these operators can be build by calling the corresponding constructor. Alternatively one can use the EncodingOp constructor that allows for high-level construction of the imaging operator."
@@ -177,11 +193,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "reconstruction.html#MRIReco.reconstruction-Tuple{AcquisitionData,Dict}",
+    "page": "Reconstruction",
+    "title": "MRIReco.reconstruction",
+    "category": "method",
+    "text": "reconstruction(acqData::AcquisitionData, recoParams::Dict)\n\nThe reconstruction method takes an AcquisitionData object and a parameter dictionary and calculates an image from the given raw data.\n\n\n\n\n\n"
+},
+
+{
     "location": "reconstruction.html#Reconstruction-1",
     "page": "Reconstruction",
     "title": "Reconstruction",
     "category": "section",
-    "text": ""
+    "text": "reconstruction(acqData::AcquisitionData, recoParams::Dict)"
 },
 
 ]}
