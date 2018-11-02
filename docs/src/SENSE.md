@@ -1,7 +1,10 @@
-using MRIReco
+# Parallel Imaging
 
-##### simple example ####
+For parallel imaging MRIReco.jl uses an iterative SENSE approach. In the following
+code example we show how to simulate MRI data with an array of 8 coils and a corresponding
+SENSE reconstruction.
 
+```julia
 N = 256
 numCoils = 8
 I = shepp_logan(N)
@@ -30,11 +33,7 @@ params[:regularization] = "L2"
 params[:iterations] = 10
 params[:solver] = "admm"
 params[:senseMaps] = coilsens
-params[:alpha] = 1.75
-params[:m] = 4.0
-params[:K] = 28
+
 Ireco = reconstruction(acqData, params)
 
-# export images
-Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("../assets/senseReco.png", Icolored[:,:,1,1,1] )
+```

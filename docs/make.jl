@@ -11,6 +11,7 @@ makedocs(
         "Acquisition Data" => "acquisitionData.md",
         "Images" => "image.md",
         "Offresonance" => "offresonance.md",
+        "Parallel Imaging" => "SENSE.md",
         "Simulation" => "simulation.md",
         "Reconstruction" => "reconstruction.md",
         "Trajectory" => "trajectories.md",
