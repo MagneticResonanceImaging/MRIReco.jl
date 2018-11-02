@@ -121,6 +121,38 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "trajectories.html#",
+    "page": "Trajectory",
+    "title": "Trajectory",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "trajectories.html#Trajectory-1",
+    "page": "Trajectory",
+    "title": "Trajectory",
+    "category": "section",
+    "text": "Several typical MRI k-space trajectories are available:Cartesian\nEPI\nRadial\nSpiralIn addition, there is a CustomTrajectory type for implementing arbitrary k-space trajectories. Currently, most of the trajectories are only available in 2D. Each trajectory is of type AbstractTrajectory and implements the following functionsstring(tr::AbstractTrajectory)\nkspaceNodes(tr::AbstractTrajectory)\nreadoutTimes(tr::AbstractTrajectory)For instance we can define a spiral trajectory using ......(Image: Phantom)"
+},
+
+{
+    "location": "operators.html#",
+    "page": "Operators",
+    "title": "Operators",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "operators.html#Imaging-Operators-1",
+    "page": "Operators",
+    "title": "Imaging Operators",
+    "category": "section",
+    "text": "The mapping between the proton density and the recorded signal is linear in MRI and can be described in the continuous case as an integral equation and in the discrete case as a matrix vector multiplication.Depending on the imaging scenario, the MRI system matrix can have various different forms. It may encode a Cartesian, or a spiral trajectory. It may take offresonance into account, and it may also encode the sensitivity of the receive coil.MRIReco implements various MRI imaging operators. In all cases, the operators have a dedicated Julia type that acts as a matrix. The operator E thus can be applied to a vector x by calling E*x. Similarly, the adjoint can be applied by adjoint(E)*x. We note at this point that the adjoint operation is lazy in Julia and thus the matrix adjoint(E) is never explicitly arranged.MRIReco currently implements the following operators:FFTOp: A multidimensional FFT operator\nNFFTOp: A multidimensional operator for non-equidistant FFTs\nFieldmapNFFTOp: An operator that takes complex correction terms into account\nSensitivityMapOp: An operator for building a SENSE reconstruction. Has to be combined with one of the former encoding operators\nSamplingOp: An operator that describes the (sub)sampling of full trajectories. The operator is used for Compressed Sensing reconstruction\nWaveletOp: A multidimensional operator for applying Wavelet transformationsEach of these operators can be build by calling the corresponding constructor. Alternatively one can use the EncodingOp constructor that allows for high-level construction of the imaging operator."
+},
+
+{
     "location": "simulation.html#",
     "page": "Simulation",
     "title": "Simulation",
@@ -149,30 +181,6 @@ var documenterSearchIndex = {"docs": [
     "page": "Reconstruction",
     "title": "Reconstruction",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "trajectories.html#",
-    "page": "Trajectory",
-    "title": "Trajectory",
-    "category": "page",
-    "text": ""
-},
-
-{
-    "location": "trajectories.html#Trajectory-1",
-    "page": "Trajectory",
-    "title": "Trajectory",
-    "category": "section",
-    "text": "Several typical MRI k-space trajectories are available:Cartesian\nEPI\nRadial\nSpiralIn addition, there is a CustomTrajectory type for implementing arbitrary k-space trajectories. Currently, most of the trajectories are only available in 2D. Each trajectory is of type AbstractTrajectory and implements the following functionsstring(tr::AbstractTrajectory)\nkspaceNodes(tr::AbstractTrajectory)\nreadoutTimes(tr::AbstractTrajectory)For instance we can define a spiral trajectory using ......(Image: Phantom)"
-},
-
-{
-    "location": "operators.html#",
-    "page": "Operators",
-    "title": "Operators",
-    "category": "page",
     "text": ""
 },
 
