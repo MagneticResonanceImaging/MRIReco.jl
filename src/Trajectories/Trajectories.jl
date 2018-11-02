@@ -68,6 +68,7 @@ numProfiles(tr::AbstractTrajectory) = tr.numProfiles
 numSamplingPerProfile(tr::AbstractTrajectory) = tr.numSamplingPerProfile
 
 numSlices(tr::AbstractTrajectory) = tr.numSlices
+isCircular(tr::AbstractTrajectory) = false
 
 # this function calculates the readout time for each sampling point on the
 # kspace tracectory

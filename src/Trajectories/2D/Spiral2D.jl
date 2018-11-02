@@ -64,3 +64,5 @@ Calculating the density using VoronoiCells
 function kspaceDensity(tr::SpiralTrajectory)
   error("Not implemented!")
 end
+
+isCircular(tr::SpiralTrajectory) = true

@@ -13,6 +13,7 @@ mutable struct NFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNothing} <
   ctprod :: F2
   inv :: F3
   density::Vector{Float64}
+  circShutter::Bool
 end
 
 #
@@ -37,14 +38,19 @@ function NFFTOp(shape::Tuple, tr::AbstractTrajectory; nodes=nothing, symmetrize=
     else
       x = nfft_adjoint(plan, y[:])
     end
+
+    if isCircular(tr)
+      circularShutter!(x,1.0)
+    end
+
     return vec(x)
   end
 
   function invprodu(y::Vector{T}) where T<:Union{Real,Complex}
     if symmetrize
-      x = nfft_adjoint(plan, y[:] .*sqrt.(density))
+      x = nfft_adjoint(plan, y[:] .* sqrt.(density))
     else
-      x = nfft_adjoint(plan, y[:] .*density)
+      x = nfft_adjoint(plan, y[:] .* density)
     end
     return vec(x)
   end
@@ -54,7 +60,8 @@ function NFFTOp(shape::Tuple, tr::AbstractTrajectory; nodes=nothing, symmetrize=
             , nothing
             , ctprodu
             , invprodu
-            , density )
+            , density
+            , isCircular(tr) )
 end
 
 function adjoint(op::NFFTOp{T}) where T

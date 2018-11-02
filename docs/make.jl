@@ -10,6 +10,7 @@ makedocs(
         "Getting Started" => "gettingStarted.md",
         "Acquisition Data" => "acquisitionData.md",
         "Images" => "image.md",
+        "Offresonance" => "offresonance.md",
         "Simulation" => "simulation.md",
         "Reconstruction" => "reconstruction.md",
         "Trajectory" => "trajectories.md",

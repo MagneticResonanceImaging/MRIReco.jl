@@ -80,3 +80,5 @@ end
 function kspaceDensity(tr::SpiralTrajectoryVarDensPeturb)
   error("Not implemented!")
 end
+
+isCircular(tr::SpiralTrajectoryVarDensPeturb) = true
