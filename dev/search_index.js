@@ -105,6 +105,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "SENSE.html#",
+    "page": "Parallel Imaging",
+    "title": "Parallel Imaging",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "SENSE.html#Parallel-Imaging-1",
+    "page": "Parallel Imaging",
+    "title": "Parallel Imaging",
+    "category": "section",
+    "text": "For parallel imaging MRIReco.jl uses an iterative SENSE approach. In the following code example we show how to simulate MRI data with an array of 8 coils and a corresponding SENSE reconstruction.N = 256\nnumCoils = 8\nI = shepp_logan(N)\nI = circularShutterFreq!(I,1)\n\ncoilsens = birdcageSensitivity(N, 8, 1.5)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Spiral\"\nparams[:numProfiles] = 1\nparams[:numSamplingPerProfile] = div(N*N,2)\nparams[:windings] = div(N,4)\nparams[:AQ] = 3.0e-2\nparams[:senseMaps] = coilsens\n\n# do simulation\nacqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"multiCoil\"\nparams[:shape] = (N,N)\nparams[:regularization] = \"L2\"\nparams[:iterations] = 10\nparams[:solver] = \"admm\"\nparams[:senseMaps] = coilsens\n\nIreco = reconstruction(acqData, params)\n"
+},
+
+{
     "location": "simulation.html#",
     "page": "Simulation",
     "title": "Simulation",

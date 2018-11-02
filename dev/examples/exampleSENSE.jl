@@ -6,7 +6,6 @@ N = 256
 numCoils = 8
 I = shepp_logan(N)
 I = circularShutterFreq!(I,1)
-cmap = 1im*quadraticFieldmap(N,N,125*2pi)
 
 coilsens = birdcageSensitivity(N, 8, 1.5)
 
@@ -18,7 +17,6 @@ params[:numProfiles] = 1
 params[:numSamplingPerProfile] = div(N*N,2)
 params[:windings] = div(N,4)
 params[:AQ] = 3.0e-2
-#params[:correctionMap] = cmap[:,:,1]
 params[:senseMaps] = coilsens
 
 # do simulation
@@ -26,13 +24,12 @@ acqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
-params[:reco] = "multiCoil" #"standard"
+params[:reco] = "multiCoil"
 params[:shape] = (N,N)
 params[:regularization] = "L2"
 params[:iterations] = 10
 params[:solver] = "admm"
-#params[:correctionMap] = cmap
-params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
+params[:senseMaps] = coilsens
 params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28
