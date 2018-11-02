@@ -22,7 +22,7 @@ aqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
-params[:reco] = "nfft"
+params[:reco] = "direct"
 params[:shape] = (N,N)
 Ireco = reconstruction(aqData, params)
 
@@ -31,7 +31,7 @@ Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
 save("../assets/fieldmapReco1.png", Icolored[:,:,1,1,1] )
 
 # now with fieldmap correction
-params[:reco] = "simple"
+params[:reco] = "standard"
 params[:regularization] = "L2"
 params[:iterations] = 3
 params[:solver] = "admm"

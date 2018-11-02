@@ -2,7 +2,7 @@ export defaultRecoParams
 
 function defaultRecoParams()
   params = Dict{Symbol,Any}()
-  params[:reco] = "nfft"
+  params[:reco] = "direct"
   params[:shape] = (32,32)
   params[:sparseTrafoName] = "Wavelet"
   params[:regularization] = "L1"

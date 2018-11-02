@@ -11,9 +11,9 @@ include("RecoParameters.jl")
 # reconstruction
 function reconstruction(aqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
-  if recoParams[:reco] == "nfft" || recoParams[:reco] == "explicit"
+  if recoParams[:reco] == "direct"
     return reconstruction_direct(aqData, recoParams)
-  elseif recoParams[:reco] == "simple"
+  elseif recoParams[:reco] == "standard"
     return reconstruction_simple(aqData, recoParams)
   elseif recoParams[:reco] == "multiEcho"
     return reconstruction_multiEcho(aqData, recoParams)

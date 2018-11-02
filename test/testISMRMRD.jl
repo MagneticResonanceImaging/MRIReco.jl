@@ -24,7 +24,7 @@ f = ISMRMRD(filename)
 @test size(f.data) == (256, 32, 1281)
 
 params = Dict{Symbol, Any}()
-params[:reco] = "nfft"
+params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
 

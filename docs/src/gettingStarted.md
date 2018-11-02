@@ -19,7 +19,7 @@ aqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
-params[:reco] = "nfft"
+params[:reco] = "direct"
 params[:shape] = (N,N)
 Ireco = reconstruction(aqData, params)
 ```

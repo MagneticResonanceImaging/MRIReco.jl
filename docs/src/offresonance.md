@@ -31,7 +31,7 @@ aqData = simulation(I, params)
 
 # reco parameters
 params = Dict{Symbol, Any}()
-params[:reco] = "nfft"
+params[:reco] = "direct"
 params[:shape] = (N,N)
 params[:cmap] = cmap
 params[:alpha] = 1.75

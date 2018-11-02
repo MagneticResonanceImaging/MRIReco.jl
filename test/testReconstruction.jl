@@ -13,7 +13,7 @@ function testGriddingReco(N=32)
   aqData = simulation(x, params)
 
   #reco
-  params[:reco] = "nfft"
+  params[:reco] = "direct"
   params[:shape] = (N,N)
 
   x_approx = reconstruction(aqData, params)
@@ -37,7 +37,7 @@ function testCSReco(N=32,redFac=1.1)
   aqData = convertUndersampledData(aqData)
 
   # reco
-  params[:reco] = "simple"    # encoding model
+  params[:reco] = "standard"    # encoding model
   params[:shape] = (N,N)
   params[:sparseTrafoName] = "Wavelet" #sparse trafo
   params[:regularization] = "L1"       # regularization
@@ -113,7 +113,7 @@ function testOffresonanceReco(N = 128)
 
   # reco parameters
   params = Dict{Symbol, Any}()
-  params[:reco] = "simple"
+  params[:reco] = "standard"
   params[:regularization] = "L2"
   params[:iterations] = 3
   params[:solver] = "admm"
