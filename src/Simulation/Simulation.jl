@@ -320,6 +320,8 @@ function simulation_fast(seq::AbstractSequence
     out[:,i,:] = simulation_fast(tr, ampl[:,:,i].*exp(r2map*tr.TE).*image, r2map+1im*fmap, senseMaps=senseMaps).kdata
   end
 
+  println("numCoils = $numCoils")
+
   return AcquisitionData(seq, vec(out), numEchoes=numEchoes(seq), numCoils=numCoils)
 end
 
@@ -398,7 +400,7 @@ function simulation_fast(tr::Abstract2DTrajectory
     for l=1:size(senseMaps,2)
       kdata[:,l] = nfftOp * (vec(complex(image)) .* vec(senseMaps[:,l]))
     end
-    return AcquisitionData(tr, vec(kdata), numCoils=size(senseMaps,3))
+    return AcquisitionData(tr, vec(kdata), numCoils=size(senseMaps,2))
   end
 
 end

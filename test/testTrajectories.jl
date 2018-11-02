@@ -8,7 +8,7 @@ for trajName in trajectories
 
   tr = trajectory(trajName, 8, 9)
   @test trajName == string(tr)
-  println(kspaceNodes(tr)) # TODO: make real tests
+  #println(kspaceNodes(tr)) # TODO: make real tests
 
 end
 

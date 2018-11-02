@@ -90,8 +90,6 @@ function testCSSenseReco(N=32,redFac=1.1)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
-
-# test CSSense Reco
 function testOffresonanceReco(N = 128)
 
   I = shepp_logan(N)
@@ -106,7 +104,7 @@ function testOffresonanceReco(N = 128)
   params[:numSamplingPerProfile] = N*N
   params[:windings] = div(N,2)
   params[:AQ] = 3.0e-2
-  params[:correctionMap] = cmap
+  params[:correctionMap] = cmap[:,:,1]
 
   # do simulation
   aqData = simulation(I, params)
@@ -118,14 +116,90 @@ function testOffresonanceReco(N = 128)
   params[:iterations] = 3
   params[:solver] = "admm"
   params[:shape] = (N,N)
-  params[:cmap] = cmap
-  params[:alpha] = 1.75
-  params[:m] = 4.0
-  params[:K] = 28
+  params[:correctionMap] = cmap
+
   Ireco = reconstruction(aqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
+
+
+function testSENSEReco(N = 64)
+  numCoils = 8
+  I = shepp_logan(N)
+  I = circularShutterFreq!(I,1)
+
+  coilsens = birdcageSensitivity(N, 8, 1.5)
+
+  # simulation parameters
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Spiral"
+  params[:numProfiles] = 1
+  params[:numSamplingPerProfile] = div(N*N,2)
+  params[:windings] = div(N,4)
+  params[:AQ] = 3.0e-2
+  params[:senseMaps] = coilsens
+
+  # do simulation
+  acqData = simulation(I, params)
+
+  # reco parameters
+  params = Dict{Symbol, Any}()
+  params[:reco] = "multiCoil" #"standard"
+  params[:shape] = (N,N)
+  params[:regularization] = "L2"
+  params[:iterations] = 3
+  params[:solver] = "admm"
+  params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
+
+  Ireco = reconstruction(acqData, params)
+
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
+end
+
+
+function testOffresonanceSENSEReco(N = 64)
+  numCoils = 8
+  I = shepp_logan(N)
+  I = circularShutterFreq!(I,1)
+
+  coilsens = birdcageSensitivity(N, 8, 1.5)
+  cmap = 1im*quadraticFieldmap(N,N,125*2pi)
+
+  # simulation parameters
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Spiral"
+  params[:numProfiles] = 1
+  params[:numSamplingPerProfile] = div(N*N,2)
+  params[:windings] = div(N,4)
+  params[:AQ] = 3.0e-2
+  params[:senseMaps] = coilsens
+  params[:correctionMap] = cmap[:,:,1]
+
+  # do simulation
+  acqData = simulation(I, params)
+
+  # reco parameters
+  params = Dict{Symbol, Any}()
+  params[:reco] = "multiCoil" #"standard"
+  params[:shape] = (N,N)
+  params[:regularization] = "L2"
+  params[:iterations] = 3
+  params[:solver] = "admm"
+  params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
+  params[:correctionMap] = cmap
+
+  Ireco = reconstruction(acqData, params)
+
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1.6e-1
+end
+
+
+
+
+
 
 function testReco(N=32)
   @testset "Reconstructions" begin
@@ -133,5 +207,7 @@ function testReco(N=32)
     testCSReco()
     testCSSenseReco()
     testOffresonanceReco()
+    testSENSEReco()
+    testOffresonanceSENSEReco()
   end
 end

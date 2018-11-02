@@ -24,7 +24,7 @@ params[:numProfiles] = 1
 params[:numSamplingPerProfile] = N*N
 params[:windings] = 128
 params[:AQ] = 3.0e-2
-params[:correctionMap] = cmap
+params[:correctionMap] = cmap[:,:,1]
 
 # do simulation
 aqData = simulation(I, params)
@@ -33,7 +33,7 @@ aqData = simulation(I, params)
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (N,N)
-params[:cmap] = cmap
+params[:correctionMap] = cmap
 params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28

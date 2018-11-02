@@ -18,7 +18,7 @@ function test_kdataWithCorrection(N::Int64=32)
     # Testing generating kdata with fieldinhomogeneity
     I = shepp_logan(N)
     @info "Testing simulating kdata with correctionterm"
-    fmap = quadraticFieldmap(N,N,125*2pi)
+    fmap = quadraticFieldmap(N,N,125*2pi)[:,:,1]
     rmap = relaxationMap(I,5.0,50.0)
     cmap = rmap + 1im*fmap
     tr = SpiralTrajectory(N,2*N,TE=0.0,AQ=32e-3)

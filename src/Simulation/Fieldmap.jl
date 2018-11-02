@@ -6,10 +6,10 @@ Computes a parabolic fieldmap.
 function quadraticFieldmap(Nx::Int64, Ny::Int64, maxOffresonance::Float64=125.0)
   xx = range(-1, stop=1, length=Nx)
   yy = range(-1, stop=1, length=Ny)
-  fieldmap = zeros(Nx,Ny)
+  fieldmap = zeros(Nx,Ny, 1)
   for nx=1:Nx
     for ny=1:Ny
-      fieldmap[nx,ny] = maxOffresonance*(xx[nx]^2 + yy[ny]^2) - maxOffresonance
+      fieldmap[nx,ny,1] = maxOffresonance*(xx[nx]^2 + yy[ny]^2) - maxOffresonance
     end
   end
   return fieldmap
@@ -18,17 +18,17 @@ end
 """
 Computes a polaroid fieldmap.
 """
-function polarFieldmap(Nx::Int64, Ny::Int64
-                        , maxOffresonance::Float64=125.0
-                        ; xCenter::Int64=0
-                        , yCenter::Int64=0
-                        )
-  fieldmap = zeros(Nx,Ny)
+function polarFieldmap(Nx::Int64, Ny::Int64,
+                        maxOffresonance::Float64=125.0;
+                        xCenter::Int64=0,
+                        yCenter::Int64=0
+                       )
+  fieldmap = zeros(Nx,Ny,1)
   xx = range(-1, stop=1, length=Nx)
   yy = range(-1, stop=1, length=Ny)
   for nx=1:Nx
     for ny=1:Ny
-      fieldmap[nx,ny] = maxOffresonance*sqrt(xx[nx]^2 + yy[ny]^2)- maxOffresonance
+      fieldmap[nx,ny,1] = maxOffresonance*sqrt(xx[nx]^2 + yy[ny]^2)- maxOffresonance
     end
   end
   return fieldmap
@@ -39,11 +39,11 @@ end
 Computes a fieldmap consisting of stairs, which has discrete linear
 ascending/descending values
 """
-function stairsFieldmap(Nx::Int64, Ny::Int64
-                        ; numStairs::Int64=8
-                        , minOffresonance::Float64=-125.0
-                        , maxOffresonance::Float64=125.0
-                        , ascending=true)
+function stairsFieldmap(Nx::Int64, Ny::Int64;
+                        numStairs::Int64=8,
+                        minOffresonance::Float64=-125.0,
+                        maxOffresonance::Float64=125.0,
+                        ascending=true)
   # Input check for the number of stairs
   if numStairs < 2 || numStairs > (Nx > Ny ? Ny : Nx)
     error("Number of stairs not used correctly")
@@ -98,5 +98,5 @@ function stairsFieldmap(Nx::Int64, Ny::Int64
     fieldmap[:,midYIndx ] = fieldmap[:,midYIndx-1]
   end
 
-  return fieldmap
+  return reshape(fieldmap,Nx,Ny,1)
 end

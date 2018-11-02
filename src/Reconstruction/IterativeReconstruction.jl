@@ -5,9 +5,6 @@ export reconstruction_simple, reconstruction_multiEcho, reconstruction_multiCoil
 """
 function reconstruction_simple(aqData::AcquisitionData, recoParams::Dict)
 
-  # operators
-  F = EncodingOp(aqData, recoParams;numEchoes=aqData.numEchoes)
-
   # sparsifying transform
   sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
   recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
@@ -30,13 +27,15 @@ function reconstruction_simple(aqData::AcquisitionData, recoParams::Dict)
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), aqData.numSlices, aqData.numEchoes, aqData.numCoils)
-  solvername = get(recoParams,:solver,"fista")
-  solver = [createLinearSolver(solvername, F[i], reg; recoParams...) for i=1:aqData.numEchoes]
-  for i = 1:aqData.numCoils
+  solvername = get(recoParams, :solver, "fista")
+
+  for k = 1:aqData.numSlices
+    F = EncodingOp(aqData, recoParams, slice=k)
     for j = 1:aqData.numEchoes
-      for k = 1:aqData.numSlices
-        kdata = kData(aqData2,k,j,i)
-        Ireco[:,k,j,i] = solve( solver[j], kdata )
+      solver = createLinearSolver(solvername, F[j], reg; recoParams...)
+      for i = 1:aqData.numCoils
+        kdata = kData(aqData2,j,i,k)
+        Ireco[:,k,j,i] = solve( solver, kdata )
       end
     end
   end
@@ -52,7 +51,7 @@ end
 function reconstruction_multiEcho(aqData::AcquisitionData, recoParams::Dict)
 
   # encoding operator and trafo into sparse domain
-  F = EncodingOp(aqData,recoParams; numEchoes=aqData.numEchoes, multiEcho=true)
+  F = EncodingOp(aqData,recoParams; multiEcho=true)
 
   # sparsifying transform
   recoParams[:multiEcho] = true
@@ -96,9 +95,6 @@ end
 """
 function reconstruction_multiCoil(aqData::AcquisitionData, recoParams::Dict)
 
-  # encoding operator and trafo into sparse domain
-  E = EncodingOp(aqData, recoParams; numEchoes=aqData.numEchoes, parallel=true)
-
   # sparsifying transform
   sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
   recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
@@ -122,21 +118,21 @@ function reconstruction_multiCoil(aqData::AcquisitionData, recoParams::Dict)
   # solve optimization problem
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), aqData.numSlices, aqData.numEchoes, 1)
   solvername = get(recoParams,:solver,"fista")
-  solver = [ createLinearSolver(solvername, E[j], reg; recoParams...) for j=1:aqData.numEchoes]
-  for i = 1:aqData.numEchoes
-    for j = 1:aqData.numSlices
-      kdata = multiCoilData(aqData2, j, i)
-      Ireco[:,j,i] = solve(solver[i],kdata)
+
+  for k = 1:aqData.numSlices
+    E = EncodingOp(aqData, recoParams; parallel=true, slice=k)
+    for j = 1:aqData.numEchoes
+      solver = createLinearSolver(solvername, E[j], reg; recoParams...)
+      kdata = multiCoilData(aqData2, j, k)
+      Ireco[:,j,k] = solve(solver,kdata)
     end
   end
 
   Ireco = reshape(Ireco, recoParams[:shape]..., aqData.numSlices, aqData.numEchoes, 1)
+  return makeAxisArray(Ireco, aqData)
 end
 
 function reconstruction_multiCoilMultiEcho(aqData::AcquisitionData, recoParams::Dict)
-
-  # signal encoding transformation
-  E = EncodingOp(aqData, recoParams, numEchoes=aqData.numEchoes, parallel=true, multiEcho=true)
 
   # sparsifying transform
   recoParams[:multiEcho] = true
@@ -162,9 +158,11 @@ function reconstruction_multiCoilMultiEcho(aqData::AcquisitionData, recoParams::
 
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), aqData.numEchoes, aqData.numSlices)
   solvername = get(recoParams,:solver,"fista")
-  solver = createLinearSolver(solvername, E, reg; recoParams...)
+
   for i = 1:aqData.numSlices
-    kdata = multiCoilMultiEchoData(aqData2,i)
+    E = EncodingOp(aqData, recoParams, parallel=true, multiEcho=true, slice=i)
+    solver = createLinearSolver(solvername, E, reg; recoParams...)
+    kdata = multiCoilMultiEchoData(aqData2, i)
     Ireco[:,:,i] = solve(solver, kdata)
   end
 

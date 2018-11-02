@@ -3,21 +3,24 @@ export EncodingOp, lrEncodingOp
 #
 # Encoding operator for one slice
 #
-function EncodingOp(aqData::AcquisitionData, params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false, multiEcho::Bool=false)
+function EncodingOp(aqData::AcquisitionData, params::Dict; slice=1,
+                           parallel=false, multiEcho=false)
   # Fourier Operators
-  ft = Array{AbstractLinearOperator,1}(undef,numEchoes)
-  for i = 1:numEchoes
+  ft = Array{AbstractLinearOperator,1}(undef,aqData.numEchoes)
+
+  for i = 1:aqData.numEchoes
     tr = trajectory(aqData.seq,i)
-    ft[i] = fourierEncodingOp(tr, params)
+    ft[i] = fourierEncodingOp(tr, params, slice=slice)
   end
 
   # coil sensitivities in case of SENSE-reconstruction
   if parallel && multiEcho
-    S = SensitivityOp(params[:senseMaps][:,:,set],numEchoes)
+    S = SensitivityOp( reshape(params[:senseMaps][:,:,slice,:],:,aqData.numCoils),
+                       aqData.numEchoes)
     E = diagOp( repeat(ft, aqData.numCoils)... )*S
   elseif parallel && !multiEcho
-    S = SensitivityOp(params[:senseMaps][:,:,set],1)
-    E = [ diagOp( [ft[i] for k=1:aqData.numCoils]... )*S for i=1:numEchoes]
+    S = SensitivityOp(reshape(params[:senseMaps][:,:,slice,:],:,aqData.numCoils),1)
+    E = [ diagOp( [ft[i] for k=1:aqData.numCoils]... )*S for i=1:aqData.numEchoes]
   elseif !parallel && multiEcho
     E = diagOp(ft...)
   else
@@ -39,7 +42,7 @@ function EncodingOp(aqData::AcquisitionData, params::Dict; set::Int64=1, numEcho
 end
 
 
-function lrEncodingOp(aqData::AcquisitionData,params::Dict; set::Int64=1, numEchoes::Int64=1, parallel::Bool=false,)
+function lrEncodingOp(aqData::AcquisitionData,params::Dict; numEchoes::Int64=1, parallel::Bool=false,)
 
   # low rank operator
   N=prod(params[:shape])
@@ -53,7 +56,7 @@ function lrEncodingOp(aqData::AcquisitionData,params::Dict; set::Int64=1, numEch
 
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
-    S = SensitivityOp(params[:senseMaps][:,:,set],K)
+    S = SensitivityOp(params[:senseMaps][:,:],K)
     E = diagOp( [ft for i=1:aqData.numCoils*K]... )*S
   else
     E = diagOp( [ft for i=1:K]... )
@@ -74,12 +77,12 @@ end
 #
 # return Fourier encoding operator with(out) correction when cmap is (not) specified
 #
-function fourierEncodingOp(tr, params)
+function fourierEncodingOp(tr, params; slice=1)
   densityWeighting = get(params,:densityWeighting,true)
   fft = get(params,:fft,false)
   if fft
     FFTOp(ComplexF64, params[:shape])
-  elseif !haskey(params,:cmap)
+  elseif !haskey(params,:correctionMap)
     return NFFTOp(params[:shape], tr, symmetrize=densityWeighting)
   else
     echoImage = get(params, :echoImage, true)
@@ -87,6 +90,8 @@ function fourierEncodingOp(tr, params)
     alpha = get(params, :alpha, 1.75)
     m = get(params, :m, 1.75)
     K = get(params, :K, 20)
-    return FieldmapNFFTOp( params[:shape],  tr, params[:cmap], symmetrize=densityWeighting, echoImage=echoImage, K=K, alpha=alpha, m=m, method=method )
+    return FieldmapNFFTOp( params[:shape],  tr, params[:correctionMap][:,:,slice],
+                           symmetrize=densityWeighting, echoImage=echoImage, K=K,
+                           alpha=alpha, m=m, method=method )
   end
 end

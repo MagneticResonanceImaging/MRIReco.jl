@@ -37,7 +37,7 @@ function testFieldmapFT(N=16)
   tr = SimpleCartesianTrajectory(N,N,0.0,0.01)
   times = readoutTimes(tr)
   nodes = kspaceNodes(tr)
-  cmap = im*quadraticFieldmap(N,N)
+  cmap = im*quadraticFieldmap(N,N)[:,:,1]
 
   # FourierMatrix
   idx = CartesianIndices((N,N))[collect(1:N^2)]
