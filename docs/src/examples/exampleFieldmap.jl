@@ -31,11 +31,17 @@ Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
 save("../assets/fieldmapReco1.png", Icolored[:,:,1,1,1] )
 
 # now with fieldmap correction
+params[:reco] = "simple"
+params[:regularization] = "L2"
+params[:iterations] = 3
+params[:solver] = "admm"
 params[:cmap] = cmap
 params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28
+
 Ireco = reconstruction(aqData, params)
+
 
 # export images
 Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))

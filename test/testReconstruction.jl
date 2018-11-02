@@ -90,10 +90,48 @@ function testCSSenseReco(N=32,redFac=1.1)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
+
+# test CSSense Reco
+function testOffresonanceReco(N = 128)
+
+  I = shepp_logan(N)
+  I = circularShutterFreq!(I,1)
+  cmap = 1im*quadraticFieldmap(N,N,125*2pi)
+
+  # simulation parameters
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Spiral"
+  params[:numProfiles] = 1
+  params[:numSamplingPerProfile] = N*N
+  params[:windings] = div(N,2)
+  params[:AQ] = 3.0e-2
+  params[:correctionMap] = cmap
+
+  # do simulation
+  aqData = simulation(I, params)
+
+  # reco parameters
+  params = Dict{Symbol, Any}()
+  params[:reco] = "simple"
+  params[:regularization] = "L2"
+  params[:iterations] = 3
+  params[:solver] = "admm"
+  params[:shape] = (N,N)
+  params[:cmap] = cmap
+  params[:alpha] = 1.75
+  params[:m] = 4.0
+  params[:K] = 28
+  Ireco = reconstruction(aqData, params)
+
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
+end
+
 function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
     testCSReco()
     testCSSenseReco()
+    testOffresonanceReco()
   end
 end
