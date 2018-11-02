@@ -12,10 +12,10 @@ makedocs(
         "Images" => "image.md",
         "Offresonance" => "offresonance.md",
         "Parallel Imaging" => "SENSE.md",
-        "Simulation" => "simulation.md",
-        "Reconstruction" => "reconstruction.md",
         "Trajectory" => "trajectories.md",
         "Operators" => "operators.md",
+        "Simulation" => "simulation.md",
+        "Reconstruction" => "reconstruction.md",
     ],
     html_prettyurls = false, #!("local" in ARGS),
 )
