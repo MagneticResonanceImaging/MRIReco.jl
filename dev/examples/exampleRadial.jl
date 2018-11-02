@@ -20,9 +20,6 @@ aqData = simulation(I, params)
 params = Dict{Symbol, Any}()
 params[:reco] = "nfft"
 params[:shape] = (N,N)
-params[:alpha] = 1.75
-params[:m] = 4.0
-params[:K] = 28
 Ireco = reconstruction(aqData, params)
 
 # use ImageView for interactive display

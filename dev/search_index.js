@@ -89,6 +89,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "offresonance.html#",
+    "page": "Offresonance",
+    "title": "Offresonance",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "offresonance.html#Offresonance-correction-1",
+    "page": "Offresonance",
+    "title": "Offresonance correction",
+    "category": "section",
+    "text": "For trajectories with long readouts the MRI images are degraded by offresonance artifacts, if the offresonance is not taken into account during reconstruction. We provide fast algorithms that are capable of correcting offresonance artifacts provided that the offresonance map is known. Our framework is also capable of correcting T2* relaxation effects. The later are encoded in the real part of the correction map while the offresoanance is encoded in the imaginary part. The following example shows an example of a simulation and reconstruction of MRI data that takes offresonance due to an inhomogeneous fieldmap into account.using MRIReco\n\nN = 256\nI = shepp_logan(N)\nI = circularShutterFreq!(I,1)\ncmap = 1im*quadraticFieldmap(N,N,125*2pi)\n\n# simulation parameters\nparams = Dict{Symbol, Any}()\nparams[:simulation] = \"fast\"\nparams[:trajName] = \"Spiral\"\nparams[:numProfiles] = 1\nparams[:numSamplingPerProfile] = N*N\nparams[:windings] = 128\nparams[:AQ] = 3.0e-2\nparams[:correctionMap] = cmap\n\n# do simulation\naqData = simulation(I, params)\n\n# reco parameters\nparams = Dict{Symbol, Any}()\nparams[:reco] = \"nfft\"\nparams[:shape] = (N,N)\nparams[:cmap] = cmap\nparams[:alpha] = 1.75\nparams[:m] = 4.0\nparams[:K] = 28\nIreco = reconstruction(aqData, params)The considered quadratic fieldmap looks like this:(Image: Phantom)The reconstruction without and with offresonance correction are shown below:(Image: Phantom) (Image: Reconstruction)"
+},
+
+{
     "location": "simulation.html#",
     "page": "Simulation",
     "title": "Simulation",
