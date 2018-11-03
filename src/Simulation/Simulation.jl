@@ -5,9 +5,12 @@ include("RelaxationMap.jl")
 include("CoilSensitivity.jl")
 include("ExpApproximation.jl")
 
-#####################################################################
-# simulation interface
-#####################################################################
+"""
+  simulation(image::Array{Float64}, simParams::Dict)
+
+Simulate MRI raw data from given `image` data. All simulation parameters
+are passed to the function in the form of a dictionary.
+"""
 function simulation(image::Array{Float64}, simParams::Dict)
   haskey(simParams, :correctionMap) ? cmap = simParams[:correctionMap] : cmap = ComplexF64[]
 
