@@ -18,10 +18,9 @@ One strength of the package is that it is strongly modular and uses high quality
 
 This interaction allows new algorithms to be easily integrated into the software framework. It is not necessary to program in C/C++ but the advantages of the scientific high-level language Julia can be used.
 
-## Status
-
-MRIReco.jl is work in progress and in some parts not entirely optimized. In particular the FFT and NFFT implementation are currently limited to the CPU and do not support
-GPU acceleration yet.
+!!! note
+    MRIReco.jl is work in progress and in some parts not entirely optimized. In particular the FFT and NFFT implementation are currently limited to the CPU and do not support
+    GPU acceleration yet.
 
 ## Installation
 

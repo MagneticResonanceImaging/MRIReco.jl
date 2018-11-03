@@ -80,7 +80,9 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
     end
     rand && (seed += 1)
   end
-  return AcquisitionData(acqData.seq, vec(kdata_sub), acqData.numEchoes, acqData.numCoils, acqData.numSlices, samplePointer, idx)
+  return AcquisitionData(acqData.seq, vec(kdata_sub), acqData.numEchoes,
+                         acqData.numCoils, acqData.numSlices, samplePointer, idx,
+                         acqData.encodingSize, acqData.fov)
 end
 
 function shuffle_vector(vec::Vector{T};patFunc::AbstractString="poisson",redFac::Float64=one(Float64),kargs...) where T

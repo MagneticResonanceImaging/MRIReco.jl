@@ -1,6 +1,6 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightData!, weightedData
 
-#=
+"""
  contains all relevant info for the aquired data.
  kdata is stored as a vector.
  samplePointer contains the start of each datasample (for one echo, one slice and one coil).
@@ -8,8 +8,8 @@ export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightD
  1. dim : kspace nodes
  2. dim : echo times
  3. dim : coils
- 4. slices
-=#
+ 4. slices / repetitions
+"""
 mutable struct AcquisitionData{S<:AbstractSequence}
   seq::S
   kdata::Vector{ComplexF64}
@@ -17,7 +17,9 @@ mutable struct AcquisitionData{S<:AbstractSequence}
   numCoils::Int64
   numSlices::Int64
   samplePointer::Vector{Int64}
-  idx::Array{Int64}
+  subsampleIndices::Array{Int64}
+  encodingSize::Vector{Int64}
+  fov::Vector{Float64}
 end
 
 ##############
@@ -26,25 +28,27 @@ end
 #
 # constructor function for single trajectories
 #
-function AcquisitionData(tr::AbstractTrajectory, kdata::Vector{ComplexF64};
-                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
+function AcquisitionData(tr::AbstractTrajectory, kdata::Vector{ComplexF64}; kargs...)
   seq = SESequence(tr)
-  return AcquisitionData(seq, kdata, numCoils=numCoils, numEchoes=numEchoes, numSlices=numSlices)
+  return AcquisitionData(seq, kdata; kargs...)
 end
 
 #
 # aquisition data for single sequences
 #
 function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
-                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing)
+                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
+                        encodingSize=Int64[], fov=Float64[])
   idx==nothing && ( idx = collect(1:length(kdata)) )
   numSamplesPerShot = div(length(kdata),(numEchoes*numCoils*numSlices))
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
-  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices, samplePointer, idx)
+  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices,
+                         samplePointer, idx, encodingSize, fov)
 end
 
 function Images.pixelspacing(acqData::AcquisitionData)
   return [1.0,1.0,1.0]*Unitful.mm
+  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
 end
 
 ######################
@@ -100,23 +104,25 @@ end
 # utilities to convert and edit acqData
 ######################################
 
-#
-# convert undersampled AcquisitionData, where only profiles contained in acqData.idx are sampled,
-# into a format where trajectories only contain the sampled profiles
-#
+"""
+ convert undersampled AcquisitionData, where only profiles contained in
+ acqData.subsampleIndices are sampled,
+ into a format where trajectories only contain the sampled profiles
+"""
 function convertUndersampledData(acqData::AcquisitionData)
 
   acqDataCopy = deepcopy(acqData)
 
   # get number of nodes and reset idx
-  numNodes = size(acqData.idx,1)
-  acqDataCopy.idx = collect(1:length(acqData.kdata))
+  numNodes = size(acqData.subsampleIndices,1)
+  acqDataCopy.subsampleIndices = collect(1:length(acqData.kdata))
 
   # replace trajectories by Undersampled Trajectories
   for i = 1:acqData.numEchoes
     tr = trajectory(acqData.seq,i)
     # assume that coils and slices experience the same trajectory
-    setTrajectory!(acqDataCopy.seq, UndersampledTrajectory(tr, acqData.idx[:,i,1,1]), i)
+    setTrajectory!(acqDataCopy.seq,
+             UndersampledTrajectory(tr, acqData.subsampleIndices[:,i,1,1]), i)
   end
 
   return acqDataCopy

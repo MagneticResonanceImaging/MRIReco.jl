@@ -28,12 +28,12 @@ function EncodingOp(acqData::AcquisitionData, params::Dict; slice=1,
   end
 
   # sampling operator in case of undersampled cartesian acquisitions
-  if acqData.idx != collect(1:length(acqData.kdata))
+  if acqData.subsampleIndices != collect(1:length(acqData.kdata))
     if get(params,:sampling, nothing) == "binary"
-      M = SamplingOp(Array{Bool})(acqData.idx)
+      M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
     else
       numNodes = prod(params[:shape])
-      M = SamplingOp(acqData.idx,(numNodes, acqData.numEchoes, acqData.numCoils))
+      M = SamplingOp(acqData.subsampleIndices,(numNodes, acqData.numEchoes, acqData.numCoils))
     end
     return M*E
   end
@@ -64,9 +64,9 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
 
   # sampling operator in case of undersampled cartesian acquisitions
   if get(params,:sampling, nothing) == "binary"
-    M = SamplingOp(Array{Bool})(acqData.idx)
+    M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
   else
-    M = SamplingOp(acqData.idx,(N, numEchoes, acqData.numCoils))
+    M = SamplingOp(acqData.subsampleIndices,(N, numEchoes, acqData.numCoils))
   end
 
   return M*Φ*E

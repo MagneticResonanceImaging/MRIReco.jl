@@ -429,7 +429,9 @@ end
 function addNoise(acqData::AcquisitionData, snr::Float64)
   noisyData = addNoise(acqData.kdata, snr, true)
 
-  return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes, acqData.numCoils, acqData.numSlices, acqData.samplePointer, acqData.idx)
+  return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes,
+                         acqData.numCoils, acqData.numSlices, acqData.samplePointer,
+                         acqData.subsampleIndices)
 end
 
 """

@@ -101,7 +101,7 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
 
     # number of Coils, and sampled points and number of slices
     write(file, "numCoils", acqData.numCoils)
-    write(file, "samplingIdx", acqData.idx)
+    write(file, "samplingIdx", acqData.subsampleIndices)
     write(file, "numSlices", acqData.numSlices)
 
     # pointer to the data corresponding to a given echo, coil and slice
