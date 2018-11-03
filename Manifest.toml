@@ -516,10 +516,12 @@ uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
 
 [[RegularizedLeastSquares]]
-deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "Random", "SparseArrays", "Test", "Wavelets"]
-git-tree-sha1 = "61bbee339c91cf05e8c3747828eadd1daccfc08c"
-uuid = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
-version = "0.1.0"
+deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "SparseArrays", "Wavelets"]
+git-tree-sha1 = "0b27865701a269e94e4eeb0643f216988938dd1a"
+repo-rev = "master"
+repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
+uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
+version = "0.0.0"
 
 [[Requires]]
 deps = ["Test"]
