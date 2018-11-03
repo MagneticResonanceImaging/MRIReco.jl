@@ -45,14 +45,16 @@ function FieldmapNFFTOp(shape::Tuple, tr::AbstractTrajectory, correctionmap::Mat
   cparam = createInhomogeneityData_(nrow,ncol,vec(times),correctionmap; K=K, alpha=alpha, m=m, method=method)
   K = size(cparam.A_k,2)
 
+  @info "K = $K" 
+
   plan = Vector{NFFTPlan}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 4, 1.75)
+    plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25)
   end
 
-  planTmp = NFFTPlan(nodes, shape, 4, 1.75)
+  planTmp = NFFTPlan(nodes, shape, 3, 1.25)
   density = convert(Vector{Float64}, sdc(planTmp))
 
   mul(x::Vector{T}) where T<:ComplexF64 =

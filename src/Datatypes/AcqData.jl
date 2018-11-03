@@ -1,4 +1,5 @@
-export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,weightData!, weightedData
+export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
+       weightData!, weightedData, unweightData!, unweightDataSquared!
 
 """
  contains all relevant info for the aquired data.
@@ -151,4 +152,28 @@ function weightData!(acqData::AcquisitionData, shape::Tuple)
       end
     end
   end
+  return acqData
+end
+
+function unweightData!(acqData::AcquisitionData, shape::Tuple)
+  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  for i = 1:acqData.numSlices
+    for j = 1:acqData.numCoils
+      for k = 1:acqData.numEchoes
+        idx = ((i-1)*acqData.numCoils+j-1)*acqData.numEchoes+k
+        if k!=acqData.numEchoes || j!=acqData.numCoils || i!=acqData.numSlices
+          acqData.kdata[acqData.samplePointer[idx] : acqData.samplePointer[idx+1]-1] ./= sqrt.(ft[k].density)
+        else
+          acqData.kdata[acqData.samplePointer[idx] : end] ./= sqrt.(ft[k].density)
+        end
+      end
+    end
+  end
+  return acqData
+end
+
+function unweightDataSquared!(acqData::AcquisitionData, shape::Tuple)
+  unweightData!(acqData, shape)
+  unweightData!(acqData, shape)
+  return acqData
 end
