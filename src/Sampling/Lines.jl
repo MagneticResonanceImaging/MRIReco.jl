@@ -51,7 +51,7 @@ function sample_lines(M::Int64,N::Int64,redFac::Float64;sampleFunc="simple",karg
 
   A[1:M,yInd] .= 1;
 
-  return (LinearIndices(A))[findall(A)] # find(A)
+  return (LinearIndices(A))[findall(x->x!=0, A)] # find(A)
 
 end
 
