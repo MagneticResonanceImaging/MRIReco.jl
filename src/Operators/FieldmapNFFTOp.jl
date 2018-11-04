@@ -14,13 +14,13 @@ mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNo
 end
 
 mutable struct InhomogeneityData
-    A_k::Matrix
-    C_k::Matrix
-    times::Vector
-    Cmap::Matrix
-    t_hat
-    z_hat
-    method
+  A_k::Matrix{ComplexF64}
+  C_k::Matrix{ComplexF64}
+  times::Vector{Float64}
+  Cmap::Matrix{ComplexF64}
+  t_hat::Float64
+  z_hat::ComplexF64
+  method::String
 end
 
 #
@@ -45,7 +45,7 @@ function FieldmapNFFTOp(shape::Tuple, tr::AbstractTrajectory, correctionmap::Mat
   cparam = createInhomogeneityData_(nrow,ncol,vec(times),correctionmap; K=K, alpha=alpha, m=m, method=method)
   K = size(cparam.A_k,2)
 
-  @info "K = $K" 
+  @info "K = $K"
 
   plan = Vector{NFFTPlan}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
@@ -83,18 +83,23 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
       x = x .* exp.(-vec(cparam.Cmap) * cparam.t_hat )
   end
 
-  s = @distributed (+) for κ=1:K
-                        p_tild = cparam.C_k[κ,:] .* x;
-                        s_tild = zeros(ComplexF64, numOfNodes);
-                        s_tild[idx[κ]] = reshape(nfft(plan[κ], reshape(p_tild, shape)), length(idx[κ]) );
-                        s_tild = cparam.A_k[:,κ] .* s_tild
-                    end
+  sp = Threads.SpinLock()
+  @time Threads.@threads for κ=1:K
+    p_tild = cparam.C_k[κ,:] .* x;
+    s_tild = zeros(ComplexF64, numOfNodes);
+    s_tild[idx[κ]] = reshape(nfft(plan[κ], reshape(p_tild, shape)), length(idx[κ]) );
+    s_tild = cparam.A_k[:,κ] .* s_tild
+    lock(sp)
+    s[:] += s_tild
+    unlock(sp)
+  end
+
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
-      s = s .* exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
+      s[:] .*= exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
   end
   if symmetrize
-      s = s .* sqrt.(density) # <- use for FISTA
+      s[:] .*= sqrt.(density) # <- use for FISTA
   end
   return s
 end
@@ -129,11 +134,16 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
       x = x .* conj.(exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat)))
   end
   # Algorithm for fast adjoint Transformation with correctionterm
-  y = @distributed (+) for κ=1:K
-                        s_tild = conj.(cparam.A_k[:,κ]) .* x
-                        p_tild = reshape(nfft_adjoint(plan[κ], s_tild[idx[κ]]), prod(shape) )
-                        p_tild = conj.(cparam.C_k[κ,:]) .* p_tild
-                    end
+  #@time y = @distributed (+)
+  sp = Threads.SpinLock()
+  @time Threads.@threads for κ=1:K
+      s_tild = conj.(cparam.A_k[:,κ]) .* x
+      p_tild = reshape(nfft_adjoint(plan[κ], s_tild[idx[κ]]), prod(shape) )
+      p_tild = conj.(cparam.C_k[κ,:]) .* p_tild
+      lock(sp)
+      y[:] += p_tild
+      unlock(sp)
+  end
 
   if cparam.method == "nfft"
     y = y .*  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
