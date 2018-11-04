@@ -146,7 +146,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   end
 
   if cparam.method == "nfft"
-    y = y .*  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
+    y[:] .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
   end
 
   if shutter
