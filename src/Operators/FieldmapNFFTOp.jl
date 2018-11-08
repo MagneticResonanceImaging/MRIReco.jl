@@ -26,13 +26,13 @@ end
 #
 # Linear Operator to perform NFFT
 #
-function FieldmapNFFTOp(shape::Tuple, tr::AbstractTrajectory, correctionmap::Matrix
+function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory, correctionmap::Array{ComplexF64,D}
                         ; method="nfft"
-                        , symmetrize=true
-                        , echoImage=true
+                        , symmetrize::Bool=true
+                        , echoImage::Bool=true
                         , alpha::Float64=1.75
                         , m::Float64=4.0
-                        , K=20)
+                        , K=20) where D
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
@@ -73,9 +73,9 @@ function FieldmapNFFTOp(shape::Tuple, tr::AbstractTrajectory, correctionmap::Mat
 end
 
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
+function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan},
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-                density, symmetrize::Bool) where T<:ComplexF64
+                density::Vector{Float64}, symmetrize::Bool) where T<:ComplexF64
   K = size(cparam.A_k,2)
   s = zeros(ComplexF64,numOfNodes)
   # Preprocessing step when time and correctionMap are centered
@@ -84,7 +84,7 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
   end
 
   sp = Threads.SpinLock()
-  @time Threads.@threads for κ=1:K
+  Threads.@threads for κ=1:K
     p_tild = cparam.C_k[κ,:] .* x;
     s_tild = zeros(ComplexF64, numOfNodes);
     s_tild[idx[κ]] = reshape(nfft(plan[κ], reshape(p_tild, shape)), length(idx[κ]) );
@@ -105,8 +105,8 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
 end
 
 # function inv{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function inv(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-             cparam::InhomogeneityData, density, symmetrize::Bool,
+function inv(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan}, idx::Vector{Vector{Int64}},
+             cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool,
             shutter::Bool) where T<:ComplexF64
   if symmetrize
     x = x .* sqrt.(density)
@@ -118,8 +118,8 @@ function inv(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
 end
 
 # function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData, density, symmetrize::Bool,
+function ctprodu(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan}, idx::Vector{Vector{Int64}},
+                 cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool,
                  shutter::Bool) where T<:ComplexF64
 
   y = zeros(ComplexF64,prod(shape))
@@ -136,7 +136,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   # Algorithm for fast adjoint Transformation with correctionterm
   #@time y = @distributed (+)
   sp = Threads.SpinLock()
-  @time Threads.@threads for κ=1:K
+  Threads.@threads for κ=1:K
       s_tild = conj.(cparam.A_k[:,κ]) .* x
       p_tild = reshape(nfft_adjoint(plan[κ], s_tild[idx[κ]]), prod(shape) )
       p_tild = conj.(cparam.C_k[κ,:]) .* p_tild
@@ -160,11 +160,11 @@ end
 function createInhomogeneityData_( numOfNodes::Int64
                                 , numOfPixel::Int64
                                 , times::Vector
-                                , correctionmap::Matrix
+                                , correctionmap::Array{ComplexF64,D}
                                 ; K::Int64=20
                                 , alpha::Float64=1.75
                                 , m::Float64 = 4.0
-                                , method="nfft")
+                                , method="nfft") where D
 
     C = getC_Coefficients_hist_lsqr(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
     if method == "const"

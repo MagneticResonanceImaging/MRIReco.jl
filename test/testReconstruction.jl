@@ -56,7 +56,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   x = shepp_logan(N)
 
   # coil sensitivites
-  sensMaps = zeros(N*N,2,1)
+  sensMaps = zeros(ComplexF64,N*N,2,1)
   sensMaps[1:floor(Int64, N*N/2),1,1] .= 1.0
   sensMaps[floor(Int64, N*N/2)+1:end,2,1] .= 1.0
 
@@ -67,8 +67,8 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
 
-  acqData = simulation( real(x.*reshape(sensMaps[:,1],N,N)), params )
-  acqData2 = simulation( real(x.*reshape(sensMaps[:,2],N,N)), params )
+  acqData = simulation( real(x.*reshape(sensMaps[:,1,1],N,N)), params )
+  acqData2 = simulation( real(x.*reshape(sensMaps[:,2,1],N,N)), params )
   acqData.kdata = cat(acqData.kdata, acqData2.kdata, dims=1)
   acqData.numCoils = 2
   acqData.samplePointer = [1,N*N+1]

@@ -391,7 +391,7 @@ function simulation_fast(tr::Abstract2DTrajectory
     nfftOp = NFFTOp(imageShape, tr;symmetrize=false)
   else
     # Get coefficients for exp. of Correctionterm
-    nfftOp = FieldmapNFFTOp(imageShape,tr,correctionMap; method=method, echoImage=false, symmetrize=false)
+    nfftOp = FieldmapNFFTOp(imageShape,tr,correctionMap[:,:,1]; method=method, echoImage=false, symmetrize=false)
   end
 
   if isempty(senseMaps)
