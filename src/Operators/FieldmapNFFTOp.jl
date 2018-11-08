@@ -82,8 +82,6 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
                 density, symmetrize::Bool,p,y,d) where T<:ComplexF64
   K = size(cparam.A_k,2)
-  C = cparam.C_k
-  A = cparam.A_k
   s = zeros(ComplexF64,numOfNodes)
   # Preprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
@@ -166,7 +164,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   end
 
   if shutter
-    circularShutter!(reshape(s, shape), 1.0)
+    circularShutter!(reshape(y, shape), 1.0)
   end
 
   return y
