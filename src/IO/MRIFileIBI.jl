@@ -50,7 +50,7 @@ end
 function rawdata(f::MRIFileIBI)
   data = h5read(f.filename, "/rawdata")
   # workaround for hdf5 not supporting complex
-  return reshape(reinterpret(Complex{eltype(data)}, vec(data)), (size(data)[2:end]...,) )
+  return collect(reshape(reinterpret(Complex{eltype(data)}, vec(data)), (size(data)[2:end]...,) ))
 end
 
 function acquisitionData(f::MRIFileIBI)
@@ -60,7 +60,9 @@ function acquisitionData(f::MRIFileIBI)
                         h5read(f.filename, "numCoils"),
                         h5read(f.filename, "numSlices"),
                         h5read(f.filename, "samplePointer"),
-                        h5read(f.filename, "samplingIdx"))
+                        h5read(f.filename, "samplingIdx"),
+                        h5read(f.filename, "encodingSize"),
+                        h5read(f.filename, "fov"))
 end
 
 ### writing ###
@@ -77,7 +79,7 @@ function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr:
     write(file, "sequence/trajectory/TE", tr.TE)
     write(file, "sequence/trajectory/AQ", tr.AQ)
 
-    rawdata_real = reshape(reinterpret(T, vec(rawdata)), (2,size(rawdata)...))
+    rawdata_real = collect(reshape(reinterpret(T, vec(rawdata)), (2,size(rawdata)...)))
     write(file, "/rawdata", rawdata_real)
 
   end
@@ -91,7 +93,7 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
     write(file, "sequence/name", string(acqData.seq))
     write(file, "sequence/trajectory/name", string(trajectory(acqData.seq)))
     tr = trajectory(acqData.seq)
-    for field in fieldnames(tr)
+    for field in fieldnames(typeof(tr))
       a = getfield(tr,field)
       write( file, "sequence/trajectory/"*string(field), a )
     end
@@ -108,7 +110,7 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
     write(file, "samplePointer", acqData.samplePointer)
 
     # kspace data
-    rawdata_real = reshape(reinterpret(Float64, vec(acqData.kdata)), (2,size(acqData.kdata)...))
+    rawdata_real = collect(reshape(reinterpret(Float64, vec(acqData.kdata)), (2,size(acqData.kdata)...)))
     write(file, "/rawdata", rawdata_real)
 
   end
