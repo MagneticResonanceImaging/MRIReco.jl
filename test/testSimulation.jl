@@ -14,6 +14,36 @@ function test_kdata(N::Int64=32)
 
 end
 
+function test_kdataMultipleSlices(N::Int64=32)
+    @info "Testing simulating multiple 2d-slices with NFFT and exact evauluation"
+    sh = ComplexF64.(shepp_logan(N))
+    I = cat(sh,0.6*sh,0.3*sh,dims=3)
+    tr = SimpleCartesianTrajectory(N,N)
+    println("Simulating kdata using NFFT")
+    @time acqDataNFFT = simulation(tr,I,opName="fast")
+    @info "Simulating kdata rigorously"
+    @time acqDataExplicit = simulation(tr,I,opName="explicit")
+    relError =  norm(acqDataExplicit.kdata[:]-acqDataNFFT.kdata[:]) / norm(acqDataExplicit.kdata[:])
+    println("Relative error NFFT vs EXACT: ", relError)
+    @test relError < 1e-2
+
+end
+
+function test_kdata3d(N::Int64=32)
+    @info "Testing simulating 3d-kdata with NFFT and exact evauluation"
+    sh = ComplexF64.(shepp_logan(N))
+    I = cat(sh,0.6*sh,0.3*sh,dims=3)
+    tr = CartesianTrajectory3D(N,N,numSlices=3)
+    println("Simulating kdata using NFFT")
+    @time acqDataNFFT = simulation(tr,I,opName="fast")
+    @info "Simulating kdata rigorously"
+    @time acqDataExplicit = simulation(tr,I,opName="explicit")
+    relError =  norm(acqDataExplicit.kdata[:]-acqDataNFFT.kdata[:]) / norm(acqDataExplicit.kdata[:])
+    println("Relative error NFFT vs EXACT: ", relError)
+    @test relError < 1e-2
+
+end
+
 function test_kdataWithCorrection(N::Int64=32)
     # Testing generating kdata with fieldinhomogeneity
     I = shepp_logan(N)
@@ -44,6 +74,8 @@ end
 function testSimulation()
   @testset "simulations" begin
     test_kdata()
+    test_kdataMultipleSlices()
+    # test_kdata3d()
     test_kdataWithCorrection(16)
   end
 end
