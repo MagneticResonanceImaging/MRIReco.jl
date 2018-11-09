@@ -3,14 +3,14 @@ export EncodingOp, lrEncodingOp
 #
 # Encoding operator for one slice
 #
-function EncodingOp(acqData::AcquisitionData, params::Dict; slice=1,
+function EncodingOp2d(acqData::AcquisitionData, params::Dict; slice=1,
                            parallel=false, multiEcho=false)
   # Fourier Operators
   ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
 
   for i = 1:acqData.numEchoes
     tr = trajectory(acqData.seq,i)
-    ft[i] = fourierEncodingOp(tr, params, slice=slice)
+    ft[i] = fourierEncodingOp2d(tr, params, slice=slice)
   end
 
   # coil sensitivities in case of SENSE-reconstruction
@@ -52,7 +52,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
 
   # Fourier Operator
   tr = trajectory(acqData.seq,1)
-  ft = fourierEncodingOp(tr, params)
+  ft = fourierEncodingOp2d(tr, params)
 
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
@@ -77,21 +77,102 @@ end
 #
 # return Fourier encoding operator with(out) correction when cmap is (not) specified
 #
-function fourierEncodingOp(tr, params; slice=1)
-  densityWeighting = get(params,:densityWeighting,true)
-  fft = get(params,:fft,false)
-  if fft
-    FFTOp(ComplexF64, params[:shape])
-  elseif !haskey(params,:correctionMap)
-    return NFFTOp(params[:shape], tr, symmetrize=densityWeighting)
-  else
-    echoImage = get(params, :echoImage, true)
-    method = get(params, :method, "nfft")
-    alpha = get(params, :alpha, 1.75)
-    m = get(params, :m, 1.75)
-    K = get(params, :K, 20)
-    return FieldmapNFFTOp( params[:shape],  tr, params[:correctionMap][:,:,slice],
-                           symmetrize=densityWeighting, echoImage=echoImage, K=K,
-                           alpha=alpha, m=m, method=method )
+# function fourierEncodingOp(tr, params; slice=1)
+#   densityWeighting = get(params,:densityWeighting,true)
+#   fft = get(params,:fft,false)
+#   if fft
+#     FFTOp(ComplexF64, params[:shape])
+#   elseif !haskey(params,:correctionMap)
+#     return NFFTOp(params[:shape], tr, symmetrize=densityWeighting)
+#   else
+#     echoImage = get(params, :echoImage, true)
+#     method = get(params, :method, "nfft")
+#     alpha = get(params, :alpha, 1.75)
+#     m = get(params, :m, 1.75)
+#     K = get(params, :K, 20)
+#     return FieldmapNFFTOp( params[:shape],  tr, params[:correctionMap][:,:,slice],
+#                            symmetrize=densityWeighting, echoImage=echoImage, K=K,
+#                            alpha=alpha, m=m, method=method )
+#   end
+# end
+
+function fourierEncodingOp2d(tr, params; slice=0)
+  shape = params[:shape]
+  opName="fast"
+  if get(params,:fft,false)
+    opName=="fft"
+  elseif get(params,:explicit,false)
+    opName=="explicit"
   end
+  symmetrize = get(params, :densityWeighting, true)
+
+  return fourierEncodingOp2d(shape,tr,opName;slice=slice, symmetrize=symmetrize,params...)
+end
+
+"""
+return 2d Fourier encoding operator (either Explicit, FFT or NFFT)
+  opname : "explicit", "fft" or "fast"
+  slice : slice to which the operator will be applied
+  symmetrize : symmetrizes the operator
+  echoImage : calculate signal evolution relative to the echo time
+"""
+function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::AbstractTrajectory, opName::String;
+          slice::Int64=1, correctionMap=[], symmetrize::Bool=true, echoImage::Bool=true,
+          method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
+
+  if opName=="explicit"
+    return ExplicitOp(shape,tr,correctionMap[:,:,slice], symmetrize=symmetrize, echoImage=echoImage)
+  elseif opName=="fft"
+    return FFTOp(ComplexF64, shape)
+  elseif opName=="fast"
+    if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
+      return NFFTOp(shape, tr, symmetrize=symmetrize)
+    else
+      return FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice], symmetrize=symmetrize, echoImage=echoImage)
+    end
+  else
+    error("opName $(opName) is not known")
+  end
+
+  return NFFTOp(shape, tr, symmetrize=symmetrize)
+end
+
+function fourierEncodingOp3d(tr, params)
+  shape = params[:shape]
+  opName="fast"
+  if get(params,:fft,false)
+    opName=="fft"
+  elseif get(params,:explicit,false)
+    opName=="explicit"
+  end
+  symmetrize = get(params, :densityWeighting, true)
+
+  return fourierEncodingOp3d(shape,tr,opName; symmetrize=symmetrize,params...)
+end
+
+"""
+return 3d Fourier encoding operator (either Explicit, FFT or NFFT)
+  opname : "explicit", "fft" or "fast"
+  symmetrize : symmetrizes the operator
+  echoImage : calculate signal evolution relative to the echo time
+"""
+function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::AbstractTrajectory, opName::String;
+          correctionMap=[], symmetrize::Bool=true, echoImage::Bool=true,
+          method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
+
+  if opName=="explicit"
+    return ExplicitOp(shape,tr,correctionMap, symmetrize=symmetrize, echoImage=echoImage)
+  elseif opName=="fft"
+    return FFTOp(ComplexF64, shape)
+  elseif opName=="fast"
+    if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
+      return NFFTOp(shape, tr, symmetrize=symmetrize)
+    else
+      return FieldmapNFFTOp(shape, tr, correctionMap, symmetrize=symmetrize, echoImage=echoImage)
+    end
+  else
+    error("opName $(opName) is not known")
+  end
+
+  return NFFTOp(shape, tr, symmetrize=symmetrize)
 end

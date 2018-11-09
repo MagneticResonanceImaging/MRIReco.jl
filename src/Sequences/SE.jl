@@ -7,7 +7,7 @@ end
 #
 # echo amplitude due to T2-relaxation
 #
-echoAmplitudes(seq::SESequence, R1::Float64, R2::Float64) = exp(-seq.traj.TE*R2)
+echoAmplitudes(seq::SESequence, R1::Float64, R2::Float64) = [exp(-seq.traj.TE*R2)]
 
 flipAngles(seq::SESequence) = [90.]
 

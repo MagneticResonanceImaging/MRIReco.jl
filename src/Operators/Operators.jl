@@ -2,6 +2,7 @@ import Base: hcat, vcat, \
 export hcat, vcat, \, diagOp, A_mul_B
 
 include("NFFTOp.jl")
+include("ExplicitOp.jl")
 include("SensitivityMapOp.jl")
 include("SamplingOp.jl")
 include("MapSliceOp.jl")

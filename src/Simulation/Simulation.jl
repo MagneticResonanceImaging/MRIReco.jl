@@ -11,29 +11,24 @@ include("ExpApproximation.jl")
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
 """
-function simulation(image::Array{Float64}, simParams::Dict)
-  haskey(simParams, :correctionMap) ? cmap = simParams[:correctionMap] : cmap = ComplexF64[]
+function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+  haskey(simParams, :correctionMap) ? cmap = reshape(simParams[:correctionMap],size(image)) : cmap = zeros(ComplexF64,size(image))
 
-  if simParams[:simulation] == "explicit"
-    tr = trajectory(simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return simulation_explicit(tr, image, cmap; simParams...)
-  elseif simParams[:simulation] == "fast"
-    tr = trajectory(simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return simulation_fast(tr, image, cmap; simParams...)
-  elseif simParams[:simulation] == "epgExplicit"
-    seq = sequence(simParams[:seqName], simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return   simulation_explicit(seq, image; r2map=real(cmap), fmap = imag(cmap), simParams...)
-  elseif simParams[:simulation] == "epgNFFT"
-    seq = sequence(simParams[:seqName], simParams[:trajName], simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
-    return   simulation_fast(seq, image; r2map=real(cmap), fmap = imag(cmap), simParams...)
-  else
+  seqName = get(simParams,:seqName,"SE")
+  trajName = get(simParams,:trajName,"Cartesian")
+  seq = sequence(seqName, trajName, simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
+
+  opName = get(simParams,:simulation,"fast")
+  if opName!="fast" && opName!="explicit"
     error("simulation $(simParams[:simulation]) is not known...")
   end
+
+  return simulation(seq, ComplexF64.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
 end
 
 # This version stores the simulation data into a file
-function simulation(image::Array{Float64}, simParams::Dict, filename::String;
-                        force=false)
+function simulation(image::Array{T,3}, simParams::Dict, filename::String;
+                        force=false) where T<:Union{ComplexF64,Float64}
   if !force && isfile(filename)
     return loadIBIFile(filename)
   else
@@ -41,6 +36,11 @@ function simulation(image::Array{Float64}, simParams::Dict, filename::String;
     saveasIBIFile(filename, acq)
     return acq
   end
+end
+
+function simulation(image::Array{T,2}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+  nx,ny = size(image)
+  return simulation(reshape(image,nx,ny,1),simParams)
 end
 
 #####################################################################
@@ -67,41 +67,46 @@ julia> kdata = simulation(tr,I);
 ```
 
 """
-function simulation_explicit(tr::Abstract2DTrajectory, image::Matrix, correctionMap=[]; verbose=true, kargs...)
-  nodes = kspaceNodes(tr)
-  kdata = zeros(ComplexF64, size(nodes,2))
+function simulation(tr::Abstract2DTrajectory, image::Array{ComplexF64,3}, correctionMap=[]
+              ; opName="fast", senseMaps=[], verbose=true, kargs...) #where T<:Union{ComplexF64,Float64}
 
-  if verbose==true
-    p = Progress(size(nodes,2), 1, "Simulating data...")
-  end
+  nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(size(image)...)
+    disturbanceTerm = zeros(ComplexF64,nx,ny,nz)
   else
-    disturbanceTerm = correctionMap
+    if size(correctionMap) != size(image)
+      error("correctionMap and image should have the same size!")
+    end
+    disturbanceTerm = ComplexF64.(correctionMap)
   end
 
-  t = readoutTimes(tr)
-
-  for k=1:size(nodes,2)
-    for ny=1:size(image,2)
-      for nx=1:size(image,1)
-        phi = (nodes[1,k]*(nx-size(image,1)/2-1)+
-               nodes[2,k]*(ny-size(image,2)/2-1))
-        e = exp(-2*1im*pi*phi - disturbanceTerm[nx,ny]*t[k])
-        kdata[k] += image[nx,ny] * e
-      end
+  if isempty(senseMaps)
+    sensFac = ones(nx,ny,nz,1)
+    nc=1
+  else
+    if size(senseMaps)[1:3] != (nx,ny,nz)
+      error("senseMaps and image should have the same size!")
     end
-    if verbose==true
-      next!(p)
+    sensFac = senseMaps
+    nc = size(sensFac,4)
+  end
+
+  nodes = kspaceNodes(tr)
+  kdata = zeros(ComplexF64, size(nodes,2),nc,nz)
+  if verbose==true
+    p = Progress(nz*nc, 1, "Simulating data...")
+  end
+  for z = 1:nz
+    E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
+    for c = 1:nc
+      kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
+      verbose && next!(p)
     end
   end
 
-
-  return AcquisitionData(tr, kdata)
-
+  return AcquisitionData(tr, vec(kdata),numCoils=nc,numSlices=nz)
 end
-
 
 """
     Transforms a given image to k-space Domain using an exact
@@ -117,215 +122,104 @@ end
 ...
 
 """
-function simulation_explicit(tr::Abstract3DTrajectory, image::Array{Float64,3}, correctionMap=[];verbose=true, kargs...)
-  nodes = kspaceNodes(tr)
-  out = zeros(ComplexF64, size(nodes,2))
+function simulation(tr::Abstract3DTrajectory, image::Array{ComplexF64,3}, correctionMap=[];
+              opName="fast", senseMaps=[], verbose=true, kargs...) # where T<:Union{ComplexF64,Float64}
 
-  if verbose==true
-    p = Progress(size(nodes,2), 1, "Simulating data...")
-  end
-
-  # Readout times, i.e. effects of Relaxation and Offresonce not considered in 3D
-  # (for now...)
+  nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(size(image)...)
+    disturbanceTerm = zeros(ComplexF64,nx,ny,nz)
   else
-    disturbanceTerm = correctionMap
+    if size(correctionMap) != size(image)
+      error("correctionMap and image should have the same size!")
+    end
+    disturbanceTerm = ComplexF64.(correctionMap)
   end
 
-  t = readoutTimes(tr)
-
-  for k=1:size(nodes,2)
-    for nz=1:size(image,3)
-      for ny=1:size(image,2)
-        for nx=1:size(image,1)
-          phi = (nodes[1,k]*(nx-size(image,1)/2-1)+
-                 nodes[2,k]*(ny-size(image,2)/2-1)+
-                 nodes[3,k]*(nz-size(image,3)/2-1))
-          e = exp(-2*1im*pi*phi - disturbanceTerm[nx,ny,nz]*t[k])
-          out[k] += image[nx,ny,nz] * e
-        end
-      end
+  if isempty(senseMaps)
+    sensFac = ones(nx,ny,nz,1)
+    nc=1
+  else
+    if size(senseMaps)[1:3] != (nx,ny,nz)
+      error("senseMaps and image should have the same size!")
     end
-    if verbose==true
-      next!(p)
-    end
+    sensFac = senseMaps
+    nc = size(sensFac,4)
   end
 
-  return AcquisitionData(tr, out)
+  nodes = kspaceNodes(tr)
+  kdata = zeros(ComplexF64, size(nodes,2),nc)
+  if verbose==true
+    p = Progress(nc, 1, "Simulating data...")
+  end
+
+  E = fourierEncodingOp3d((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
+  for c = 1:nc
+    kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
+    verbose && next!(p)
+  end
+
+  return AcquisitionData(tr, vec(kdata) ,numCoils=nc,numSlices=nz)
 end
 
-function simulation_explicit(seq::AbstractSequence
-                    , image::Array{Float64,3}
-                    ; r1map=[]
+function simulation(seq::AbstractSequence
+                    , image::Array{ComplexF64,3}
+                    ; opName="fast"
+                    , r1map=[]
                     , r2map=[]
                     , fmap=[]
+                    , senseMaps=[]
                     , verbose=true
                     , kargs...)
+  nx,ny,nz = size(image)
+  ne = numEchoes(seq)
+
+  correctionMap = zeros(ComplexF64,nx,ny,nz)
   if isempty(r1map)
-    r1map = zeros(size(image)...)
+    r1map = zeros(nx,ny,nz)
   end
   if isempty(r2map)
-    r2map = zeros(size(image)...)
+    r2map = zeros(nx,ny,nz)
+  else
+    correctionMap = ComplexF64.(r2map)
   end
-  if isempty(fmap)
-    fmap = zeros(size(image)...)
+  if !isempty(fmap)
+    correctionMap = correctionMap .+ 1im*fmap
   end
 
+  # compute echo amplitudes
+  ampl = zeros(ComplexF64, nx,ny,nz,ne )
+  if verbose
+    p = Progress(nx*ny*nz,1,"Compute echo amplitudes ")
+  end
+  for k = 1:nz
+    for j=1:ny
+      for i=1:nx
+        ampl[i,j,k,:]= echoAmplitudes(seq, r1map[i,j,k], r2map[i,j,k] )
+      end
+    end
+  end
+
+  # this assumes the same number of readout points per echo
   size_kNodes = size(kspaceNodes( trajectory(seq) ), 2)
-  out = zeros( ComplexF64, size_kNodes, numEchoes(seq) )
+  isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
+  out = zeros( ComplexF64, size_kNodes, ne, nc )
 
   if verbose
-    p = Progress(size(image,3)*numEchoes(seq), 1, "Simulating data...")
+    p = Progress(numEchoes(seq), 1, "Simulating data...")
   end
-
-  # compute echo amplitudes
-  ampl = zeros(ComplexF64, size(image,1), size(image,2), size(image,3), numEchoes(seq) )
-  for nz = 1:size(image,3)
-    for ny=1:size(image,2)
-      for nx=1:size(image,1)
-        ampl[nx,ny,nz,:]= echoAmplitudes(seq, r1map[nx,ny,nz], r2map[nx,ny,nz] )
-      end
-    end
-  end
-
-  for i = 1:numEchoes(seq)
+  for i = 1:ne
     tr = trajectory(seq,i)
+    te = echoTime(tr)
     nodes = kspaceNodes(tr)
     t = readoutTimes(tr)
 
-    for nz=1:size(image,3)
-      for ny=1:size(image,2)
-        for nx=1:size(image,1)
-          for k=1:size_kNodes
-            phi = (nodes[1,k]*(nx-size(image,1)/2-1)+
-                   nodes[2,k]*(ny-size(image,2)/2-1)+
-                   nodes[3,k]*(nz-size(image,3)/2-1))
-
-            # include correction map and compensate for relaxation before TE,
-            # which is taken into account by the EPG-Simulation
-            e = exp( -1im*( 2*pi*phi - fmap[nx,ny,nz]*(t[k]-tr.TE)) - rmap[nx,ny,nz]*(t[k]-tr.TE) )
-
-            out[k,i] += ampl[nx,ny,nz,i] * image[nx,ny,nz] * e
-          end
-        end
-      end
-      if verbose
-        next!(p)
-      end
-    end
-  end
-
-  return AcquisitionData(seq, vec(out), numEchoes=numEchoes)
-end
-
-function simulation_explicit(seq::AbstractSequence
-                      , image::Array{Float64,2}
-                      ; r1map=[]
-                      , r2map=[]
-                      , fmap=[]
-                      , verbose=true
-                      , kargs...)
-  if isempty(r1map)
-    r1map = zeros(size(image)...)
-  end
-  if isempty(r2map)
-    r2map = zeros(size(image)...)
-  end
-  if isempty(fmap)
-    fmap = zeros(size(image)...)
-  end
-
-  tr = trajectory(seq)
-  size_kNodes = size( kspaceNodes(tr), 2 )
-  out = zeros( ComplexF64, size_kNodes, numEchoes(seq) )
-
-  if verbose
-    p = Progress(size(image,2)*numEchoes(seq), 1, "Simulating data...")
-  end
-
-  # compute echo amplitudes
-  ampl = zeros(ComplexF64, size(image,1), size(image,2), numEchoes(seq) )
-  for ny=1:size(image,2)
-    for nx=1:size(image,1)
-      ampl[nx,ny,:]= abs( echoAmplitudes(seq, r1map[nx,ny], r2map[nx,ny] ) )
-    end
-  end
-
-  for i = 1:numEchoes(seq)
-    tr = trajectory(seq,i)
-    nodes = kspaceNodes(tr)
-    t = readoutTimes(tr)
-
-    for ny=1:size(image,2)
-      for nx=1:size(image,1)
-        for k=1:size_kNodes
-          phi = (nodes[1,k]*(nx-size(image,1)/2-1)+nodes[2,k]*(ny-size(image,2)/2-1))
-
-          # include correction map and compensate for relaxation before TE,
-          # which is taken into account by the EPG-Simulation
-          e = exp( -1im*( 2*pi*phi - fmap[nx,ny]*(t[k]-tr.TE)) - rmap[nx,ny]*(t[k]-tr.TE) )
-
-          out[k,i] += ampl[nx,ny,i] * image[nx,ny] * e
-        end
-      end
-      if verbose
-        next!(p)
-      end
-    end
-  end
-
-  return AcquisitionData(seq, vec(out), numEchoes=numEchoes)
-end
-
-function simulation_fast(seq::AbstractSequence
-                      , image::Array{Float64,2}
-                      ; r1map=[]
-                      , r2map=[]
-                      , fmap=[]
-                      , senseMaps = []
-                      , verbose=true
-                      , kargs...)
-  if isempty(r1map)
-    r1map = zeros(size(image)...)
-  end
-  if isempty(r2map)
-    r2map = zeros(size(image)...)
-  end
-  if isempty(fmap)
-    fmap = zeros(size(image)...)
-  end
-
-  tr = trajectory(seq)
-  size_kNodes = size( kspaceNodes(tr), 2 )
-  senseMaps!=[] ? numCoils= div(length(senseMaps),length(image)) : numCoils=1
-  out = zeros( ComplexF64, size_kNodes, numEchoes(seq), numCoils )
-
-  if verbose
-    p = Progress(size(image,2)*numEchoes(seq), 1, "Simulating data...")
-  end
-
-  # compute echo amplitudes
-  ampl = zeros(ComplexF64, size(image,1), size(image,2), numEchoes(seq) )
-  for ny=1:size(image,2)
-    for nx=1:size(image,1)
-      ampl[nx,ny,:]= abs( echoAmplitudes(seq, r1map[nx,ny], r2map[nx,ny] ) )
-    end
-  end
-
-  # simulate kspace
-  for i = 1:numEchoes(seq)
-    println("simulate echo $i")
-    tr = trajectory(seq,i)
     # include correction map and compensate for relaxation before TE,
     # which is taken into account by the EPG-Simulation
-    out[:,i,:] = simulation_fast(tr, ampl[:,:,i].*exp(r2map*tr.TE).*image, r2map+1im*fmap, senseMaps=senseMaps).kdata
+    out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image.*exp.(r2map*te), correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
   end
 
-  println("numCoils = $numCoils")
-
-  return AcquisitionData(seq, vec(out), numEchoes=numEchoes(seq), numCoils=numCoils)
+  return AcquisitionData(seq, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
 end
 
 #
@@ -378,34 +272,28 @@ function simulation_fast(tr::Abstract2DTrajectory
                         , method="nfft"
                         , senseMaps = []
                         , kargs...)
-  # Get kspace nodes and readouttimes
-  nodes = kspaceNodes(tr)
-  numOfNodes = size(nodes,2)
-
-  times = readoutTimes(tr)
-  imageShape = size(image)
-  numOfPixel = prod(imageShape)
-
-  kdata = zeros(ComplexF64,numOfNodes)
-  if isempty(correctionMap)
-    nfftOp = NFFTOp(imageShape, tr;symmetrize=false)
-  else
-    # Get coefficients for exp. of Correctionterm
-    nfftOp = FieldmapNFFTOp(imageShape,tr,correctionMap[:,:,1]; method=method, echoImage=false, symmetrize=false)
+  image = reshape(image,size(image)[1],size(image)[2],1)
+  if !isempty(correctionMap)
+    correctionMap = reshape(correctionMap,size(image))
   end
 
-  if isempty(senseMaps)
-    kdata = nfftOp * vec(complex(image))
-    return AcquisitionData(tr, kdata)
-  else
-    senseMaps = reshape(senseMaps,length(image),:)
-    kdata = zeros(ComplexF64, numOfNodes, size(senseMaps,2))
-    for l=1:size(senseMaps,2)
-      kdata[:,l] = nfftOp * (vec(complex(image)) .* vec(senseMaps[:,l]))
-    end
-    return AcquisitionData(tr, vec(kdata), numCoils=size(senseMaps,2))
-  end
+  return simulation(tr,ComplexF64.(image),correctionMap;opName="fast", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
+end
 
+function simulation_explicit(tr::Abstract2DTrajectory
+                        , image::Matrix
+                        , correctionMap = []
+                        ; alpha::Float64 = 1.75
+                        , m::Float64=4.0
+                        , K::Int64=16
+                        , method="nfft"
+                        , senseMaps = []
+                        , kargs...)
+  image = reshape(image,size(image)[1],size(image)[2],1)
+  if !isempty(correctionMap)
+    correctionMap = reshape(correctionMap,size(image))
+  end
+  return simulation(tr,ComplexF64.(image),correctionMap;opName="explicit", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
 end
 
 """
@@ -432,27 +320,4 @@ function addNoise(acqData::AcquisitionData, snr::Float64)
   return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes,
                          acqData.numCoils, acqData.numSlices, acqData.samplePointer,
                          acqData.subsampleIndices)
-end
-
-"""
-  Returns EchoImages. Each echoimage is influenced by the correctionterm and the echotime
-  (time offset where recording of the signal had been started)
-  z   : correctionterm
-  tau : echoterm
-
-  Basically the formula of echoimage is : I_echo = I_orig .* exp(-z * tau)
-
-"""
-function simulateEchoImages(image::Matrix, echoTimes::Vector, cmap=[])
-  echoImg = zeros(ComplexF64, size(image,1),size(image,2),length(echoTimes))
-  if isempty(cmap)
-    for i=1:length(echoTimes)
-      echoImg[:,:,i] = image
-    end
-  else
-    for i=1:length(echoTimes)
-      echoImg[:,:,i] = image .* exp(-cmap .* echoTimes[i])
-    end
-  end
-  return echoImg
 end

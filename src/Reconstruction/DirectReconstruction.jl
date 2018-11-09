@@ -12,7 +12,7 @@ function reconstruction_direct(acqData::AcquisitionData, recoParams::Dict)
   p = Progress(numSlices*numCoils*numEchoes, 1, "Direct Reconstruction...")
 
   for i = 1:numSlices
-    F = EncodingOp(acqData, recoParams, slice=i)
+    F = EncodingOp2d(acqData, recoParams, slice=i)
     for k = 1:numEchoes
       for j = 1:numCoils
         Ireco[:,i,k,j] = adjoint(F[k]) * kData(acqDataWeighted,k,j,i)

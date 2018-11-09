@@ -30,7 +30,7 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams, :solver, "fista")
 
   for k = 1:acqData.numSlices
-    F = EncodingOp(acqData, recoParams, slice=k)
+    F = EncodingOp2d(acqData, recoParams, slice=k)
     for j = 1:acqData.numEchoes
       solver = createLinearSolver(solvername, F[j], reg; recoParams...)
       for i = 1:acqData.numCoils
@@ -51,7 +51,7 @@ end
 function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
 
   # encoding operator and trafo into sparse domain
-  F = EncodingOp(acqData,recoParams; multiEcho=true)
+  F = EncodingOp2d(acqData,recoParams; multiEcho=true)
 
   # sparsifying transform
   recoParams[:multiEcho] = true
@@ -120,7 +120,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams,:solver,"fista")
 
   for k = 1:acqData.numSlices
-    E = EncodingOp(acqData, recoParams; parallel=true, slice=k)
+    E = EncodingOp2d(acqData, recoParams; parallel=true, slice=k)
     for j = 1:acqData.numEchoes
       solver = createLinearSolver(solvername, E[j], reg; recoParams...)
       kdata = multiCoilData(acqData2, j, k)
@@ -160,7 +160,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
   solvername = get(recoParams,:solver,"fista")
 
   for i = 1:acqData.numSlices
-    E = EncodingOp(acqData, recoParams, parallel=true, multiEcho=true, slice=i)
+    E = EncodingOp2d(acqData, recoParams, parallel=true, multiEcho=true, slice=i)
     solver = createLinearSolver(solvername, E, reg; recoParams...)
     kdata = multiCoilMultiEchoData(acqData2, i)
     Ireco[:,:,i] = solve(solver, kdata)

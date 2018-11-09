@@ -28,7 +28,7 @@ end
 
 
 # echo Amplitudes for a standard spin echo sequence
-echoAmplitudes(seq::AbstractTrajectory, T1::Float64, T2::Float64) = exp(-seq.traj.TE/T2)
+# echoAmplitudes(seq::AbstractTrajectory, T1::Float64, T2::Float64) = [exp(-seq.traj.TE/T2)]
 
 trajectory(seq::AbstractSequence, n=1) = seq.traj
 
