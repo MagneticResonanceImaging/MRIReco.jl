@@ -169,14 +169,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "simulation.html#MRIReco.simulation-Tuple{Array{Float64,N} where N,Dict}",
-    "page": "Simulation",
-    "title": "MRIReco.simulation",
-    "category": "method",
-    "text": "simulation(image::Array{Float64}, simParams::Dict)\n\nSimulate MRI raw data from given image data. All simulation parameters are passed to the function in the form of a dictionary.\n\n\n\n\n\n"
-},
-
-{
     "location": "simulation.html#Simulation-1",
     "page": "Simulation",
     "title": "Simulation",
