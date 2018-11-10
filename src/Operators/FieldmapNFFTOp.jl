@@ -104,7 +104,7 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
 end
 
 function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
+  @time Threads.@threads for κ=1:K
     t = Threads.threadid()
     for l=1:length(x_)
       p[t][l] = C[κ,l] * x_[l]
@@ -171,7 +171,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
 end
 
 function ctprodu_inner(K, C, A, shape, p, d, y, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
+  @time Threads.@threads for κ=1:K
     t = Threads.threadid()
     for k=1:length(idx[κ])
       d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
