@@ -95,21 +95,21 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
 
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
-      s[:] .*= exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
+      s .*= exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
   end
   if symmetrize
-      s[:] .*= sqrt.(density)
+      s .*= sqrt.(density)
   end
   return s
 end
 
 function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
+  @time Threads.@threads for κ=1:K
     t = Threads.threadid()
     for l=1:length(x_)
       p[t][l] = C[κ,l] * x_[l]
     end
-    NFFT.nfft!(plan[κ], reshape(p[t][:], shape), d[κ])
+    @time NFFT.nfft!(plan[κ], reshape(p[t], shape), d[κ])
     fill!(y[t], 0.0)
     for k=1:length(idx[κ])
       y[t][idx[κ][k]] = d[κ][k]
@@ -118,7 +118,7 @@ function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
       y[t][l] *= A[l,κ]
     end
     lock(sp)
-    s[:] .+= y[t]
+    s .+= y[t]
     unlock(sp)
   end
   return
@@ -153,14 +153,14 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
 
   # Preprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
-      x_[:] .*= conj.(exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat)))
+      x_ .*= conj.(exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat)))
   end
 
   sp = Threads.SpinLock()
   ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, sp, plan, idx, x_)
 
   if cparam.method == "nfft"
-    y[:] .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
+    y .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
   end
 
   if shutter
@@ -171,17 +171,17 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
 end
 
 function ctprodu_inner(K, C, A, shape, p, d, y, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
+  @time Threads.@threads for κ=1:K
     t = Threads.threadid()
     for k=1:length(idx[κ])
       d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
     end
-    NFFT.nfft_adjoint!(plan[κ], d[κ], reshape(p[t], shape))
+    @time NFFT.nfft_adjoint!(plan[κ], d[κ], reshape(p[t], shape))
     for k=1:length(p[t])
       p[t][k] = conj(C[κ,k]) * p[t][k]
     end
     lock(sp)
-    y[:] .+= p[t]
+    y .+= p[t]
     unlock(sp)
   end
   return
