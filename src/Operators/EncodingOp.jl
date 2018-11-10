@@ -128,7 +128,8 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::AbstractTrajectory, opN
     if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
       return NFFTOp(shape, tr, symmetrize=symmetrize)
     else
-      return FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice], symmetrize=symmetrize, echoImage=echoImage)
+      return FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice], symmetrize=symmetrize,
+                            echoImage=echoImage, alpha=alpha, m=m, K=K)
     end
   else
     error("opName $(opName) is not known")
@@ -168,7 +169,8 @@ function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::AbstractTrajectory, opN
     if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
       return NFFTOp(shape, tr, symmetrize=symmetrize)
     else
-      return FieldmapNFFTOp(shape, tr, correctionMap, symmetrize=symmetrize, echoImage=echoImage)
+      return FieldmapNFFTOp(shape, tr, correctionMap, symmetrize=symmetrize,
+                            echoImage=echoImage, alpha=alpha, m=m, K=K)
     end
   else
     error("opName $(opName) is not known")
