@@ -52,10 +52,10 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory,
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25)
+    plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
   end
 
-  planTmp = NFFTPlan(nodes, shape, 3, 1.25)
+  planTmp = NFFTPlan(nodes, shape, 3, 1.25, flags = FFTW.PATIENT)
   density = convert(Vector{Float64}, sdc(planTmp))
 
   p = [zeros(ComplexF64, ncol) for t=1:Threads.nthreads() ]
@@ -91,7 +91,7 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
   end
 
   sp = Threads.SpinLock()
-  @time produ_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, s, sp, plan, idx, x_)
+  produ_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, s, sp, plan, idx, x_)
 
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
@@ -157,7 +157,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   end
 
   sp = Threads.SpinLock()
-  @time ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, sp, plan, idx, x_)
+  ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, sp, plan, idx, x_)
 
   if cparam.method == "nfft"
     y[:] .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
