@@ -285,9 +285,9 @@ version = "0.1.1"
 
 [[ImageTransformations]]
 deps = ["AxisAlgorithms", "ColorTypes", "ColorVectorSpace", "Colors", "CoordinateTransformations", "FixedPointNumbers", "IdentityRanges", "ImageCore", "Interpolations", "LinearAlgebra", "OffsetArrays", "StaticArrays", "Test"]
-git-tree-sha1 = "904bcf19c10176fc0725d9fd94c79bcddb392e93"
+git-tree-sha1 = "fdc6ecdb96a03f4df62ded306eb32fae68ccb588"
 uuid = "02fcd773-0e25-5acc-982a-7f6622650795"
-version = "0.6.0"
+version = "0.7.0"
 
 [[Images]]
 deps = ["AxisArrays", "Base64", "ColorTypes", "ColorVectorSpace", "Colors", "FileIO", "FixedPointNumbers", "Graphics", "ImageAxes", "ImageCore", "ImageDistances", "ImageFiltering", "ImageMetadata", "ImageMorphology", "ImageShow", "ImageTransformations", "IndirectArrays", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Random", "Reexport", "SIUnits", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "Test", "TiledIteration"]
@@ -410,10 +410,12 @@ version = "0.3.1"
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NFFT]]
-deps = ["Distributed", "FFTW", "LinearAlgebra", "SpecialFunctions", "Test"]
-git-tree-sha1 = "228cba94c5dd49d17b88d2442d18c1d321641814"
-uuid = "efe261a4-0d2b-5849-be55-fc731d526b0d"
-version = "0.3.3"
+deps = ["Distributed", "FFTW", "LinearAlgebra", "Random", "SparseArrays", "SpecialFunctions", "Test"]
+git-tree-sha1 = "af187da25ecab90545c8837972bb63a6e4fac207"
+repo-rev = "master"
+repo-url = "https://github.com/tknopp/NFFT.jl.git"
+uuid = "8eb238ee-c2ea-11e8-3196-999cce9ed216"
+version = "0.0.0"
 
 [[NIfTI]]
 deps = ["Base64", "GZip", "Mmap", "Test"]
@@ -517,7 +519,7 @@ version = "0.2.0"
 
 [[RegularizedLeastSquares]]
 deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "SparseArrays", "Wavelets"]
-git-tree-sha1 = "0b27865701a269e94e4eeb0643f216988938dd1a"
+git-tree-sha1 = "ce3acdf2ee1170374b54c3103d07be6859d7f1e1"
 repo-rev = "master"
 repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
 uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
