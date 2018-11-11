@@ -7,6 +7,7 @@ mutable struct SamplingPattern
 end
 
 include("Simple.jl")
+include("Regular.jl")
 include("Vardens.jl")
 include("Lines.jl")
 include("PoissonDisk.jl")
@@ -15,7 +16,7 @@ include("CalibrationArea.jl")
 include("PointSpreadFunction.jl")
 
 
-function SamplingPattern(shape::Tuple,redFac::Float64,patFunc::AbstractString;kargs...)
+function SamplingPattern(shape::Tuple, redFac::Float64, patFunc::AbstractString; kargs...)
 
 if redFac < 1
   error("Reduction factor redFac must be >= 1")
@@ -23,6 +24,8 @@ end
 
 if patFunc == "simple"
   return SamplingPattern(shape,redFac,SimplePatternParams(;kargs...))
+elseif patFunc == "regular"
+  return SamplingPattern(shape,redFac,RegularPatternParams(;kargs...))
 elseif patFunc == "vardens"
   return SamplingPattern(shape,redFac,VardensPatternParams(;kargs...))
 elseif patFunc == "lines"

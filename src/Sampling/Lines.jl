@@ -41,6 +41,8 @@ function sample_lines(M::Int64,N::Int64,redFac::Float64;sampleFunc="simple",karg
 
   if sampleFunc=="simple"
     yInd = sample((N,),redFac,SimplePatternParams())
+  elseif sampleFunc=="regular"
+    yInd = sample((N,),redFac,RegularPatternParams())
   elseif sampleFunc =="vardens"
     yInd = sample((N,),redFac,VardensPatternParams(;kargs...))
   elseif sampleFunc =="poisson"
@@ -61,6 +63,8 @@ function sample_lines_3D(M::Int64,N::Int64,Z::Int64,redFac::Float64;xyFunc="simp
 
   if xyFunc=="simple"
     idx = sample(size(A2D),redFac,SimplePatternParams())
+  elseif xyFunc=="regular"
+    idx = sample(size(A2D),redFac,RegularPatternParams())
   elseif xyFunc =="vardens"
     idx = sample(size(A2D),redFac,VardensPatternParams(;kargs...))
   elseif xyFunc =="poisson"
