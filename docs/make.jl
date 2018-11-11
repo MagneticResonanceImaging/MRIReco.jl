@@ -1,3 +1,4 @@
+import ImageMagick
 using Documenter, MRIReco
 
 makedocs(
