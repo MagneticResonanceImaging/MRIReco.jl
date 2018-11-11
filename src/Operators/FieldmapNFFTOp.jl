@@ -104,12 +104,12 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
 end
 
 function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
-  @time Threads.@threads for κ=1:K
+  Threads.@threads for κ=1:K
     t = Threads.threadid()
     for l=1:length(x_)
       p[t][l] = C[κ,l] * x_[l]
     end
-    @time NFFT.nfft!(plan[κ], reshape(p[t], shape), d[κ])
+    NFFT.nfft!(plan[κ], reshape(p[t], shape), d[κ])
     fill!(y[t], 0.0)
     for k=1:length(idx[κ])
       y[t][idx[κ][k]] = d[κ][k]
@@ -171,12 +171,12 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
 end
 
 function ctprodu_inner(K, C, A, shape, p, d, y, sp, plan, idx, x_)
-  @time Threads.@threads for κ=1:K
+  Threads.@threads for κ=1:K
     t = Threads.threadid()
     for k=1:length(idx[κ])
       d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
     end
-    @time NFFT.nfft_adjoint!(plan[κ], d[κ], reshape(p[t], shape))
+    NFFT.nfft_adjoint!(plan[κ], d[κ], reshape(p[t], shape))
     for k=1:length(p[t])
       p[t][k] = conj(C[κ,k]) * p[t][k]
     end
