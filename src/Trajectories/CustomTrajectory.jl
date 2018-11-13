@@ -7,9 +7,11 @@ mutable struct CustomTrajectory <: Abstract2DTrajectory
   AQ::Float64 # time for each spiral arm in s
   nodes::Vector{Float64}
   readoutTimes::Vector{Float64}
+  isCirc::Bool
 end
 
-function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTimes=nothing, TE=0.0, AQ=1.0e-3, kargs...)
+function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTimes=nothing, 
+				       TE=0.0, AQ=1.0e-3, isCircular=false, kargs...)
   if readoutTimes != nothing
     times = readoutTimes
   else
@@ -20,7 +22,7 @@ function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTime
       end
     end
   end
-  CustomTrajectory(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times))
+  CustomTrajectory(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times), isCircular)
 end
 
 string(tr::CustomTrajectory) = "Custom"
@@ -28,3 +30,5 @@ string(tr::CustomTrajectory) = "Custom"
 kspaceNodes(tr::CustomTrajectory) = reshape(tr.nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
 
 readoutTimes(tr::CustomTrajectory) = tr.readoutTimes
+
+isCircular(tr::CustomTrajectory) = tr.isCirc

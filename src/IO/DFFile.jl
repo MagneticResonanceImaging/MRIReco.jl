@@ -9,7 +9,7 @@ end
 
 # reading
 
-function trajectory(f::DFFile)
+function trajectory(f::DFFile; kargs...)
   numSamplingPerProfile, numProfiles, nodes = open(f.trajfilename,"r") do fd
     # tmp1,numSamplingPerProfile,numProfiles,tmp2= read(fd,Int32,4)
     tmp1,numSamplingPerProfile,numProfiles,tmp2= read!(fd,Array{Int32}(undef,4))
@@ -18,7 +18,7 @@ function trajectory(f::DFFile)
     return numSamplingPerProfile, numProfiles, nodes
   end
 
-  return CustomTrajectory(numProfiles, numSamplingPerProfile, vec(nodes))
+  return CustomTrajectory(numProfiles, numSamplingPerProfile, vec(nodes); kargs...)
 end
 
 function rawdata(f::DFFile)
