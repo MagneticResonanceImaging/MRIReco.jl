@@ -63,7 +63,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory,
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
 
   mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,nrow,ncol,shape,plan,idx,cparam,density,symmetrize,p,y,d)
+     produ(x,nrow,ncol,shape,plan,idx,cparam,density,symmetrize,isCircular(tr),p,y,d)
   ctmul(y::Vector{T}) where T<:ComplexF64 =
      ctprodu(y,shape,plan,idx,cparam,density,symmetrize,isCircular(tr),p,y,d)
   inverse(y::Vector{T}) where T<:ComplexF64 =
@@ -80,9 +80,14 @@ end
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-                density, symmetrize::Bool,p,y,d) where T<:ComplexF64
+                density, symmetrize::Bool, shutter::Bool, p, y, d) where T<:ComplexF64
   K = size(cparam.A_k,2)
   s = zeros(ComplexF64,numOfNodes)
+
+  if shutter
+    circularShutter!(reshape(x, shape), 1.0)
+  end
+
   # Preprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
     x_ = x .* exp.(-vec(cparam.Cmap) * cparam.t_hat )

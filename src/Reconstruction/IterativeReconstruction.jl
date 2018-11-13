@@ -35,7 +35,13 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
       solver = createLinearSolver(solvername, F[j], reg; recoParams...)
       for i = 1:acqData.numCoils
         kdata = kData(acqData2,j,i,k)
-        Ireco[:,k,j,i] = solve( solver, kdata )
+
+        I = solve(solver, kdata)
+
+        if isCircular( trajectory(acqData.seq, j) )
+          circularShutter!(reshape(I, recoParams[:shape]), 1.0)
+        end
+        Ireco[:,k,j,i] = I
       end
     end
   end
@@ -83,6 +89,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
     for j = 1:acqData.numCoils
       kdata = multiEchoData(acqData2, j, i)
       Ireco[:,j,i] = solve(solver,kdata)
+      # TODO circular shutter
     end
   end
 
@@ -124,7 +131,12 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
     for j = 1:acqData.numEchoes
       solver = createLinearSolver(solvername, E[j], reg; recoParams...)
       kdata = multiCoilData(acqData2, j, k)
-      Ireco[:,j,k] = solve(solver,kdata)
+      I = solve(solver, kdata)
+
+      if isCircular( trajectory(acqData.seq, j) )
+        circularShutter!(reshape(I, recoParams[:shape]), 1.0)
+      end
+      Ireco[:,j,k] = I
     end
   end
 
