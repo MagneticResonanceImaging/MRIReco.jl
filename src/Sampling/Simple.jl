@@ -1,23 +1,23 @@
 export SimplePatternParams
 
 mutable struct SimplePatternParams
-  nothing
 end
 
-function SimplePatternParams(;kargs...)
-  SimplePatternParams(nothing)
+function SimplePatternParams(; kargs...)
+  SimplePatternParams()
 end
 
-function sample(shape::Tuple,redFac::Float64,patternParams::SimplePatternParams;kargs...)
-  sample_simple(prod(shape),redFac)
+function sample(shape::Tuple,redFac::Float64, patternParams::SimplePatternParams;
+                seed=1234,kargs...)
+  sample_simple(prod(shape), redFac, seed)
 end
 
-function sample_simple(maxInd::Int64, redFact::Float64; kargs...)
+function sample_simple(maxInd::Int64, redFact::Float64, seed)
   idxSet = collect(1:1:maxInd)
   outSet = zeros(Int64,floor(Int,maxInd/redFact))
 
-  Random.seed!(1234)
-  
+  Random.seed!(seed)
+
   for i=1:floor(Int,maxInd/redFact)
     pick = rand(1:length(idxSet))
     outSet[i] = idxSet[pick]

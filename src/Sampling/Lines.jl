@@ -40,7 +40,7 @@ function sample_lines(M::Int64,N::Int64,redFac::Float64;sampleFunc="simple",karg
   # A[yInd,1:N] = 1;
 
   if sampleFunc=="simple"
-    yInd = sample((N,),redFac,SimplePatternParams())
+    yInd = sample((N,),redFac,SimplePatternParams(;kargs...); kargs...)
   elseif sampleFunc=="regular"
     yInd = sample((N,),redFac,RegularPatternParams())
   elseif sampleFunc =="vardens"

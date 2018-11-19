@@ -14,6 +14,7 @@ include("PoissonDisk.jl")
 include("VDPoissonDisk.jl")
 include("CalibrationArea.jl")
 include("PointSpreadFunction.jl")
+include("Incoherence.jl")
 
 
 function SamplingPattern(shape::Tuple, redFac::Float64, patFunc::AbstractString; kargs...)
@@ -51,7 +52,9 @@ function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
 end
 
 function sample_kspace(acqData::AcquisitionData,redFac::Float64,
-                       patFunc::AbstractString;rand=true, profiles=false, kargs...)
+                       patFunc::AbstractString; rand=true, profiles=false,
+                       seed = 1234, kargs...)
+
   numEchoes = acqData.numEchoes
   numCoils = acqData.numCoils
   numSlices = acqData.numSlices
@@ -70,12 +73,11 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
   end
 
   idx = zeros(Int64, numNodes, numEchoes, numCoils, numSlices)
-  seed = 1234
 
   for i = 1:numEchoes
     samplingShape = (tr.numSamplingPerProfile, tr.numProfiles)
-    pattern = SamplingPattern(samplingShape, redFac, patFunc;seed = seed, kargs...)
-    patOut = sample(samplingShape,redFac,pattern.patParams;kargs...)
+    pattern = SamplingPattern(samplingShape, redFac, patFunc; seed = seed, kargs...)
+    patOut = sample(samplingShape,redFac,pattern.patParams; seed = seed, kargs...)
     patOut = sort(patOut)
     for j=1:numCoils, k=1:numSlices
       kdata_sub[:,i,j,k] = kData(acqData,i,j,k)[patOut]
