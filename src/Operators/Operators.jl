@@ -7,7 +7,6 @@ include("SensitivityMapOp.jl")
 include("SamplingOp.jl")
 include("MapSliceOp.jl")
 include("FieldmapNFFTOp.jl")
-include("LRProjectionOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
 

@@ -11,9 +11,6 @@ function SparseOp(name::AbstractString; kargs...)
     else
       return WaveletOp(params[:shape])
     end
-  elseif name=="LRProjection"
-    phi = get( params, :phi, eye(prod(params[:shape])) )
-    return LRMapOp(phi, prod(params[:shape]))
   elseif name=="nothing"
     return opEye(prod(params[:shape]))
   else
