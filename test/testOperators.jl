@@ -32,7 +32,7 @@ function testFT(N=16)
   @test (norm(y_adj-y_adj_exp)/norm(y_adj)) < 1e-2
 end
 
-function testFT3d(N=8)
+function testFT3d(N=12)
   # random image
   x = zeros(ComplexF64,N,N,N)
   for i=1:N,j=1:N,k=1:N
@@ -108,7 +108,7 @@ end
 function testOperators()
   @testset "Linear Operator" begin
     testFT()
-    # testFT3d()
+    testFT3d()
     testFieldmapFT()
   end
 end

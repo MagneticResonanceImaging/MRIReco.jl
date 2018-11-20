@@ -21,7 +21,7 @@ end
 #
 function NFFTOp(shape::Tuple, tr::AbstractTrajectory; nodes=nothing, symmetrize=true)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  plan = NFFTPlan(nodes, shape, 2, 1.25)
+  plan = NFFTPlan(nodes, shape, 3, 1.25)
   density = sdc(plan)
 
   function produ(x::Vector{T}) where T<:Union{Real,Complex}
