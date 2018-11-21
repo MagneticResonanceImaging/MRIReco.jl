@@ -181,7 +181,7 @@ function simulation(seq::AbstractSequence
   if isempty(r2map)
     r2map = zeros(nx,ny,nz)
   else
-    correctionMap = ComplexF64.(r2map)
+    correctionMap = zeros(nx,ny,nz) # ComplexF64.(r2map)
   end
   if !isempty(fmap)
     correctionMap = correctionMap .+ 1im*fmap
@@ -216,7 +216,17 @@ function simulation(seq::AbstractSequence
 
     # include correction map and compensate for relaxation before TE,
     # which is taken into account by the EPG-Simulation
-    out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image.*exp.(r2map*te), correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
+    img_scaled = ampl[:,:,:,i].*image.*exp.(r2map*te)
+    if length(findall(x->isfinite(x),img_scaled)) != length(img_scaled)
+      error("scaled image contains NaN")
+    end
+
+    # out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image.*exp.(r2map*te), correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
+    out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
+
+    if length(findall(x->isfinite(x),out[:,i,:])) != length(out[:,i,:])
+      error("out contains NaN")
+    end
   end
 
   return AcquisitionData(seq, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)

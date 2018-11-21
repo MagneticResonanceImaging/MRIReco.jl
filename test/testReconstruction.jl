@@ -218,7 +218,36 @@ function testOffresonanceSENSEReco(N = 64)
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1.6e-1
 end
 
+function testDirectRecoMultiEcho(N=32)
+  # image
+  x = ComplexF64.(shepp_logan(N))
+  rmap = 20.0*ones(N,N)
 
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:TE] = 0.0
+  params[:r2map] = rmap
+  params[:TE] = 2.e-2
+  params[:seqName] = "FSE"
+  params[:numEchoes] = 2
+  params[:flipAngles] = [pi,pi]
+
+  acqData = simulation( real(x), params )
+
+  params[:reco] = "direct"
+  params[:shape] = (N,N)
+
+  x_approx = reshape(reconstruction(acqData,params),N,N,2)
+
+  relErrorEcho1 = norm(exp(-20.0*2.e-2)*x - x_approx[:,:,1])/norm(exp(-20.0*2.e-2)*x)
+  @test relErrorEcho1 < 1e-3
+  relErrorEcho2 = norm(exp(-20.0*4.e-2)*x - x_approx[:,:,2])/norm(exp(-20.0*4.e-2)*x)
+  @test relErrorEcho2 < 1e-3
+end
 
 
 
@@ -232,5 +261,6 @@ function testReco(N=32)
     testOffresonanceReco()
     testSENSEReco()
     testOffresonanceSENSEReco()
+    testDirectRecoMultiEcho()
   end
 end

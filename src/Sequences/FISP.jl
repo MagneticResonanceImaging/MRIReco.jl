@@ -114,7 +114,7 @@ function epgAmplitudes(seq::FISPSequence, R1::Real, R2::Real, numStates=nothing)
  end
 
  function encoding(seq::FISPSequence)
-   tr_type = typeof(trajectory(seq),1)
+   tr_type = typeof(trajectory(seq,1))
    if tr_type <: Abstract2DTrajectory
      return "2D"
    elseif tr_type <: Abstract3DTrajectory
