@@ -33,7 +33,7 @@ function test_kdata3d(N::Int64=16)
     @info "Testing simulating 3d-kdata with NFFT and exact evauluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
-    tr = CartesianTrajectory3D(N,N,numSlices=3)
+    tr = CartesianTrajectory3D(N,N,numSlices=8)
     println("Simulating kdata using NFFT")
     @time acqDataNFFT = simulation(tr,I,opName="fast")
     @info "Simulating kdata rigorously"

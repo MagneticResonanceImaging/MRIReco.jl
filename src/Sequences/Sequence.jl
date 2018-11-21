@@ -6,6 +6,12 @@ abstract type AbstractSequence end
 # trajectories should be specified for each echo
 abstract type AbstractMultiEchoSequence <: AbstractSequence end
 
+# define interface for a sequence
+@mustimplement trajectory(seq::AbstractSequence,n::Int64)
+@mustimplement echoAmplitudes(seq::AbstractSequence,R1::Float64,R2::Float64)
+@mustimplement numEchoes(seq::AbstractSequence)
+@mustimplement encoding(seq::AbstractSequence)
+
 include("BlochSimulation.jl")
 include("FSE.jl")
 include("SE.jl")
@@ -26,14 +32,6 @@ function sequence(seqName::AbstractString, trajName::AbstractString, numProfiles
   return SESequence(tr; kargs...)
 end
 
-
-# echo Amplitudes for a standard spin echo sequence
-# echoAmplitudes(seq::AbstractTrajectory, T1::Float64, T2::Float64) = [exp(-seq.traj.TE/T2)]
-
-trajectory(seq::AbstractSequence, n=1) = seq.traj
-
-trajectory(seq::AbstractMultiEchoSequence, n=1) = seq.traj[n]
-
 function setTrajectory!(seq::AbstractSequence,tr::AbstractTrajectory, n=1)
   seq.traj = tr
 end
@@ -41,11 +39,3 @@ end
 function setTrajectory!(seq::AbstractMultiEchoSequence,tr::AbstractTrajectory, n=1)
   seq.traj[n] = tr
 end
-
-numEchoes(seq::AbstractSequence) = 1
-
-numEchoes(seq::AbstractMultiEchoSequence) = seq.numEchoes
-
-echoTimes(seq::AbstractSequence) = seq.traj.TE
-
-echoTimes(seq::AbstractMultiEchoSequence) = [ i*seq.traj.TE for i=1:numEchoes(seq) ]

@@ -13,9 +13,22 @@ The reconstruction method takes an AcquisitionData object and a parameter
 dictionary and calculates an image from the given raw data.
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
+  encodingDims = encoding(acqData.seq)
+  if encodingDims == "2D"
+    return reconstruction_2d(acqData,recoParams)
+  elseif encodingDims == "3D"
+    return reconstruction_3d(acqData,recoParams)
+  else
+    error("encoding $(encodingDims) not yet supported")
+  end
+  return reconstruction_2d(acqData,recoParams)
+end
+
+
+function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
   if recoParams[:reco] == "direct"
-    return reconstruction_direct(acqData, recoParams)
+    return reconstruction_direct_2d(acqData, recoParams)
   elseif recoParams[:reco] == "standard"
     return reconstruction_simple(acqData, recoParams)
   elseif recoParams[:reco] == "multiEcho"
@@ -27,6 +40,17 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   else
     error("RecoModel $(recoParams[:reco]) not found.")
   end
+  return reconstruction_direct_2d(acqData, recoParams)
+end
+
+function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
+  recoParams = merge(defaultRecoParams(), recoParams)
+  if recoParams[:reco] == "direct"
+    return reconstruction_direct_3d(acqData, recoParams)
+  else
+    error("3D reconstruction is not yet implimented")
+  end
+  return reconstruction_direct_3d(acqData, recoParams)
 end
 
 # This version stores the reconstructed data into a file

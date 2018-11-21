@@ -1,6 +1,6 @@
-export CustomTrajectory
+export CustomTrajectory, CustomTrajectory2D, CustomTrajectory3D
 
-mutable struct CustomTrajectory <: Abstract2DTrajectory
+mutable struct CustomTrajectory2D <: Abstract2DTrajectory
   numProfiles::Int
   numSamplingPerProfile::Int
   TE::Float64 # echo time in s
@@ -10,7 +10,18 @@ mutable struct CustomTrajectory <: Abstract2DTrajectory
   isCirc::Bool
 end
 
-function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTimes=nothing, 
+mutable struct CustomTrajectory3D <: Abstract3DTrajectory
+  numProfiles::Int
+  numSamplingPerProfile::Int
+  numSlices::Int
+  TE::Float64 # echo time in s
+  AQ::Float64 # time for each spiral arm in s
+  nodes::Vector{Float64}
+  readoutTimes::Vector{Float64}
+  isCirc::Bool
+end
+
+function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTimes=nothing,
 				       TE=0.0, AQ=1.0e-3, isCircular=false, kargs...)
   if readoutTimes != nothing
     times = readoutTimes
@@ -22,13 +33,32 @@ function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTime
       end
     end
   end
-  CustomTrajectory(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times), isCircular)
+  CustomTrajectory2D(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times), isCircular)
 end
 
-string(tr::CustomTrajectory) = "Custom"
+function CustomTrajectory(numProfiles, numSamplingPerProfile, numSlices, nodes; readoutTimes=nothing,
+				       TE=0.0, AQ=1.0e-3, isCircular=false, kargs...)
+  if readoutTimes != nothing
+    times = readoutTimes
+  else
+    times = zeros(numSamplingPerProfile, numProfiles, numSlices)
+    for m = 1:numSlices
+      for l = 1:numProfiles
+        for k = 1:numSamplingPerProfile
+          times[k,l,m] = TE + AQ*(k-1)/numSamplingPerProfile
+        end
+      end
+    end
+  end
+  CustomTrajectory3D(numProfiles, numSamplingPerProfile, numSlices, TE, AQ, nodes, vec(times), isCircular)
+end
 
-kspaceNodes(tr::CustomTrajectory) = reshape(tr.nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+string(tr::CustomTrajectory2D) = "Custom2D"
+string(tr::CustomTrajectory3D) = "Custom3D"
 
-readoutTimes(tr::CustomTrajectory) = tr.readoutTimes
+kspaceNodes(tr::CustomTrajectory2D) = reshape(tr.nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+kspaceNodes(tr::CustomTrajectory3D) = reshape(tr.nodes, 3, tr.numSamplingPerProfile*tr.numProfiles)
 
-isCircular(tr::CustomTrajectory) = tr.isCirc
+readoutTimes(tr::T) where T <: Union{CustomTrajectory2D,CustomTrajectory3D} = tr.readoutTimes
+
+isCircular(tr::T) where T <: Union{CustomTrajectory2D,CustomTrajectory3D} = tr.isCirc

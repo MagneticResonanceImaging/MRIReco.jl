@@ -40,8 +40,35 @@ end
 function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
                         numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
                         encodingSize=Int64[], fov=Float64[])
+  encodingDims = encoding(seq)
+  if encodingDims == "2D"
+    return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+  elseif encodingDims == "3D"
+    return AcquisitionData3d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+  else
+    error("encoding $(encodingDims) not yet supported")
+  end
+  return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+end
+
+function AcquisitionData2d(seq::AbstractSequence, kdata::Vector{ComplexF64};
+                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
+                        encodingSize=Int64[], fov=Float64[])
   idx==nothing && ( idx = collect(1:length(kdata)) )
   numSamplesPerShot = div(length(kdata),(numEchoes*numCoils*numSlices))
+  samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
+  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices,
+                         samplePointer, idx, encodingSize, fov)
+end
+
+#
+# aquisition data for single sequences
+#
+function AcquisitionData3d(seq::AbstractSequence, kdata::Vector{ComplexF64};
+                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
+                        encodingSize=Int64[], fov=Float64[])
+  idx==nothing && ( idx = collect(1:length(kdata)) )
+  numSamplesPerShot = div(length(kdata),(numEchoes*numCoils))
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
   return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices,
                          samplePointer, idx, encodingSize, fov)
@@ -138,7 +165,7 @@ function weightedData(acqData::AcquisitionData, shape::Tuple)
   return res
 end
 
-function weightData!(acqData::AcquisitionData, shape::Tuple)
+function weightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
   ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
@@ -155,7 +182,22 @@ function weightData!(acqData::AcquisitionData, shape::Tuple)
   return acqData
 end
 
-function unweightData!(acqData::AcquisitionData, shape::Tuple)
+function weightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
+  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  for j = 1:acqData.numCoils
+    for k = 1:acqData.numEchoes
+      idx = (j-1)*acqData.numEchoes+k
+      if k!=acqData.numEchoes || j!=acqData.numCoils
+        acqData.kdata[acqData.samplePointer[idx] : acqData.samplePointer[idx+1]-1] .*= sqrt.(ft[k].density)
+      else
+        acqData.kdata[acqData.samplePointer[idx] : end] .*= sqrt.(ft[k].density)
+      end
+    end
+  end
+  return acqData
+end
+
+function unweightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
   ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
@@ -166,6 +208,21 @@ function unweightData!(acqData::AcquisitionData, shape::Tuple)
         else
           acqData.kdata[acqData.samplePointer[idx] : end] ./= sqrt.(ft[k].density)
         end
+      end
+    end
+  end
+  return acqData
+end
+
+function unweightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
+  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  for j = 1:acqData.numCoils
+    for k = 1:acqData.numEchoes
+      idx = (j-1)*acqData.numEchoes+k
+      if k!=acqData.numEchoes || j!=acqData.numCoils
+        acqData.kdata[acqData.samplePointer[idx] : acqData.samplePointer[idx+1]-1] ./= sqrt.(ft[k].density)
+      else
+        acqData.kdata[acqData.samplePointer[idx] : end] ./= sqrt.(ft[k].density)
       end
     end
   end

@@ -20,6 +20,28 @@ function testGriddingReco(N=32)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
+function testGriddingReco3d(N=32)
+  sh = ComplexF64.(shepp_logan(N))
+  x = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian3D"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:numSlices] = 8
+
+  acqData = simulation( real(x), params )
+
+  # reco
+  params[:reco] = "direct"
+  params[:shape] = (N,N,8)
+
+  x_approx = vec(reconstruction(acqData, params))
+  @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
+end
+
 # test CS reco
 function testCSReco(N=32,redFac=1.1)
   # image
@@ -204,6 +226,7 @@ end
 function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
+    testGriddingReco3d()
     testCSReco()
     testCSSenseReco()
     testOffresonanceReco()

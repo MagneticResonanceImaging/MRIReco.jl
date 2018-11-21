@@ -41,6 +41,43 @@ function EncodingOp2d(acqData::AcquisitionData, params::Dict; slice=1,
   return E
 end
 
+function EncodingOp3d(acqData::AcquisitionData, params::Dict;
+                           parallel=false, multiEcho=false)
+  # Fourier Operators
+  ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
+
+  for i = 1:acqData.numEchoes
+    tr = trajectory(acqData.seq,i)
+    ft[i] = fourierEncodingOp3d(tr, params)
+  end
+
+  # coil sensitivities in case of SENSE-reconstruction
+  if parallel && multiEcho
+    S = SensitivityOp( reshape(params[:senseMaps],:,acqData.numCoils),
+                       acqData.numEchoes)
+    E = diagOp( repeat(ft, acqData.numCoils)... )*S
+  elseif parallel && !multiEcho
+    S = SensitivityOp(reshape(params[:senseMaps],:,acqData.numCoils),1)
+    E = [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
+  elseif !parallel && multiEcho
+    E = diagOp(ft...)
+  else
+    E = ft
+  end
+
+  # sampling operator in case of undersampled cartesian acquisitions
+  if acqData.subsampleIndices != collect(1:length(acqData.kdata))
+    if get(params,:sampling, nothing) == "binary"
+      M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
+    else
+      numNodes = prod(params[:shape])
+      M = SamplingOp(acqData.subsampleIndices,(numNodes, acqData.numEchoes, acqData.numCoils))
+    end
+    return M*E
+  end
+
+  return E
+end
 
 function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1, parallel::Bool=false,)
 
