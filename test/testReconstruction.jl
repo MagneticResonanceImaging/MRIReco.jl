@@ -72,6 +72,41 @@ function testCSReco(N=32,redFac=1.1)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-1
 end
 
+function testCSRecoMultCoil(N=32)
+  # image
+  x = shepp_logan(N)
+  smaps = birdcageSensitivity(32,2,3.0)
+  smaps[:,:,:,1] = 10*smaps[:,:,:,1]
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "SpiralVarDens"
+  params[:numProfiles] = floor(Int64, N/4)
+  params[:numSamplingPerProfile] = 2*N
+  params[:senseMaps] = smaps
+
+  acqData = simulation(x, params)
+
+  # reco
+  params[:reco] = "standard"    # encoding model
+  params[:shape] = (N,N)
+  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:regularization] = "TV"       # regularization
+  params[:lambdTV] = 2.e-3
+  params[:solver] = "admm"    # solver
+  params[:iterations] = 100
+  params[:ρ] = 1.0e-1
+
+  x_approx = reshape( reconstruction(acqData, params), 32,32,2)
+
+  err1 = norm(vec(smaps[:,:,1,1]) .* vec(x)-vec(x_approx[:,:,1]) )/norm(vec(smaps[:,:,1,1]) .* vec(x))
+  err2 = norm(vec(smaps[:,:,1,2]) .* vec(x)-vec(x_approx[:,:,2]) )/norm(vec(smaps[:,:,1,2]) .* vec(x))
+
+  @test err1 < 1e-1
+  @test err2 < 1e-1
+end
+
 # test CSSense Reco
 function testCSSenseReco(N=32,redFac=1.1)
   # image
@@ -257,6 +292,7 @@ function testReco(N=32)
     testGriddingReco()
     testGriddingReco3d()
     testCSReco()
+    testCSRecoMultCoil()
     testCSSenseReco()
     testOffresonanceReco()
     testSENSEReco()

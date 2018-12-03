@@ -1,10 +1,12 @@
 export SimplePatternParams
 
 mutable struct SimplePatternParams
+  # FIXME: dummyVal was inserted to prevent inifinite loop in the constructor
+  dummyVal::Int64
 end
 
 function SimplePatternParams(; kargs...)
-  SimplePatternParams()
+  SimplePatternParams(1)
 end
 
 function sample(shape::Tuple,redFac::Float64, patternParams::SimplePatternParams;

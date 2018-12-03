@@ -19,11 +19,7 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
-  reg = getRegularization(regName; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
-  if normalize
-    RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
-  end
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), acqData.numSlices, acqData.numEchoes, acqData.numCoils)
@@ -32,8 +28,12 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
   for k = 1:acqData.numSlices
     F = EncodingOp2d(acqData, recoParams, slice=k)
     for j = 1:acqData.numEchoes
-      solver = createLinearSolver(solvername, F[j], reg; recoParams...)
       for i = 1:acqData.numCoils
+        reg = getRegularization(regName; recoParams...)
+        if normalize
+          RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
+        end
+        solver = createLinearSolver(solvername, F[j], reg; recoParams...)
         kdata = kData(acqData2,j,i,k)
 
         I = solve(solver, kdata)
@@ -75,18 +75,19 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
-  reg = getRegularization(regName; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
-  if normalize
-    RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
-  end
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(recoParams[:shape])*acqData.numEchoes, acqData.numCoils, acqData.numSlices)
   solvername = get(recoParams,:solver,"fista")
-  solver = createLinearSolver(solvername, F, reg; recoParams...)
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
+      reg = getRegularization(regName; recoParams...)
+      if normalize
+        RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
+      end
+      solver = createLinearSolver(solvername, F, reg; recoParams...)
+
       kdata = multiEchoData(acqData2, j, i)
       Ireco[:,j,i] = solve(solver,kdata)
       # TODO circular shutter
@@ -116,11 +117,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
-  reg = getRegularization(regName; multiEcho=true, recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
-  if normalize
-    RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
-  end
 
   # solve optimization problem
   Ireco = zeros(ComplexF64, prod(recoParams[:shape]), acqData.numSlices, acqData.numEchoes, 1)
@@ -129,6 +126,10 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   for k = 1:acqData.numSlices
     E = EncodingOp2d(acqData, recoParams; parallel=true, slice=k)
     for j = 1:acqData.numEchoes
+      reg = getRegularization(regName; multiEcho=true, recoParams...)
+      if normalize
+        RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
+      end
       solver = createLinearSolver(solvername, E[j], reg; recoParams...)
       kdata = multiCoilData(acqData2, j, k)
       I = solve(solver, kdata)
