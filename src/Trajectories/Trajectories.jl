@@ -47,7 +47,7 @@ function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerPr
   elseif trajName == "SpiralVarDens"
     return SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Cartesian3D"
-    return CartesianTrajectory3D(numProfiles, numSamplingPerProfile; kargs...)
+    return CartesianTrajectory3D(numProfiles, numSamplingPerProfile; numSlices=numSlices, kargs...)
   elseif trajName == "StackOfStars"
     return StackOfStarsTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Kooshball"
