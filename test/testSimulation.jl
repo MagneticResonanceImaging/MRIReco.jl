@@ -102,6 +102,16 @@ function test_kdataMultiEcho(N=32)
     @test relErrorEcho2 < 1e-3
 end
 
+function test_noise(N::Int64=32, snr::Float64=25.0)
+    @info "Testing simulating kdata with NFFT and exact evauluation"
+    I = shepp_logan(N)
+    tr = RadialTrajectory(N,N)
+    @time acqData = simulation_explicit(tr,I)
+    acqDataNoisy = MRIReco.addNoise(acqData,snr)
+    relError =  norm(acqData.kdata[:]-acqDataNoisy.kdata[:]) / norm(acqData.kdata[:])
+    println("Relative error EXACT vs NOISY: ", relError)
+    @test relError < 1e-1
+end
 
 function testSimulation()
   @testset "simulations" begin
@@ -110,5 +120,6 @@ function testSimulation()
     test_kdata3d()
     test_kdataWithCorrection(16)
     test_kdataMultiEcho()
+    test_noise()
   end
 end

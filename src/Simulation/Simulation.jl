@@ -1,4 +1,4 @@
-export simulation,createSimulationProblem,simulation_fast,simulation_explicit,simulation_dynamic, simulateTempSubspace, simulation_dynamic_rigid, simulation_dynamic_rigid_parallel, AcquisitionData
+export simulation,simulation_fast,simulation_explicit,simulateTempSubspace,addNoise
 
 include("Fieldmap.jl")
 include("RelaxationMap.jl")
@@ -329,5 +329,5 @@ function addNoise(acqData::AcquisitionData, snr::Float64)
 
   return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes,
                          acqData.numCoils, acqData.numSlices, acqData.samplePointer,
-                         acqData.subsampleIndices)
+                         acqData.subsampleIndices, acqData.encodingSize, acqData.fov)
 end

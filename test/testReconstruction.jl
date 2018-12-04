@@ -57,6 +57,7 @@ function testCSReco(N=32,redFac=1.1)
   acqData = simulation(x, params)
   acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
   acqData = convertUndersampledData(acqData)
+  acqData = MRIReco.addNoise(acqData,25.0)
 
   # reco
   params[:reco] = "standard"    # encoding model
