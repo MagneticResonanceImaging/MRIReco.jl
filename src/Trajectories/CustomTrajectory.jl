@@ -7,7 +7,7 @@ mutable struct CustomTrajectory2D <: Abstract2DTrajectory
   AQ::Float64 # time for each spiral arm in s
   nodes::Vector{Float64}
   readoutTimes::Vector{Float64}
-  isCirc::Bool
+  isCirc::Int64
 end
 
 mutable struct CustomTrajectory3D <: Abstract3DTrajectory
@@ -18,7 +18,7 @@ mutable struct CustomTrajectory3D <: Abstract3DTrajectory
   AQ::Float64 # time for each spiral arm in s
   nodes::Vector{Float64}
   readoutTimes::Vector{Float64}
-  isCirc::Bool
+  isCirc::Int64
 end
 
 function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTimes=nothing,
@@ -33,7 +33,7 @@ function CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; readoutTime
       end
     end
   end
-  CustomTrajectory2D(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times), isCircular)
+  CustomTrajectory2D(numProfiles, numSamplingPerProfile, TE, AQ, nodes, vec(times), Int64(isCircular))
 end
 
 function CustomTrajectory(numProfiles, numSamplingPerProfile, numSlices, nodes; readoutTimes=nothing,
@@ -50,7 +50,7 @@ function CustomTrajectory(numProfiles, numSamplingPerProfile, numSlices, nodes; 
       end
     end
   end
-  CustomTrajectory3D(numProfiles, numSamplingPerProfile, numSlices, TE, AQ, nodes, vec(times), isCircular)
+  CustomTrajectory3D(numProfiles, numSamplingPerProfile, numSlices, TE, AQ, nodes, vec(times), Int64(isCircular))
 end
 
 string(tr::CustomTrajectory2D) = "Custom2D"
@@ -61,4 +61,4 @@ kspaceNodes(tr::CustomTrajectory3D) = reshape(tr.nodes, 3, tr.numSamplingPerProf
 
 readoutTimes(tr::T) where T <: Union{CustomTrajectory2D,CustomTrajectory3D} = tr.readoutTimes
 
-isCircular(tr::T) where T <: Union{CustomTrajectory2D,CustomTrajectory3D} = tr.isCirc
+isCircular(tr::T) where T <: Union{CustomTrajectory2D,CustomTrajectory3D} = (tr.isCirc==1)

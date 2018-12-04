@@ -33,7 +33,7 @@ include("CustomTrajectory.jl")
 
 # This dispatches on the file extension and automatically
 # generates the correct type
-function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; kargs...)
+function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, nodes=nothing, kargs...)
   if trajName == "Spiral"
     return SpiralTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Radial"
@@ -52,6 +52,10 @@ function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerPr
     return StackOfStarsTrajectory(numProfiles, numSamplingPerProfile; kargs...)
   elseif trajName == "Kooshball"
     return KooshballTrajectory(numProfiles, numSamplingPerProfile; kargs...)
+  elseif trajName == "Custom2D"
+    return CustomTrajectory(numProfiles, numSamplingPerProfile, nodes; kargs...)
+  elseif trajName == "Custom3D"
+    return CustomTrajectory(numProfiles, numSamplingPerProfile, numSlices, nodes; kargs...)
   else
     error("The trajectory $trajName is not yet supported!")
   end

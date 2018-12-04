@@ -109,6 +109,10 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
     # pointer to the data corresponding to a given echo, coil and slice
     write(file, "samplePointer", acqData.samplePointer)
 
+    # fov and encoding size
+    write(file, "fov", acqData.fov)
+    write(file, "encodingSize", acqData.encodingSize)
+
     # kspace data
     rawdata_real = collect(reshape(reinterpret(Float64, vec(acqData.kdata)), (2,size(acqData.kdata)...)))
     write(file, "/rawdata", rawdata_real)
