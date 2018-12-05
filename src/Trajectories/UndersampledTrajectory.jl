@@ -27,3 +27,4 @@ end
 
 readoutTimes(tr::T) where T <: Union{UndersampledTrajectory2D,UndersampledTrajectory3D} = readoutTimes(tr.trajectory)[tr.subsampleIndices]
 echoTime(tr::T) where T <: Union{UndersampledTrajectory2D,UndersampledTrajectory3D} = echoTime(tr.trajectory)
+isCircular(tr::T) where T <: Union{UndersampledTrajectory2D,UndersampledTrajectory3D} = isCircular(tr.trajectory)
