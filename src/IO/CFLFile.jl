@@ -14,7 +14,7 @@ function data(f::CFLFile)
 
     fid = open(f.filenameBase*".cfl")
 
-    dataFloat = read(fid, Float32, 2*prod(dims))
+    dataFloat = read!(fid, Array{Float32}(undef,2*prod(dims)))
     data = zeros(ComplexF64, dims...)
     data[:] = dataFloat[1:2:end] + 1im*dataFloat[2:2:end]
 

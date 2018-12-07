@@ -39,6 +39,6 @@ function SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
 end
 
 function SensitivityOp(sensMaps::Array{T,4}, numEchoes::Int=1) where T #{T,D}
-  return SensitivityOp(reshape(sensMaps, div(length(sensMaps),size(sensMaps,D)),
-                                         size(sensMaps,D)), numEchoes)
+  return SensitivityOp(reshape(sensMaps, div(length(sensMaps),size(sensMaps,4)),
+                                         size(sensMaps,4)), numEchoes)
 end

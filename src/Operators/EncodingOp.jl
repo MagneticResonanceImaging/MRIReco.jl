@@ -89,6 +89,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
 
   # Fourier Operator
   tr = trajectory(acqData.seq,1)
+  params[:fft] = true
   ft = fourierEncodingOp2d(tr, params)
 
   # coil sensitivities in case of SENSE-reconstruction
@@ -101,7 +102,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
 
   # sampling operator in case of undersampled cartesian acquisitions
   if get(params,:sampling, nothing) == "binary"
-    M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
+    M = SamplingOp(Array{Bool}(acqData.subsampleIndices))
   else
     M = SamplingOp(acqData.subsampleIndices,(N, numEchoes, acqData.numCoils))
   end
@@ -137,9 +138,9 @@ function fourierEncodingOp2d(tr, params; slice=0)
   shape = params[:shape]
   opName="fast"
   if get(params,:fft,false)
-    opName=="fft"
+    opName="fft"
   elseif get(params,:explicit,false)
-    opName=="explicit"
+    opName="explicit"
   end
   symmetrize = get(params, :densityWeighting, true)
 
@@ -158,10 +159,13 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::AbstractTrajectory, opN
           method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
 
   if opName=="explicit"
+    @info "ExplicitOp"
     return ExplicitOp(shape,tr,correctionMap[:,:,slice], symmetrize=symmetrize, echoImage=echoImage)
   elseif opName=="fft"
+    @info "FFTOp"
     return FFTOp(ComplexF64, shape)
   elseif opName=="fast"
+    @info "NNFT-based Op"
     if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
       return NFFTOp(shape, tr, symmetrize=symmetrize)
     else
