@@ -1,5 +1,5 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
-       weightData!, weightedData, unweightData!, unweightDataSquared!
+       weightData!, weightedData, unweightData!, unweightDataSquared!, changeEncodingSize2D
 
 """
  contains all relevant info for the aquired data.
@@ -233,4 +233,38 @@ function unweightDataSquared!(acqData::AcquisitionData, shape::Tuple)
   unweightData!(acqData, shape)
   unweightData!(acqData, shape)
   return acqData
+end
+
+#########################################################################
+# convert acqData for a reconstruction with a encodingSize (resolution)
+#########################################################################
+function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+  fac = acqData.encodingSize ./ newEncodingSize
+  idx = Vector{Vector{Int64}}(undef,acqData.numEchoes)
+  # new sequence
+  seqNew = deepcopy(acqData.seq)
+  for i=1:numEchoes(acqData.seq)
+    tr = trajectory(acqData.seq)
+    nodesNew = fac .* copy(kspaceNodes(tr))
+    # nodesNew = copy(kspaceNodes(tr))
+    # idxX = findall(x-> abs.(x)<0.5, nodesNew[1,:])
+    idxX = findall(x->(x>=-0.5)&&(x<0.5), nodesNew[1,:])
+    # idxY = findall(x-> abs.(x)<0.5, nodesNew[2,:])
+    idxY = findall(x->(x>=-0.5)&&(x<0.5), nodesNew[2,:])
+    idx[i] = intersect(idxX,idxY)
+    nodesNew = vec(nodesNew[:,idx[i]])
+    timesNew = readoutTimes(tr)[idx[i]]
+    isCirc = Int64(isCircular(tr))
+    trNew = CustomTrajectory2D(1, div(length(nodesNew),2), echoTime(tr), acqTimePerProfile(tr), nodesNew, timesNew, isCirc)
+    setTrajectory!(seqNew,trNew,i)
+  end
+  # find relevant kspace data
+  kdata = reshape(acqData.kdata,:,acqData.numEchoes,acqData.numCoils, acqData.numSlices)
+  kdataNew = zeros(ComplexF64,length(idx[1]),acqData.numEchoes,acqData.numCoils, acqData.numSlices)
+  for i=1:numEchoes(acqData.seq)
+    kdataNew[:,i,:,:] = 1.0/prod(fac) * kdata[idx[i],i,:,:]
+  end
+  acqDataNew = AcquisitionData2d(seqNew, vec(kdataNew);
+                          numCoils=acqData.numCoils, numEchoes=acqData.numEchoes, numSlices=acqData.numSlices,
+                          encodingSize=newEncodingSize, fov=acqData.fov)
 end
