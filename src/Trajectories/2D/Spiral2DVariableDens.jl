@@ -45,7 +45,10 @@ function kspaceNodes(tr::SpiralTrajectoryVarDens)
   if tr.angleOffset == "golden" #:golden
       angles = [i*(3-sqrt(5))/2  for i=0:tr.numProfiles-1 ]
   elseif tr.angleOffset == "random" #:random
-      angles = sort(rand(tr.numProfiles))
+      # angles = sort(rand(tr.numProfiles))
+      angles = collect((0:tr.numProfiles-1)/tr.numProfiles)
+      Random.seed!(1234)
+      angles = angles .+ 1.0/tr.numProfiles*rand(tr.numProfiles)
   elseif tr.angleOffset == "equispaced" #:equispaced
       angles = collect((0:tr.numProfiles-1)/tr.numProfiles)
   end

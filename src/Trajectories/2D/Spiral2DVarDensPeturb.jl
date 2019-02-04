@@ -17,7 +17,7 @@ function SpiralTrajectoryVarDensPeturb(numProfiles::Int64
                         ; TE=0.0
                         , AQ=1.0
                         , windings=6.25
-                        , alpha=5.0
+                        , alpha=2.0
                         , angleOffset= "equispaced"
                         , kargs...)
 
@@ -50,11 +50,11 @@ function kspaceNodes(tr::SpiralTrajectoryVarDensPeturb)
 
 
   T_ea = 1/((tr.alpha+1)*gamma/(2pi*tr.windings))
-  times = linspace(0,T_ea,tr.numSamplingPerProfile)
+  times = range(0,stop=T_ea,length=tr.numSamplingPerProfile)
   for l = 1:tr.numProfiles
     for k = 1:tr.numSamplingPerProfile
       tau = (gamma/(2pi*tr.windings) *(tr.alpha+1)*times[k])^(1/(tr.alpha+1))
-      tmp = (1+0.025*cos(k*0.5))*(tau^tr.alpha)*A*exp(1im*2*pi*( tr.windings*tau + angles[l] ))
+      tmp = (1+0.025*cos(k*0.1))*(tau^tr.alpha)*(A-0.025)*exp(1im*2*pi*( tr.windings*tau + angles[l] ))
       # Thresholding if the petrubed spiral goes beyond |x_j| > [0.5,0.5]
       if real(tmp) >= 0.5
           nodes[1,k,l] = 0.5 - 1e-6
@@ -80,5 +80,3 @@ end
 function kspaceDensity(tr::SpiralTrajectoryVarDensPeturb)
   error("Not implemented!")
 end
-
-isCircular(tr::SpiralTrajectoryVarDensPeturb) = true
