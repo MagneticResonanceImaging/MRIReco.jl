@@ -80,6 +80,93 @@ function getA_Ccoefficients_nfft(K::Int64
   return A,C
 end
 
+function getA_coefficients_nfft(K::Int64
+                                , numOfNodes::Int64
+                                , numOfPixel::Int64
+                                , times::Vector     # readout times
+                                , z_p::Vector       # Correction map
+                                , alpha::Float64    # oversampling factor(NFFT)
+                                , m::Float64
+                                ; double::Bool=false
+                                , adaptK::Bool=false)       # kernel size(NFFT)
+
+  # Centering time and correctionterm to lower computational effort
+  t_hat = (times[1] + times[end])/2
+  z_hat = minimum(real(z_p)) + maximum(real(z_p)) + 1im*(minimum(imag(z_p)) + maximum(imag(z_p)))
+  z_hat *= 0.5
+  # Centering readouttimes and correctionmap
+  times = times .- t_hat
+  z_p = z_p .- z_hat
+
+  # Calculating timescaling factor so it satisfies: t_j / T in [0.5,0.5)
+  T =  maximum(abs.(times)) / (0.5-1e-7)
+
+  # determining N and K,
+  # K can be choosen freely with tradeoff comp. complexity vs precision
+  N = Int64(4*ceil( maximum(abs.(z_p)) * maximum(abs.(times)) / (2*pi) ))
+  if adaptK
+    K = ceil(Int64, alpha*N + 2*m)
+  end
+  # println("Calculated K for NFFT: ",K)
+
+  # Preallocating output
+  A = zeros(ComplexF64,numOfNodes, K)
+
+  win, win_hat = NFFT.getWindow(:kaiser_bessel)
+
+  for kappa=1:K
+    for j=1:numOfNodes
+        argument = times[j]/T - (kappa - K/2)/(K -2*m)
+        A[j,kappa] = win(argument,N*alpha,m,alpha)
+    end
+  end
+  return A
+end
+
+function getC_coefficients_nfft(K::Int64
+                                , numOfNodes::Int64
+                                , numOfPixel::Int64
+                                , times::Vector     # readout times
+                                , z_p::Vector       # Correction map
+                                , alpha::Float64    # oversampling factor(NFFT)
+                                , m::Float64
+                                ; double::Bool=false
+                                , adaptK::Bool=false)       # kernel size(NFFT)
+
+  # Centering time and correctionterm to lower computational effort
+  t_hat = (times[1] + times[end])/2
+  z_hat = minimum(real(z_p)) + maximum(real(z_p)) + 1im*(minimum(imag(z_p)) + maximum(imag(z_p)))
+  z_hat *= 0.5
+  # Centering readouttimes and correctionmap
+  times = times .- t_hat
+  z_p = z_p .- z_hat
+
+  # Calculating timescaling factor so it satisfies: t_j / T in [0.5,0.5)
+  T =  maximum(abs.(times)) / (0.5-1e-7)
+
+  # determining N and K,
+  # K can be choosen freely with tradeoff comp. complexity vs precision
+  N = Int64(4*ceil( maximum(abs.(z_p)) * maximum(abs.(times)) / (2*pi) ))
+  if adaptK
+    K = ceil(Int64, alpha*N + 2*m)
+  end
+  # println("Calculated K for NFFT: ",K)
+
+  # Preallocating output
+  C = zeros(ComplexF64,K, numOfPixel)
+
+  win, win_hat = NFFT.getWindow(:kaiser_bessel)
+
+  for p=1:numOfPixel
+    for kappa=1:K
+        fourierarg = 1im * z_p[p]*T/(2pi)
+        exparg = -z_p[p]*T * ( (kappa - K/2)/(K-2*m) )
+        C[kappa,p] = (1/ ( (K-2*m)* 1/(N*alpha)*win_hat(fourierarg,N*alpha,m,alpha))) * exp(exparg)
+    end
+  end
+  return C
+end
+
 """
   Returns the a_j,k and c_k,p Coefficients considering the approximation of the
   exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
@@ -166,7 +253,7 @@ function getA_Coefficients_hist_lsqr(K::Int64
   A = zeros(ComplexF64,numOfNodes,K)
   G = zeros(ComplexF64,numBins,K)
 
-  progr = Progress(numOfNodes, 1, "Using leastsquares to get Hist-coefficients...")
+  # progr = Progress(numOfNodes, 1, "Using leastsquares to get Hist-coefficients...")
 
   t_hat = zeros(K)
   # t_hat = collect(linspace(times[1],times[numOfNodes],K))
@@ -179,12 +266,13 @@ function getA_Coefficients_hist_lsqr(K::Int64
     end
   end
 
-  systemMat = G'*diagm(z_weights)*G
+  # systemMat = G'*diagm(z_weights)*G
+  systemMat = G'*Diagonal(z_weights)*G
   err = zeros(numOfNodes)
-  for j=1:length(times) #numOfNodes
+  @showprogress 1 "Using leastsquares to get Hist-coefficients..." for j=1:length(times) #numOfNodes
     b = [z_weights[p]*exp(-times[j]*z_center[p]) for p=1:numBins ]
     A[j,:] = systemMat \ (G'*b)
-    next!(progr)
+    # next!(progr)
   end
   return A
 end
