@@ -64,7 +64,7 @@ function testCSReco(N=32,redFac=1.1)
   params[:shape] = (N,N)
   params[:sparseTrafoName] = "Wavelet" #sparse trafo
   params[:regularization] = "L1"       # regularization
-  params[:lambdL1] = 1.e-3
+  params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
@@ -94,7 +94,7 @@ function testCSRecoMultCoil(N=32)
   params[:shape] = (N,N)
   params[:sparseTrafoName] = "nothing" #sparse trafo
   params[:regularization] = "TV"       # regularization
-  params[:lambdTV] = 2.e-3
+  params[:λ] = 2.e-3
   params[:solver] = "admm"    # solver
   params[:iterations] = 100
   params[:ρ] = 1.0e-1
@@ -139,7 +139,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:senseMaps] = sensMaps
   params[:sparseTrafoName] = "Wavelet" # sparse trafo
   params[:regularization] = "L1"       # regularization
-  params[:lambdL1] = 1.e-3
+  params[:λ] = 1.e-3
   params[:solver] = "admm"
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1

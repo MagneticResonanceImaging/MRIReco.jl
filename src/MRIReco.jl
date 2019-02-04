@@ -10,7 +10,7 @@ using Reexport
 using NFFT
 using Distributions
 using LinearOperators
-@reexport using RegularizedLeastSquares
+using RegularizedLeastSquares
 using StatsBase
 using LinearAlgebra
 using Random

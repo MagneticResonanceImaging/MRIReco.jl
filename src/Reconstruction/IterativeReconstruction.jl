@@ -19,6 +19,7 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
+  λ = get(recoParams,:λ,0.0)
   normalize = get(recoParams, :normalizeReg, false)
 
   # reconstruction
@@ -29,7 +30,7 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
     F = EncodingOp2d(acqData, recoParams, slice=k)
     for j = 1:acqData.numEchoes
       for i = 1:acqData.numCoils
-        reg = getRegularization(regName; recoParams...)
+        reg = getRegularization(regName, λ; recoParams...)
         if normalize
           RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
         end
@@ -75,6 +76,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
+  λ = get(recoParams,:λ,0.0)
   normalize = get(recoParams, :normalizeReg, false)
 
   # reconstruction
@@ -82,7 +84,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams,:solver,"fista")
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
-      reg = getRegularization(regName; recoParams...)
+      reg = getRegularization(regName, λ; recoParams...)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
@@ -117,6 +119,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
+  λ = get(recoParams,:λ,0.0)
   normalize = get(recoParams, :normalizeReg, false)
 
   # solve optimization problem
@@ -126,7 +129,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   for k = 1:acqData.numSlices
     E = EncodingOp2d(acqData, recoParams; parallel=true, slice=k)
     for j = 1:acqData.numEchoes
-      reg = getRegularization(regName; multiEcho=true, recoParams...)
+      reg = getRegularization(regName, λ; multiEcho=true, recoParams...)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
@@ -163,7 +166,8 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
-  reg = getRegularization(regName; recoParams...)
+  λ = get(recoParams,:λ,0.0)
+  reg = getRegularization(regName, λ; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
     RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
