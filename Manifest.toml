@@ -519,9 +519,11 @@ version = "0.2.0"
 
 [[RegularizedLeastSquares]]
 deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "Random", "SparseArrays", "Test", "Wavelets"]
-git-tree-sha1 = "c6d3476550098f69562539d234cf41df8da149b6"
+git-tree-sha1 = "b13c3e212a6eb282cad70df4435789a4541dcfa3"
+repo-rev = "master"
+repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
 uuid = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
-version = "0.1.1"
+version = "0.1.1+"
 
 [[Requires]]
 deps = ["Test"]
