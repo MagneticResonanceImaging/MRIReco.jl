@@ -39,9 +39,9 @@ function NFFTOp(shape::Tuple, tr::AbstractTrajectory; nodes=nothing, symmetrize=
       x = nfft_adjoint(plan, y[:])
     end
 
-    if isCircular(tr)
-      circularShutter!(x,1.0)
-    end
+    # if isCircular(tr)
+    #   circularShutter!(x,1.0)
+    # end
 
     return vec(x)
   end
@@ -50,7 +50,7 @@ function NFFTOp(shape::Tuple, tr::AbstractTrajectory; nodes=nothing, symmetrize=
     if symmetrize
       x = nfft_adjoint(plan, y[:] .* sqrt.(density))
     else
-      x = nfft_adjoint(plan, y[:] .* density)
+      x = nfft_adjoint(plan, y[:] .* density) * sqrt(prod(shape))
     end
     return vec(x)
   end
