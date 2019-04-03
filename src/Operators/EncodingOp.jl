@@ -159,13 +159,13 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::AbstractTrajectory, opN
           method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
 
   if opName=="explicit"
-    @info "ExplicitOp"
+    @debug "ExplicitOp"
     return ExplicitOp(shape,tr,correctionMap[:,:,slice], symmetrize=symmetrize, echoImage=echoImage)
   elseif opName=="fft"
-    @info "FFTOp"
+    @debug "FFTOp"
     return FFTOp(ComplexF64, shape)
   elseif opName=="fast"
-    @info "NNFT-based Op"
+    @debug "NFFT-based Op"
     if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
       return NFFTOp(shape, tr, symmetrize=symmetrize)
     else

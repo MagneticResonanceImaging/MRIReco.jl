@@ -34,11 +34,11 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
     F = weightingFac*EncodingOp2d(acqData, recoParams, slice=k)
     for j = 1:acqData.numEchoes
       for i = 1:acqData.numCoils
-        reg = getRegularization(regName, λ; recoParams...)
+        reg = Regularization(regName, λ; recoParams...)
         if normalize
           RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
         end
-        solver = createLinearSolver(solvername, F[j], reg; recoParams...)
+        solver = createLinearSolver(solvername, F[j]; reg=reg, recoParams...)
         kdata = kData(acqData2,j,i,k)
 
         I = solve(solver, kdata)
@@ -95,11 +95,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams,:solver,"fista")
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
-      reg = getRegularization(regName, λ; recoParams...)
+      reg = Regularization(regName, λ; recoParams...)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
-      solver = createLinearSolver(solvername, F, reg; recoParams...)
+      solver = createLinearSolver(solvername, F; reg=reg, recoParams...)
 
       kdata = multiEchoData(acqData2, j, i)
       Ireco[:,j,i] = solve(solver,kdata)
@@ -144,11 +144,11 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   for k = 1:acqData.numSlices
     E = weightingFac*EncodingOp2d(acqData, recoParams; parallel=true, slice=k)
     for j = 1:acqData.numEchoes
-      reg = getRegularization(regName, λ; multiEcho=true, recoParams...)
+      reg = Regularization(regName, λ; multiEcho=true, recoParams...)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
-      solver = createLinearSolver(solvername, E[j], reg; recoParams...)
+      solver = createLinearSolver(solvername, E[j]; reg=reg, recoParams...)
       kdata = multiCoilData(acqData2, j, k)
       I = solve(solver, kdata)
 
@@ -186,7 +186,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
   # regularization
   regName = get(recoParams, :regularization, "L1")
   λ = get(recoParams,:λ,0.0)
-  reg = getRegularization(regName, λ; recoParams...)
+  reg = Regularization(regName, λ; recoParams...)
   normalize = get(recoParams, :normalizeReg, false)
   if normalize
     RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
@@ -197,7 +197,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
 
   for i = 1:acqData.numSlices
     E = weightingFac*EncodingOp2d(acqData, recoParams, parallel=true, multiEcho=true, slice=i)
-    solver = createLinearSolver(solvername, E, reg; recoParams...)
+    solver = createLinearSolver(solvername, E; reg=reg, recoParams...)
     kdata = multiCoilMultiEchoData(acqData2, i)
     Ireco[:,:,i] = solve(solver, kdata)
   end

@@ -4,9 +4,9 @@ function calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=
 
   N = prod(recoParams[:shape])
 
-  @info "Setup operator"
+  @debug "Setup operator"
   F = EncodingOp2d(acqData, recoParams, slice=slice)
-  @info "Operator ready"
+  @debug "Operator ready"
 
   maxValue = 0.0
 

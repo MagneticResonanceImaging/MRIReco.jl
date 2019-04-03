@@ -46,7 +46,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory,
   cparam = createInhomogeneityData_(nrow,ncol,vec(times),correctionmap; K=K, alpha=alpha, m=m, method=method)
   K = size(cparam.A_k,2)
 
-  @info "K = $K"
+  @debug "K = $K"
 
   plan = Vector{NFFTPlan{D,0,Float64}}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
