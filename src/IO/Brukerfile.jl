@@ -137,7 +137,8 @@ acqNumEchos(b::BrukerFile) = parse(Int,b["ACQ_n_echo_images"])
 acqPhaseFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
 acqRareFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
 acqSpatialSize1(b::BrukerFile) = parse(Int,b["ACQ_spatial_size_1"])
-numRepetitions(b::BrukerFile) = parse(Int,b["NR"])
+acqNumRepetitions(b::BrukerFile) = parse(Int,b["NR"])
+acqObjOrder(b::BrukerFile) = parse.(Int,b["ACQ_obj_order"])
 
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
 pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
@@ -169,15 +170,29 @@ function rawdata(b::BrukerFile)
   profileLength = div((div(N[1]*sizeof(dtype),1024)+1)*1024,sizeof(dtype))
   phaseFactor = acqPhaseFactor(b)
   numSlices = acqNumSlices(b)
+  numEchos = acqNumEchos(b)
+  numEncSteps2 = length(N) == 3 ? N[3] : 1
+  numRep = acqNumRepetitions(b)
 
   I = open(filename,"r") do fd
-    read!(fd,Array{dtype,4}(undef, profileLength,
+    read!(fd,Array{dtype,7}(undef, profileLength,
+                                   numEchos,
                                    phaseFactor,
                                    numSlices,
-                                   div(N[2], phaseFactor)))[1:N[1],:,:,:]
+                                   div(N[2], phaseFactor),
+                                   numEncSteps2,
+                                   numRep))[1:N[1],:,:,:,:,:,:]
   end
 
-  I_ = reshape(permutedims(I, (1,4,2,3) ), N[1], :, numSlices)
+  I_ = reshape(permutedims(I, (1,3,5,6,2,4,7) ), N[1], :,
+                              numEncSteps2, numEchos, numSlices, numRep)
+  encSteps = pvmEncSteps1(b)
+  idxE = collect(1:length(encSteps))
+  permE = invpermute!(idxE, encSteps.-minimum(encSteps).+1)
+  objOrd = acqObjOrder(b)
+  idxO = collect(1:length(objOrd))
+  permO = invpermute!(idxO, objOrd.-minimum(objOrd).+1)
+  I_ = I_[:,permE,:,:,permO,:]
 
   return vec( map(ComplexF64, I_) )
 end
@@ -185,8 +200,11 @@ end
 
 function trajectory(b::BrukerFile)
   N = acqSize(b)
-
-  return trajectory("Cartesian", N[1], N[2])
+  if length(N) == 2
+    return trajectory("Cartesian", N[1], N[2])
+  elseif length(N) == 3
+    return trajectory("Cartesian3D", N[1], N[2]; numSlices=N[3])
+  end
   #return nothing
 end
 
