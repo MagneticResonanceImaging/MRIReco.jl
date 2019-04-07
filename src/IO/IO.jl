@@ -7,6 +7,7 @@ export MRIFile
 
 abstract type MRIFile end
 
+# @TODO formaly define the interface
 
 include("ISMRMRD.jl")
 include("MRIFileIBI.jl")
@@ -15,3 +16,4 @@ include("DFFile.jl")
 include("CFLFile.jl")
 include("Nifti.jl")
 include("ImageExport.jl")
+include("Brukerfile.jl")

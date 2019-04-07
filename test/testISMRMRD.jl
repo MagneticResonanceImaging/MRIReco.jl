@@ -1,5 +1,3 @@
-using HTTP
-
 @testset "ISMRMRD" begin
 
 filename = "simple_gre.h5"
@@ -29,7 +27,7 @@ params[:shape] = (256,128) #this should be clear from context
 
 Ireco = abs.(vec(reconstruction(acquisitionData(f), params)))
 Icolored = colorview(Gray, Ireco./maximum(Ireco))
-save("recogre.png", reshape(Icolored,256,128,32)[:,:,1] )
+save("recogre.png", reshape(Icolored,256,128,32)[:,:,1]*20 )
 
 
 filename = "simple_spiral.h5"
