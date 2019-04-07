@@ -123,42 +123,85 @@ function acqNumFrames(b::BrukerFile)
 end
 
 acqNumAverages(b::BrukerFile) = parse(Int,b["NA"])
+acqNumSlices(b::BrukerFile) = parse(Int,b["NSLICES"])
+acqNumInterleaves(b::BrukerFile) = parse(Int,b["NI"])
+function acqSize(b::BrukerFile)
+  N = parse.(Int,b["ACQ_size"])
+  N[1] = div(N[1],2)
+  return N
+end
+##$PVM_EncAvailReceivers=1
 
+acqNumCoils(b::BrukerFile) = parse(Int,b["PVM_EncNReceivers"])
+acqNumEchos(b::BrukerFile) = parse(Int,b["ACQ_n_echo_images"])
+acqPhaseFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
+acqRareFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
+acqSpatialSize1(b::BrukerFile) = parse(Int,b["ACQ_spatial_size_1"])
+numRepetitions(b::BrukerFile) = parse(Int,b["NR"])
+
+pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
+pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
+pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
+pvmEncValues2(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps2"])
+pvmMatrix(b::BrukerFile) = parse.(Int,b["PVM_Matrix"])
+
+function acqDataType(b::BrukerFile)
+  format = b["GO_raw_data_format"]
+  if format == "GO_32BIT_SGN_INT"
+    return Int32
+  elseif format == "GO_16BIT_SGN_INT"
+    return Int16
+  elseif format == "GO_32BIT_FLOAT"
+  else
+    @error "Data type curr"
+  end
+  return Int8
+end
 
 # interface of MRIFile
+function rawdata(b::BrukerFile)
+  dtype = Complex{acqDataType(b)}
 
-function rawdata(f::BrukerFile, repetition=1)
-  return map(ComplexF64,vec(permutedims(f.data[:,:,findIndices(f,repetition)],(1,3,2))))
-end
+  filename = joinpath(b.path, "fid")
 
-function acquisitionData(f::BrukerFile)
-  return AcquisitionData(trajectory(f), rawdata(f),
-                          numCoils=numChannels(f), numEchoes=1, numSlices=1)
-end
+  N = acqSize(b)
+  # The data is padded in case it is not a multiple of 1024
+  profileLength = div((div(N[1]*sizeof(dtype),1024)+1)*1024,sizeof(dtype))
+  phaseFactor = acqPhaseFactor(b)
+  numSlices = acqNumSlices(b)
 
-#=
-function measData(b::BrukerFile, frames=1:acqNumFrames(b), periods=1:acqNumPeriodsPerFrame(b),
-                  receivers=1:rxNumChannels(b))
-
-  dataFilename = joinpath(b.path,"rawdata.job0")
-  dType = acqNumAverages(b) == 1 ? Int16 : Int32
-
-  s = open(dataFilename)
-
-  if numSubPeriods(b) == 1
-    raw = Mmap.mmap(s, Array{dType,4},
-             (rxNumSamplingPoints(b),rxNumChannels(b),acqNumPeriodsPerFrame(b),acqNumFrames(b)))
-  else
-    raw = Mmap.mmap(s, Array{dType,5},
-             (rxNumSamplingPoints(b),numSubPeriods(b),rxNumChannels(b),acqNumPeriodsPerFrame(b),acqNumFrames(b)))
-    raw = dropdims(sum(raw,dims=2),dims=2)
+  I = open(filename,"r") do fd
+    read!(fd,Array{dtype,4}(undef, profileLength,
+                                   phaseFactor,
+                                   numSlices,
+                                   div(N[2], phaseFactor)))[1:N[1],:,:,:]
   end
-  data = raw[:,receivers,periods,frames]
-  close(s)
 
-  return reshape(data, rxNumSamplingPoints(b), length(receivers),length(periods),length(frames))
+  I_ = reshape(permutedims(I, (1,4,2,3) ), N[1], :, numSlices)
+
+  return vec( map(ComplexF64, I_) )
 end
-=#
+
+
+function trajectory(b::BrukerFile)
+  N = acqSize(b)
+
+  return trajectory("Cartesian", N[1], N[2])
+  #return nothing
+end
+
+
+function sequence(f::BrukerFile)
+  # TODO
+end
+
+function acquisitionData(b::BrukerFile)
+  return AcquisitionData(trajectory(b), rawdata(b),
+                          numCoils=acqNumCoils(b),
+                          numEchoes=acqNumEchos(b),
+                          numSlices=acqNumSlices(b),
+                          encodingSize=acqSize(b))
+end
 
 ##### Reco
 function recoData(f::BrukerFile)

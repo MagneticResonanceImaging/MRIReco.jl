@@ -42,9 +42,11 @@ function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
                         encodingSize=Int64[], fov=Float64[])
   encodingDims = encoding(seq)
   if encodingDims == "2D"
-    return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+    return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,
+              numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
   elseif encodingDims == "3D"
-    return AcquisitionData3d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+    return AcquisitionData3d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,
+                numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
   else
     error("encoding $(encodingDims) not yet supported")
   end
@@ -171,6 +173,7 @@ function weightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
     for j = 1:acqData.numCoils
       for k = 1:acqData.numEchoes
         idx = ((i-1)*acqData.numCoils+j-1)*acqData.numEchoes+k
+
         if k!=acqData.numEchoes || j!=acqData.numCoils || i!=acqData.numSlices
           acqData.kdata[acqData.samplePointer[idx] : acqData.samplePointer[idx+1]-1] .*= sqrt.(ft[k].density)
         else

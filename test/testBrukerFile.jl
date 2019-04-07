@@ -9,6 +9,18 @@ if !isdir("brukerfileCart")
   run(`unzip brukerfileCart.zip`)
 end
 
+f = BrukerFile("brukerfileCart")
+N = MRIReco.pvmMatrix(b)
+acqData = acquisitionData(f)
+N = acqData.encodingSize
+
+params = Dict{Symbol, Any}()
+params[:reco] = "direct"
+params[:shape] = (N[1],N[2]) #this should be clear from context
+
+Ireco = abs.(vec(reconstruction(acqData, params)))
+Icolored = colorview(Gray, Ireco./maximum(Ireco))
+save("brukerCart.png", reshape(Icolored,N[1],N[2],:)[:,:,13] )
 
 
 
