@@ -9,9 +9,9 @@ if !isdir("brukerfileCart")
   run(`unzip brukerfileCart.zip`)
 end
 
-f = BrukerFile("brukerfileCart")
+b = BrukerFile("brukerfileCart")
 N = MRIReco.pvmMatrix(b)
-acqData = acquisitionData(f)
+acqData = acquisitionData(b)
 N = acqData.encodingSize
 
 params = Dict{Symbol, Any}()
