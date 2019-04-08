@@ -186,13 +186,19 @@ function rawdata(b::BrukerFile)
 
   I_ = reshape(permutedims(I, (1,3,5,6,2,4,7) ), N[1], :,
                               numEncSteps2, numEchos, numSlices, numRep)
-  encSteps = pvmEncSteps1(b)
-  idxE = collect(1:length(encSteps))
-  permE = invpermute!(idxE, encSteps.-minimum(encSteps).+1)
+  encSteps1 = pvmEncSteps1(b)
+  idxE1 = collect(1:length(encSteps1))
+  permE1 = invpermute!(idxE1, encSteps1.-minimum(encSteps1).+1)
+
+  encSteps2 = pvmEncSteps2(b)
+  idxE2 = collect(1:length(encSteps2))
+  permE2 = invpermute!(idxE2, encSteps2.-minimum(encSteps2).+1)
+
   objOrd = acqObjOrder(b)
   idxO = collect(1:length(objOrd))
   permO = invpermute!(idxO, objOrd.-minimum(objOrd).+1)
-  I_ = I_[:,permE,:,:,permO,:]
+
+  I_ = I_[:,permE1,permE2,:,permO,:]
 
   return vec( map(ComplexF64, I_) )
 end
