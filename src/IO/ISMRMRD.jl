@@ -45,7 +45,7 @@ struct ISMRMRD <: MRIFile
   filename::String
   params::Dict
   head::Array{ISMRMRDAcquisitionHeader,1}
-  traj::Array{Float32,2}
+  traj::Array{Float32,3}
   data::Array{Complex{Float32},3}
   xdoc
 end
@@ -85,15 +85,22 @@ function ISMRMRD(filename::String)
     end
   end
 
-  dataNew = zeros(ComplexF32, size(data[1],1), size(data[1],2), length(data) )
+  dataNew_ = zeros(ComplexF32, size(data[1],1), size(data[1],2), length(data) )
   for m=1:M
-    dataNew[:,:,m] = data[m]
+    dataNew_[:,:,m] = data[m]
   end
 
+  # remove data that should be discarded
+  i1 = head[1].discard_pre + 1
+  i2 = size(data[1],1) - head[1].discard_post
+
+  dataNew = dataNew_[i1:i2,:,:]
+
   if !isempty(traj)
-    trajNew = reshape(traj,:,M)
+    trajNew_ = reshape(traj, Int(head[1].trajectory_dimensions), :, M)
+    trajNew = trajNew_[:,i1:i2,:]
   else
-    trajNew = zeros(Float32,0,0)
+    trajNew = zeros(Float32,0,0,0)
   end
 
   return ISMRMRD(filename, header, head, trajNew, dataNew, xdoc)
@@ -182,19 +189,18 @@ function trajectory(f::ISMRMRD)
                                    f.params["encodedMatrixSize"][1])
   elseif f.params["trajectory"] == "spiral"
 
+    # this code makes assumptions!!!
 
-    #=function trajectory(f::DFFile)
-      numSamplingPerProfile, numProfiles, nodes = open(f.trajfilename,"r") do fd
-        tmp1,numSamplingPerProfile,numProfiles,tmp2= read!(fd,Array{Int32}(undef,4))
-        nodes = read!(fd, Array{Float32}(undef, 2, numSamplingPerProfile,numProfiles))
-        return numSamplingPerProfile, numProfiles, nodes
-      end
+    sl = slices(f)
+    rep = repetitions(f)
 
-      return CustomTrajectory(numProfiles, numSamplingPerProfile, vec(nodes))
-    end=#
+    numSl = length(unique(sl))
+    numRep = length(unique(rep))
 
 
-    return nothing
+    return CustomTrajectory(div(size(f.traj,3),numSl*numRep),
+                            size(f.traj,2),
+                            vec(f.traj[:,:,1:div(size(f.traj,3),numSl*numRep)]))
   end
   return nothing
 end
@@ -216,19 +222,44 @@ function findIndices(f::ISMRMRD, repetition=1, slice=1)
   idx = zeros(Int,f.params["encodedMatrixSize"][2])
   i = 1
   for l=1:length(f.head)
-    if f.head[l].idx.slice+1 == slice &&
-       f.head[l].idx.repetition+1 == repetition
+    if f.head[l].idx.slice+1 == slice #&&
+       #f.head[l].idx.repetition+1 == repetition
       idx[ f.head[l].idx.kspace_encode_step_1+1 ] = l
     end
   end
   return idx
 end
 
-function rawdata(f::ISMRMRD, repetition=1)
-  return map(ComplexF64,vec(permutedims(f.data[:,:,findIndices(f,repetition)],(1,3,2))))
+encSteps1(f::ISMRMRD) = [f.head[l].idx.kspace_encode_step_1+1 for l=1:length(f.head)]
+encSteps2(f::ISMRMRD) = [f.head[l].idx.kspace_encode_step_2+1 for l=1:length(f.head)]
+slices(f::ISMRMRD) = [f.head[l].idx.slice+1 for l=1:length(f.head)]
+repetitions(f::ISMRMRD) = [f.head[l].idx.repetition+1 for l=1:length(f.head)]
+
+
+function rawdata(f::ISMRMRD)
+  encSt1 = encSteps1(f)
+  encSt2 = encSteps2(f)
+  sl = slices(f)
+  rep = repetitions(f)
+
+  numSl = length(unique(sl))
+  numRep = length(unique(rep))
+  numEncSt1 = length(unique(encSt1))
+  numEncSt2 = length(unique(encSt2))
+
+  N = size(f.data)
+  sorted = zeros(eltype(f.data), N[1], numEncSt1, numEncSt2, N[2], numSl, numRep)
+  for l=1:length(slices(f))
+    sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.data[:,:,l]
+  end
+
+  return map(ComplexF64, vec(sorted))
 end
 
 function acquisitionData(f::ISMRMRD)
   return AcquisitionData(trajectory(f), rawdata(f),
-                          numCoils=numChannels(f), numEchoes=1, numSlices=1)
+                          numCoils=numChannels(f),
+                          numEchoes=1,
+                          numSlices=length(unique(slices(f)))*length(unique(repetitions(f))),
+                          encodingSize=f.params["encodedMatrixSize"] )
 end

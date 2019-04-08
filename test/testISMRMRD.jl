@@ -25,9 +25,9 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
-Ireco = abs.(vec(reconstruction(acquisitionData(f), params)))
-Icolored = colorview(Gray, Ireco./maximum(Ireco))
-save("recogre.png", reshape(Icolored,256,128,32)[:,:,1]*20 )
+Ireco = abs.(reconstruction(acquisitionData(f), params))
+Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
+save("recogre.png", Icolored )
 
 
 filename = "simple_spiral.h5"
@@ -40,11 +40,28 @@ if !isfile(filename)
 end
 
 f = ISMRMRD(filename)
-@test size(f.data) == (1000, 32, 160)
+@test size(f.data) == (909, 32, 160)
 
+params = Dict{Symbol, Any}()
+params[:reco] = "direct"
+params[:shape] = (128,128) #this should be clear from context
+
+Ireco = abs.(reconstruction(acquisitionData(f), params))
+Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
+save("recospiral.png", Icolored )
 
 
 # 3D_partial_fourier.h5
+
+filename = "3D_partial_fourier.h5"
+if !isfile(filename)
+  HTTP.open("GET", "https://netix.dl.sourceforge.net/project/ismrmrd/data/3D_partial_fourier.h5") do http
+    open(filename, "w") do file
+      write(file, http)
+    end
+  end
+end
+
 
 end
 
