@@ -1,14 +1,17 @@
 export RawAcquisitionData, EncodingCounters, AcquisitionHeader
 
-struct RawAcquisitionData
-  params::Dict{String, Any}
-  profiles::Vector{Profile}
-end
 
-struct Profile
-  head::AcquisitionHeader
-  traj::Array{Float32,2}
-  data::Array{Complex{Float32},2}
+struct EncodingCounters
+  kspace_encode_step_1::Int16
+  kspace_encode_step_2::Int16
+  average::Int16
+  slice::Int16
+  contrast::Int16
+  phase::Int16
+  repetition::Int16
+  set::Int16
+  segment::Int16
+  user::Vector{Int16}
 end
 
 struct AcquisitionHeader
@@ -38,15 +41,13 @@ struct AcquisitionHeader
   user_float::Vector{Float32}
 end
 
-struct EncodingCounters
-  kspace_encode_step_1::Int16
-  kspace_encode_step_2::Int16
-  average::Int16
-  slice::Int16
-  contrast::Int16
-  phase::Int16
-  repetition::Int16
-  set::Int16
-  segment::Int16
-  user::Vector{Int16}
+struct Profile
+  head::AcquisitionHeader
+  traj::Array{Float32,2}
+  data::Array{Complex{Float32},2}
+end
+
+struct RawAcquisitionData
+  params::Dict{String, Any}
+  profiles::Vector{Profile}
 end
