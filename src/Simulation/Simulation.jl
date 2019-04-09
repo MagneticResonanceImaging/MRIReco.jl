@@ -67,7 +67,7 @@ julia> kdata = simulation(tr,I);
 ```
 
 """
-function simulation(tr::Abstract2DTrajectory, image::Array{ComplexF64,3}, correctionMap=[]
+function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[]
               ; opName="fast", senseMaps=[], verbose=true, kargs...) #where T<:Union{ComplexF64,Float64}
 
   nx,ny,nz = size(image)
@@ -122,7 +122,7 @@ end
 ...
 
 """
-function simulation(tr::Abstract3DTrajectory, image::Array{ComplexF64,3}, correctionMap=[];
+function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[];
               opName="fast", senseMaps=[], verbose=true, kargs...) # where T<:Union{ComplexF64,Float64}
 
   nx,ny,nz = size(image)
@@ -221,7 +221,6 @@ function simulation(seq::AbstractSequence
       error("scaled image contains NaN")
     end
 
-    # out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image.*exp.(r2map*te), correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
     out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
 
     if length(findall(x->isfinite(x),out[:,i,:])) != length(out[:,i,:])
@@ -230,6 +229,32 @@ function simulation(seq::AbstractSequence
   end
 
   return AcquisitionData(seq, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
+end
+
+function simulation(tr::Trajectory
+                        , image::Array{ComplexF64}
+                        , correctionMap = []
+                        ; opName="fast"
+                        , r1map=[]
+                        , r2map=[]
+                        , fmap=[]
+                        , senseMaps=[]
+                        , verbose=true
+                        , kargs...)
+
+  ndims(image) > 2 ? numSlices=size(image,3) : numSlices=1
+  image = reshape(image,size(image)[1],size(image)[2],numSlices)
+  if !isempty(correctionMap)
+    correctionMap = reshape(correctionMap,size(image))
+  end
+
+  if dims(tr)==2
+    acqData = simulation2d(tr, ComplexF64.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+  else
+    acqData = simulation3d(tr, ComplexF64.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+  end
+
+  return acqData
 end
 
 #
@@ -273,7 +298,7 @@ end
 ...
 
 """
-function simulation_fast(tr::Abstract2DTrajectory
+function simulation_fast(tr::Trajectory
                         , image::Matrix
                         , correctionMap = []
                         ; alpha::Float64 = 1.75
@@ -287,10 +312,10 @@ function simulation_fast(tr::Abstract2DTrajectory
     correctionMap = reshape(correctionMap,size(image))
   end
 
-  return simulation(tr,ComplexF64.(image),correctionMap;opName="fast", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
+  return simulation(tr, ComplexF64.(image), correctionMap;opName="fast", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
 end
 
-function simulation_explicit(tr::Abstract2DTrajectory
+function simulation_explicit(tr::Trajectory
                         , image::Matrix
                         , correctionMap = []
                         ; alpha::Float64 = 1.75
@@ -303,7 +328,8 @@ function simulation_explicit(tr::Abstract2DTrajectory
   if !isempty(correctionMap)
     correctionMap = reshape(correctionMap,size(image))
   end
-  return simulation(tr,ComplexF64.(image),correctionMap;opName="explicit", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
+
+  return simulation(tr, ComplexF64.(image), correctionMap;opName="explicit", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
 end
 
 """

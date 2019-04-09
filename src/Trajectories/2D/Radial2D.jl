@@ -1,51 +1,44 @@
-export RadialTrajectory
+export RadialTrajectory, radialNodes, radialDensity
 
-mutable struct RadialTrajectory <: Abstract2DTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  TE::Float64 # echo time in ms
-  AQ::Float64 # time for each spiral arm in ms
-  angleOffset::Symbol
+function RadialTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , angleOffset= :equispaced
+                  , kargs...)
+  nodes = radialNodes(numProfiles, numSamplingPerProfile; angleOffset=angleOffset)
+  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  return  Trajectory("Radial", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-function RadialTrajectory(numProfiles::Int64
+function radialNodes(numProfiles::Int64
                           , numSamplingPerProfile::Int64
-                          ; TE=0.0
-                          , AQ=1.0
-                          , angleOffset= :equispaced
+                          ; angleOffset= :equispaced
                           , kargs...)
-
-   RadialTrajectory(numProfiles, numSamplingPerProfile, TE, AQ, angleOffset)
-end
-
-string(tr::RadialTrajectory) = "Radial"
-
-function kspaceNodes(tr::RadialTrajectory)
-  nodes = zeros(2,tr.numSamplingPerProfile, tr.numProfiles)
-  if tr.angleOffset == :golden
-    angles = [i*getGoldenAngleRad()  for i=0:tr.numProfiles-1 ]
-  elseif tr.angleOffset == :random
-    angles = sort(pi .* rand(tr.numProfiles))
-  elseif tr.angleOffset == :equispaced
-    angles = collect(pi.*(0:tr.numProfiles-1)/tr.numProfiles)
+  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  if angleOffset == :golden
+    angles = [i*getGoldenAngleRad()  for i=0:numProfiles-1 ]
+  elseif angleOffset == :random
+    angles = sort(pi .* rand(numProfiles))
+  elseif angleOffset == :equispaced
+    angles = collect(pi.*(0:numProfiles-1)/numProfiles)
   end
 
 
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       nodes[1,k,l] = (-1)^l * pos[k]*cos(angles[l])
       nodes[2,k,l] = (-1)^l * pos[k]*sin(angles[l])
     end
   end
-  return reshape(nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+  return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function kspaceDensity(tr::RadialTrajectory)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles)
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+function radialDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
+  density = zeros(numSamplingPerProfile, numProfiles)
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       density[k,l] = abs(pos[k])
     end
   end

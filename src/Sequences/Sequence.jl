@@ -32,10 +32,10 @@ function sequence(seqName::AbstractString, trajName::AbstractString, numProfiles
   return SESequence(tr; kargs...)
 end
 
-function setTrajectory!(seq::AbstractSequence,tr::AbstractTrajectory, n=1)
+function setTrajectory!(seq::AbstractSequence,tr::Trajectory, n=1)
   seq.traj = tr
 end
 
-function setTrajectory!(seq::AbstractMultiEchoSequence,tr::AbstractTrajectory, n=1)
+function setTrajectory!(seq::AbstractMultiEchoSequence,tr::Trajectory, n=1)
   seq.traj[n] = tr
 end

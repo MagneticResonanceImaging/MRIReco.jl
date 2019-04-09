@@ -15,7 +15,7 @@ end
 #
 # Linear Operator to perform explicite reconstruction
 #
-function ExplicitOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory, correctionmap::Array{ComplexF64,D}
+function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
                         ; symmetrize::Bool=true
                         , echoImage::Bool=false) where D
 
@@ -45,7 +45,7 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory, correctionma
 end
 
 function produ(x::Vector{T}, shape::NTuple{2,Int64},
-                    nodes::Matrix{Float64}, times::Matrix{Float64}, echoOffset::Float64,
+                    nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
                     correctionmap::Matrix{ComplexF64}, density::Vector{Float64},
                     symmetrize::Bool) where T<:Union{Real,Complex}
    if symmetrize
@@ -74,7 +74,7 @@ function produ(x::Vector{T}, shape::NTuple{2,Int64},
 end
 
 function produ(x::Vector{T}, shape::NTuple{3,Int64},
-                    nodes::Matrix{Float64}, times::Array{Float64,3}, echoOffset::Float64,
+                    nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
                     correctionmap::Array{ComplexF64,3}, density::Vector{Float64},
                     symmetrize::Bool) where T<:Union{Real,Complex}
    if symmetrize
@@ -104,7 +104,7 @@ function produ(x::Vector{T}, shape::NTuple{3,Int64},
 end
 
 function ctprodu(x::Vector{T}, shape::NTuple{2,Int64},
-                        nodes::Matrix{Float64}, times::Matrix{Float64}, echoOffset::Float64,
+                        nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
                         correctionmap::Matrix{ComplexF64}, density::Vector{Float64},
                         symmetrize::Bool) where T<:Union{Real,Complex}
 
@@ -132,7 +132,7 @@ function ctprodu(x::Vector{T}, shape::NTuple{2,Int64},
 end
 
 function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
-                        nodes::Matrix{Float64}, times::Array{Float64,3}, echoOffset::Float64,
+                        nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
                         correctionmap::Array{ComplexF64,3}, density::Vector{Float64},
                         symmetrize::Bool) where T<:Union{Real,Complex}
 

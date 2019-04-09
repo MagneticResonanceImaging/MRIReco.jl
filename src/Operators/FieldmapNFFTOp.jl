@@ -26,7 +26,7 @@ end
 #
 # Linear Operator to perform NFFT
 #
-function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::AbstractTrajectory,
+function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{ComplexF64,D};
                         method::String="nfft",
                         symmetrize::Bool=true,

@@ -1,7 +1,7 @@
 export SESequence, echoAmplitudes, flipAngles, numEchoes, TE
 
 mutable struct SESequence <:AbstractSequence
-  traj :: AbstractTrajectory    # readout trajectory
+  traj :: Trajectory    # readout trajectory
 end
 
 # trajectory of the Sequence
@@ -19,10 +19,10 @@ echoTimes(seq::SESequence) = seq.traj.TE
 string(seq::SESequence) = "SE"
 
 function encoding(seq::SESequence)
-  tr_type = typeof(trajectory(seq))
-  if tr_type <: Abstract2DTrajectory
+  tr = trajectory(seq)
+  if dims(tr) == 2
     return "2D"
-  elseif tr_type <: Abstract3DTrajectory
+  elseif dims(tr) == 3
     return "3D"
   end
   return "other"

@@ -14,16 +14,16 @@ mutable struct FISPSequence <: AbstractMultiEchoSequence
   numEchoes :: Int64                    # number of RF pulses
   TE :: Float64                         # echo times relative to the previous RF pulse
   TI :: Float64                         # inversion time
-  traj :: Vector{AbstractTrajectory}    # readout trajectories
+  traj :: Vector{Trajectory}    # readout trajectories
 end
 
 function FISPSequence(numEchoes::Int64, TE::Float64, TI::Float64,  N::Int64)
   flipAngles = fill(1.0*pi, numEchoes)
-  traj = SimpleCartesianTrajectory(N,N,TE,1.e-3)
+  traj = traj = trajectory("Cartesian",N,N;TE=TE) #SimpleCartesianTrajectory(N,N,TE,1.e-3)
   FISPSequence(flipAngles, numEchoes, TE, traj)
 end
 
-function FISPSequence(tr::AbstractTrajectory; numEchoes=1, TE = 1.e-2, TI = 7.e-3, flipAngles=nothing, TR=nothing, kargs...)
+function FISPSequence(tr::Trajectory; numEchoes=1, TE = 1.e-2, TI = 7.e-3, flipAngles=nothing, TR=nothing, kargs...)
   alpha = zeros(numEchoes)
   if flipAngles==nothing
     alpha = fill(pi/2., numEchoes)

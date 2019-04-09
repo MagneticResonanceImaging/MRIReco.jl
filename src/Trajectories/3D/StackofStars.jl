@@ -1,52 +1,49 @@
-export StackOfStarsTrajectory
+export StackOfStarsTrajectory, stackOfStarsNodes, stackOfStarsDensity
 
-mutable struct StackOfStarsTrajectory <: StackedTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  numSlices::Int
-  TE::Float64 # echo time in ms
-  AQ::Float64 # time for each spiral arm in ms
-  angleOffset::Symbol
+function StackOfStarsTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , numSlices=1
+                  , angleOffset = :equispaced
+                  , kargs...)
+  nodes = cartesian3dNodes(numProfiles, numSamplingPerProfile; numSlices=numSlices, angleOffset = :equispaced)
+  times = readoutTimes(numProfiles, numSamplingPerProfile, numSlices; TE=TE, AQ=AQ)
+  return  Trajectory("StackOfStars", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, false, true)
 end
 
-StackOfStarsTrajectory(numProfiles, numSamplingPerProfile; numSlices=1, TE=0.0, AQ=1.0, angleOffset = :equispaced,kargs...) =
-   StackOfStarsTrajectory(numProfiles,numSamplingPerProfile,numSlices,TE,AQ,angleOffset)
+function stackOfStarsNodes(numProfiles, numSamplingPerProfile
+              ; numSlices=1, angleOffset = :equispaced, kargs...)
 
-string(tr::StackOfStarsTrajectory) = "StackOfStars"
-
-
-function kspaceNodes(tr::StackOfStarsTrajectory)
-
-  angles = collect(pi.*(0:tr.numProfiles-1)/tr.numProfiles)
-  nodes = zeros(3,tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-  if tr.angleOffset == :golden
-    angles = [i*getGoldenAngleRad()  for i=0:tr.numProfiles-1 ]
-  elseif tr.angleOffset == :random
-    angles = sort(pi .* rand(tr.numProfiles))
-  elseif tr.angleOffset == :equispaced
-    angles = collect(pi.*(0:tr.numProfiles-1)/tr.numProfiles)
+  angles = collect(pi.*(0:numProfiles-1)/numProfiles)
+  nodes = zeros(3,numSamplingPerProfile, numProfiles, numSlices)
+  if angleOffset == :golden
+    angles = [i*getGoldenAngleRad()  for i=0:numProfiles-1 ]
+  elseif angleOffset == :random
+    angles = sort(pi .* rand(numProfiles))
+  elseif angleOffset == :equispaced
+    angles = collect(pi.*(0:numProfiles-1)/numProfiles)
   end
 
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  posZ = collect((0:tr.numSlices-1)/tr.numSlices .- 0.5)
-  for j = 1:tr.numSlices
-    for l = 1:tr.numProfiles
-      for k = 1:tr.numSamplingPerProfile
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  posZ = collect((0:numSlices-1)/numSlices .- 0.5)
+  for j = 1:numSlices
+    for l = 1:numProfiles
+      for k = 1:numSamplingPerProfile
         nodes[1,k,l,j] = (-1)^l * pos[k]*cos(angles[l])
         nodes[2,k,l,j] = (-1)^l * pos[k]*sin(angles[l])
         nodes[3,k,l,j] = posZ[j]
       end
     end
   end
-  return reshape(nodes, 3, tr.numSamplingPerProfile*tr.numProfiles*tr.numSlices)
+  return reshape(nodes, 3, numSamplingPerProfile*numProfiles*numSlices)
 end
 
-function kspaceDensity(tr::StackOfStarsTrajectory)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for j= 1:tr.numSlices
-    for l = 1:tr.numProfiles
-      for k = 1:tr.numSamplingPerProfile
+function stackOfStarsDensity(numSamplingPerProfile::Int64, numProfiles::Int64, numSlices::Int64)
+  density = zeros(numSamplingPerProfile, numProfiles, numSlices)
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for j= 1:numSlices
+    for l = 1:numProfiles
+      for k = 1:numSamplingPerProfile
         density[k,l,j] = abs(pos[k])
       end
     end

@@ -1,59 +1,46 @@
-export EPITrajectory
+export EPITrajectory, epiNodes, epiDensity
 
-mutable struct EPITrajectory <: Abstract2DTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  TE::Real # echo time in ms
-  AQ::Real # time for each spiral arm in ms
-  EPI_factor # EPI factor, integer greater one
-  profileOffset::Symbol
+function EPITrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , EPI_factor::Int64=1
+                  , profileOffset= :equispaced
+                  , kargs...)
+  nodes = epiNodes(numProfiles, numSamplingPerProfile; EPI_factor=EPI_factor, profileOffset=profileOffset)
+  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  return Trajectory("EPI", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
-
-function EPITrajectory(numProfiles::Int64
+function epiNodes(numProfiles::Int64
                     , numSamplingPerProfile::Int64
-                    ; TE::Real=0.0
-                    , AQ::Real=1.0e-3
-                    , EPI_factor::Int64=1
+                    ; EPI_factor::Int64=1
                     , profileOffset= :equispaced
                     , kargs...)
+  nodes = zeros(2,numSamplingPerProfile, numProfiles)
 
-   EPITrajectory(numProfiles
-                , numSamplingPerProfile
-                , TE
-                , AQ
-                , EPI_factor
-                , profileOffset
-                )
-end
-string(tr::EPITrajectory) = "EPI"
-
-function kspaceNodes(tr::EPITrajectory)
-  nodes = zeros(2,tr.numSamplingPerProfile, tr.numProfiles)
-
-  if tr.profileOffset == :equispaced
-      samplesperline = tr.numSamplingPerProfile/tr.EPI_factor -1
-      for l = 1:tr.numProfiles
-        for gamma1 = 1:tr.EPI_factor
-          for gamma2 = 1:tr.numSamplingPerProfile/tr.EPI_factor
+  if profileOffset == :equispaced
+      samplesperline = numSamplingPerProfile/EPI_factor -1
+      for l = 1:numProfiles
+        for gamma1 = 1:EPI_factor
+          for gamma2 = 1:numSamplingPerProfile/EPI_factor
             # Node index
-            index = Int64( (gamma1-1) * (tr.numSamplingPerProfile/tr.EPI_factor) + gamma2 )
+            index = Int64( (gamma1-1) * (numSamplingPerProfile/EPI_factor) + gamma2 )
             # Nodes containing kx values, second index is the actual sample index, l profile index
             nodes[1,index,l] =  (-1)^(gamma1-1) * (gamma2-1) / samplesperline + ((gamma1-1) % 2 ) - 0.5
             # Nodes containing ky values, second index is the actual sample index, l profile index
-            nodes[2,index,l] = ( (l-1) + (gamma1-1)*tr.numProfiles)/(tr.numProfiles*tr.EPI_factor) - 0.5
+            nodes[2,index,l] = ( (l-1) + (gamma1-1)*numProfiles)/(numProfiles*EPI_factor) - 0.5
           end
         end
       end
-  elseif tr.profileOffset == :random
-      samplesperline = tr.numSamplingPerProfile/tr.EPI_factor -1
-      for l = 1:tr.numProfiles
+  elseif profileOffset == :random
+      samplesperline = numSamplingPerProfile/EPI_factor -1
+      for l = 1:numProfiles
         # Sorting the random samples
-        angleOffsets = sort(rand(tr.EPI_factor)-0.5)
-        for gamma1 = 1:tr.EPI_factor
-          for gamma2 = 1:tr.numSamplingPerProfile/tr.EPI_factor
+        angleOffsets = sort(rand(EPI_factor)-0.5)
+        for gamma1 = 1:EPI_factor
+          for gamma2 = 1:numSamplingPerProfile/EPI_factor
             # Node index
-            index = Int64( (gamma1-1) * (tr.numSamplingPerProfile/tr.EPI_factor) + gamma2 )
+            index = Int64( (gamma1-1) * (numSamplingPerProfile/EPI_factor) + gamma2 )
             # Nodes containing kx values, second index is the actual sample index, l profile index
             nodes[1,index,l] =  (-1)^(gamma1-1) * (gamma2-1) / samplesperline + ((gamma1-1) % 2 ) - 0.5
             # Nodes containing ky values, second index is the actual sample index, l profile index
@@ -62,9 +49,9 @@ function kspaceNodes(tr::EPITrajectory)
         end
       end
   end
-  return reshape(nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+  return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function kspaceDensity(tr::EPITrajectory)
-
+function epiDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
+  @error "not implement yet"
 end

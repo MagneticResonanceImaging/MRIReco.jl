@@ -1,42 +1,46 @@
-export SimpleCartesianTrajectory
+export CartesianTrajectory, cartesianTrajectory2dNodes, cartesian2dDensity
 
-# FIXME: Why is this called "Simple?"
-
-mutable struct SimpleCartesianTrajectory <: CartesianTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  TE::Float64 # echo time in s
-  AQ::Float64 # time for each spiral arm in s
+function CartesianTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , kmin=(-0.5,-0.5)
+                  , kmax=(0.5,0.5)
+                  , kargs...)
+  nodes = cartesian2dNodes(numProfiles, numSamplingPerProfile; kmin=kmin,kmax=kmax)
+  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  return  Trajectory("Cartesian", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
-# SimpleCartesianTrajectory(numProfiles, numSamplingPerProfile) =
-#    SimpleCartesianTrajectory(numProfiles, numSamplingPerProfile, 0.0, 1.0)
+function cartesian2dNodes(numProfiles, numSamplingPerProfile
+                  ; kmin=(-0.5,-0.5)
+                  , kmax=(0.5,0.5)
+                  , kargs...)
 
-SimpleCartesianTrajectory(numProfiles, numSamplingPerProfile; TE=0.0, AQ=1.0e-3, kargs...) =
-   SimpleCartesianTrajectory(numProfiles, numSamplingPerProfile, TE, AQ)
+  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  posX = collect( -ceil(Int64, (numSamplingPerProfile-1)/2.):floor(Int64, (numSamplingPerProfile-1)/2.) ) / numSamplingPerProfile
+  posY = collect( -ceil(Int64, (numProfiles-1)/2.):floor(Int64, (numProfiles-1)/2.) ) / numProfiles
 
-string(tr::SimpleCartesianTrajectory) = "Cartesian"
-
-function kspaceNodes(tr::SimpleCartesianTrajectory)
-  nodes = zeros(2,tr.numSamplingPerProfile, tr.numProfiles)
-  # posX = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  # posY = collect((0:tr.numProfiles-1)/tr.numProfiles .- 0.5)
-  posX = collect( -ceil(Int64, (tr.numSamplingPerProfile-1)/2.):floor(Int64, (tr.numSamplingPerProfile-1)/2.) ) / tr.numSamplingPerProfile
-  posY = collect( -ceil(Int64, (tr.numProfiles-1)/2.):floor(Int64, (tr.numProfiles-1)/2.) ) / tr.numProfiles
-
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       nodes[1,k,l] = posX[k]
       nodes[2,k,l] = posY[l]
     end
   end
-  return reshape(nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+
+  # rescale nodes according to the region covered by kmin & kmax
+  nodes[1,:,:] .*= (kmax[1]-kmin[1])
+  nodes[2,:,:] .*= (kmax[2]-kmin[2])
+  # shift nodes to the region defined by kmin & kmax
+  nodes[1,:,:] .+= 0.5*(kmin[1]+kmax[1])
+  nodes[2,:,:] .+= 0.5*(kmin[2]+kmax[2])
+
+  return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function kspaceDensity(tr::SimpleCartesianTrajectory)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+function cartesian2dDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
+  density = zeros(numSamplingPerProfile, numProfiles)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       density[k,l] = 1
     end
   end

@@ -197,10 +197,9 @@ function trajectory(f::ISMRMRD)
     numSl = length(unique(sl))
     numRep = length(unique(rep))
 
-
-    return CustomTrajectory(div(size(f.traj,3),numSl*numRep),
-                            size(f.traj,2),
-                            vec(f.traj[:,:,1:div(size(f.traj,3),numSl*numRep)]))
+    return Trajectory(reshape(f.traj[:,:,1:div(size(f.traj,3),numSl*numRep)],2,:),
+                      div(size(f.traj,3),numSl*numRep),
+                      size(f.traj,2), circular=true)
   end
   return nothing
 end

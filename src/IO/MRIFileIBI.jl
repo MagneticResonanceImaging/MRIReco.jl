@@ -67,7 +67,7 @@ end
 
 ### writing ###
 
-function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr::AbstractTrajectory) where T<:Real
+function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr::Trajectory) where T<:Real
 
 
   h5open(filename, "w") do file

@@ -1,37 +1,34 @@
-export RandomKooshballTrajectory
+export RandomKooshballTrajectory, randomKooshballNodes, randomKooshballDensity
 
-mutable struct RandomKooshballTrajectory <: Real3DTrajectory
- numProfiles::Int
- numSamplingPerProfile::Int
- TE::Float64 # echo time in ms
- AQ::Float64 # time for each spiral arm in ms
+function RandomKooshballTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , kargs...)
+  nodes = randomKooshballNodes(numProfiles, numSamplingPerProfile; numSlices=1)
+  times = kooshballTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  return  Trajectory("RandomKooshball", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-RandomKooshballTrajectory(numProfiles, numSamplingPerProfile; TE=0.0, AQ=1.0, kargs...) =
-    RandomKooshballTrajectory(numProfiles, numSamplingPerProfile, TE, AQ)
+function randomKooshballNodes(numProfiles, numSamplingPerProfile; kargs...)
+  nodes = zeros(3,numSamplingPerProfile, numProfiles)
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  profileList = shuffle_vector([i for i=1:numProfiles])
 
-string(tr::RandomKooshballTrajectory) = "RandomKooshball"
-
-function kspaceNodes(tr::RandomKooshballTrajectory)
-  nodes = zeros(3,tr.numSamplingPerProfile, tr.numProfiles)
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  profileList = shuffle_vector([i for i=1:tr.numProfiles])
-
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
-      nodes[1,k,l] = (-1)^l * pos[k]*xax(profileList[l],2*tr.numProfiles)
-      nodes[2,k,l] = (-1)^l * pos[k]*yax(profileList[l],2*tr.numProfiles)
-      nodes[3,k,l] = (-1)^l * pos[k]*zax(profileList[l],2*tr.numProfiles)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
+      nodes[1,k,l] = (-1)^l * pos[k]*xax(profileList[l],2*numProfiles)
+      nodes[2,k,l] = (-1)^l * pos[k]*yax(profileList[l],2*numProfiles)
+      nodes[3,k,l] = (-1)^l * pos[k]*zax(profileList[l],2*numProfiles)
     end
   end
-  return reshape(nodes, 3, tr.numSamplingPerProfile*tr.numProfiles)
+  return reshape(nodes, 3, numSamplingPerProfile*numProfiles)
 end
 
-function kspaceDensity(tr::RandomKooshballTrajectory)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles)
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+function randomKooshballDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
+  density = zeros(numSamplingPerProfile, numProfiles)
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       density[k,l] = abs(pos[k])
     end
   end

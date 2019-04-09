@@ -1,45 +1,39 @@
-export CartesianTrajectory3D
+export CartesianTrajectory3D, cartesian3dNodes, cartesian3dDensity
 
-mutable struct CartesianTrajectory3D <: StackedTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  numSlices::Int
-  TE::Float64 # echo time in s
-  AQ::Float64 # time for each spiral arm in s
+function CartesianTrajectory3D(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , numSlices=1
+                  , kargs...)
+  nodes = cartesian3dNodes(numProfiles, numSamplingPerProfile; numSlices=numSlices)
+  times = readoutTimes(numProfiles, numSamplingPerProfile, numSlices; TE=TE, AQ=AQ)
+  return  Trajectory("Cartesian3D", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, true, false)
 end
 
-CartesianTrajectory3D(numProfiles, numSamplingPerProfile; numSlices=1, TE=0.0, AQ=1.0e-3, kargs...) =
-   CartesianTrajectory3D(numProfiles, numSamplingPerProfile, numSlices, TE, AQ)
+function cartesian3dNodes(numProfiles, numSamplingPerProfile
+                          ; numSlices=1, kargs...)
+  nodes = zeros(3,numSamplingPerProfile, numProfiles, numSlices)
+  posX = collect( -ceil(Int64, (numSamplingPerProfile-1)/2.):floor(Int64, (numSamplingPerProfile-1)/2.) ) / numSamplingPerProfile
+  posY = collect( -ceil(Int64, (numProfiles-1)/2.):floor(Int64, (numProfiles-1)/2.) ) / numProfiles
+  posZ = collect( -ceil(Int64, (numSlices-1)/2.):floor(Int64, (numSlices-1)/2.) ) / numSlices
 
-string(tr::CartesianTrajectory3D) = "Cartesian3D"
-
-
-function kspaceNodes(tr::CartesianTrajectory3D)
-  nodes = zeros(3,tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-  # posX = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  # posY = collect((0:tr.numProfiles-1)/tr.numProfiles .- 0.5)
-  # posZ = collect((0:tr.numSlices-1)/tr.numSlices .- 0.5)
-  posX = collect( -ceil(Int64, (tr.numSamplingPerProfile-1)/2.):floor(Int64, (tr.numSamplingPerProfile-1)/2.) ) / tr.numSamplingPerProfile
-  posY = collect( -ceil(Int64, (tr.numProfiles-1)/2.):floor(Int64, (tr.numProfiles-1)/2.) ) / tr.numProfiles
-  posZ = collect( -ceil(Int64, (tr.numSlices-1)/2.):floor(Int64, (tr.numSlices-1)/2.) ) / tr.numSlices
-
-  for j = 1:tr.numSlices
-    for l = 1:tr.numProfiles
-      for k = 1:tr.numSamplingPerProfile
+  for j = 1:numSlices
+    for l = 1:numProfiles
+      for k = 1:numSamplingPerProfile
         nodes[1,k,l,j] = posX[k]
         nodes[2,k,l,j] = posY[l]
         nodes[3,k,l,j] = posZ[j]
       end
     end
   end
-  return reshape(nodes, 3, tr.numSamplingPerProfile*tr.numProfiles*tr.numSlices)
+  return reshape(nodes, 3, numSamplingPerProfile*numProfiles*numSlices)
 end
 
-function kspaceDensity(tr::CartesianTrajectory3D)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-  for j = 1:tr.numSlices
-    for l = 1:tr.numProfiles
-      for k = 1:tr.numSamplingPerProfile
+function cartesian3dDensity(numSamplingPerProfile::Int64, numProfiles::Int64, numSlices::Int64)
+  density = zeros(numSamplingPerProfile, numProfiles, numSlices)
+  for j = 1:numSlices
+    for l = 1:numProfiles
+      for k = 1:numSamplingPerProfile
         density[k,l,j] = 1
       end
     end

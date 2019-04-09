@@ -12,16 +12,16 @@ mutable struct FSESequence <: AbstractMultiEchoSequence
   flipAngles :: Vector{Float64}         # flip angles
   numEchoes :: Int64                    # number of RF pulses
   TE :: Float64                         # echo times relative to the previous RF pulse
-  traj :: Vector{AbstractTrajectory}    # readout trajectories
+  traj :: Vector{Trajectory}    # readout trajectories
 end
 
 function FSESequence(numEchoes::Int64, TE::Float64, N::Int64)
   flipAngles = fill(1.0*pi, numEchoes)
-  traj = SimpleCartesianTrajectory(N,N,TE,1.e-3)
+  traj = trajectory("Cartesian",N,N;TE=TE) #SimpleCartesianTrajectory(N,N,TE,1.e-3)
   FSESequence(flipAngles, numEchoes, TE, traj)
 end
 
-function FSESequence(tr::AbstractTrajectory; numEchoes=1, TE = 1.e-3, flipAngles=nothing, kargs...)
+function FSESequence(tr::Trajectory; numEchoes=1, TE = 1.e-3, flipAngles=nothing, kargs...)
    alpha = zeros(numEchoes)
   if flipAngles==nothing
     alpha = fill(180, numEchoes)
@@ -97,10 +97,10 @@ function epgAmplitudes(pulse::FSESequence, R1::Real, R2::Real)
 end
 
 function encoding(seq::FSESequence)
-  tr_type = typeof(trajectory(seq,1))
-  if tr_type <: Abstract2DTrajectory
+  tr = trajectory(seq)
+  if dims(tr) == 2
     return "2D"
-  elseif tr_type <: Abstract3DTrajectory
+  elseif dims(tr) == 3
     return "3D"
   end
   return "other"

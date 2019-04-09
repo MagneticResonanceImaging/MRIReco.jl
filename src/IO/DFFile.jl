@@ -18,7 +18,7 @@ function trajectory(f::DFFile; kargs...)
     return numSamplingPerProfile, numProfiles, nodes
   end
 
-  return CustomTrajectory(numProfiles, numSamplingPerProfile, vec(nodes); kargs...)
+  return Trajectory(reshape(nodes,2,:), numProfiles, numSamplingPerProfile; kargs...)
 end
 
 function rawdata(f::DFFile)

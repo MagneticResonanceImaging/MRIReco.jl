@@ -154,7 +154,7 @@ return 2d Fourier encoding operator (either Explicit, FFT or NFFT)
   symmetrize : symmetrizes the operator
   echoImage : calculate signal evolution relative to the echo time
 """
-function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::AbstractTrajectory, opName::String;
+function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::String;
           slice::Int64=1, correctionMap=[], symmetrize::Bool=true, echoImage::Bool=true,
           method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
 
@@ -198,7 +198,7 @@ return 3d Fourier encoding operator (either Explicit, FFT or NFFT)
   symmetrize : symmetrizes the operator
   echoImage : calculate signal evolution relative to the echo time
 """
-function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::AbstractTrajectory, opName::String;
+function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::Trajectory, opName::String;
           correctionMap=[], symmetrize::Bool=true, echoImage::Bool=true,
           method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
 

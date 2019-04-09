@@ -1,37 +1,34 @@
-export OneLine2DTrajectory
+export OneLine2Trajectory, oneLine2dNodes, oneLine2dDensity
 
-mutable struct OneLine2DTrajectory <: Abstract2DTrajectory
-  numProfiles::Int
-  numSamplingPerProfile::Int
-  angle::Float64
-  TE::Float64 # echo time in ms
-  AQ::Float64 # time for each spiral arm in ms
+function OneLine2dTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , angle::Float64=0.0
+                  , kargs...)
+  nodes = oneLine2dNodes(numProfiles, numSamplingPerProfile; angle=angle)
+  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  return  Trajectory("OneLine", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-OneLine2DTrajectory(numProfiles, numSamplingPerProfile;angle=0.0, TE=0.0, AQ=1.0, kargs...) =
-   OneLine2DTrajectory(numProfiles, numSamplingPerProfile, angle,TE, AQ)
-
-string(tr::OneLine2DTrajectory) = "OneLine"
-
-function kspaceNodes(tr::OneLine2DTrajectory)
-  nodes = zeros(2,tr.numSamplingPerProfile, tr.numProfiles)
-  angles = zeros(Float64,tr.numProfiles)
-  angles[:] .= tr.angle
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+function oneLine2dNodes(numProfiles, numSamplingPerProfile; angle::Float64=0.0, kargs...)
+  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  angles = zeros(Float64,numProfiles)
+  angles[:] .= angle
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       nodes[1,k,l] = (-1)^l * pos[k]*cos(angles[l])
       nodes[2,k,l] = (-1)^l * pos[k]*sin(angles[l])
     end
   end
-  return reshape(nodes, 2, tr.numSamplingPerProfile*tr.numProfiles)
+  return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function kspaceDensity(tr::OneLine2DTrajectory)
-  density = zeros(tr.numSamplingPerProfile, tr.numProfiles)
-  pos = collect((0:tr.numSamplingPerProfile-1)/tr.numSamplingPerProfile .- 0.5)
-  for l = 1:tr.numProfiles
-    for k = 1:tr.numSamplingPerProfile
+function oneLine2dDensity(numSamplingPerProfile::Int64, numProfiles::Int64)
+  density = zeros(tr.numSamplingPerProfile, numProfiles)
+  pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
+  for l = 1:numProfiles
+    for k = 1:numSamplingPerProfile
       density[k,l] = abs(pos[k])
     end
   end
