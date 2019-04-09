@@ -12,14 +12,12 @@ end
 
 f = ISMRMRD(filename)
 
-@test f.head[1].version == Int16(0)
-@test f.head[1].measurement_uid == Int32(37)
-@test f.head[1].scan_counter == Int32(1)
-@test f.head[1].number_of_samples == Int16(256)
-@test f.head[1].available_channels == Int16(32)
-@test f.head[1].active_channels == Int16(32)
-
-@test size(f.data) == (256, 32, 1281)
+@test f.profiles[1].head.version == Int16(0)
+@test f.profiles[1].head.measurement_uid == Int32(37)
+@test f.profiles[1].head.scan_counter == Int32(1)
+@test f.profiles[1].head.number_of_samples == Int16(256)
+@test f.profiles[1].head.available_channels == Int16(32)
+@test f.profiles[1].head.active_channels == Int16(32)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
@@ -40,7 +38,6 @@ if !isfile(filename)
 end
 
 f = ISMRMRD(filename)
-@test size(f.data) == (909, 32, 160)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"

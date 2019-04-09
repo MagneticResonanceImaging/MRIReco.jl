@@ -41,13 +41,109 @@ struct AcquisitionHeader
   user_float::Vector{Float32}
 end
 
-struct Profile
+mutable struct Profile
   head::AcquisitionHeader
   traj::Array{Float32,2}
   data::Array{Complex{Float32},2}
 end
 
-struct RawAcquisitionData
+mutable struct RawAcquisitionData
   params::Dict{String, Any}
   profiles::Vector{Profile}
+end
+
+
+
+
+function trajectory(f::RawAcquisitionData)
+  if f.params["trajectory"] == "cartesian"
+    return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
+                                   f.params["encodedMatrixSize"][1])
+
+  elseif f.params["trajectory"] == "spiral"
+
+    encSt1 = encSteps1(f)
+    encSt2 = encSteps2(f)
+    sl = slices(f)
+    rep = repetitions(f)
+
+    numSl = length(unique(sl))
+    numRep = length(unique(rep))
+    numEncSt1 = length(unique(encSt1))
+    numEncSt2 = length(unique(encSt2))
+
+    numSampPerProfile = size(f.profiles[1].data,1)
+    numChannels = size(f.profiles[1].data,2)
+    D = Int(f.profiles[1].head.trajectory_dimensions)
+
+    # remove data that should be discarded
+    i1 = f.profiles[1].head.discard_pre + 1
+    i2 = numSampPerProfile - f.profiles[1].head.discard_post
+
+    traj = zeros(Float32, D, length(i1:i2), numEncSt1, numEncSt2, numSl, numRep)
+
+    for l=1:length(f.profiles)
+      traj[:, :, encSt1[l], encSt2[l], sl[l], rep[l]] .= f.profiles[l].traj[:,i1:i2]
+    end
+
+    traj_ = reshape(traj[:,:,:,:,1,1], D, :)
+    return Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
+  end
+  return nothing
+end
+
+
+function sequence(f::RawAcquisitionData)
+  # TODO
+end
+
+
+function numChannels(f::RawAcquisitionData)
+  return f.params["receiverChannels"]
+end
+
+encSteps1(f::RawAcquisitionData) =
+   [f.profiles[l].head.idx.kspace_encode_step_1+1 for l=1:length(f.profiles)]
+encSteps2(f::RawAcquisitionData) =
+   [f.profiles[l].head.idx.kspace_encode_step_2+1 for l=1:length(f.profiles)]
+slices(f::RawAcquisitionData) =
+   [f.profiles[l].head.idx.slice+1 for l=1:length(f.profiles)]
+repetitions(f::RawAcquisitionData) =
+   [f.profiles[l].head.idx.repetition+1 for l=1:length(f.profiles)]
+
+
+function rawdata(f::RawAcquisitionData)
+  encSt1 = encSteps1(f)
+  encSt2 = encSteps2(f)
+  sl = slices(f)
+  rep = repetitions(f)
+
+  numSl = length(unique(sl))
+  numRep = length(unique(rep))
+  numEncSt1 = length(unique(encSt1))
+  numEncSt2 = length(unique(encSt2))
+
+  numSampPerProfile = size(f.profiles[1].data,1)
+  numChannels = size(f.profiles[1].data,2)
+
+  # remove data that should be discarded
+  i1 = f.profiles[1].head.discard_pre + 1
+  i2 = numSampPerProfile - f.profiles[1].head.discard_post
+
+  sorted = zeros(ComplexF32, length(i1:i2), numEncSt1, numEncSt2,
+                 numChannels, numSl, numRep)
+
+  for l=1:length(f.profiles)
+    sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.profiles[l].data[i1:i2,:]
+  end
+
+  return map(ComplexF64, vec(sorted))
+end
+
+function acquisitionData(f::RawAcquisitionData)
+  return AcquisitionData(trajectory(f), rawdata(f),
+                          numCoils=numChannels(f),
+                          numEchoes=1,
+                          numSlices=length(unique(slices(f)))*length(unique(repetitions(f))),
+                          encodingSize=f.params["encodedMatrixSize"] )
 end

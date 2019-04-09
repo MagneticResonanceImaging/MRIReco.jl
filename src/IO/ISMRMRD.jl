@@ -1,54 +1,4 @@
-export ISMRMRD, ISMRMRDEncodingCounters, ISMRMRDAcquisitionHeader, numRepetitions
-
-struct ISMRMRDEncodingCounters
-  kspace_encode_step_1::Int16
-  kspace_encode_step_2::Int16
-  average::Int16
-  slice::Int16
-  contrast::Int16
-  phase::Int16
-  repetition::Int16
-  set::Int16
-  segment::Int16
-  user::Vector{Int16}
-end
-
-struct ISMRMRDAcquisitionHeader
-  version::Int16
-  flags::Int64
-  measurement_uid::Int32
-  scan_counter::Int32
-  acquisition_time_stamp::Int32
-  physiology_time_stamp::Vector{Int32}
-  number_of_samples::Int16
-  available_channels::Int16
-  active_channels::Int16
-  channel_mask::Vector{Int64}
-  discard_pre::Int16
-  discard_post::Int16
-  center_sample::Int16
-  encoding_space_ref::Int16
-  trajectory_dimensions::Int16
-  sample_time_us::Float32
-  position::Vector{Float32}
-  read_dir::Vector{Float32}
-  phase_dir::Vector{Float32}
-  slice_dir::Vector{Float32}
-  patient_table_position::Vector{Float32}
-  idx::ISMRMRDEncodingCounters
-  user_int::Vector{Int32}
-  user_float::Vector{Float32}
-end
-
-
-struct ISMRMRD <: MRIFile
-  filename::String
-  params::Dict
-  head::Array{ISMRMRDAcquisitionHeader,1}
-  traj::Array{Float32,3}
-  data::Array{Complex{Float32},3}
-  xdoc
-end
+export ISMRMRD
 
 function ISMRMRD(filename::String)
   headerStr = h5read(filename, "/dataset/xml")
@@ -60,51 +10,39 @@ function ISMRMRD(filename::String)
 
   M = length(d)
 
-  head = ISMRMRDAcquisitionHeader[]
-  traj = Float32[]
-  data = Any[]
+  profiles = Profile[]
 
   chan = header["receiverChannels"]
 
   for m=1:M
 
-    push!(head, read_header(d[m].data[1]))
+    head = read_header(d[m].data[1])
+    D = Int(head.trajectory_dimensions)
 
     N = reinterpret(Int64, d[m].data[2][1:8])[1]
     if N > 0
       ptr = reinterpret(Int64, d[m].data[2][9:end])[1]
-      U = unsafe_wrap(Array,Ptr{Float32}(ptr),(N,))
-      append!(traj, U)
+      traj = unsafe_wrap(Array,Ptr{Float32}(ptr),(D,div(N,D)))
+    else
+      traj = Matrix{Float32}(undef,0,0)
     end
 
     N = reinterpret(Int64, d[m].data[3][1:8])[1]
     if N > 0
       ptr = reinterpret(Int64, d[m].data[3][9:end])[1]
       U = unsafe_wrap(Array,Ptr{ComplexF32}(ptr),(div(N,2),))
-      push!(data, reshape(U,div(N,2*chan),chan))
+      dat = reshape(U,div(N,2*chan),chan)
+    else
+      dat = Matrix{ComplexF32}(undef,0,0)
     end
+
+    push!(profiles, Profile(head,traj,dat) )
+
   end
 
-  dataNew_ = zeros(ComplexF32, size(data[1],1), size(data[1],2), length(data) )
-  for m=1:M
-    dataNew_[:,:,m] = data[m]
-  end
-
-  # remove data that should be discarded
-  i1 = head[1].discard_pre + 1
-  i2 = size(data[1],1) - head[1].discard_post
-
-  dataNew = dataNew_[i1:i2,:,:]
-
-  if !isempty(traj)
-    trajNew_ = reshape(traj, Int(head[1].trajectory_dimensions), :, M)
-    trajNew = trajNew_[:,i1:i2,:]
-  else
-    trajNew = zeros(Float32,0,0,0)
-  end
-
-  return ISMRMRD(filename, header, head, trajNew, dataNew, xdoc)
+  return RawAcquisitionData(header, profiles)
 end
+
 
 function parse_xml_header(xdoc)
   header = Dict{String,Any}()
@@ -165,13 +103,13 @@ function read_header(header)
   segment = read(buf,Int16)
   user = read!(buf,zeros(Int16,8))
   ###
-  idx = ISMRMRDEncodingCounters(kspace_encode_step_1,kspace_encode_step_2,
+  idx = EncodingCounters(kspace_encode_step_1,kspace_encode_step_2,
                       average,slice,contrast,phase,repetition,set,segment,user)
 
   user_int = read!(buf,zeros(Int32,8))
   user_float = read!(buf,zeros(Float32,8))
 
-  head = ISMRMRDAcquisitionHeader( version, flags, measurement_uid,
+  head = AcquisitionHeader( version, flags, measurement_uid,
     scan_counter, acquisition_time_stamp, physiology_time_stamp, number_of_samples,
     available_channels, active_channels, channel_mask, discard_pre, discard_post,
     center_sample, encoding_space_ref, trajectory_dimensions,sample_time_us,
@@ -180,86 +118,4 @@ function read_header(header)
     )
 
   return head
-end
-
-
-function trajectory(f::ISMRMRD)
-  if f.params["trajectory"] == "cartesian"
-    return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
-                                   f.params["encodedMatrixSize"][1])
-                                   
-  elseif f.params["trajectory"] == "spiral"
-
-    # this code makes assumptions!!!
-
-    sl = slices(f)
-    rep = repetitions(f)
-
-    numSl = length(unique(sl))
-    numRep = length(unique(rep))
-
-    return Trajectory(reshape(f.traj[:,:,1:div(size(f.traj,3),numSl*numRep)],2,:),
-                      div(size(f.traj,3),numSl*numRep),
-                      size(f.traj,2), circular=true)
-  end
-  return nothing
-end
-
-
-function sequence(f::ISMRMRD)
-  # TODO
-end
-
-function numRepetitions(f::ISMRMRD)
-  f.head[end].idx.repetition - f.head[1].idx.repetition + 1
-end
-
-function numChannels(f::ISMRMRD)
-  return f.params["receiverChannels"]
-end
-
-function findIndices(f::ISMRMRD, repetition=1, slice=1)
-  idx = zeros(Int,f.params["encodedMatrixSize"][2])
-  i = 1
-  for l=1:length(f.head)
-    if f.head[l].idx.slice+1 == slice #&&
-       #f.head[l].idx.repetition+1 == repetition
-      idx[ f.head[l].idx.kspace_encode_step_1+1 ] = l
-    end
-  end
-  return idx
-end
-
-encSteps1(f::ISMRMRD) = [f.head[l].idx.kspace_encode_step_1+1 for l=1:length(f.head)]
-encSteps2(f::ISMRMRD) = [f.head[l].idx.kspace_encode_step_2+1 for l=1:length(f.head)]
-slices(f::ISMRMRD) = [f.head[l].idx.slice+1 for l=1:length(f.head)]
-repetitions(f::ISMRMRD) = [f.head[l].idx.repetition+1 for l=1:length(f.head)]
-
-
-function rawdata(f::ISMRMRD)
-  encSt1 = encSteps1(f)
-  encSt2 = encSteps2(f)
-  sl = slices(f)
-  rep = repetitions(f)
-
-  numSl = length(unique(sl))
-  numRep = length(unique(rep))
-  numEncSt1 = length(unique(encSt1))
-  numEncSt2 = length(unique(encSt2))
-
-  N = size(f.data)
-  sorted = zeros(eltype(f.data), N[1], numEncSt1, numEncSt2, N[2], numSl, numRep)
-  for l=1:length(slices(f))
-    sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.data[:,:,l]
-  end
-
-  return map(ComplexF64, vec(sorted))
-end
-
-function acquisitionData(f::ISMRMRD)
-  return AcquisitionData(trajectory(f), rawdata(f),
-                          numCoils=numChannels(f),
-                          numEchoes=1,
-                          numSlices=length(unique(slices(f)))*length(unique(repetitions(f))),
-                          encodingSize=f.params["encodedMatrixSize"] )
 end
