@@ -62,6 +62,8 @@ if !isfile(filename)
   end
 end
 
+f = ISMRMRD(filename)
+#@test size(f.data) == (909, 32, 160)
 
 end
 

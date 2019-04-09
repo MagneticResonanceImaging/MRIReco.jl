@@ -187,6 +187,7 @@ function trajectory(f::ISMRMRD)
   if f.params["trajectory"] == "cartesian"
     return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
                                    f.params["encodedMatrixSize"][1])
+                                   
   elseif f.params["trajectory"] == "spiral"
 
     # this code makes assumptions!!!
