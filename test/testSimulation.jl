@@ -18,7 +18,7 @@ function test_kdataMultipleSlices(N::Int64=32)
     @info "Testing simulating multiple 2d-slices with NFFT and exact evauluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.6*sh,0.3*sh,dims=3)
-    tr = SimpleCartesianTrajectory(N,N)
+    tr = CartesianTrajectory(N,N)
     println("Simulating kdata using NFFT")
     @time acqDataNFFT = simulation(tr,I,opName="fast")
     @info "Simulating kdata rigorously"
@@ -116,7 +116,7 @@ end
 function test_changeEncodingSize(N=32)
     @info "Testing reduction of encoding size"
     I = shepp_logan(N)
-    tr = SimpleCartesianTrajectory(2*N,2*N)
+    tr = CartesianTrajectory(2*N,2*N)
     acqData = simulation_fast(tr,I)
     acqData.encodingSize = [2*N,2*N]
     acqData2 = MRIReco.changeEncodingSize2D(acqData, [N,N])
