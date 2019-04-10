@@ -2,9 +2,8 @@ export ISMRMRD
 
 function ISMRMRD(filename::String)
   headerStr = h5read(filename, "/dataset/xml")
-  xdoc = parse_string(headerStr[1])
 
-  header = parse_xml_header(xdoc)
+  params = GeneralParameters(headerStr[1])
 
   d = h5read(filename, "/dataset/data")
 
@@ -12,7 +11,7 @@ function ISMRMRD(filename::String)
 
   profiles = Profile[]
 
-  chan = header["receiverChannels"]
+  chan = params["receiverChannels"]
 
   for m=1:M
 
@@ -40,27 +39,9 @@ function ISMRMRD(filename::String)
 
   end
 
-  return RawAcquisitionData(header, profiles)
+  return RawAcquisitionData(params, profiles)
 end
 
-
-function parse_xml_header(xdoc)
-  header = Dict{String,Any}()
-
-  e = get_elements_by_tagname(LightXML.root(xdoc),"acquisitionSystemInformation")[1]
-
-  header["receiverChannels"] = parse(Int,content(get_elements_by_tagname(e,"receiverChannels")[1]))
-
-  e = get_elements_by_tagname(LightXML.root(xdoc),"encoding")[1]
-  header["trajectory"] = content(get_elements_by_tagname(e,"trajectory")[1])
-
-  e = LightXML.root(xdoc)["encoding"][1]["encodedSpace"][1]["matrixSize"][1]
-  header["encodedMatrixSize"] = [parse(Int,content(e["x"][1])),
-                          parse(Int,content(e["y"][1])),
-                          parse(Int,content(e["z"][1]))]
-
-  return header
-end
 
 function read_header(header)
   buf = IOBuffer(header)

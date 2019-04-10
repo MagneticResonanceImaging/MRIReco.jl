@@ -53,12 +53,10 @@ mutable struct RawAcquisitionData
 end
 
 
-
-
 function trajectory(f::RawAcquisitionData)
   if f.params["trajectory"] == "cartesian"
-    return trajectory("Cartesian", f.params["encodedMatrixSize"][2],
-                                   f.params["encodedMatrixSize"][1])
+    return trajectory("Cartesian", f.params["encodedSize"][2],
+                                   f.params["encodedSize"][1])
 
   elseif f.params["trajectory"] == "spiral"
 
@@ -124,14 +122,14 @@ function rawdata(f::RawAcquisitionData)
   numEncSt2 = length(unique(encSt2))
 
   numSampPerProfile = size(f.profiles[1].data,1)
-  numChannels = size(f.profiles[1].data,2)
+  numChan = size(f.profiles[1].data,2)
 
   # remove data that should be discarded
   i1 = f.profiles[1].head.discard_pre + 1
   i2 = numSampPerProfile - f.profiles[1].head.discard_post
 
   sorted = zeros(ComplexF32, length(i1:i2), numEncSt1, numEncSt2,
-                 numChannels, numSl, numRep)
+                 numChan, numSl, numRep)
 
   for l=1:length(f.profiles)
     sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.profiles[l].data[i1:i2,:]
@@ -145,5 +143,5 @@ function acquisitionData(f::RawAcquisitionData)
                           numCoils=numChannels(f),
                           numEchoes=1,
                           numSlices=length(unique(slices(f)))*length(unique(repetitions(f))),
-                          encodingSize=f.params["encodedMatrixSize"] )
+                          encodingSize=f.params["encodedSize"] )
 end
