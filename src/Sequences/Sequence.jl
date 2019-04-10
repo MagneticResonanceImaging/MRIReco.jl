@@ -1,4 +1,4 @@
-export AbstractSequence, AbstractMultiEchoSequence, echoAmplitudes, numEchoes, echoTimes, sequence, setTrajectory!
+export AbstractSequence, AbstractMultiEchoSequence, echoAmplitudes, numEchoes, echoTimes, sequence, sequenceInfo
 
 abstract type AbstractSequence end
 
@@ -11,6 +11,7 @@ abstract type AbstractMultiEchoSequence <: AbstractSequence end
 @mustimplement echoAmplitudes(seq::AbstractSequence,R1::Float64,R2::Float64)
 @mustimplement numEchoes(seq::AbstractSequence)
 @mustimplement encoding(seq::AbstractSequence)
+@mustimplement string(seq::AbstractSequence)
 
 include("BlochSimulation.jl")
 include("FSE.jl")
@@ -32,10 +33,11 @@ function sequence(seqName::AbstractString, trajName::AbstractString, numProfiles
   return SESequence(tr; kargs...)
 end
 
-function setTrajectory!(seq::AbstractSequence,tr::Trajectory, n=1)
-  seq.traj = tr
-end
-
-function setTrajectory!(seq::AbstractMultiEchoSequence,tr::Trajectory, n=1)
-  seq.traj[n] = tr
+function sequenceInfo(seq::AbstractSequence)
+  param = Dict{Symbol,Any}()
+  param[:name] = string(seq)
+  for field in fieldnames(typeof(seq))
+    param[field] = getfield(seq,field)
+  end
+  return param
 end

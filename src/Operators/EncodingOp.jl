@@ -9,7 +9,7 @@ function EncodingOp2d(acqData::AcquisitionData, params::Dict; slice=1,
   ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
 
   for i = 1:acqData.numEchoes
-    tr = trajectory(acqData.seq,i)
+    tr = trajectory(acqData,i)
     ft[i] = fourierEncodingOp2d(tr, params, slice=slice)
   end
 
@@ -47,7 +47,7 @@ function EncodingOp3d(acqData::AcquisitionData, params::Dict;
   ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
 
   for i = 1:acqData.numEchoes
-    tr = trajectory(acqData.seq,i)
+    tr = trajectory(acqData,i)
     ft[i] = fourierEncodingOp3d(tr, params)
   end
 
@@ -88,7 +88,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
   Φ = MapSliceOp(subspace[:,:,1],2,(N, K, acqData.numCoils), (N, numEchoes, acqData.numCoils))
 
   # Fourier Operator
-  tr = trajectory(acqData.seq,1)
+  tr = trajectory(acqData,1)
   params[:fft] = true
   ft = fourierEncodingOp2d(tr, params)
 

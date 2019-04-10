@@ -60,7 +60,7 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
   numSlices = acqData.numSlices
   numNodes = div(length(acqData.kdata), numEchoes*numCoils*numSlices)
 
-  tr = trajectory(acqData.seq)
+  tr = acqData.traj
 
   if profiles
     numNodes = tr.numSamplingPerProfile * Int(div(tr.numProfiles, redFac))
@@ -75,7 +75,7 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
   idx = zeros(Int64, numNodes, numEchoes, numCoils, numSlices)
 
   for i = 1:numEchoes
-    samplingShape = (tr.numSamplingPerProfile, tr.numProfiles)
+    samplingShape = (tr[i].numSamplingPerProfile, tr[i].numProfiles)
     pattern = SamplingPattern(samplingShape, redFac, patFunc; seed = seed, kargs...)
     patOut = sample(samplingShape,redFac,pattern.patParams; seed = seed, kargs...)
     patOut = sort(patOut)
@@ -85,7 +85,7 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
     end
     rand && (seed += 1)
   end
-  return AcquisitionData(acqData.seq, vec(kdata_sub), acqData.numEchoes,
+  return AcquisitionData(acqData.sequenceInfo, tr, vec(kdata_sub), acqData.numEchoes,
                          acqData.numCoils, acqData.numSlices, samplePointer, idx,
                          acqData.encodingSize, acqData.fov)
 end

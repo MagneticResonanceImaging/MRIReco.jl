@@ -43,7 +43,7 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
 
         I = solve(solver, kdata)
 
-        if isCircular( trajectory(acqData.seq, j) )
+        if isCircular( trajectory(acqData, j) )
           circularShutter!(reshape(I, recoParams[:shape]), 1.0)
         end
         Ireco[:,k,j,i] = I
@@ -152,7 +152,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
       kdata = multiCoilData(acqData2, j, k)
       I = solve(solver, kdata)
 
-      if isCircular( trajectory(acqData.seq, j) )
+      if isCircular( trajectory(acqData, j) )
         circularShutter!(reshape(I, recoParams[:shape]), 1.0)
       end
       Ireco[:,j,k] = I

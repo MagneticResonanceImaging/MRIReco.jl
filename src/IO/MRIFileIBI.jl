@@ -14,7 +14,7 @@ end
 
 function trajectory(f::MRIFileIBI)
   fid = h5open(f.filename, "r")
-  tr = fid["sequence/trajectory"]
+  tr = fid["trajectory"]
 
   params = Dict{Symbol, Any}()
   for field = names(tr)
@@ -25,26 +25,18 @@ function trajectory(f::MRIFileIBI)
   return trajectory(params[:name], params[:numProfiles], params[:numSamplingPerProfile]; params...)
 end
 
-function sequence(f::MRIFileIBI)
+function sequenceInfo(f::MRIFileIBI)
   fid = h5open(f.filename, "r")
 
   # general sequence inforamation
   seq = fid["sequence"]
   seqParams = Dict{Symbol, Any}()
   for field = names(seq)
-    field == "trajectory" && continue
     seqParams[Symbol(field)] = read(seq[field])
-  end
-
-  # information on trajectories used
-  tr = fid["sequence/trajectory"]
-  trParams = Dict{Symbol, Any}()
-  for field = names(tr)
-    trParams[Symbol(field)] = read(tr[field])
   end
   close(fid)
 
-  return sequence(seqParams[:name], trParams[:name], trParams[:numProfiles], trParams[:numSamplingPerProfile]; seqParams..., trParams...)
+  return seqParams
 end
 
 function rawdata(f::MRIFileIBI)
@@ -54,9 +46,9 @@ function rawdata(f::MRIFileIBI)
 end
 
 function acquisitionData(f::MRIFileIBI)
-  return AcquisitionData(sequence(f),
+  return AcquisitionData(sequenceInfo(f),
                         rawdata(f),
-                        h5read(f.filename, "sequence/numEchoes"),
+                        h5read(f.filename, "numEchoes"),
                         h5read(f.filename, "numCoils"),
                         h5read(f.filename, "numSlices"),
                         h5read(f.filename, "samplePointer"),
@@ -73,11 +65,11 @@ function saveasIBIFile(filename::AbstractString, rawdata::Array{Complex{T}}, tr:
   h5open(filename, "w") do file
 
     # Trajectory Information
-    write(file, "sequence/trajectory/name", string(tr))
-    write(file, "sequence/trajectory/numProfiles", tr.numProfiles)
-    write(file, "sequence/trajectory/numSamplingPerProfile", tr.numSamplingPerProfile)
-    write(file, "sequence/trajectory/TE", tr.TE)
-    write(file, "sequence/trajectory/AQ", tr.AQ)
+    write(file, "trajectory/name", string(tr))
+    write(file, "trajectory/numProfiles", tr.numProfiles)
+    write(file, "trajectory/numSamplingPerProfile", tr.numSamplingPerProfile)
+    write(file, "trajectory/TE", tr.TE)
+    write(file, "trajectory/AQ", tr.AQ)
 
     rawdata_real = collect(reshape(reinterpret(T, vec(rawdata)), (2,size(rawdata)...)))
     write(file, "/rawdata", rawdata_real)
@@ -90,16 +82,20 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
   h5open(filename, "w") do file
 
     # Sequence Information
-    write(file, "sequence/name", string(acqData.seq))
-    write(file, "sequence/trajectory/name", string(trajectory(acqData.seq)))
-    tr = trajectory(acqData.seq)
-    for field in fieldnames(typeof(tr))
-      a = getfield(tr,field)
-      write( file, "sequence/trajectory/"*string(field), a )
+    seqInfo = sequenceInfo(seq)
+    for key in keys(seqInfo)
+      a = get(seqInfo,key,"")
+      write(file, "sequence/"*string(k), a)
     end
 
-    write(file, "sequence/numEchoes", numEchoes(acqData.seq))
-    write(file, "sequence/flipAngles", flipAngles(acqData.seq))
+    write(file, "trajectory/name", string(trajectory(acqData)))
+    tr = trajectory(acqData)
+    for field in fieldnames(typeof(tr))
+      a = getfield(tr,field)
+      write( file, "trajectory/"*string(field), a )
+    end
+
+    write(file, "numEchoes", numEchoes(acqData))
 
     # number of Coils, and sampled points and number of slices
     write(file, "numCoils", acqData.numCoils)
@@ -118,25 +114,6 @@ function saveasIBIFile(filename::AbstractString, acqData::AcquisitionData)
     write(file, "/rawdata", rawdata_real)
 
   end
-end
-
-function convertIBIFile(fileIn::AbstractString, fileOut::AbstractString)
-  f = MRIFileIBI(fileIn)
-  kdata = rawdata(f)
-  seq = sequence(f)
-  numEchoes = h5read(f.filename, "sequence/numEchoes")
-  numCoils = h5read(f.filename, "numCoils")
-  numSlices = h5read(f.filename, "numSlices")
-  samplingIdx = h5read(f.filename, "samplingIdx")
-  numSamplesPerShot = length(kdata)/(numEchoes*numCoils*numSlices)
-  samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
-
-  acqData = AcquisitionData(seq, vec(kdata), numEchoes, numCoils, numSlices
-                          , samplePointer, samplingIdx)
-
-  saveasIBIFile(fileOut, acqData)
-
-  return acqData
 end
 
 function loadIBIFile(filename::AbstractString)

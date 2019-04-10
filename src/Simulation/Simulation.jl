@@ -228,7 +228,8 @@ function simulation(seq::AbstractSequence
     end
   end
 
-  return AcquisitionData(seq, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
+  tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
+  return AcquisitionData(tr, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
 end
 
 function simulation(tr::Trajectory
@@ -353,7 +354,7 @@ end
 function addNoise(acqData::AcquisitionData, snr::Float64)
   noisyData = addNoise(acqData.kdata, snr, true)
 
-  return AcquisitionData(acqData.seq, noisyData, acqData.numEchoes,
+  return AcquisitionData(acqData.sequenceInfo, acqData.traj, noisyData, acqData.numEchoes,
                          acqData.numCoils, acqData.numSlices, acqData.samplePointer,
                          acqData.subsampleIndices, acqData.encodingSize, acqData.fov)
 end

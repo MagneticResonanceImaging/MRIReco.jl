@@ -13,13 +13,13 @@ The reconstruction method takes an AcquisitionData object and a parameter
 dictionary and calculates an image from the given raw data.
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
-  encodingDims = encoding(acqData.seq)
-  if encodingDims == "2D"
+  encodingDims = dims(trajectory(acqData))
+  if encodingDims == 2 #"2D"
     return reconstruction_2d(acqData,recoParams)
-  elseif encodingDims == "3D"
+  elseif encodingDims == 3 #"3D"
     return reconstruction_3d(acqData,recoParams)
   else
-    error("encoding $(encodingDims) not yet supported")
+    error("$(encodingDims)d encoding not yet supported")
   end
   return reconstruction_2d(acqData,recoParams)
 end

@@ -11,8 +11,9 @@ export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
  3. dim : coils
  4. slices / repetitions
 """
-mutable struct AcquisitionData{S<:AbstractSequence}
-  seq::S
+mutable struct AcquisitionData
+  sequenceInfo::Dict{Symbol,Any}
+  traj::Vector{Trajectory}
   kdata::Vector{ComplexF64}
   numEchoes::Int64
   numCoils::Int64
@@ -26,53 +27,53 @@ end
 ##############
 # constructors
 ##############
-#
-# constructor function for single trajectories
-#
-function AcquisitionData(tr::Trajectory, kdata::Vector{ComplexF64}; kargs...)
-  seq = SESequence(tr)
-  return AcquisitionData(seq, kdata; kargs...)
+function AcquisitionData(tr::Trajectory, kdata::Vector{ComplexF64}
+                        ; seqInfo=Dict{Symbol,Any}(),kargs...)
+  return AcquisitionData([tr], kdata; seqInfo=seqInfo, kargs...)
 end
 
-#
-# aquisition data for single sequences
-#
-function AcquisitionData(seq::AbstractSequence, kdata::Vector{ComplexF64};
-                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
-                        encodingSize=Int64[], fov=Float64[])
-  encodingDims = encoding(seq)
-  if encodingDims == "2D"
-    return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,
+function AcquisitionData(tr::Vector{Trajectory},kdata::Vector{ComplexF64}
+                        ; seqInfo=Dict{Symbol,Any}()
+                        , numCoils=1
+                        , numEchoes=1
+                        , numSlices=1
+                        , idx=nothing
+                        , encodingSize=Int64[]
+                        , fov = Float64[]
+                        , kargs...)
+  encodingDims = dims(tr[1])
+  if encodingDims==2
+    return AcquisitionData2d(tr,kdata,seqInfo=seqInfo,numCoils=numCoils,numEchoes=numEchoes,
               numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
-  elseif encodingDims == "3D"
-    return AcquisitionData3d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,
+  elseif encodingDims==3
+    return AcquisitionData3d(tr,kdata,seqInfo=seqInfo,numCoils=numCoils,numEchoes=numEchoes,
                 numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
   else
-    error("encoding $(encodingDims) not yet supported")
+    @error "encoding $(encodingDims) not yet supported"
   end
-  return AcquisitionData2d(seq,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
+  return AcquisitionData2d(seqInfo,tr,kdata,numCoils=numCoils,numEchoes=numEchoes,numSlices=numSlices,idx=idx,encodingSize=encodingSize,fov=fov)
 end
 
-function AcquisitionData2d(seq::AbstractSequence, kdata::Vector{ComplexF64};
-                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
+function AcquisitionData2d(tr::Vector{Trajectory}, kdata::Vector{ComplexF64};
+                        seqInfo=Dict{Symbol,Any}(), numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
                         encodingSize=Int64[], fov=Float64[])
   idx==nothing && ( idx = collect(1:length(kdata)) )
   numSamplesPerShot = div(length(kdata),(numEchoes*numCoils*numSlices))
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
-  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices,
+  return AcquisitionData(seqInfo, tr, kdata, numEchoes, numCoils, numSlices,
                          samplePointer, idx, encodingSize, fov)
 end
 
 #
 # aquisition data for single sequences
 #
-function AcquisitionData3d(seq::AbstractSequence, kdata::Vector{ComplexF64};
-                        numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
+function AcquisitionData3d(tr::Vector{Trajectory}, kdata::Vector{ComplexF64};
+                        seqInfo=Dict{Symbol,Any}(), numCoils=1, numEchoes=1, numSlices=1, idx=nothing,
                         encodingSize=Int64[], fov=Float64[])
   idx==nothing && ( idx = collect(1:length(kdata)) )
   numSamplesPerShot = div(length(kdata),(numEchoes*numCoils))
   samplePointer = collect(1:numSamplesPerShot:length(kdata)-numSamplesPerShot+1)
-  return AcquisitionData(seq, kdata, numEchoes, numCoils, numSlices,
+  return AcquisitionData(seqInfo, tr, kdata, numEchoes, numCoils, numSlices,
                          samplePointer, idx, encodingSize, fov)
 end
 
@@ -80,6 +81,11 @@ function Images.pixelspacing(acqData::AcquisitionData)
   return [1.0,1.0,1.0]*Unitful.mm
   #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
 end
+
+############
+# trajectory
+############
+trajectory(acqData::AcquisitionData,i::Int64=1) = acqData.traj[i]
 
 ######################
 # getting k-space data
@@ -150,7 +156,7 @@ function convertUndersampledData(acqData::AcquisitionData)
 
   # replace trajectories by Undersampled Trajectories
   for i = 1:acqData.numEchoes
-    tr = trajectory(acqDataSub.seq,i)
+    tr = trajectory(acqDataSub,i)
     # assume that coils and slices experience the same trajectory
     tr.nodes = tr.nodes[:,acqData.subsampleIndices[:,i,1,1]]
   end
@@ -168,7 +174,7 @@ function weightedData(acqData::AcquisitionData, shape::Tuple)
 end
 
 function weightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  ft = [ NFFTOp(shape,trajectory(acqData,i)) for i=1:acqData.numEchoes]
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
       for k = 1:acqData.numEchoes
@@ -186,7 +192,7 @@ function weightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
 end
 
 function weightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  ft = [ NFFTOp(shape,trajectory(acqData,i)) for i=1:acqData.numEchoes]
   for j = 1:acqData.numCoils
     for k = 1:acqData.numEchoes
       idx = (j-1)*acqData.numEchoes+k
@@ -201,7 +207,7 @@ function weightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
 end
 
 function unweightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  ft = [ NFFTOp(shape,trajectory(acqData,i)) for i=1:acqData.numEchoes]
   for i = 1:acqData.numSlices
     for j = 1:acqData.numCoils
       for k = 1:acqData.numEchoes
@@ -218,7 +224,7 @@ function unweightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
 end
 
 function unweightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData.seq,i)) for i=1:acqData.numEchoes]
+  ft = [ NFFTOp(shape,trajectory(acqData,i)) for i=1:acqData.numEchoes]
   for j = 1:acqData.numCoils
     for k = 1:acqData.numEchoes
       idx = (j-1)*acqData.numEchoes+k
@@ -241,38 +247,6 @@ end
 #########################################################################
 # convert acqData for a reconstruction with a encodingSize (resolution)
 #########################################################################
-# function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
-#   fac = acqData.encodingSize ./ newEncodingSize
-#   idx = Vector{Vector{Int64}}(undef,acqData.numEchoes)
-#   # new sequence
-#   seqNew = deepcopy(acqData.seq)
-#   for i=1:numEchoes(acqData.seq)
-#     tr = trajectory(acqData.seq)
-#     nodesNew = fac .* copy(kspaceNodes(tr))
-#     # nodesNew = copy(kspaceNodes(tr))
-#     # idxX = findall(x-> abs.(x)<0.5, nodesNew[1,:])
-#     idxX = findall(x->(x>=-0.5)&&(x<0.5), nodesNew[1,:])
-#     # idxY = findall(x-> abs.(x)<0.5, nodesNew[2,:])
-#     idxY = findall(x->(x>=-0.5)&&(x<0.5), nodesNew[2,:])
-#     idx[i] = intersect(idxX,idxY)
-#     nodesNew = vec(nodesNew[:,idx[i]])
-#     timesNew = readoutTimes(tr)[idx[i]]
-#     isCirc = Int64(isCircular(tr))
-#     trNew = CustomTrajectory2D(1, div(length(nodesNew),2), echoTime(tr), acqTimePerProfile(tr), nodesNew, timesNew, isCirc)
-#     setTrajectory!(seqNew,trNew,i)
-#   end
-#   # find relevant kspace data
-#   kdata = reshape(acqData.kdata,:,acqData.numEchoes,acqData.numCoils, acqData.numSlices)
-#   kdataNew = zeros(ComplexF64,length(idx[1]),acqData.numEchoes,acqData.numCoils, acqData.numSlices)
-#   for i=1:numEchoes(acqData.seq)
-#     kdataNew[:,i,:,:] = 1.0/prod(fac) * kdata[idx[i],i,:,:]
-#   end
-#   acqDataNew = AcquisitionData2d(seqNew, vec(kdataNew);
-#                           numCoils=acqData.numCoils, numEchoes=acqData.numEchoes, numSlices=acqData.numSlices,
-#                           encodingSize=newEncodingSize, fov=acqData.fov)
-# end
-
-
 function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
   dest = deepcopy(acqData)
   changeEncodingSize2D!(dest,newEncodingSize)
@@ -282,9 +256,8 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   fac = acqData.encodingSize ./ newEncodingSize
   idx = Vector{Vector{Int64}}(undef,acqData.numEchoes)
 
-  seq = acqData.seq
-  for i=1:numEchoes(acqData.seq)
-    tr = trajectory(acqData.seq,i)
+  for i=1:acqData.numEchoes
+    tr = trajectory(acqData,i)
     nodes = fac .* kspaceNodes(tr)
 
     # filter out nodes with magnitude > 0.5
@@ -300,7 +273,7 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   # find relevant kspace data
   kdata = reshape(acqData.kdata,:,acqData.numEchoes,acqData.numCoils, acqData.numSlices)
   kdata2 = zeros(ComplexF64,length(idx[1]),acqData.numEchoes,acqData.numCoils, acqData.numSlices)
-  for i=1:numEchoes(acqData.seq)
+  for i=1:acqData.numEchoes
     kdata2[:,i,:,:] = 1.0/prod(fac) * kdata[idx[i],i,:,:]
   end
   acqData.kdata = vec(kdata2)
