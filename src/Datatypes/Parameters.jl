@@ -222,21 +222,23 @@ function generateGroup(params, paramVec, node, groupName)
   if any( [haskey(params,n) for n in paramVec] )
     xs = new_child(node, groupName)
     for p in paramVec
+      if haskey(params,p)
         xsp = new_child(xs, p)
         add_text(xsp, string(params[p]))
+      end
     end
   end
 end
 
-#=
+
 function GeneralParametersToXML(params::Dict{String,Any})
 
   xdoc = XMLDocument()
   xroot = create_root(xdoc, "ismrmrdHeader")
-  set_attributes(xroot, {"xmlns"=>"http://www.ismrm.org/ISMRMRD",
+  set_attributes(xroot, Dict{String,String}("xmlns"=>"http://www.ismrm.org/ISMRMRD",
                          "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
                          "xmlns:xs"=>"http://www.w3.org/2001/XMLSchema",
-                         "xsi:schemaLocation"=>"http://www.ismrm.org/ISMRMRD ismrmrd.xsd"})
+                         "xsi:schemaLocation"=>"http://www.ismrm.org/ISMRMRD ismrmrd.xsd"))
 
   p = ["patientName","patientWeight_kg", "patientID", "patientBirthdate", "patientGender"]
   generateGroup(params, p, xroot, "subjectInformation")
@@ -245,7 +247,7 @@ function GeneralParametersToXML(params::Dict{String,Any})
        "studyDescription", "studyInstanceUID"]
   generateGroup(params, p, xroot, "studyInformation")
 
-
+#=
       e = get_elements_by_tagname(LightXML.root(xdoc),"measurementInformation")
       if !isempty(e)
         addToDict!(params, e[1], "measurementID", String)
@@ -262,7 +264,14 @@ function GeneralParametersToXML(params::Dict{String,Any})
                        NamedTuple{(:dependencyType, :measurementID),Tuple{String,String}})
         addToDict!(params, e[1], "referencedImageSequence", String)
       end
+=#
 
+  p = ["systemVendor", "systemModel", "systemFieldStrength_T",
+       "relativeReceiverNoiseBandwidth", "receiverChannels",
+       "institutionName", "stationName"]  #TODO handle coilLabel
+  generateGroup(params, p, xroot, "acquisitionSystemInformation")
+
+#=
       # AcquisitionSystemInformation
       e = get_elements_by_tagname(LightXML.root(xdoc),"acquisitionSystemInformation")
       if !isempty(e)
@@ -275,7 +284,6 @@ function GeneralParametersToXML(params::Dict{String,Any})
         addToDict!(params, e[1], "stationName", String)
         addToDict!(params, e[1], "coilLabel", NamedTuple{(:coilNumber, :coilName),Tuple{Int,String}})
       end
-
-
-end
 =#
+  return string(xdoc)
+end

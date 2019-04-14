@@ -137,3 +137,5 @@ function testSimulation()
     test_changeEncodingSize(32)
   end
 end
+
+testSimulation()

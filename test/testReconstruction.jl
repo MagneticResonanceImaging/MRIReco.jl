@@ -301,3 +301,5 @@ function testReco(N=32)
     testDirectRecoMultiEcho()
   end
 end
+
+testReco()

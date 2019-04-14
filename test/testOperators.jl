@@ -112,3 +112,5 @@ function testOperators()
     testFieldmapFT()
   end
 end
+
+testOperators()

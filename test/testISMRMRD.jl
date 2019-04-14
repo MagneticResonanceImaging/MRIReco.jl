@@ -10,23 +10,36 @@ if !isfile(filename)
   end
 end
 
-f = ISMRMRD(filename)
+f = ISMRMRDFile(filename)
+acq = RawAcquisitionData(f)
 
-@test f.profiles[1].head.version == Int16(0)
-@test f.profiles[1].head.measurement_uid == Int32(37)
-@test f.profiles[1].head.scan_counter == Int32(1)
-@test f.profiles[1].head.number_of_samples == Int16(256)
-@test f.profiles[1].head.available_channels == Int16(32)
-@test f.profiles[1].head.active_channels == Int16(32)
+@test acq.profiles[1].head.version == Int16(0)
+@test acq.profiles[1].head.measurement_uid == Int32(37)
+@test acq.profiles[1].head.scan_counter == Int32(1)
+@test acq.profiles[1].head.number_of_samples == Int16(256)
+@test acq.profiles[1].head.available_channels == Int16(32)
+@test acq.profiles[1].head.active_channels == Int16(32)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
-Ireco = abs.(reconstruction(acquisitionData(f), params))
+Ireco = abs.(reconstruction(acquisitionData(acq), params))
 Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
 save("recogre.png", Icolored )
 
+filenameCopy = "simple_gre_copy.h5"
+fCopy = ISMRMRDFile(filenameCopy)
+# store data in another ISMRMRD file
+save(fCopy, acq)
+acqCopy = RawAcquisitionData(f)
+
+@test acqCopy.profiles[1].head == acq.profiles[1].head
+@test acqCopy.profiles[1].data == acq.profiles[1].data
+
+IrecoCopy = abs.(reconstruction(acquisitionData(acqCopy), params))
+
+@test IrecoCopy == Ireco
 
 filename = "simple_spiral.h5"
 if !isfile(filename)
@@ -37,16 +50,26 @@ if !isfile(filename)
   end
 end
 
-f = ISMRMRD(filename)
+f = ISMRMRDFile(filename)
+acq = RawAcquisitionData(f)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (128,128) #this should be clear from context
 
-Ireco = abs.(reconstruction(acquisitionData(f), params))
+Ireco = abs.(reconstruction(acquisitionData(acq), params))
 Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
 save("recospiral.png", Icolored )
 
+filenameCopy = "simple_spiral_copy.h5"
+fCopy = ISMRMRDFile(filenameCopy)
+# store data in another ISMRMRD file
+save(fCopy, acq)
+acqCopy = RawAcquisitionData(f)
+
+@test acqCopy.profiles[1].head == acq.profiles[1].head
+@test acqCopy.profiles[1].traj == acq.profiles[1].traj
+@test acqCopy.profiles[1].data == acq.profiles[1].data
 
 # 3D_partial_fourier.h5
 
@@ -59,7 +82,7 @@ if !isfile(filename)
   end
 end
 
-f = ISMRMRD(filename)
+f = ISMRMRDFile(filename)
 #@test size(f.data) == (909, 32, 160)
 
 end
