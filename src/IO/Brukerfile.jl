@@ -39,7 +39,8 @@ function BrukerFile(path::String; maxEntriesAcqp=2000)
 end
 
 function getindex(b::BrukerFile, parameter)#::String
-  if !b.acqpRead && ( parameter=="NA" || parameter[1:3] == "ACQ" )
+  if !b.acqpRead && ( parameter=="NA" || parameter=="NR" || parameter=="NI" ||
+                      parameter[1:2] == "GO" || parameter[1:3] == "ACQ" )
     acqppath = joinpath(b.path, "acqp")
     read(b.params, acqppath, maxEntries=b.maxEntriesAcqp)
     b.acqpRead = true
@@ -154,78 +155,87 @@ function acqDataType(b::BrukerFile)
     return Int16
   elseif format == "GO_32BIT_FLOAT"
   else
-    @error "Data type curr"
+    @error "Data type unknown: $(format)"
   end
   return Int8
 end
 
-# interface of MRIFile
-function rawdata(b::BrukerFile)
-  dtype = Complex{acqDataType(b)}
+function RawAcquisitionData(b::BrukerFile)
+    dtype = Complex{acqDataType(b)}
 
-  filename = joinpath(b.path, "fid")
+    filename = joinpath(b.path, "fid")
 
-  N = acqSize(b)
-  # The data is padded in case it is not a multiple of 1024
-  profileLength = div((div(N[1]*sizeof(dtype),1024)+1)*1024,sizeof(dtype))
-  phaseFactor = acqPhaseFactor(b)
-  numSlices = acqNumSlices(b)
-  numEchos = acqNumEchos(b)
-  numEncSteps2 = length(N) == 3 ? N[3] : 1
-  numRep = acqNumRepetitions(b)
+    N = acqSize(b)
+    # The data is padded in case it is not a multiple of 1024
+    profileLength = div((div(N[1]*sizeof(dtype),1024)+1)*1024,sizeof(dtype))
+    phaseFactor = acqPhaseFactor(b)
+    numSlices = acqNumSlices(b)
+    numEchos = acqNumEchos(b)
+    numEncSteps2 = length(N) == 3 ? N[3] : 1
+    numRep = acqNumRepetitions(b)
 
-  I = open(filename,"r") do fd
-    read!(fd,Array{dtype,7}(undef, profileLength,
-                                   numEchos,
-                                   phaseFactor,
-                                   numSlices,
-                                   div(N[2], phaseFactor),
-                                   numEncSteps2,
-                                   numRep))[1:N[1],:,:,:,:,:,:]
-  end
+    I = open(filename,"r") do fd
+      read!(fd,Array{dtype,7}(undef, profileLength,
+                                     numEchos,
+                                     phaseFactor,
+                                     numSlices,
+                                     div(N[2], phaseFactor),
+                                     numEncSteps2,
+                                     numRep))[1:N[1],:,:,:,:,:,:]
+    end
 
-  I_ = reshape(permutedims(I, (1,3,5,6,2,4,7) ), N[1], :,
-                              numEncSteps2, numEchos, numSlices, numRep)
-  encSteps1 = pvmEncSteps1(b)
-  idxE1 = collect(1:length(encSteps1))
-  permE1 = invpermute!(idxE1, encSteps1.-minimum(encSteps1).+1)
+    encSteps1 = pvmEncSteps1(b)
+    encSteps1 = encSteps1.-minimum(encSteps1)
 
-  encSteps2 = pvmEncSteps2(b)
-  idxE2 = collect(1:length(encSteps2))
-  permE2 = invpermute!(idxE2, encSteps2.-minimum(encSteps2).+1)
+    encSteps2 = pvmEncSteps2(b)
+    encSteps2 = encSteps2.-minimum(encSteps2)
 
-  objOrd = acqObjOrder(b)
-  idxO = collect(1:length(objOrd))
-  permO = invpermute!(idxO, objOrd.-minimum(objOrd).+1)
+    objOrd = acqObjOrder(b)
+    objOrd = objOrd.-minimum(objOrd)
 
-  I_ = I_[:,permE1,permE2,:,permO,:]
+    profiles = Profile[]
+    for nR = 1:numRep
+      for nEnc2 = 1:numEncSteps2
+        for nPhase2 = 1:div(N[2], phaseFactor)
+          for nSl = 1:numSlices
+            for nPhase1 = 1:phaseFactor
+              for nEcho=1:numEchos
+                  counter = EncodingCounters(kspace_encode_step_1=encSteps1[nPhase1+phaseFactor*(nPhase2-1)],
+                                             kspace_encode_step_2=encSteps2[nEnc2],
+                                             average=0,
+                                             slice=objOrd[nSl], # I am not sure...
+                                             contrast=0,
+                                             phase=0,
+                                             repetition=0,
+                                             set=0,
+                                             segment=0 )
 
-  return vec( map(ComplexF64, I_) )
+                  head = AcquisitionHeader(version=0, flags=0, measurement_uid=0, scan_counter=0,
+                     acquisition_time_stamp=0, physiology_time_stamp = ntuple(i->Int32(0),3),
+                     number_of_samples=N[1], available_channels=0, active_channels=0, channel_mask=ntuple(i->Int64(0),16),
+                     discard_pre=0, discard_post=0, center_sample=0, encoding_space_ref=0, trajectory_dimensions=0,
+                     sample_time_us=0.0, position=ntuple(i->Float32(0),3), read_dir=ntuple(i->Float32(0),3),
+                     phase_dir=ntuple(i->Float32(0),3), slice_dir=ntuple(i->Float32(0),3),
+                     patient_table_position=ntuple(i->Float32(0),3), idx=counter,
+                     user_int=ntuple(i->Int32(0),8), user_float=ntuple(i->Float32(0),8))
+                  traj = Matrix{Float32}(undef,0,0)
+                  dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,1))
+                  push!(profiles, Profile(head,traj,dat) )
+              end
+            end
+          end
+        end
+      end
+    end
+
+    params = Dict{String,Any}()
+    params["trajectory"] = "cartesian"
+    params["encodedSize"] = acqSize(b)
+    params["receiverChannels"] = 1
+
+    return RawAcquisitionData(params, profiles)
 end
 
-
-function trajectory(b::BrukerFile)
-  N = acqSize(b)
-  if length(N) == 2
-    return trajectory("Cartesian", N[1], N[2])
-  elseif length(N) == 3
-    return trajectory("Cartesian3D", N[1], N[2]; numSlices=N[3])
-  end
-  #return nothing
-end
-
-
-function sequence(f::BrukerFile)
-  # TODO
-end
-
-function acquisitionData(b::BrukerFile)
-  return AcquisitionData(trajectory(b), rawdata(b),
-                          numCoils=acqNumCoils(b),
-                          numEchoes=acqNumEchos(b),
-                          numSlices=acqNumSlices(b),
-                          encodingSize=acqSize(b))
-end
 
 ##### Reco
 function recoData(f::BrukerFile)
@@ -247,5 +257,3 @@ recoFov(f::BrukerFile) = push!(parse.(Float64,f["RECO_fov",1])./1000,
 recoFovCenter(f::BrukerFile) = zeros(3)
 recoSize(f::BrukerFile) = push!(parse.(Int,f["RECO_size",1]),
                                 parse(Int,f["RecoObjectsPerRepetition",1]))
-#recoOrder(f::BrukerFile) = f["/reconstruction/order"]
-#recoPositions(f::BrukerFile) = f["/reconstruction/positions"]

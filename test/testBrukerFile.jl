@@ -10,8 +10,10 @@ if !isdir("brukerfileCart")
 end
 
 b = BrukerFile("brukerfileCart")
-N = MRIReco.pvmMatrix(b)
-acqData = acquisitionData(b)
+#N = MRIReco.pvmMatrix(b)
+
+acq = RawAcquisitionData(b)
+acqData = acquisitionData(acq)
 N = acqData.encodingSize
 
 params = Dict{Symbol, Any}()
