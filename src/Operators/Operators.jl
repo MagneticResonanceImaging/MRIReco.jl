@@ -10,6 +10,10 @@ include("FieldmapNFFTOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
 
+# FIXME: Weighting Op should be removed, as it is contained on the
+# master branch of RegularizedLeastSquares.jl
+include("WeightingOp.jl")
+
 #
 # horizontally concatenate linear operators n times
 #
