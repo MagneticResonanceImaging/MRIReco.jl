@@ -28,6 +28,11 @@ function Trajectory(nodes::Matrix{T}, numProfiles::Int64, numSamplingPerProfile
   return Trajectory("Custom", Float64.(nodes), ttimes, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, cartesian, circular)
 end
 
+Base.vec(tr::Trajectory) = [tr]
+Base.vec(tr::Vector{Trajectory}) = tr
+Base.size(tr::Trajectory) = size(kspaceNodes(tr))
+Base.size(tr::Trajectory,i::Int) = size(kspaceNodes(tr),i)
+
 include("2D/Cartesian2D.jl")
 include("2D/Radial2D.jl")
 include("2D/Spiral2D.jl")

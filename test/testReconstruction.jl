@@ -123,13 +123,10 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:simulation] = "fast"
   params[:trajName] = "Cartesian"
   params[:numProfiles] = floor(Int64, N)
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
   params[:numSamplingPerProfile] = N
 
-  acqData = simulation( real(x.*reshape(sensMaps[:,1,1],N,N)), params )
-  acqData2 = simulation( real(x.*reshape(sensMaps[:,2,1],N,N)), params )
-  acqData.kdata = cat(acqData.kdata, acqData2.kdata, dims=1)
-  acqData.numCoils = 2
-  acqData.samplePointer = [1,N*N+1]
+  acqData = simulation(x,params)
   acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
   acqData = convertUndersampledData(acqData)
 

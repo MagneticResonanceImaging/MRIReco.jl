@@ -120,8 +120,8 @@ function test_changeEncodingSize(N=32)
     acqData = simulation_fast(tr,I)
     acqData.encodingSize = [2*N,2*N]
     acqData2 = MRIReco.changeEncodingSize2D(acqData, [N,N])
-    kdata = reshape(acqData.kdata,2*N,2*N)[div(N,2)+1:end-div(N,2), div(N,2)+1:end-div(N,2)]
-    kdata2 = reshape(acqData2.kdata,N,N)
+    kdata = reshape(acqData.kdata[1],2*N,2*N)[div(N,2)+1:end-div(N,2), div(N,2)+1:end-div(N,2)]
+    kdata2 = reshape(acqData2.kdata[1],N,N)
     relError = norm(kdata[:]-4*kdata2[:]) / norm(kdata)
     @test relError < 1.e-3
 end

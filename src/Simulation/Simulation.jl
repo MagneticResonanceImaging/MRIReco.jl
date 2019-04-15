@@ -93,19 +93,21 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   end
 
   nodes = kspaceNodes(tr)
-  kdata = zeros(ComplexF64, size(nodes,2),nc,nz)
+  # kdata = zeros(ComplexF64, size(nodes,2),nc,nz)
+  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:nz]
   if verbose==true
     p = Progress(nz*nc, 1, "Simulating data...")
   end
   for z = 1:nz
     E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
     for c = 1:nc
-      kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
+      # kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
+      kdata[1,z][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
       verbose && next!(p)
     end
   end
 
-  return AcquisitionData(tr, vec(kdata),numCoils=nc,numSlices=nz)
+  return AcquisitionData(tr, kdata,numCoils=nc,numSlices=nz)
 end
 
 """
@@ -148,20 +150,23 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   end
 
   nodes = kspaceNodes(tr)
-  kdata = zeros(ComplexF64, size(nodes,2),nc)
+  # kdata = zeros(ComplexF64, size(nodes,2),nc)
+  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:1]
   if verbose==true
     p = Progress(nc, 1, "Simulating data...")
   end
 
   E = fourierEncodingOp3d((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
   for c = 1:nc
-    kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
+    # kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
+    kdata[1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
     verbose && next!(p)
   end
 
-  return AcquisitionData(tr, vec(kdata) ,numCoils=nc,numSlices=nz)
+  return AcquisitionData(tr, kdata ,numCoils=nc,numSlices=nz)
 end
 
+# FIXME: this only works for 3d or for one slice
 function simulation(seq::AbstractSequence
                     , image::Array{ComplexF64,3}
                     ; opName="fast"
@@ -203,16 +208,17 @@ function simulation(seq::AbstractSequence
   # this assumes the same number of readout points per echo
   size_kNodes = size(kspaceNodes( trajectory(seq) ), 2)
   isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
-  out = zeros( ComplexF64, size_kNodes, ne, nc )
+  # out = zeros( ComplexF64, size_kNodes, ne, nc )
+  out = Vector{Matrix{ComplexF64}}(undef,ne)
 
   if verbose
     p = Progress(numEchoes(seq), 1, "Simulating data...")
   end
+  tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
   for i = 1:ne
-    tr = trajectory(seq,i)
-    te = echoTime(tr)
-    nodes = kspaceNodes(tr)
-    t = readoutTimes(tr)
+    te = echoTime(tr[i])
+    nodes = kspaceNodes(tr[i])
+    t = readoutTimes(tr[i])
 
     # include correction map and compensate for relaxation before TE,
     # which is taken into account by the EPG-Simulation
@@ -221,14 +227,14 @@ function simulation(seq::AbstractSequence
       error("scaled image contains NaN")
     end
 
-    out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
+    # out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
+    out[i] = simulation(tr[i], ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata[1]
 
-    if length(findall(x->isfinite(x),out[:,i,:])) != length(out[:,i,:])
-      error("out contains NaN")
-    end
+    # if length(findall(x->isfinite(x),out[:,i,:])) != length(out[:,i,:])
+    #   error("out contains NaN")
+    # end
   end
 
-  tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
   return AcquisitionData(tr, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
 end
 
@@ -352,9 +358,18 @@ function addNoise(x::Vector, snr::Float64, complex= true)
 end
 
 function addNoise(acqData::AcquisitionData, snr::Float64)
-  noisyData = addNoise(acqData.kdata, snr, true)
+  # noisyData = addNoise(acqData.kdata, snr, true)
 
-  return AcquisitionData(acqData.sequenceInfo, acqData.traj, noisyData, acqData.numEchoes,
-                         acqData.numCoils, acqData.numSlices, acqData.samplePointer,
-                         acqData.subsampleIndices, acqData.encodingSize, acqData.fov)
+  # return AcquisitionData(acqData.sequenceInfo, acqData.traj, noisyData, acqData.numEchoes,
+  #                        acqData.numCoils, acqData.numSlices, acqData.samplePointer,
+  #                        acqData.subsampleIndices, acqData.encodingSize, acqData.fov)
+  acqData2 = deepcopy(acqData)
+  addNoise!(acqData2,snr)
+  return acqData2
+end
+
+function addNoise!(acqData::AcquisitionData, snr::Float64)
+  for i=1:length(acqData.kdata)
+    acqData.kdata[i][:] .= addNoise(vec(acqData.kdata[i]),snr,true)[:]
+  end
 end

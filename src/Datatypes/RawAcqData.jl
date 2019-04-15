@@ -159,7 +159,9 @@ function rawdata(f::RawAcquisitionData)
     sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.profiles[l].data[i1:i2,:]
   end
 
-  return map(ComplexF64, vec(sorted))
+  # return map(ComplexF64, vec(sorted))
+  kdata = map(ComplexF64, reshape(sorted,:,1,numChan,numRep*numSl))
+  return [kdata[:,echo,:,slice] for echo=1:1,slice=1:numRep*numSl]
 end
 
 function acquisitionData(f::RawAcquisitionData)
