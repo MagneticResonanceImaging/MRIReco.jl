@@ -22,23 +22,28 @@ function normalizeSensitivityMap!(sensMaps::Matrix{ComplexF64})
   sensMaps[:,:] = sensMaps[:,:]./repeat(SMag,1,numCoils)
 end
 
-function sensOpForeward(sensMaps::Matrix{ComplexF64}, x::Vector{T}, numEchoes::Int=1) where T
-  return  vec( repeat(sensMaps,numEchoes,1).*x )
-end
-
-function sensOpBackward(sensMaps::Matrix{ComplexF64}, y::Vector{ComplexF64}, numEchoes::Int=1)
-  y = reshape( y, size(sensMaps,1)*numEchoes, size(sensMaps,2) )
-  return vec( sum( repeat(conj(sensMaps),numEchoes,1).*y, dims=2 ) )
-end
+# function sensOpForeward(sensMaps::Matrix{ComplexF64}, x::Vector{T}, numEchoes::Int=1) where T
+#   return  vec( repeat(sensMaps,numEchoes,1).*x )
+# end
+#
+# function sensOpBackward(sensMaps::Matrix{ComplexF64}, y::Vector{ComplexF64}, numEchoes::Int=1)
+#   y = reshape( y, size(sensMaps,1)*numEchoes, size(sensMaps,2) )
+#   return vec( sum( repeat(conj(sensMaps),numEchoes,1).*y, dims=2 ) )
+# end
+#
+# function SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
+#   return LinearOperator{ComplexF64,Function,Nothing,Function}(length(sensMaps)*numEchoes, size(sensMaps,1)*numEchoes, false, false
+#       , x->sensOpForeward(sensMaps, x, numEchoes)
+#       , nothing
+#       , y-> sensOpBackward(sensMaps, y, numEchoes) )
+# end
 
 function SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
-  return LinearOperator{ComplexF64,Function,Nothing,Function}(length(sensMaps)*numEchoes, size(sensMaps,1)*numEchoes, false, false
-      , x->sensOpForeward(sensMaps, x, numEchoes)
-      , nothing
-      , y-> sensOpBackward(sensMaps, y, numEchoes) )
+  sensMaps_cat = repeat(sensMaps,numEchoes,1)
+  return vcat( [opDiagonal(sensMaps_cat[:,coil]) for coil=1:size(sensMaps,2)]... )
 end
 
 function SensitivityOp(sensMaps::Array{T,4}, numEchoes::Int=1) where T #{T,D}
-  return SensitivityOp(reshape(sensMaps, div(length(sensMaps),size(sensMaps,4)),
-                                         size(sensMaps,4)), numEchoes)
+  sensMaps_mat = reshape(sensMaps, div(length(sensMaps),size(sensMaps,4)),size(sensMaps,4))
+  return SensitivityOp(sensMaps_mat, numEchoes)
 end

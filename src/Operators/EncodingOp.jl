@@ -1,84 +1,70 @@
 export EncodingOp, lrEncodingOp
 
-#
-# Encoding operator for one slice
-#
-function EncodingOp2d(acqData::AcquisitionData, params::Dict; slice=1,
-                           parallel=false, multiEcho=false)
-  # Fourier Operators
-  ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
-
-  for i = 1:acqData.numEchoes
-    tr = trajectory(acqData,i)
-    ft[i] = fourierEncodingOp2d(tr, params, slice=slice)
-  end
-
-  # coil sensitivities in case of SENSE-reconstruction
-  if parallel && multiEcho
-    S = SensitivityOp( reshape(params[:senseMaps][:,:,slice,:],:,acqData.numCoils),
-                       acqData.numEchoes)
-    E = diagOp( repeat(ft, acqData.numCoils)... )*S
-  elseif parallel && !multiEcho
-    S = SensitivityOp(reshape(params[:senseMaps][:,:,slice,:],:,acqData.numCoils),1)
-    E = [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
-  elseif !parallel && multiEcho
-    E = diagOp(ft...)
-  else
-    E = ft
-  end
-
-  # sampling operator in case of undersampled cartesian acquisitions
-  if acqData.subsampleIndices != collect(1:length(acqData.kdata))
-    if get(params,:sampling, nothing) == "binary"
-      M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
-    else
-      numNodes = prod(params[:shape])
-      M = SamplingOp(acqData.subsampleIndices,(numNodes, acqData.numEchoes, acqData.numCoils))
-    end
-    return M*E
-  end
-
-  return E
+#########################
+# simple Fourier Encoding
+#########################
+function encodingOps2d_simple(acqData::AcquisitionData, params::Dict;slice=1)
+  tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
+  return [fourierEncodingOp2d(tr[i], params, slice=slice) for i=1:acqData.numEchoes]
 end
 
-function EncodingOp3d(acqData::AcquisitionData, params::Dict;
-                           parallel=false, multiEcho=false)
-  # Fourier Operators
-  ft = Array{AbstractLinearOperator,1}(undef,acqData.numEchoes)
-
-  for i = 1:acqData.numEchoes
-    tr = trajectory(acqData,i)
-    ft[i] = fourierEncodingOp3d(tr, params)
-  end
-
-  # coil sensitivities in case of SENSE-reconstruction
-  if parallel && multiEcho
-    S = SensitivityOp( reshape(params[:senseMaps],:,acqData.numCoils),
-                       acqData.numEchoes)
-    E = diagOp( repeat(ft, acqData.numCoils)... )*S
-  elseif parallel && !multiEcho
-    S = SensitivityOp(reshape(params[:senseMaps],:,acqData.numCoils),1)
-    E = [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
-  elseif !parallel && multiEcho
-    E = diagOp(ft...)
-  else
-    E = ft
-  end
-
-  # sampling operator in case of undersampled cartesian acquisitions
-  if acqData.subsampleIndices != collect(1:length(acqData.kdata))
-    if get(params,:sampling, nothing) == "binary"
-      M = SamplingOp(Array{Bool})(acqData.subsampleIndices)
-    else
-      numNodes = prod(params[:shape])
-      M = SamplingOp(acqData.subsampleIndices,(numNodes, acqData.numEchoes, acqData.numCoils))
-    end
-    return M*E
-  end
-
-  return E
+function encodingOps3d_simple(acqData::AcquisitionData, params::Dict)
+  tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
+  return [fourierEncodingOp3d(tr[i], params) for i=1:acqData.numEchoes]
 end
 
+##########################################
+# fourier encoding with coil sensitivities
+##########################################
+function encodingOps2d_parallel(acqData::AcquisitionData, params::Dict;slice=1)
+  # fourier operators
+  ft = encodingOps2d_simple(acqData, params, slice=slice)
+  S = SensitivityOp(reshape(params[:senseMaps][:,:,slice,:],:,acqData.numCoils),1)
+  return [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
+end
+
+function encodingOps3d_parallel(acqData::AcquisitionData, params::Dict)
+  # fourier operators
+  ft = encodingOps3d_simple(acqData, params)
+  S = SensitivityOp(reshape(params[:senseMaps],:,acqData.numCoils),1)
+  return [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
+end
+
+#############################
+# multi echo fourier encoding
+#############################
+function encodingOp2d_multiEcho(acqData::AcquisitionData, params::Dict;slice=1)
+  # fourier operators
+  ft = encodingOps2d_simple(acqData, params, slice=slice)
+  return diagOp(ft)
+end
+
+function encodingOp3d_multiEcho(acqData::AcquisitionData, params::Dict)
+  # fourier operators
+  ft = encodingOps3d_simple(acqData, params)
+  return diagOp(ft)
+end
+
+#####################################################
+# multi echo fourier encoding with coil sensitivities
+#####################################################
+function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, params::Dict;slice=1)
+  # fourier operators
+  ft = encodingOps2d_simple(acqData, params, slice=slice)
+  S = SensitivityOp(reshape(params[:senseMaps][:,:,slice,:],:,acqData.numCoils),1)
+  return diagOp( repeat(ft, acqData.numCoils)... )*S
+end
+
+function encodingOp3d_multiEcho_parallel(acqData::AcquisitionData, params::Dict)
+  # fourier operators
+  ft = encodingOps3d_simple(acqData, params)
+  S = SensitivityOp(reshape(params[:senseMaps],:,acqData.numCoils),1)
+  return diagOp( repeat(ft, acqData.numCoils)... )*S
+end
+
+###################################
+# Encoding with low rank projection
+###################################
 function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1, parallel::Bool=false,)
 
   # low rank operator
@@ -100,7 +86,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
     E = diagOp( [ft for i=1:K]... )
   end
 
-  # sampling operator in case of undersampled cartesian acquisitions
+  #  TODO: sampling operator in case of undersampled cartesian acquisitions
   if get(params,:sampling, nothing) == "binary"
     M = SamplingOp(Array{Bool}(acqData.subsampleIndices))
   else
@@ -115,25 +101,6 @@ end
 #
 # return Fourier encoding operator with(out) correction when cmap is (not) specified
 #
-# function fourierEncodingOp(tr, params; slice=1)
-#   densityWeighting = get(params,:densityWeighting,true)
-#   fft = get(params,:fft,false)
-#   if fft
-#     FFTOp(ComplexF64, params[:shape])
-#   elseif !haskey(params,:correctionMap)
-#     return NFFTOp(params[:shape], tr, symmetrize=densityWeighting)
-#   else
-#     echoImage = get(params, :echoImage, true)
-#     method = get(params, :method, "nfft")
-#     alpha = get(params, :alpha, 1.75)
-#     m = get(params, :m, 1.75)
-#     K = get(params, :K, 20)
-#     return FieldmapNFFTOp( params[:shape],  tr, params[:correctionMap][:,:,slice],
-#                            symmetrize=densityWeighting, echoImage=echoImage, K=K,
-#                            alpha=alpha, m=m, method=method )
-#   end
-# end
-
 function fourierEncodingOp2d(tr, params; slice=0)
   shape = params[:shape]
   opName="fast"
