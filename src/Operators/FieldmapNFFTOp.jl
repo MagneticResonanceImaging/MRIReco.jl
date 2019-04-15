@@ -1,7 +1,7 @@
 export FieldmapNFFTOp, createInhomogeneityData_
 
-mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNothing} <:
-                      AbstractLinearOperator{T,F1,F2,F3}
+mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
+                      AbstractLinearOperator{T,Function,F1,F2}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -9,8 +9,6 @@ mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNo
   prod :: Function
   tprod :: F1
   ctprod :: F2
-  inv :: F3
-  density::Vector{Float64}
 end
 
 mutable struct InhomogeneityData
@@ -29,11 +27,11 @@ end
 function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{ComplexF64,D};
                         method::String="nfft",
-                        symmetrize::Bool=true,
                         echoImage::Bool=true,
                         alpha::Float64=1.75,
                         m::Float64=4.0,
-                        K=20) where D
+                        K=20,
+                        kargs...) where D
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
@@ -55,32 +53,27 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
     plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
   end
 
-  planTmp = NFFTPlan(nodes, shape, 3, 1.25, flags = FFTW.PATIENT)
-  density = convert(Vector{Float64}, sdc(planTmp))
-
   p = [zeros(ComplexF64, ncol) for t=1:Threads.nthreads() ]
   y = [zeros(ComplexF64, nrow) for t=1:Threads.nthreads() ]
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
 
   mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,nrow,ncol,shape,plan,idx,cparam,density,symmetrize,isCircular(tr),p,y,d)
+     produ(x,nrow,ncol,shape,plan,idx,cparam,isCircular(tr),p,y,d)
   ctmul(y::Vector{T}) where T<:ComplexF64 =
-     ctprodu(y,shape,plan,idx,cparam,density,symmetrize,isCircular(tr),p,y,d)
+     ctprodu(y,shape,plan,idx,cparam,isCircular(tr),p,y,d)
   inverse(y::Vector{T}) where T<:ComplexF64 =
-     inv(y,shape,plan,idx,cparam,density,symmetrize,isCircular(tr),p,y,d)
+     inv(y,shape,plan,idx,cparam,isCircular(tr),p,y,d)
 
-  return FieldmapNFFTOp{ComplexF64,Nothing,Function,Function}(nrow, ncol, false, false
+  return FieldmapNFFTOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
             , mul
             , nothing
-            , ctmul
-            , inverse
-            , density )
+            , ctmul)
 end
 
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-                density, symmetrize::Bool, shutter::Bool, p, y, d) where T<:ComplexF64
+               shutter::Bool, p, y, d) where T<:ComplexF64
   K = size(cparam.A_k,2)
   s = zeros(ComplexF64,numOfNodes)
 
@@ -101,9 +94,6 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
       s .*= exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
-  end
-  if symmetrize
-      s .*= sqrt.(density)
   end
   return s
 end
@@ -129,32 +119,15 @@ function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
   return
 end
 
-# function inv{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function inv(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-             cparam::InhomogeneityData, density, symmetrize::Bool,
-            shutter::Bool, p, y, d) where T<:ComplexF64
-  if symmetrize
-    x = x .* sqrt.(density)
-  else
-    x = x .* density
-  end
-
-  y = ctprodu(x,shape,plan,cparam,density,false,shutter,p,y,d)
-end
 
 # function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData, density, symmetrize::Bool,
-                 shutter::Bool, p, y_, d) where T<:ComplexF64
+                 cparam::InhomogeneityData, shutter::Bool, p, y_, d) where T<:ComplexF64
 
   y = zeros(ComplexF64,prod(shape))
   K = size(cparam.A_k,2)
 
-  if symmetrize
-    x_ = x .* sqrt.(density)
-  else
-    x_ = copy(x)
-  end
+  x_ = copy(x)
 
   # Preprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"

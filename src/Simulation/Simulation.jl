@@ -99,7 +99,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     p = Progress(nz*nc, 1, "Simulating data...")
   end
   for z = 1:nz
-    E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
+    E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
     for c = 1:nc
       # kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
       kdata[1,z][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])

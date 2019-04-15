@@ -12,13 +12,9 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
   # weight kdata with sampling density
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    acqData2 = weightedData(acqData, recoParams[:shape])
-    weightingFac=1.0
+    weights = samplingDensity(acqData,recoParams[:shape])
   else
-    # acqData2 = acqData
-    acqData2 = deepcopy(acqData)
-    acqData2.kdata /= sqrt(prod(recoParams[:shape]))
-    weightingFac=1.0/sqrt(prod(recoParams[:shape]))
+    weights = [1.0/sqrt(prod(recoParams[:shape])) for echo=1:acqData.numEcoes]
   end
 
   # regularization
@@ -31,16 +27,16 @@ function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams, :solver, "fista")
 
   for k = 1:acqData.numSlices
-    F = weightingFac*encodingOps2d_simple(acqData, recoParams, slice=k)
+    F = encodingOps2d_simple(acqData, recoParams, slice=k)
     for j = 1:acqData.numEchoes
+      W = WeightingOp(weights[j])
       for i = 1:acqData.numCoils
         reg = Regularization(regName, λ; recoParams...)
         if normalize
           RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
         end
-        solver = createLinearSolver(solvername, F[j]; reg=reg, recoParams...)
-        kdata = kData(acqData2,j,i,k)
-
+        solver = createLinearSolver(solvername, W*F[j]; reg=reg, recoParams...)
+        kdata = kData(acqData,j,i,k).* weights[j] #kData(acqData2,j,i,k)
         I = solve(solver, kdata)
 
         if isCircular( trajectory(acqData, j) )
@@ -73,17 +69,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
   # weight kdata with sampling density
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    acqData2 = weightedData(acqData, recoParams[:shape])
-    weightingFac=1.0
+    weights = vcat(samplingDensity(acqData,recoParams[:shape])...)
   else
-    # acqData2 = acqData
-    acqData2 = deepcopy(acqData)
-    acqData2.kdata /= sqrt(prod(recoParams[:shape]))
-    weightingFac=1.0/sqrt(prod(recoParams[:shape]))
+    weights = vcat([fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]...)
   end
-
-  # encoding operator and trafo into sparse domain
-  F = weightingFac*F
+  W = WeightingOp(weights)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
@@ -99,9 +89,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
-      solver = createLinearSolver(solvername, F; reg=reg, recoParams...)
+      solver = createLinearSolver(solvername, W*F; reg=reg, recoParams...)
 
-      kdata = multiEchoData(acqData2, j, i)
+      kdata = multiEchoData(acqData, j, i) .* weights  #multiEchoData(acqData2, j, i)
       Ireco[:,j,i] = solve(solver,kdata)
       # TODO circular shutter
     end
@@ -123,13 +113,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   # weight kdata with sampling density
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    acqData2 = weightedData(acqData, recoParams[:shape])
-    weightingFac=1.0
+    weights = samplingDensity(acqData,recoParams[:shape])
   else
-    # acqData2 = acqData
-    acqData2 = deepcopy(acqData)
-    acqData2.kdata /= sqrt(prod(recoParams[:shape]))
-    weightingFac=1.0/sqrt(prod(recoParams[:shape]))
+    weights = [fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]
   end
 
   # regularization
@@ -142,14 +128,15 @@ function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams,:solver,"fista")
 
   for k = 1:acqData.numSlices
-    E = weightingFac*encodingOps2d_parallel(acqData, recoParams; slice=k)
+    E = encodingOps2d_parallel(acqData, recoParams; slice=k)
     for j = 1:acqData.numEchoes
+      W = WeightingOp(weights[j],acqData.numCoils)
       reg = Regularization(regName, λ; multiEcho=true, recoParams...)
       if normalize
         RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
       end
-      solver = createLinearSolver(solvername, E[j]; reg=reg, recoParams...)
-      kdata = multiCoilData(acqData2, j, k)
+      solver = createLinearSolver(solvername, W*E[j]; reg=reg, recoParams...)
+      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], acqData.numCoils) #multiCoilData(acqData2, j, k)
       I = solve(solver, kdata)
 
       if isCircular( trajectory(acqData, j) )
@@ -174,14 +161,11 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
   # rescale data for the symmetrized problem
   densityWeighting = get(recoParams,:densityWeighting,false)
   if densityWeighting
-    acqData2 = weightedData(acqData, recoParams[:shape])
-    weightingFac=1.0
+    weights = samplingDensity(acqData,recoParams[:shape])
   else
-    # acqData2 = acqData
-    acqData2 = deepcopy(acqData)
-    acqData2.kdata /= sqrt(prod(recoParams[:shape]))
-    weightingFac=1.0/sqrt(prod(recoParams[:shape]))
+    weights = vcat([fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]...)
   end
+  W = WeightingOp(weights,acqData.numCoils)
 
   # regularization
   regName = get(recoParams, :regularization, "L1")
@@ -196,9 +180,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams:
   solvername = get(recoParams,:solver,"fista")
 
   for i = 1:acqData.numSlices
-    E = weightingFac*encodingOp_2d_multiEcho_parallel(acqData, recoParams, slice=i)
-    solver = createLinearSolver(solvername, E; reg=reg, recoParams...)
-    kdata = multiCoilMultiEchoData(acqData2, i)
+    E = encodingOp_2d_multiEcho_parallel(acqData, recoParams, slice=i)
+    solver = createLinearSolver(solvername, W*E; reg=reg, recoParams...)
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, acqData.numCoils)# multiCoilMultiEchoData(acqData2, i)
     Ireco[:,:,i] = solve(solver, kdata)
   end
 

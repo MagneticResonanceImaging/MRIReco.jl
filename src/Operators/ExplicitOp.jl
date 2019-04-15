@@ -1,6 +1,6 @@
 export ExplicitOp
 
-mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNothing} <: AbstractLinearOperator{T,F1,F2,F3}
+mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <: AbstractLinearOperator{T,Function,F1,F2}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -8,26 +8,17 @@ mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing,F3<:FuncOrNothin
   prod :: Function
   tprod :: F1
   ctprod :: F2
-  inv :: F3
-  density::Vector{Float64}
 end
 
 #
 # Linear Operator to perform explicite reconstruction
 #
 function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
-                        ; symmetrize::Bool=true
-                        , echoImage::Bool=false) where D
+                        ; echoImage::Bool=false, kargs...) where D
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   nrow = size(nodes,2)
   ncol = prod(shape)
-
-  density = zeros(size(nodes,2))
-  if symmetrize
-      plan = NFFTPlan(nodes, shape, 4, 1.75)
-      density = convert(Vector{Float64}, sdc(plan))
-  end
 
   # if echo image is desired echo time is needed as an offset
   if echoImage
@@ -36,21 +27,15 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array
       echoOffset = 0.0
   end
 
-  return ExplicitOp{ComplexF64,Nothing,Function,Function}(nrow, ncol, false, false
-            , x->produ(x, shape, nodes, times, echoOffset, correctionmap, density, symmetrize)
+  return ExplicitOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
+            , x->produ(x, shape, nodes, times, echoOffset, correctionmap)
             , nothing
-            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap, density, symmetrize)
-            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap, density, symmetrize)
-            , density )
+            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap))
 end
 
 function produ(x::Vector{T}, shape::NTuple{2,Int64},
                     nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                    correctionmap::Matrix{ComplexF64}, density::Vector{Float64},
-                    symmetrize::Bool) where T<:Union{Real,Complex}
-   if symmetrize
-       x = x .* sqrt(density)
-   end
+                    correctionmap::Matrix{ComplexF64}) where T<:Union{Real,Complex}
 
    if isempty(correctionmap)
        disturbanceTerm = zeros(ComplexF64,shape...)
@@ -75,11 +60,7 @@ end
 
 function produ(x::Vector{T}, shape::NTuple{3,Int64},
                     nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                    correctionmap::Array{ComplexF64,3}, density::Vector{Float64},
-                    symmetrize::Bool) where T<:Union{Real,Complex}
-   if symmetrize
-       x = x .* sqrt(density)
-   end
+                    correctionmap::Array{ComplexF64,3}) where T<:Union{Real,Complex}
 
    if isempty(correctionmap)
        disturbanceTerm = zeros(ComplexF64,shape...)
@@ -105,12 +86,7 @@ end
 
 function ctprodu(x::Vector{T}, shape::NTuple{2,Int64},
                         nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                        correctionmap::Matrix{ComplexF64}, density::Vector{Float64},
-                        symmetrize::Bool) where T<:Union{Real,Complex}
-
-  if symmetrize
-      x = x .* sqrt(density) # <- using for FISTA
-  end
+                        correctionmap::Matrix{ComplexF64}) where T<:Union{Real,Complex}
 
   if isempty(correctionmap)
       disturbanceTerm = zeros(ComplexF64,shape...)
@@ -133,12 +109,7 @@ end
 
 function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
                         nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                        correctionmap::Array{ComplexF64,3}, density::Vector{Float64},
-                        symmetrize::Bool) where T<:Union{Real,Complex}
-
-  if symmetrize
-      x = x .* sqrt(density) # <- using for FISTA
-  end
+                        correctionmap::Array{ComplexF64,3}) where T<:Union{Real,Complex}
 
   if isempty(correctionmap)
       disturbanceTerm = zeros(ComplexF64,shape...)

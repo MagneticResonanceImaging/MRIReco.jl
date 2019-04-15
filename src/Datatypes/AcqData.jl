@@ -115,7 +115,6 @@ end
 ######################################
 # utilities to convert and edit acqData
 ######################################
-
 """
 dims(tr::Trajectory) =
  convert undersampled AcquisitionData, where only profiles contained in
@@ -129,7 +128,7 @@ function convertUndersampledData(acqData::AcquisitionData)
   # get number of nodes and reset idx
   numNodes = size(acqData.subsampleIndices,1)
   for echo=1:acqDataSub.numEchoes
-    acqDataSub.subsampleIndices[echo] = collect(1:size(acqDataSub.traj[echo],2))
+    acqDataSub.subsampleIndices[echo] = collect(1:length(acqData.subsampleIndices[echo]))
   end
 
   # replace trajectories by Undersampled Trajectories
@@ -142,63 +141,20 @@ function convertUndersampledData(acqData::AcquisitionData)
   return acqDataSub
 end
 
-#
-# weight kdata with the sampling density of the trajectories used
-#
-function weightedData(acqData::AcquisitionData, shape::Tuple)
-  res = deepcopy(acqData)
-  weightData!(res, shape)
-  return res
-end
-
-function weightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData,echo)) for echo=1:acqData.numEchoes]
-  for slice = 1:acqData.numSlices
-    for coil = 1:acqData.numCoils
-      for echo = 1:acqData.numEchoes
-        acqData.kdata[echo,slice][:,coil] .*= sqrt.(ft[echo].density)
-      end
-    end
+##################
+# sampling weights
+##################
+function samplingDensity(acqData::AcquisitionData,shape::Tuple)
+  numEchoes = acqData.numEchoes
+  numSlices = acqData.numSlices
+  weights = Array{Vector{ComplexF64}}(undef,numEchoes)
+  for echo=1:numEchoes
+    tr = trajectory(acqData,echo)
+    nodes = kspaceNodes(tr)[:,acqData.subsampleIndices[echo]]
+    plan = NFFTPlan(nodes, shape,3, 1.25)
+    weights[echo] = sqrt.(sdc(plan))
   end
-  return acqData
-end
-
-function weightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData,echo)) for echo=1:acqData.numEchoes]
-  for coil = 1:acqData.numCoils
-    for echo = 1:acqData.numEchoes
-        acqData.kdata[echo,1][:,coil] .*= sqrt.(ft[echo].density)
-    end
-  end
-  return acqData
-end
-
-function unweightData!(acqData::AcquisitionData, shape::NTuple{2,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData,echo)) for echo=1:acqData.numEchoes]
-  for slice = 1:acqData.numSlices
-    for coil = 1:acqData.numCoils
-      for echo = 1:acqData.numEchoes
-        acqData.kdata[echo,slice][:,coil] ./= sqrt.(ft[echo].density)
-      end
-    end
-  end
-  return acqData
-end
-
-function unweightData!(acqData::AcquisitionData, shape::NTuple{3,Int64})
-  ft = [ NFFTOp(shape,trajectory(acqData,echo)) for echo=1:acqData.numEchoes]
-  for coil = 1:acqData.numCoils
-    for echo = 1:acqData.numEchoes
-        acqData.kdata[echo,1][:,coil] ./= sqrt.(ft[echo].density)
-    end
-  end
-  return acqData
-end
-
-function unweightDataSquared!(acqData::AcquisitionData, shape::Tuple)
-  unweightData!(acqData, shape)
-  unweightData!(acqData, shape)
-  return acqData
+  return weights
 end
 
 #########################################################################
