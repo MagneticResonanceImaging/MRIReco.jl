@@ -1,3 +1,5 @@
+export Limit, MeasurementDependency, CoilDescription
+
 function GeneralParameters(str::String)
   return GeneralParameters( parse_string(str) )
 end
@@ -18,6 +20,22 @@ function addToDict!(params::Dict, e::XMLElement, paramName::String, ::Type{T},
   end
 end
 
+struct Limit
+  minimum::Int
+  maximum::Int
+  center::Int
+end
+
+struct MeasurementDependency
+  dependencyType::String
+  measurementID::String
+end
+
+struct CoilDescription
+  number::Int
+  name::String
+end
+
 customParse(::Type{T}, node) where T = parse(T,content(node))
 customParse(::Type{String}, node) where T = content(node)
 function customParse(::Type{Vector{T}}, node) where T
@@ -26,21 +44,21 @@ function customParse(::Type{Vector{T}}, node) where T
   z = content(get_elements_by_tagname(node, "z")[1])
   return [parse(T,x),parse(T,y),parse(T,z)]
 end
-function customParse(::Type{NamedTuple{(:dependencyType, :measurementID),Tuple{String,String}}}, node)
+function customParse(::Type{MeasurementDependency}, node)
   a = content(get_elements_by_tagname(node, "dependencyType")[1])
   b = content(get_elements_by_tagname(node, "measurementID")[1])
-  return (dependencyType=a, measurementID=b)
+  return MeasurementDependency(a, b)
 end
-function customParse(::Type{NamedTuple{(:coilNumber, :coilName),Tuple{Int,String}}}, node)
+function customParse(::Type{CoilDescription}, node)
   a = content(get_elements_by_tagname(node, "coilNumber")[1])
   b = content(get_elements_by_tagname(node, "coilName")[1])
-  return (coilNumber=parse(Int,a), coilName=b)
+  return CoilDescription(parse(Int,a), b)
 end
-function customParse(::Type{NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}}, node)
+function customParse(::Type{Limit}, node)
   a = content(get_elements_by_tagname(node, "minimum")[1])
   b = content(get_elements_by_tagname(node, "maximum")[1])
   c = content(get_elements_by_tagname(node, "center")[1])
-  return (minimum=parse(Int,a), maximum=parse(Int,b), center=parse(Int,c))
+  return Limit(parse(Int,a), parse(Int,b), parse(Int,c))
 end
 
 function GeneralParameters(xdoc::XMLDocument)
@@ -81,8 +99,7 @@ function GeneralParameters(xdoc::XMLDocument)
       addToDict!(params, e[1], "seriesInstanceUIDRoot", String)
       addToDict!(params, e[1], "frameOfReferenceUID", String)
 
-      addToDict!(params, e[1], "measurementDependency",
-                     NamedTuple{(:dependencyType, :measurementID),Tuple{String,String}})
+      addToDict!(params, e[1], "measurementDependency", MeasurementDependency)
       addToDict!(params, e[1], "referencedImageSequence", String)
     end
 
@@ -96,7 +113,7 @@ function GeneralParameters(xdoc::XMLDocument)
       addToDict!(params, e[1], "receiverChannels", Int)
       addToDict!(params, e[1], "institutionName", String)
       addToDict!(params, e[1], "stationName", String)
-      addToDict!(params, e[1], "coilLabel", NamedTuple{(:coilNumber, :coilName),Tuple{Int,String}})
+      addToDict!(params, e[1], "coilLabel", CoilDescription)
     end
 
     # ExperimentalConditions
@@ -119,16 +136,16 @@ function GeneralParameters(xdoc::XMLDocument)
 
       d = e[1]["encodingLimits"]
       if !isempty(d)
-        addToDict!(params, d[1], "kspace_encoding_step_0", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_kspace_encoding_step_0")
-        addToDict!(params, d[1], "kspace_encoding_step_1", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_kspace_encoding_step_1")
-        addToDict!(params, d[1], "kspace_encoding_step_2", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_kspace_encoding_step_2")
-        addToDict!(params, d[1], "average", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_average")
-        addToDict!(params, d[1], "slice", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_slice")
-        addToDict!(params, d[1], "contrast", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_contrast")
-        addToDict!(params, d[1], "phase", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_phase")
-        addToDict!(params, d[1], "repetition", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_repetition")
-        addToDict!(params, d[1], "set", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_set")
-        addToDict!(params, d[1], "segment", NamedTuple{(:minimum, :maximum, :center),NTuple{3,Int}}, "enc_lim_segment")
+        addToDict!(params, d[1], "kspace_encoding_step_0", Limit, "enc_lim_kspace_encoding_step_0")
+        addToDict!(params, d[1], "kspace_encoding_step_1", Limit, "enc_lim_kspace_encoding_step_1")
+        addToDict!(params, d[1], "kspace_encoding_step_2", Limit, "enc_lim_kspace_encoding_step_2")
+        addToDict!(params, d[1], "average", Limit, "enc_lim_average")
+        addToDict!(params, d[1], "slice", Limit, "enc_lim_slice")
+        addToDict!(params, d[1], "contrast", Limit, "enc_lim_contrast")
+        addToDict!(params, d[1], "phase", Limit, "enc_lim_phase")
+        addToDict!(params, d[1], "repetition", Limit, "enc_lim_repetition")
+        addToDict!(params, d[1], "set", Limit, "enc_lim_set")
+        addToDict!(params, d[1], "segment", Limit, "enc_lim_segment")
       end
 
       addToDict!(params, e[1], "trajectory", String)
@@ -158,10 +175,21 @@ function GeneralParameters(xdoc::XMLDocument)
         b = parse(Int,content(d[1]["accelerationFactor"][1]["kspace_encoding_step_2"][1]))
         params["accelerationFactor"] = (a,b)
 
-        addToDict!(params, d[1], "calibrationMode", String, "PICalibrationMode")
-        addToDict!(params, d[1], "interleavingDimension", String, "PIInterleavingDimension")
+        addToDict!(params, d[1], "calibrationMode", String)
+        addToDict!(params, d[1], "interleavingDimension", String)
       end
       addToDict!(params, e[1], "echoTrainLength", Int)
+    end
+
+    # Support wrongly created files (which are downloaded in the tests):
+    e = get_elements_by_tagname(LightXML.root(xdoc),"parallelImaging")
+    if !isempty(e)
+      a = parse(Int,content(e[1]["accelerationFactor"][1]["kspace_encoding_step_1"][1]))
+      b = parse(Int,content(e[1]["accelerationFactor"][1]["kspace_encoding_step_2"][1]))
+      params["accelerationFactor"] = (a,b)
+
+      addToDict!(params, e[1], "calibrationMode", String)
+      addToDict!(params, e[1], "interleavingDimension", String)
     end
 
     # SequenceParameters
@@ -218,14 +246,86 @@ function GeneralParameters(xdoc::XMLDocument)
 end
 
 
-function generateGroup(params, paramVec, node, groupName)
-  if any( [haskey(params,n) for n in paramVec] )
+function generateGroup(params, paramVec, node, groupName, prefix="")
+  if any( [haskey(params,prefix*n) for n in paramVec] )
     xs = new_child(node, groupName)
     for p in paramVec
-      if haskey(params,p)
-        xsp = new_child(xs, p)
-        add_text(xsp, string(params[p]))
+      p_ = prefix*p
+      if haskey(params,p_)
+        insertNode(xs, p, params[p_])
       end
+    end
+  end
+end
+
+
+function insertNode(xs, paramName::String, param::T) where T
+  xsp = new_child(xs, paramName)
+  add_text(xsp, string(param))
+end
+
+function insertNode(xs, paramName::String, param::Vector{T}) where T <: Number
+  xsp = new_child(xs, paramName)
+  insertNode(xsp, "x", param[1])
+  insertNode(xsp, "y", param[2])
+  insertNode(xsp, "z", param[3])
+end
+
+function insertNode(xs, paramName::String, param::Vector{T}) where T
+  for p in param
+    insertNode(xs, paramName, p)
+  end
+end
+
+function insertNode(xs, paramName::String, param::Tuple{T,T}) where T <: Integer
+  xsp = new_child(xs, "accelerationFactor")
+  insertNode(xsp, "kspace_encoding_step_1", param[1])
+  insertNode(xsp, "kspace_encoding_step_2", param[2])
+end
+
+function insertNode(xs, paramName::String, param::MeasurementDependency)
+  xsp = new_child(xs, paramName)
+  insertNode(xsp, "dependencyType", param.dependencyType)
+  insertNode(xsp, "measurementID", param.measurementID)
+end
+
+function insertNode(xs, paramName::String, param::CoilDescription)
+  xsp = new_child(xs, paramName)
+  insertNode(xsp, "coilNumber", param.number)
+  insertNode(xsp, "coilName", param.name)
+end
+
+function insertNode(xs, paramName::String, param::Limit)
+  xsp = new_child(xs, paramName)
+  insertNode(xsp, "minimum", param.minimum)
+  insertNode(xsp, "maximum", param.maximum)
+  insertNode(xsp, "center", param.center)
+end
+
+function insertNode(xs, paramName::String, param_::Dict{String,Any})
+  xsp = new_child(xs, paramName)
+  param = deepcopy(param_)
+  if haskey(param, "comment")
+    insertNode(xsp, "comment", param["comment"])
+    delete!(param,"comment")
+  end
+  if haskey(param, "identifier")
+    insertNode(xsp, "identifier", param["identifier"])
+    delete!(param,"identifier")
+  end
+  for (key,val) in param
+    if typeof(val) <: Integer
+      xspp = new_child(xsp, "userParameterLong")
+      insertNode(xspp, "name", key)
+      insertNode(xspp, "value", val)
+    elseif typeof(val) <: AbstractFloat
+      xspp = new_child(xsp, "userParameterDouble")
+      insertNode(xspp, "name", key)
+      insertNode(xspp, "value", val)
+    elseif typeof(val) <: AbstractString
+      xspp = new_child(xsp, "userParameterString")
+      insertNode(xspp, "name", key)
+      insertNode(xspp, "value", val)
     end
   end
 end
@@ -247,43 +347,67 @@ function GeneralParametersToXML(params::Dict{String,Any})
        "studyDescription", "studyInstanceUID"]
   generateGroup(params, p, xroot, "studyInformation")
 
-#=
-      e = get_elements_by_tagname(LightXML.root(xdoc),"measurementInformation")
-      if !isempty(e)
-        addToDict!(params, e[1], "measurementID", String)
-        addToDict!(params, e[1], "seriesDate", String)
-        addToDict!(params, e[1], "seriesTime", String)
-        addToDict!(params, e[1], "patientPosition", String) # non-optional?
-        addToDict!(params, e[1], "initialSeriesNumber", Int)
-        addToDict!(params, e[1], "protocolName", String)
-        addToDict!(params, e[1], "seriesDescription", String)
-        addToDict!(params, e[1], "seriesInstanceUIDRoot", String)
-        addToDict!(params, e[1], "frameOfReferenceUID", String)
-
-        addToDict!(params, e[1], "measurementDependency",
-                       NamedTuple{(:dependencyType, :measurementID),Tuple{String,String}})
-        addToDict!(params, e[1], "referencedImageSequence", String)
-      end
-=#
+  p = ["measurementID", "seriesDate", "seriesTime", "patientPosition", "initialSeriesNumber",
+       "protocolName", "seriesDescription", "seriesInstanceUIDRoot", "frameOfReferenceUID",
+       "measurementDependency", "referencedImageSequence"]
+  generateGroup(params, p, xroot, "measurementInformation")
 
   p = ["systemVendor", "systemModel", "systemFieldStrength_T",
        "relativeReceiverNoiseBandwidth", "receiverChannels",
-       "institutionName", "stationName"]  #TODO handle coilLabel
+       "institutionName", "stationName", "coilLabel"]
   generateGroup(params, p, xroot, "acquisitionSystemInformation")
 
-#=
-      # AcquisitionSystemInformation
-      e = get_elements_by_tagname(LightXML.root(xdoc),"acquisitionSystemInformation")
-      if !isempty(e)
-        addToDict!(params, e[1], "systemVendor", String)
-        addToDict!(params, e[1], "systemModel", String)
-        addToDict!(params, e[1], "systemFieldStrength_T", Float64)
-        addToDict!(params, e[1], "relativeReceiverNoiseBandwidth", Float64)
-        addToDict!(params, e[1], "receiverChannels", Int)
-        addToDict!(params, e[1], "institutionName", String)
-        addToDict!(params, e[1], "stationName", String)
-        addToDict!(params, e[1], "coilLabel", NamedTuple{(:coilNumber, :coilName),Tuple{Int,String}})
+
+  p = ["H1resonanceFrequency_Hz"]
+  generateGroup(params, p, xroot, "experimentalConditions")
+
+  pEnc = ["encodedSize", "encodedFOV"]
+  pRecon = ["reconSize", "reconFOV"]
+  pEncLim = ["kspace_encoding_step_0", "kspace_encoding_step_1",
+             "kspace_encoding_step_2", "average", "slice",
+             "contrast", "phase", "repetition", "set",
+             "segment"]
+
+  pElse = ["trajectory", "trajectoryDescription", "echoTrainLength"]
+
+  pPI = ["accelerationFactor", "calibrationMode", "interleavingDimension"]
+
+  p = union(pEnc, pRecon, pEncLim, pElse, pPI)
+
+  if any( [haskey(params,n) for n in p] )
+    xs = new_child(xroot, "encoding")
+
+    if haskey(params, "encodedSize") || haskey(params, "encodedFOV")
+      xsp = new_child(xs, "encodedSpace")
+      insertNode(xsp, "matrixSize", params["encodedSize"])
+      insertNode(xsp, "fieldOfView_mm", params["encodedFOV"])
+    end
+
+    if haskey(params, "reconSize") || haskey(params, "reconFOV")
+      xsp = new_child(xs, "reconSpace")
+      insertNode(xsp, "matrixSize", params["reconSize"])
+      insertNode(xsp, "fieldOfView_mm", params["reconFOV"])
+    end
+
+    generateGroup(params, pEncLim, xs, "encodingLimits", "enc_lim_")
+
+    for n in pElse
+      if haskey(params, n)
+        insertNode(xs, n, params[n])
       end
-=#
+    end
+
+    generateGroup(params, pPI, xs, "parallelImaging")
+  end
+
+  p = ["TR", "TE", "TI", "flipAngle_deg", "sequence_type", "echo_spacing"]
+  generateGroup(params, p, xroot, "sequenceParameters")
+
+  p = ["waveformName", "waveformType", "waveformUserParameters"]
+  generateGroup(params, p, xroot, "waveformInformation")
+
+  p = ["userParameters"]
+  generateGroup(params, p, xroot, "userParameters")
+
   return string(xdoc)
 end
