@@ -131,6 +131,14 @@ function acqSize(b::BrukerFile)
   N[1] = div(N[1],2)
   return N
 end
+function acqFov(b::BrukerFile)
+  N = parse.(Float64,b["ACQ_fov"])./100
+  if length(N) == 3
+    return N
+  else
+    return push!(N, parse(Float64,b["ACQ_slice_sepn"][1])./100)
+  end
+end
 ##$PVM_EncAvailReceivers=1
 
 acqNumCoils(b::BrukerFile) = parse(Int,b["PVM_EncNReceivers"])
@@ -230,7 +238,15 @@ function RawAcquisitionData(b::BrukerFile)
 
     params = Dict{String,Any}()
     params["trajectory"] = "cartesian"
-    params["encodedSize"] = acqSize(b)
+    N = acqSize(b)
+    if length(N) < 3
+      N_ = ones(Int,3)
+      N_[1:length(N)] .= N
+      N = N_
+    end
+    params["encodedSize"] = N
+    F = acqFov(b)
+    params["encodedFOV"] = F
     params["receiverChannels"] = 1
 
     return RawAcquisitionData(params, profiles)
@@ -252,8 +268,8 @@ function recoData(f::BrukerFile)
   return map(Float32,I)
 end
 
-recoFov(f::BrukerFile) = push!(parse.(Float64,f["RECO_fov",1])./1000,
-                                parse(Float64,f["ACQ_slice_sepn"][1])./1000)
+recoFov(f::BrukerFile) = push!(parse.(Float64,f["RECO_fov",1])./100,
+                                parse(Float64,f["ACQ_slice_sepn"][1])./100)
 recoFovCenter(f::BrukerFile) = zeros(3)
 recoSize(f::BrukerFile) = push!(parse.(Int,f["RECO_size",1]),
                                 parse(Int,f["RecoObjectsPerRepetition",1]))
