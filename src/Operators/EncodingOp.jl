@@ -1,16 +1,18 @@
-export EncodingOp, lrEncodingOp
+export EncodingOp, lrEncodingOp, fourierEncodingOp2d, fourierEncodingOp3d
 
 #########################
 # simple Fourier Encoding
 #########################
 function encodingOps2d_simple(acqData::AcquisitionData, params::Dict;slice=1)
   tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
-  return [fourierEncodingOp2d(tr[i], params, slice=slice) for i=1:acqData.numEchoes]
+  idx = acqData.subsampleIndices
+  return [fourierEncodingOp2d(tr[i], params, slice=slice, subsampleIdx=idx[i]) for i=1:acqData.numEchoes]
 end
 
 function encodingOps3d_simple(acqData::AcquisitionData, params::Dict)
   tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
-  return [fourierEncodingOp3d(tr[i], params) for i=1:acqData.numEchoes]
+  idx = acqData.subsampleIndices
+  return [fourierEncodingOp3d(tr[i], params, subsampleIdx=idx[i]) for i=1:acqData.numEchoes]
 end
 
 ##########################################
@@ -101,56 +103,59 @@ end
 #
 # return Fourier encoding operator with(out) correction when cmap is (not) specified
 #
-function fourierEncodingOp2d(tr, params; slice=0)
+function fourierEncodingOp2d(tr::Trajectory, params; subsampleIdx::Vector{Int64}=Int64[], slice=0)
   shape = params[:shape]
   opName="fast"
-  if get(params,:fft,false)
-    opName="fft"
-  elseif get(params,:explicit,false)
+  if get(params,:explicit,false)
     opName="explicit"
   end
 
-  return fourierEncodingOp2d(shape,tr,opName;slice=slice,params...)
+  return fourierEncodingOp2d(shape,tr,opName;subsampleIdx=subsampleIdx,slice=slice,params...)
 end
 
 """
-return 2d Fourier encoding operator (either Explicit, FFT or NFFT)
-  opname : "explicit", "fft" or "fast"
+return 2d Fourier encoding operator (either Explicit or NFFT)
+  opname : "explicit" or "fast"
   slice : slice to which the operator will be applied
   echoImage : calculate signal evolution relative to the echo time
 """
 function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::String;
-          slice::Int64=1, correctionMap=[], echoImage::Bool=true,
-          method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
-
+          subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap=[], echoImage::Bool=true,
+          method::String="nfft", alpha::Float64=1.25, m::Float64=3.0, K::Int64=20, kargs...)
+  # Fourier transformations
   if opName=="explicit"
     @debug "ExplicitOp"
-    return ExplicitOp(shape,tr,correctionMap[:,:,slice], echoImage=echoImage)
-  elseif opName=="fft"
-    @debug "FFTOp"
-    return FFTOp(ComplexF64, shape)
+    ftOp = ExplicitOp(shape,tr,correctionMap[:,:,slice], echoImage=echoImage)
   elseif opName=="fast"
     @debug "NFFT-based Op"
-    if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
-      return NFFTOp(shape, tr)
-    else
-      return FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice],
+    if !isempty(correctionMap) && correctionMap!=zeros(ComplexF64,size(correctionMap))
+      ftOp = FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice],
                             echoImage=echoImage, alpha=alpha, m=m, K=K)
+    elseif isCartesian(tr)
+      @debug "FFTOp"
+      ftOp = sqrt(prod(shape))*FFTOp(ComplexF64, shape)
+    else
+      ftOp = NFFTOp(shape, tr)
     end
   else
-    error("opName $(opName) is not known")
+    @error "opName $(opName) is not known"
   end
 
-  return NFFTOp(shape, tr)
+  # subsampling
+  if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
+    S = SamplingOp(subsampleIdx,shape)
+  else
+    S = opEye()
+  end
+
+  return S*ftOp
 end
 
-function fourierEncodingOp3d(tr, params)
+function fourierEncodingOp3d(tr, params; subsampleIdx::Vector{Int64}=Int64[])
   shape = params[:shape]
   opName="fast"
-  if get(params,:fft,false)
-    opName=="fft"
-  elseif get(params,:explicit,false)
-    opName=="explicit"
+  if get(params,:explicit,false)
+    opName="explicit"
   end
 
   return fourierEncodingOp3d(shape,tr,opName;params...)
@@ -162,23 +167,30 @@ return 3d Fourier encoding operator (either Explicit, FFT or NFFT)
   echoImage : calculate signal evolution relative to the echo time
 """
 function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::Trajectory, opName::String;
-          correctionMap=[], echoImage::Bool=true,
+          subsampleIdx::Vector{Int64}=Int64[], correctionMap=[], echoImage::Bool=true,
           method::String="nfft", alpha::Float64=1.75, m::Float64=4.0, K::Int64=20, kargs...)
 
   if opName=="explicit"
-    return ExplicitOp(shape,tr,correctionMap,echoImage=echoImage)
-  elseif opName=="fft"
-    return FFTOp(ComplexF64, shape)
+    ftOp = ExplicitOp(shape,tr,correctionMap,echoImage=echoImage)
   elseif opName=="fast"
-    if isempty(correctionMap) || correctionMap==zeros(ComplexF64,size(correctionMap))
-      return NFFTOp(shape, tr)
-    else
-      return FieldmapNFFTOp(shape, tr, correctionMap,
+    if !isempty(correctionMap) && correctionMap!=zeros(ComplexF64,size(correctionMap))
+      ftOp = FieldmapNFFTOp(shape, tr, correctionMap,
                             echoImage=echoImage, alpha=alpha, m=m, K=K)
+    elseif isCartesian(tr)
+      ftOp = sqrt(prod(shape))*FFTOp(ComplexF64, shape)
+    else
+      ftOp = NFFTOp(shape, tr)
     end
   else
     error("opName $(opName) is not known")
   end
 
-  return NFFTOp(shape, tr)
+  # subsampling
+  if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
+    S = SamplingOp(subsampleIdx,shape)
+  else
+    S = opEye()
+  end
+
+  return S*ftOp
 end

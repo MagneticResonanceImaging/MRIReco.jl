@@ -136,6 +136,7 @@ function convertUndersampledData(acqData::AcquisitionData)
     tr = trajectory(acqDataSub,i)
     # assume that coils and slices experience the same trajectory
     tr.nodes = tr.nodes[:,acqData.subsampleIndices[i]]
+    tr.cartesian = false
   end
 
   return acqDataSub

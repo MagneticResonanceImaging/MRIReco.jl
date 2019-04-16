@@ -115,7 +115,7 @@ end
 
 function test_changeEncodingSize(N=32)
     @info "Testing reduction of encoding size"
-    I = shepp_logan(N)
+    I = shepp_logan(2*N)
     tr = CartesianTrajectory(2*N,2*N)
     acqData = simulation_fast(tr,I)
     acqData.encodingSize = [2*N,2*N]

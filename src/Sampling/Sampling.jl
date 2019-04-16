@@ -51,45 +51,6 @@ function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
   return kspace[patOut],patOut
 end
 
-# function sample_kspace(acqData::AcquisitionData,redFac::Float64,
-#                        patFunc::AbstractString; rand=true, profiles=false,
-#                        seed = 1234, kargs...)
-#
-#   numEchoes = acqData.numEchoes
-#   numCoils = acqData.numCoils
-#   numSlices = acqData.numSlices
-#   numNodes = div(length(acqData.kdata), numEchoes*numCoils*numSlices)
-#
-#   tr = acqData.traj
-#
-#   if profiles
-#     numNodes = tr.numSamplingPerProfile * Int(div(tr.numProfiles, redFac))
-#     kdata_sub = zeros(ComplexF64, numNodes, numEchoes, numCoils, numSlices)
-#     samplePointer = collect(1:numNodes:length(kdata_sub)-numNodes+1)
-#   else
-#     numNodes = Int(div(numNodes, redFac))
-#     kdata_sub = zeros(ComplexF64, numNodes, numEchoes, numCoils, numSlices)
-#     samplePointer = collect(1:numNodes:length(kdata_sub)-numNodes+1)
-#   end
-#
-#   idx = zeros(Int64, numNodes, numEchoes, numCoils, numSlices)
-#
-#   for i = 1:numEchoes
-#     samplingShape = (tr[i].numSamplingPerProfile, tr[i].numProfiles)
-#     pattern = SamplingPattern(samplingShape, redFac, patFunc; seed = seed, kargs...)
-#     patOut = sample(samplingShape,redFac,pattern.patParams; seed = seed, kargs...)
-#     patOut = sort(patOut)
-#     for j=1:numCoils, k=1:numSlices
-#       kdata_sub[:,i,j,k] = kData(acqData,i,j,k)[patOut]
-#       idx[:,i,j,k] = patOut
-#     end
-#     rand && (seed += 1)
-#   end
-#   return AcquisitionData(acqData.sequenceInfo, tr, vec(kdata_sub), acqData.numEchoes,
-#                          acqData.numCoils, acqData.numSlices, samplePointer, idx,
-#                          acqData.encodingSize, acqData.fov)
-# end
-
 function sample_kspace(acqData::AcquisitionData,redFac::Float64,
                        patFunc::AbstractString; rand=true, profiles=false,
                        seed = 1234, kargs...)
