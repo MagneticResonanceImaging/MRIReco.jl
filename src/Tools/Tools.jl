@@ -1,7 +1,3 @@
-include("Geometric/Rotation.jl")
-include("Geometric/Scaling.jl")
-include("Geometric/Translation.jl")
-include("Im2col.jl")
 include("Shutter.jl")
 include("GoldenAngle.jl")
 include("ErrorMeasures.jl")
