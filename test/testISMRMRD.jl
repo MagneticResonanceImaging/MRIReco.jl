@@ -1,3 +1,11 @@
+import ImageMagick # not good ...
+using FileIO
+using MRIReco
+using Test
+using LinearAlgebra
+using HTTP
+
+
 @testset "ISMRMRD" begin
 
 filename = "simple_gre.h5"
@@ -60,6 +68,7 @@ params[:shape] = (128,128) #this should be clear from context
 Ireco = abs.(reconstruction(acquisitionData(acq), params))
 Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
 save("recospiral.png", Icolored )
+exportImage("recospiral.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_spiral_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)
