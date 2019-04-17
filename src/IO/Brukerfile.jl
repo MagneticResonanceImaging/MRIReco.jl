@@ -40,7 +40,7 @@ end
 
 function getindex(b::BrukerFile, parameter)#::String
   if !b.acqpRead && ( parameter=="NA" || parameter=="NR" || parameter=="NI" ||
-                      parameter[1:2] == "GO" || parameter[1:3] == "ACQ" )
+                      parameter=="SW" || parameter[1:2] == "GO" || parameter[1:3] == "ACQ" )
     acqppath = joinpath(b.path, "acqp")
     read(b.params, acqppath, maxEntries=b.maxEntriesAcqp)
     b.acqpRead = true
@@ -99,19 +99,6 @@ function Base.show(io::IO, b::BrukerFile)
   print(io, "BrukerFile: ", b.path)
 end
 
-# study parameters
-studyName(b::BrukerFile) = string(experimentSubject(b),"_",
-                                  latin1toutf8(b["VisuStudyId"]),"_",
-                                  b["VisuStudyNumber"])
-studyNumber(b::BrukerFile) = parse(Int64,b["VisuStudyNumber"])
-experimentName(b::BrukerFile) = latin1toutf8(b["ACQ_scan_name"])
-experimentNumber(b::BrukerFile) = parse(Int64,b["VisuExperimentNumber"])
-
-# scanner parameters
-scannerFacility(b::BrukerFile) = latin1toutf8(b["ACQ_institution"])
-scannerOperator(b::BrukerFile) = latin1toutf8(b["ACQ_operator"])
-scannerName(b::BrukerFile) = b["ACQ_station"]
-
 # acquisition parameters
 function acqStartTime(b::BrukerFile)
   m = match(r"<(.+)\+",b["ACQ_time"])
@@ -126,6 +113,7 @@ end
 acqNumAverages(b::BrukerFile) = parse(Int,b["NA"])
 acqNumSlices(b::BrukerFile) = parse(Int,b["NSLICES"])
 acqNumInterleaves(b::BrukerFile) = parse(Int,b["NI"])
+
 function acqSize(b::BrukerFile)
   N = parse.(Int,b["ACQ_size"])
   N[1] = div(N[1],2)
@@ -248,6 +236,20 @@ function RawAcquisitionData(b::BrukerFile)
     F = acqFov(b)
     params["encodedFOV"] = F
     params["receiverChannels"] = 1
+    params["H1resonanceFrequency_Hz"] = parse(Float64,b["SW"])*1000000
+    params["studyID"] = b["VisuStudyId"]
+    #params["studyDescription"] = b["ACQ_scan_name"]
+    #params["studyInstanceUID"] =
+    params["referringPhysicianName"] = latin1toutf8(b["ACQ_operator"])
+
+    params["patientName"] = b["VisuSubjectName"]
+
+    params["measurementID"] = parse(Int64,b["VisuExperimentNumber"])
+    params["seriesDescription"] = b["ACQ_scan_name"]
+
+    params["institutionName"] = latin1toutf8(b["ACQ_institution"])
+    params["stationName"] = b["ACQ_station"]
+    params["systemVendor"] = "Bruker"
 
     return RawAcquisitionData(params, profiles)
 end
