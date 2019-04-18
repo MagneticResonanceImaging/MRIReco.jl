@@ -231,7 +231,7 @@ function RawAcquisitionData(b::BrukerFile)
 
                   # Not sure if the following is correct...
                   pos = offset1[nSl]*G[:,1] +
-                        offset2[nSl]*G[:,2]
+                        offset2[nSl]*G[:,2] +
                         offset3[nSl]*G[:,3]
 
                   position = (pos[1], pos[2], pos[3])
