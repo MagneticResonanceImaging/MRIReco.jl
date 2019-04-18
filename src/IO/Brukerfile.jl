@@ -140,11 +140,11 @@ acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"])
 acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"])
 acqGradMatrix(b::BrukerFile) = parse.(Float64,b["ACQ_grad_matrix"])
 acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"])
-acqFlipAngle(b::BrukerFile) = parse.(Float64,b["ACQ_flip_angle"])
+acqFlipAngle(b::BrukerFile) = parse(Float64,b["ACQ_flip_angle"])
 acqProtocolName(b::BrukerFile) = b["ACQ_protocol_name"]
-acqInterEchoTime(b::BrukerFile) = parse.(Float64,b["ACQ_inter_echo_time"])
-acqEchoTime(b::BrukerFile) = parse.(Float64,b["ACQ_echo_time"])
-acqRepetitionTime(b::BrukerFile) = parse.(Float64,b["ACQ_repetition_time"])
+acqInterEchoTime(b::BrukerFile) = parse(Float64,b["ACQ_inter_echo_time"][1])
+acqEchoTime(b::BrukerFile) = parse(Float64,b["ACQ_echo_time"][1])
+acqRepetitionTime(b::BrukerFile) = parse(Float64,b["ACQ_repetition_time"][1])
 
 Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
