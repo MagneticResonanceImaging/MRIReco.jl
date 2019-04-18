@@ -2,7 +2,9 @@ module MRIReco
 
 #using Compat
 using ImageMagick
-using QuartzImageIO
+if Sys.isapple()
+  using QuartzImageIO
+end
 using FileIO
 using ProgressMeter
 using Reexport

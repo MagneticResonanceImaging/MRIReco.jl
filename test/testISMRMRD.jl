@@ -1,10 +1,6 @@
-import ImageMagick # not good ...
-using FileIO
 using MRIReco
 using Test
-using LinearAlgebra
 using HTTP
-
 
 @testset "ISMRMRD" begin
 
@@ -32,9 +28,8 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
-Ireco = abs.(reconstruction(acquisitionData(acq), params))
-Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
-save("recogre.png", Icolored )
+Ireco = reconstruction(acquisitionData(acq), params)
+exportImage("recogre.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_gre_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)
@@ -45,7 +40,7 @@ acqCopy = RawAcquisitionData(f)
 @test acqCopy.profiles[1].head == acq.profiles[1].head
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
-IrecoCopy = abs.(reconstruction(acquisitionData(acqCopy), params))
+IrecoCopy = reconstruction(acquisitionData(acqCopy), params)
 
 @test IrecoCopy == Ireco
 
@@ -65,9 +60,7 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (128,128) #this should be clear from context
 
-Ireco = abs.(reconstruction(acquisitionData(acq), params))
-Icolored = colorview(Gray, Ireco[:,:,1,1,1]./maximum(Ireco[:,:,1,1,1]))
-save("recospiral.png", Icolored )
+Ireco = reconstruction(acquisitionData(acq), params)
 exportImage("recospiral.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_spiral_copy.h5"
