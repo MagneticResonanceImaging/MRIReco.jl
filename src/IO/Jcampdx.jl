@@ -77,7 +77,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
 
            if file.dict[currentKey] == nothing
              @debug "Will now allocate memory of size:" currentSizes
-             file.dict[currentKey] = Array{Any}(undef, currentSizes...)
+             file.dict[currentKey] = Array{Any}(undef, reverse(currentSizes)...)
            end
 
            totalLine = remainingString == nothing ? line[2:end] : remainingString*line
@@ -142,7 +142,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
 
            if file.dict[currentKey] == nothing
              @debug "Will now allocate memory of size:" currentSizes
-             file.dict[currentKey] = Array{eltype(vals)}(undef, currentSizes...)
+             file.dict[currentKey] = Array{eltype(vals)}(undef, reverse(currentSizes)...)
            end
 
            try

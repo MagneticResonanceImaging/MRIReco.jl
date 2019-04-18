@@ -135,12 +135,25 @@ acqRareFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
 acqSpatialSize1(b::BrukerFile) = parse(Int,b["ACQ_spatial_size_1"])
 acqNumRepetitions(b::BrukerFile) = parse(Int,b["NR"])
 acqObjOrder(b::BrukerFile) = parse.(Int,b["ACQ_obj_order"])
+acqReadOffset(b::BrukerFile) = parse.(Float64,b["ACQ_read_offset"])
+acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"])
+acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"])
+acqGradMatrix(b::BrukerFile) = parse.(Float64,b["ACQ_grad_matrix"])
+acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"])
+acqFlipAngle(b::BrukerFile) = parse.(Float64,b["ACQ_flip_angle"])
+acqProtocolName(b::BrukerFile) = b["ACQ_protocol_name"]
+acqInterEchoTime(b::BrukerFile) = parse.(Float64,b["ACQ_inter_echo_time"])
+acqEchoTime(b::BrukerFile) = parse.(Float64,b["ACQ_echo_time"])
+acqRepetitionTime(b::BrukerFile) = parse.(Float64,b["ACQ_repetition_time"])
+
+Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
 pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
 pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
 pvmEncValues2(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps2"])
 pvmMatrix(b::BrukerFile) = parse.(Int,b["PVM_Matrix"])
+
 
 function acqDataType(b::BrukerFile)
   format = b["GO_raw_data_format"]
@@ -188,6 +201,12 @@ function RawAcquisitionData(b::BrukerFile)
     objOrd = acqObjOrder(b)
     objOrd = objOrd.-minimum(objOrd)
 
+    gradMatrix = acqGradMatrix(b)
+
+    offset1 = acqReadOffset(b)
+    offset2 = acqPhase1Offset(b)
+    offset3 = ndims(b) == 2 ? acqSliceOffset(b) : acqPhase2Offset(b)
+
     profiles = Profile[]
     for nR = 1:numRep
       for nEnc2 = 1:numEncSteps2
@@ -205,7 +224,21 @@ function RawAcquisitionData(b::BrukerFile)
                                              set=0,
                                              segment=0 )
 
-                  head = AcquisitionHeader(number_of_samples=N[1], idx=counter)
+                  G = gradMatrix[:,:,nSl]
+                  read_dir = (G[1,1],G[2,1],G[3,1])
+                  phase_dir = (G[1,2],G[2,2],G[3,2])
+                  slice_dir = (G[1,3],G[2,3],G[3,3])
+
+                  # Not sure if the following is correct...
+                  pos = offset1[nSl]*G[:,1] +
+                        offset2[nSl]*G[:,2]
+                        offset3[nSl]*G[:,3]
+
+                  position = (pos[1], pos[2], pos[3])
+
+                  head = AcquisitionHeader(number_of_samples=N[1], idx=counter,
+                                           read_dir=read_dir, phase_dir=phase_dir,
+                                           slice_dir=slice_dir, position=position)
                   traj = Matrix{Float32}(undef,0,0)
                   dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,1))
                   push!(profiles, Profile(head,traj,dat) )
@@ -242,6 +275,13 @@ function RawAcquisitionData(b::BrukerFile)
     params["institutionName"] = latin1toutf8(b["ACQ_institution"])
     params["stationName"] = b["ACQ_station"]
     params["systemVendor"] = "Bruker"
+
+    params["TR"] = acqRepetitionTime(b)
+    params["TE"] = acqEchoTime(b)
+    #params["TI"] = ???
+    params["flipAngle_deg"] = acqFlipAngle(b)
+    params["sequence_type"] = acqProtocolName(b)
+    params["echo_spacing"] = acqInterEchoTime(b)
 
     return RawAcquisitionData(params, profiles)
 end
