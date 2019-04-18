@@ -119,7 +119,7 @@ function GeneralParameters(xdoc::XMLDocument)
     # ExperimentalConditions
     e = get_elements_by_tagname(LightXML.root(xdoc),"experimentalConditions")
     if !isempty(e)
-      addToDict!(params, e[1], "H1resonanceFrequency_Hz", Float64)
+      addToDict!(params, e[1], "H1resonanceFrequency_Hz", Int)
     end
 
     # Encoding
