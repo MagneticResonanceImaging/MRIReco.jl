@@ -63,20 +63,6 @@ trajectory(acqData::AcquisitionData,i::Int64=1) = acqData.traj[i]
 # return kdata for a given coil, echo and image slice
 #
 function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1)
-  setNumber = ((slice-1)*acqData.numCoils+coil-1)*acqData.numEchoes+echo
-  numSets = acqData.numEchoes*acqData.numCoils*acqData.numSlices
-  if length(acqData.samplePointer) >1
-    if setNumber < numSets
-      return acqData.kdata[acqData.samplePointer[setNumber] : acqData.samplePointer[setNumber+1]-1]
-    else
-      return acqData.kdata[acqData.samplePointer[setNumber] : end]
-    end
-  else
-    return acqData.kdata
-  end
-end
-
-function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1)
   return acqData.kdata[echo,slice][:,coil]
 end
 
