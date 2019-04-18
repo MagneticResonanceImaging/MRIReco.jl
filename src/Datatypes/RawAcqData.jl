@@ -51,44 +51,6 @@ mutable struct RawAcquisitionData
   profiles::Vector{Profile}
 end
 
-
-# function trajectory(f::RawAcquisitionData)
-#   if f.params["trajectory"] == "cartesian"
-#     return trajectory("Cartesian", f.params["encodedSize"][2],
-#                                    f.params["encodedSize"][1])
-#
-#   elseif f.params["trajectory"] == "spiral"
-#
-#     encSt1 = encSteps1(f)
-#     encSt2 = encSteps2(f)
-#     sl = slices(f)
-#     rep = repetitions(f)
-#
-#     numSl = length(unique(sl))
-#     numRep = length(unique(rep))
-#     numEncSt1 = length(unique(encSt1))
-#     numEncSt2 = length(unique(encSt2))
-#
-#     numSampPerProfile = size(f.profiles[1].data,1)
-#     numChannels = size(f.profiles[1].data,2)
-#     D = Int(f.profiles[1].head.trajectory_dimensions)
-#
-#     # remove data that should be discarded
-#     i1 = f.profiles[1].head.discard_pre + 1
-#     i2 = numSampPerProfile - f.profiles[1].head.discard_post
-#
-#     traj = zeros(Float32, D, length(i1:i2), numEncSt1, numEncSt2, numSl, numRep)
-#
-#     for l=1:length(f.profiles)
-#       traj[:, :, encSt1[l], encSt2[l], sl[l], rep[l]] .= f.profiles[l].traj[:,i1:i2]
-#     end
-#
-#     traj_ = reshape(traj[:,:,:,:,1,1], D, :)
-#     return Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
-#   end
-#   return nothing
-# end
-
 function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   if f.params["trajectory"] == "cartesian"
     if f.params["encodedSize"][3]>1
@@ -181,35 +143,6 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   return idx
 end
 
-# function rawdata(f::RawAcquisitionData)
-#   encSt1 = encSteps1(f)
-#   encSt2 = encSteps2(f)
-#   sl = slices(f)
-#   rep = repetitions(f)
-#
-#   numSl = length(unique(sl))
-#   numRep = length(unique(rep))
-#   numEncSt1 = length(unique(encSt1))
-#   numEncSt2 = length(unique(encSt2))
-#
-#   numSampPerProfile = size(f.profiles[1].data,1)
-#   numChan = size(f.profiles[1].data,2)
-#
-#   # remove data that should be discarded
-#   i1 = f.profiles[1].head.discard_pre + 1
-#   i2 = numSampPerProfile - f.profiles[1].head.discard_post
-#
-#   sorted = zeros(ComplexF32, length(i1:i2), numEncSt1, numEncSt2,
-#                  numChan, numSl, numRep)
-#
-#   for l=1:length(f.profiles)
-#     sorted[:, encSt1[l], encSt2[l], :, sl[l], rep[l]] .= f.profiles[l].data[i1:i2,:]
-#   end
-#
-#   # return map(ComplexF64, vec(sorted))
-#   kdata = map(ComplexF64, reshape(sorted,:,1,numChan,numRep*numSl))
-#   return [kdata[:,echo,:,slice] for echo=1:1,slice=1:numRep*numSl]
-# end
 
 function rawdata(f::RawAcquisitionData)
   encSt1 = encSteps1(f)
@@ -268,11 +201,11 @@ end
 
 function rawAcquisitionData(acqData::AcquisitionData)
   # params -> TODO
-  # params =
+  params = minimalHeader(acqData.encodingSize,acqData.fov)
 
   # profiles
   profiles = Vector{Profile}()
-  for rep = 1:1
+  for rep = 1:acqData.numReps
     for slice=1:acqData.numSlices
       for contr = 1:acqData.numEchoes
         tr = trajectory(acqData,contr)

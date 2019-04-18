@@ -411,3 +411,12 @@ function GeneralParametersToXML(params::Dict{String,Any})
 
   return string(xdoc)
 end
+
+function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{2,Int},f_res::AbstractFloat=1.2774e8)
+  params = Dict{String,Any}()
+  params["H1resonanceFrequency_Hz"] = f_res
+  params["encodedSize"] = encodingSize
+  params["encodedFOV"] = fov
+
+  return params
+end
