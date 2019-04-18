@@ -1,4 +1,4 @@
-export loadImage, saveImage, makeImage
+export loadImage, saveImage
 
 function loadImage(filename::String)
   ni = niread(filename)

@@ -1,3 +1,4 @@
+import ImageMagick # not good ...
 using MRIReco
 using Test
 using LinearAlgebra
