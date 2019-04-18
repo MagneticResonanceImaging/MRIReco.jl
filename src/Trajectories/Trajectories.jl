@@ -1,6 +1,6 @@
 export Trajectory,trajectory,
        kspaceNodes, echoTime, acqTimePerProfile, readoutTimes,
-       numSamplingPerProfile, numProfiles, numSlices, findCenters
+       numSamplingPerProfile, numProfiles, numSlices, findCenters, samplingFreq
 
 import Base: string
 
@@ -95,6 +95,12 @@ kspaceNodes(tr::Trajectory) = tr.nodes
 # calculate readout time for each sampling point on the
 # kspace tracectory
 readoutTimes(tr::Trajectory) = tr.times
+
+# kspace nodes for a given profile
+function profileNodes(tr::Trajectory,prof::Int,slice::Int)
+  nodes = reshape(tr.nodes,:,tr.numSamplingPerProfile,tr.numProfiles, tr.numSlices)
+  return nodes[:,:,prof,slice]
+end
 
 function readoutTimes(numProfiles, numSamplingPerProfile, numSlices=1; TE=0.0, AQ=1.e-3)
   times = zeros(numSamplingPerProfile, numProfiles, numSlices)

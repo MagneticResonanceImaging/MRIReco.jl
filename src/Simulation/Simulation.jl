@@ -94,7 +94,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 
   nodes = kspaceNodes(tr)
   # kdata = zeros(ComplexF64, size(nodes,2),nc,nz)
-  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:nz]
+  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
   if verbose==true
     p = Progress(nz*nc, 1, "Simulating data...")
   end
@@ -102,7 +102,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
     for c = 1:nc
       # kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
-      kdata[1,z][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
+      kdata[1,z,1][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
       verbose && next!(p)
     end
   end
@@ -151,7 +151,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 
   nodes = kspaceNodes(tr)
   # kdata = zeros(ComplexF64, size(nodes,2),nc)
-  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:1]
+  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
   if verbose==true
     p = Progress(nc, 1, "Simulating data...")
   end
@@ -159,7 +159,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   E = fourierEncodingOp3d((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
   for c = 1:nc
     # kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
-    kdata[1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
+    kdata[1,1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
     verbose && next!(p)
   end
 
@@ -235,7 +235,7 @@ function simulation(seq::AbstractSequence
     # end
   end
 
-  return AcquisitionData(tr, vec(out), numEchoes=ne, numCoils=nc, numSlices=nz)
+  return AcquisitionData(tr, reshape(out,ne,1,1), numEchoes=ne, numCoils=nc, numSlices=nz)
 end
 
 function simulation(tr::Trajectory

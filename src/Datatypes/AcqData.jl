@@ -14,10 +14,11 @@ export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
 mutable struct AcquisitionData
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
-  kdata::Array{Matrix{ComplexF64}}
+  kdata::Array{Matrix{ComplexF64},3}
   numEchoes::Int64
   numCoils::Int64
   numSlices::Int64
+  numReps::Int64
   subsampleIndices::Vector{Array{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
@@ -26,11 +27,12 @@ end
 ##############
 # constructors
 ##############
-function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64}}
+function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}
                         ; seqInfo=Dict{Symbol,Any}()
                         , numCoils=1
                         , numEchoes=1
                         , numSlices=1
+                        , numReps=1
                         , idx=nothing
                         , encodingSize=Int64[0,0,0]
                         , fov=Float64[0,0,0]
@@ -42,7 +44,7 @@ function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64}}
     subsampleIndices = [collect(1:size(tr_vec[echo],2)) for echo=1:numEchoes]
   end
 
-  return AcquisitionData(seqInfo,tr_vec,kdata,numEchoes,numCoils,numSlices,subsampleIndices,encodingSize,fov)
+  return AcquisitionData(seqInfo,tr_vec,kdata,numEchoes,numCoils,numSlices,numReps,subsampleIndices,encodingSize,fov)
 end
 
 function Images.pixelspacing(acqData::AcquisitionData)
@@ -62,17 +64,17 @@ trajectory(acqData::AcquisitionData,i::Int64=1) = acqData.traj[i]
 #
 # return kdata for a given coil, echo and image slice
 #
-function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1)
-  return acqData.kdata[echo,slice][:,coil]
+function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1;rep::Int64=1)
+  return acqData.kdata[echo,slice,rep][:,coil]
 end
 
 #
 # return multi-echo-data for a given coil and image slice
 #
-function multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64)
+function multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::Int64=1)
   kdata = ComplexF64[]
   for echo=1:acqData.numEchoes
-    append!(kdata,acqData.kdata[echo,slice][:,coil])
+    append!(kdata,acqData.kdata[echo,slice,rep][:,coil])
   end
   return kdata
 end
@@ -80,29 +82,43 @@ end
 #
 # return multi-coil-data for a given echo and image slice
 #
-function multiCoilData(acqData::AcquisitionData, echo::Int64, slice::Int64)
-  return vec(acqData.kdata[echo,slice])
+function multiCoilData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::Int64=1)
+  return vec(acqData.kdata[echo,slice,rep])
 end
 
 #
 # return multi-coil-multi-echo-data for a given slice (for all coils and echoes)
 #
-function multiCoilMultiEchoData(acqData::AcquisitionData,slice::Int64)
+function multiCoilMultiEchoData(acqData::AcquisitionData,slice::Int64;rep=1)
   kdata = ComplexF64
   for coil=1:acqData.numCoils
     for echo=1:acqData:numEchoes
-      append!(kdata, acqData.kdata[echo,slice][:,coil])
+      append!(kdata, acqData.kdata[echo,slice,rep][:,coil])
     end
   end
   return kdata
 end
 
+#
+# return kdata for a given profile
+#
+function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
+  tr = trajectory(acqData,echo)
+  numProfiles, numSamp, numSlices = numProfiles(tr), numSamplePerProfile(tr), numSlices(tr)
+  if dims(tr)==2 || numSlices==1
+    kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProfiles,acqData.numCoils)
+    prof_data = kdata[:,prof_tr,:]
+  else
+    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProfiles,numSlices,acqData.numCoils)
+    prof_data = kdata[:,prof_tr,slice,:]
+  end
+  return prof_data
+end
 
 ######################################
 # utilities to convert and edit acqData
 ######################################
 """
-dims(tr::Trajectory) =
  convert undersampled AcquisitionData, where only profiles contained in
  acqData.subsampleIndices are sampled,
  into a format where trajectories only contain the sampled profiles
@@ -171,10 +187,12 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   end
 
   # find relevant kspace data
-  kdata2 = Array{Matrix{ComplexF64}}(undef,acqData.numEchoes,acqData.numSlices)
-  for slice=1:acqData.numSlices
-    for echo=1:acqData.numEchoes
-      kdata2[echo,slice] = 1.0/prod(fac) * acqData.kdata[echo,slice][idx[echo],:]
+  kdata2 = Array{Matrix{ComplexF64}}(undef,acqData.numEchoes,acqData.numSlices,acqData.numReps)
+  for rep=1:acqData.numReps
+    for slice=1:acqData.numSlices
+      for echo=1:acqData.numEchoes
+        kdata2[echo,slice,rep] = 1.0/prod(fac) * acqData.kdata[echo,slice,rep][idx[echo],:]
+      end
     end
   end
   acqData.kdata = kdata2
