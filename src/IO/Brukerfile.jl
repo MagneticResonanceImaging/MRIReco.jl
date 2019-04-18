@@ -198,21 +198,14 @@ function RawAcquisitionData(b::BrukerFile)
                   counter = EncodingCounters(kspace_encode_step_1=encSteps1[nPhase1+phaseFactor*(nPhase2-1)],
                                              kspace_encode_step_2=encSteps2[nEnc2],
                                              average=0,
-                                             slice=objOrd[nSl], # I am not sure...
-                                             contrast=0,
+                                             slice=objOrd[nSl],
+                                             contrast=nEcho-1,
                                              phase=0,
-                                             repetition=0,
+                                             repetition=nR-1,
                                              set=0,
                                              segment=0 )
 
-                  head = AcquisitionHeader(version=0, flags=0, measurement_uid=0, scan_counter=0,
-                     acquisition_time_stamp=0, physiology_time_stamp = ntuple(i->Int32(0),3),
-                     number_of_samples=N[1], available_channels=0, active_channels=0, channel_mask=ntuple(i->Int64(0),16),
-                     discard_pre=0, discard_post=0, center_sample=0, encoding_space_ref=0, trajectory_dimensions=0,
-                     sample_time_us=0.0, position=ntuple(i->Float32(0),3), read_dir=ntuple(i->Float32(0),3),
-                     phase_dir=ntuple(i->Float32(0),3), slice_dir=ntuple(i->Float32(0),3),
-                     patient_table_position=ntuple(i->Float32(0),3), idx=counter,
-                     user_int=ntuple(i->Int32(0),8), user_float=ntuple(i->Float32(0),8))
+                  head = AcquisitionHeader(number_of_samples=N[1], idx=counter)
                   traj = Matrix{Float32}(undef,0,0)
                   dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,1))
                   push!(profiles, Profile(head,traj,dat) )
