@@ -22,7 +22,11 @@ params[:shape] = (N[1],N[2]) #this should be clear from context
 Ireco = reconstruction(acqData, params)
 exportImage("brukerCart.png", Ireco[:,:,1,1,1])
 
+# Convert to ISMRMRD file
+fout = ISMRMRDFile("brukerfileCart.h5")
+save(fout, acq)
 
+# Reco data stored in BrukerFile
 Iloaded = recoData(b)
 @test size(Iloaded) == (128, 128, 15)
 
