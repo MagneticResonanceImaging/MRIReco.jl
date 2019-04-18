@@ -23,6 +23,9 @@ Ireco = reconstruction(acqData, params)
 exportImage("brukerCart.png", Ireco[:,:,1,1,1])
 
 
+Iloaded = recoData(b)
+@test size(Iloaded) == (128, 128, 15)
+
 
 
 

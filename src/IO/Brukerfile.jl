@@ -1,7 +1,6 @@
 include("Jcampdx.jl")
 
-export BrukerFile, studyName, studyNumber, experimentName, experimentNumber,
-       scannerFacility, scannerOperator, scannerName, acqStartTime, acqNumFrames, acqNumAverages
+export BrukerFile, recoData
 
 
 function latin1toutf8(str::AbstractString)
@@ -265,7 +264,7 @@ function recoData(f::BrukerFile)
   #end
 
   I = open(recoFilename,"r") do fd
-    read!(fd,Array{Int16,3}(undef,1,prod(N),1))
+    read!(fd,Array{Int16,3}(undef,N...))
   end
   return map(Float32,I)
 end
