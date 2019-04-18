@@ -27,18 +27,18 @@ function sample_vardens(M::Int64,N::Int64,redFac::Float64;calsize::Int64=0,kargs
   NumberSamples = floor(Int64,M*N/redFac)
   A, ChosenSamples = setcalibrationarea(A,M,N,redFac,calsize)
 
-  chosen = find(A)
-
-  selection = find(abs(A-1))
+  chosen = (LinearIndices(A))[findall(x->x!=0, A)]
+  B = abs.(A .- 1)
+  selection = (LinearIndices(B))[findall(x->x!=0, B)]
   #srand(1234)
   while ChosenSamples < NumberSamples
     randnum = rand(1:length(selection))
     push!(chosen,selection[randnum])
     deleteat!(selection,randnum)
-    ChosenSamples+=1
+    ChosenSamples += 1
   end
   A = reshape(A,M*N,1)
-  A[chosen]=1
+  A[chosen] .= 1
 
   A = reshape(A,M,N)
 

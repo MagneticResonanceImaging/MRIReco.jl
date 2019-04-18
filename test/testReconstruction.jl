@@ -43,7 +43,7 @@ function testGriddingReco3d(N=32)
 end
 
 # test CS reco
-function testCSReco(N=32,redFac=1.1)
+function testCSReco(N=32,redFac=1.1;sampling="poisson")
   # image
   x = shepp_logan(N)
 
@@ -55,7 +55,7 @@ function testCSReco(N=32,redFac=1.1)
   params[:numSamplingPerProfile] = N
 
   acqData = simulation(x, params)
-  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+  acqData = MRIReco.sample_kspace(acqData, redFac, sampling, calsize=5)
   acqData = MRIReco.addNoise(acqData,25.0)
 
   # reco
@@ -287,7 +287,10 @@ function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
     testGriddingReco3d()
-    testCSReco()
+    sampling = ["simple", "vardens", "poisson", "vdPoisson"] # "lines"
+    for samp in sampling
+      testCSReco(sampling=samp)
+    end
     testCSRecoMultCoil()
     testCSSenseReco()
     testOffresonanceReco()
