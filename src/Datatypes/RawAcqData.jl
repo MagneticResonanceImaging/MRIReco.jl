@@ -296,7 +296,7 @@ function acquisitionHeader(acqData::AcquisitionHeader, rep::Int, slice::Int, con
                             , user::NTuple{8,Int16} = ntuple(i->Int16(0),8), kargs...)
   numChannels = acqData.numCoils
   tr = trajectory(acqData,contr)
-  numSamples = numSamplePerProfile(tr) # multiply by number of channels?
+  numSamples = numSamplePerProfile(tr) # multiply by number of channels? No this is correct as is!
   isCartesian(tr) ? center_sample=div(numSamples,2) : center_sample=0 # needs to be fixed for partial Fourier,etc
   tr_dims = dims(tr)
   sample_time_us = acqTimePerProfile(tr)/numSamples*1.e6
