@@ -12,7 +12,7 @@ end
 b = BrukerFile("brukerfileCart")
 
 acq = RawAcquisitionData(b)
-acqData = acquisitionData(acq)
+acqData = AcquisitionData(acq)
 N = acqData.encodingSize
 
 params = Dict{Symbol, Any}()

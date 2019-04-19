@@ -7,7 +7,7 @@ implement the functions
 * `trajectory(f::MRIFile)`
 * `sequence(f::MRIFile)`
 * `rawdata(f::MRIFile)`
-* `acquisitionData(f::MRIFile)`
-which allow to access specific parts of the MRIFile. The last function `acquisitionData`
+* `AcquisitionData(f::MRIFile)`
+which allow to access specific parts of the MRIFile. The last function `AcquisitionData`
 returns an `AcquisitionData` data object which can be used directly in the
 [Reconstruction](@ref) methods.

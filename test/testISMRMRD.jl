@@ -28,7 +28,7 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (256,128) #this should be clear from context
 
-Ireco = reconstruction(acquisitionData(acq), params)
+Ireco = reconstruction(AcquisitionData(acq), params)
 exportImage("recogre.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_gre_copy.h5"
@@ -40,7 +40,7 @@ acqCopy = RawAcquisitionData(f)
 @test acqCopy.profiles[1].head == acq.profiles[1].head
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
-IrecoCopy = reconstruction(acquisitionData(acqCopy), params)
+IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
 @test IrecoCopy == Ireco
 
@@ -60,7 +60,7 @@ params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (128,128) #this should be clear from context
 
-Ireco = reconstruction(acquisitionData(acq), params)
+Ireco = reconstruction(AcquisitionData(acq), params)
 exportImage("recospiral.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_spiral_copy.h5"

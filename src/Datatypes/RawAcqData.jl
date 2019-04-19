@@ -185,7 +185,7 @@ function rawdata(f::RawAcquisitionData)
   return [reshape(kdata[c,s,r],:,numChan) for c=1:numContr, s=1:numSl, r=1:numRep]
 end
 
-function acquisitionData(f::RawAcquisitionData)
+function AcquisitionData(f::RawAcquisitionData)
   numSl = length(unique(slices(f)))
   numRep = length(unique(repetitions(f)))
   numContr = length(unique(contrasts(f)))
@@ -199,7 +199,7 @@ function acquisitionData(f::RawAcquisitionData)
 end
 
 
-function rawAcquisitionData(acqData::AcquisitionData)
+function RawAcquisitionData(acqData::AcquisitionData)
   # params -> TODO
   params = minimalHeader(acqData.encodingSize,acqData.fov)
 
