@@ -5,3 +5,4 @@ test/*.png
 test/*.nii
 *.zip
 test/brukerfileCart
+Manifest.toml
