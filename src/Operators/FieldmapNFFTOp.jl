@@ -41,7 +41,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ncol = prod(shape)
 
  # create and truncate low-rank expansion
-  cparam = createInhomogeneityData_(nrow,ncol,vec(times),correctionmap; K=K, alpha=alpha, m=m, method=method)
+  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method)
   K = size(cparam.A_k,2)
 
   @debug "K = $K"
@@ -165,28 +165,27 @@ function ctprodu_inner(K, C, A, shape, p, d, y, sp, plan, idx, x_)
   return
 end
 
-####################### Helper Function ########################################
-function createInhomogeneityData_( numOfNodes::Int64,
-                                  numOfPixel::Int64,
-                                  times::Vector,
+
+function createInhomogeneityData_(times::Vector,
                                   correctionmap::Array{ComplexF64,D};
                                   K::Int64=20,
                                   alpha::Float64=1.75,
                                   m::Float64 = 4.0,
                                   method="nfft") where D
 
-    C = getC_Coefficients_hist_lsqr(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
     if method == "const"
-      A = getA_Coefficients_one_term(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
+      A = get_AC_coefficients_one_term(K,vec(times),vec(correctionmap))
+      C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
     elseif method== "linear"
-      A = getA_Coefficients_two_terms(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
+      A = get_AC_coefficients_two_terms(K,vec(times),vec(correctionmap))
+      C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
     elseif method == "nfft"
-      A,C = getA_Ccoefficients_nfft(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap), alpha, m)
+      A,C = get_AC_coefficients_nfft(K,vec(times),vec(correctionmap), alpha, m)
     elseif method == "leastsquare"
-        A,C = getA_Coefficients_least_Squares(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
+      A,C = get_AC_coefficients_lsqr(K,vec(times),vec(correctionmap))
     elseif method == "hist"
-      A = getA_Coefficients_hist_lsqr(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
-      C = getC_Coefficients_hist_lsqr(K,numOfNodes,numOfPixel,vec(times),vec(correctionmap))
+      A = get_A_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
+      C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
     else
       error("approximation scheme $(interp) is not yet implemented")
     end
