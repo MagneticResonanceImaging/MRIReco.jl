@@ -123,7 +123,7 @@ end
 
   Using the least squares method
 """
-function get_A_Coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
+function get_AC_coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
   A = zeros(ComplexF64,length(times),K)
   C = zeros(ComplexF64,K,length(z_p))
   G = zeros(ComplexF64,length(z_p),K)
@@ -157,7 +157,7 @@ end
 
   Using the least squares method with histogramms
 """
-function get_AC_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
+function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
 
   numBins = 10*K
   if real.(z_p)== zeros(length(z_p))

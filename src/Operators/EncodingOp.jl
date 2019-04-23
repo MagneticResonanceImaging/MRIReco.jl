@@ -129,7 +129,7 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
   elseif opName=="fast"
     @debug "NFFT-based Op"
     if !isempty(correctionMap) && correctionMap!=zeros(ComplexF64,size(correctionMap))
-      ftOp = FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice],
+      ftOp = FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice], method=method,
                             echoImage=echoImage, alpha=alpha, m=m, K=K)
     elseif isCartesian(tr)
       @debug "FFTOp"
@@ -174,7 +174,7 @@ function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::Trajectory, opName::Str
     ftOp = ExplicitOp(shape,tr,correctionMap,echoImage=echoImage)
   elseif opName=="fast"
     if !isempty(correctionMap) && correctionMap!=zeros(ComplexF64,size(correctionMap))
-      ftOp = FieldmapNFFTOp(shape, tr, correctionMap,
+      ftOp = FieldmapNFFTOp(shape, tr, correctionMap, method=method,
                             echoImage=echoImage, alpha=alpha, m=m, K=K)
     elseif isCartesian(tr)
       ftOp = sqrt(prod(shape))*FFTOp(ComplexF64, shape)

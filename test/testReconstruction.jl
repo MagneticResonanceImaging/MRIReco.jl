@@ -143,7 +143,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
-function testOffresonanceReco(N = 128)
+function testOffresonanceReco(N = 128; accelMethod="nfft")
 
   I = shepp_logan(N)
   I = circularShutterFreq!(I,1)
@@ -170,6 +170,7 @@ function testOffresonanceReco(N = 128)
   params[:solver] = "admm"
   params[:shape] = (N,N)
   params[:correctionMap] = cmap
+  params[:method] = accelMethod
 
   Ireco = reconstruction(acqData, params)
 
@@ -293,7 +294,10 @@ function testReco(N=32)
     end
     testCSRecoMultCoil()
     testCSSenseReco()
-    testOffresonanceReco()
+    accelMethods = ["nfft", "hist", "leastsquare"]
+    for a in accelMethods
+      testOffresonanceReco(accelMethod=a)
+    end
     testSENSEReco()
     testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
