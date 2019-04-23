@@ -30,7 +30,7 @@ function _precompute_coffs_nfft(K::Int64
                                 , z_p::Vector       # Correction map
                                 , alpha::Float64    # oversampling factor of NFFT
                                 , m::Float64        # kernel size of NFFT
-                                ; adaptK::Bool=false)
+                                ; adaptK::Bool=true)
 
   # Centering time and correctionterm to lower computational effort
   t_hat = (times[1] + times[end])/2
@@ -61,7 +61,7 @@ function get_A_coefficients_nfft(K::Int64
                                 , z_p::Vector       # Correction map
                                 , alpha::Float64    # oversampling factor(NFFT)
                                 , m::Float64        # kernel size(NFFT)
-                                ; adaptK::Bool=false)
+                                ; adaptK::Bool=true)
 
   win, win_hat, K, N, T, times, z_p = _precompute_coffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK)
 
@@ -81,7 +81,7 @@ function get_C_coefficients_nfft(K::Int64
                                 , z_p::Vector       # Correction map
                                 , alpha::Float64    # oversampling factor(NFFT)
                                 , m::Float64        # kernel size(NFFT)
-                                ; adaptK::Bool=false)
+                                ; adaptK::Bool=true)
 
   win, win_hat, K, N, T, times, z_p = _precompute_coffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK)
 
@@ -109,7 +109,7 @@ function get_AC_coefficients_nfft(K::Int64
                                 , z_p::Vector       # Correction map
                                 , alpha::Float64    # oversampling factor(NFFT)
                                 , m::Float64        # kernel size(NFFT)
-                                ; adaptK::Bool=false)
+                                ; adaptK::Bool=true)
 
   A = get_A_coefficients_nfft(K, times, z_p, alpha, m; adaptK=adaptK)
   C = get_C_coefficients_nfft(K, times, z_p, alpha, m; adaptK=adaptK)
