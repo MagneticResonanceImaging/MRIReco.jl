@@ -1,4 +1,4 @@
-export SamplingPattern
+export SamplingPattern, profileIdx
 
 mutable struct SamplingPattern
   shape::Tuple
@@ -94,4 +94,11 @@ end
 function shuffle_vector(vec::Vector{T},pattern::SamplingPattern;kargs...) where T
   patOut = sample(pattern.shape,pattern.redFac,pattern.patParams;kargs...)
   return vec[patOut]
+end
+
+function profileIdx(acqData::AcquisitionData,contr::Int)
+  tr = trajectory(acqData,contr)
+  numSamp = numSamplingPerProfile(tr)
+  numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
+  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1],numSamp)+1 for prof=1:numProf]
 end

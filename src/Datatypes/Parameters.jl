@@ -1,4 +1,4 @@
-export Limit, MeasurementDependency, CoilDescription
+export Limit, MeasurementDependency, CoilDescription, minimalHeader
 
 function GeneralParameters(str::String)
   return GeneralParameters( parse_string(str) )
@@ -412,11 +412,13 @@ function GeneralParametersToXML(params::Dict{String,Any})
   return string(xdoc)
 end
 
-function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{2,Int},f_res::AbstractFloat=1.2774e8)
+function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};f_res::AbstractFloat=1.2774e8,tr_name::AbstractString="cartesian",numChannels::Int=1)
   params = Dict{String,Any}()
   params["H1resonanceFrequency_Hz"] = f_res
   params["encodedSize"] = encodingSize
   params["encodedFOV"] = fov
+  params["trajectory"] = tr_name
+  params["receiverChannels"] = numChannels
 
   return params
 end

@@ -107,7 +107,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     end
   end
 
-  return AcquisitionData(tr, kdata,numCoils=nc,numSlices=nz)
+  return AcquisitionData(tr, kdata,numCoils=nc,numSlices=nz,encodingSize=[nx,ny,nz])
 end
 
 """
@@ -163,7 +163,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     verbose && next!(p)
   end
 
-  return AcquisitionData(tr, kdata ,numCoils=nc,numSlices=nz)
+  return AcquisitionData(tr, kdata ,numCoils=nc,numSlices=nz,encodingSize=[nx,ny,nz])
 end
 
 # FIXME: this only works for 3d or for one slice
@@ -235,7 +235,7 @@ function simulation(seq::AbstractSequence
     # end
   end
 
-  return AcquisitionData(tr, reshape(out,ne,1,1), numEchoes=ne, numCoils=nc, numSlices=nz)
+  return AcquisitionData(tr, reshape(out,ne,1,1), numEchoes=ne, numCoils=nc, numSlices=nz,encodingSize=[nx,ny,nz])
 end
 
 function simulation(tr::Trajectory

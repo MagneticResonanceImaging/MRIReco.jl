@@ -104,12 +104,13 @@ end
 #
 function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
   tr = trajectory(acqData,echo)
-  numProfiles, numSamp, numSlices = numProfiles(tr), numSamplePerProfile(tr), numSlices(tr)
-  if dims(tr)==2 || numSlices==1
-    kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProfiles,acqData.numCoils)
+  numSamp, numSl = numSamplingPerProfile(tr), numSlices(tr)
+  numProf = div(length(acqData.subsampleIndices[echo]),numSamp) #numProfiles(tr)
+  if dims(tr)==2 || numSl==1
+    kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProf,acqData.numCoils)
     prof_data = kdata[:,prof_tr,:]
   else
-    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProfiles,numSlices,acqData.numCoils)
+    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProf,numSl,acqData.numCoils)
     prof_data = kdata[:,prof_tr,slice,:]
   end
   return prof_data
@@ -153,7 +154,11 @@ function samplingDensity(acqData::AcquisitionData,shape::Tuple)
   weights = Array{Vector{ComplexF64}}(undef,numEchoes)
   for echo=1:numEchoes
     tr = trajectory(acqData,echo)
-    nodes = kspaceNodes(tr)[:,acqData.subsampleIndices[echo]]
+    if isCartesian(tr)
+      nodes = kspaceNodes(tr)[:,acqData.subsampleIndices[echo]]
+    else
+      nodes = kspaceNodes(tr)
+    end
     plan = NFFTPlan(nodes, shape,3, 1.25)
     weights[echo] = sqrt.(sdc(plan))
   end
