@@ -261,12 +261,10 @@ function testDirectRecoMultiEcho(N=32)
   params[:trajName] = "Cartesian"
   params[:numProfiles] = floor(Int64, N)
   params[:numSamplingPerProfile] = N
-  params[:TE] = 0.0
   params[:r2map] = rmap
-  params[:TE] = 2.e-2
-  params[:seqName] = "FSE"
-  params[:numEchoes] = 2
-  params[:flipAngles] = [pi,pi]
+  params[:T_echo] = [2.e-2, 4.e-2]
+  params[:seqName] = "ME"
+  params[:refocusingAngles] = Float64[pi,pi]
 
   acqData = simulation( real(x), params )
 

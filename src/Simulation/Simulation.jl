@@ -14,16 +14,18 @@ are passed to the function in the form of a dictionary.
 function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
   haskey(simParams, :correctionMap) ? cmap = reshape(simParams[:correctionMap],size(image)) : cmap = zeros(ComplexF64,size(image))
 
-  seqName = get(simParams,:seqName,"SE")
+  seqName = get(simParams,:seqName,"ME")
   trajName = get(simParams,:trajName,"Cartesian")
-  seq = sequence(seqName, trajName, simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
+  seq = sequence(seqName, simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
+  numSamp, numProf = get(simParams, :numSamplingPerProfile,1), get(simParams, :numProfiles,1)
+  tr = [trajectory(trajName, numProf,numSamp; simParams...) for i=1:numEchoes(seq)]
 
   opName = get(simParams,:simulation,"fast")
   if opName!="fast" && opName!="explicit"
     error("simulation $(simParams[:simulation]) is not known...")
   end
 
-  return simulation(seq, ComplexF64.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
+  return simulation(seq, tr, ComplexF64.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
 end
 
 # This version stores the simulation data into a file
@@ -167,7 +169,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 end
 
 # FIXME: this only works for 3d or for one slice
-function simulation(seq::AbstractSequence
+function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
                     , image::Array{ComplexF64,3}
                     ; opName="fast"
                     , r1map=[]
@@ -206,15 +208,13 @@ function simulation(seq::AbstractSequence
   end
 
   # this assumes the same number of readout points per echo
-  size_kNodes = size(kspaceNodes( trajectory(seq) ), 2)
   isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
-  # out = zeros( ComplexF64, size_kNodes, ne, nc )
   out = Vector{Matrix{ComplexF64}}(undef,ne)
 
   if verbose
     p = Progress(numEchoes(seq), 1, "Simulating data...")
   end
-  tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
+  # tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
   for i = 1:ne
     te = echoTime(tr[i])
     nodes = kspaceNodes(tr[i])

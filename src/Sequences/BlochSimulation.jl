@@ -3,15 +3,14 @@ export epgRotation, epgRelaxation, epgDephasing, rfRotation
 #
 # apply Bloch-rotation (<=> RF pulse) to a set of EPG states
 #
-function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing) where T
-
+function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing, phi::Float64=0.0) where T
   # apply rotation to all states per default
   numStates = length(Z)
 
   n = numStates
   statesConsidered!=nothing && (n=statesConsidered)
 
-  R = rfRotation(alpha, 0.)
+  R = rfRotation(alpha, phi)
 
   rotatedF = fill!(copy(F), 0)
   rotatedZ = fill!(copy(Z), 0)

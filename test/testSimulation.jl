@@ -88,10 +88,9 @@ function test_kdataMultiEcho(N=32)
     kdata1 = acqData1.kdata
 
     params[:r2map] = rmap
-    params[:TE] = 2.e-2
-    params[:seqName] = "FSE"
-    params[:numEchoes] = 2
-    params[:flipAngles] = [pi,pi]
+    params[:T_echo] = [2.e-2, 4.e-2]
+    params[:seqName] = "ME"
+    params[:refocusingAngles] = Float64[pi,pi]
 
     acqData2 = simulation( real(I), params )
     kdata2 = reshape(acqData2.kdata,:,2)
