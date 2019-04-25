@@ -1,53 +1,48 @@
-export reconstruction_simple, reconstruction_multiEcho, reconstruction_multiCoil, reconstruction_multiCoilMultiEcho, reconstruction_lowRank
+export reconstruction_simple, reconstruction_multiEcho, reconstruction_multiCoil, reconstruction_multiCoilMultiEcho, reconstruction_lowRank, RecoParameters
 
 """
   CS-Sense Reconstruction using sparsity in the wavelet domain
 """
-function reconstruction_simple(acqData::AcquisitionData, recoParams::Dict)
+function reconstruction_simple( acqData::AcquisitionData
+                              , shape::NTuple{2,Int64}
+                              , reg::Regularization
+                              , sparseTrafo::AbstractLinearOperator
+                              , weights::Vector{Vector{ComplexF64}}
+                              , solvername::String
+                              , correctionMap::Array{ComplexF64}=ComplexF64[]
+                              , method::String="nfft"
+                              , normalize::Bool=false
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
-  # sparsifying transform
-  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
-  recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
-
-  # weight kdata with sampling density
-  densityWeighting = get(recoParams,:densityWeighting,true)
-  if densityWeighting
-    weights = samplingDensity(acqData,recoParams[:shape])
-  else
-    weights = [1.0/sqrt(prod(recoParams[:shape])) for echo=1:acqData.numEcoes]
-  end
-
-  # regularization
-  regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
-  normalize = get(recoParams, :normalizeReg, false)
+  # set sparse trafo in reg
+  reg.params[:sparseTrafo] = sparseTrafo
 
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(recoParams[:shape]), acqData.numSlices, acqData.numEchoes, acqData.numCoils)
-  solvername = get(recoParams, :solver, "fista")
-
+  Ireco = zeros(ComplexF64, prod(shape), acqData.numSlices, acqData.numEchoes, acqData.numCoils)
   for k = 1:acqData.numSlices
-    F = encodingOps2d_simple(acqData, recoParams, slice=k)
+    F = encodingOps2d_simple(acqData, shape, slice=k, correctionMap=correctionMap, method=method)
     for j = 1:acqData.numEchoes
       W = WeightingOp(weights[j])
       for i = 1:acqData.numCoils
-        reg = Regularization(regName, λ; recoParams...)
+        kdata = kData(acqData,j,i,k).* weights[j]
+
+        reg2 = deepcopy(reg)
         if normalize
-          RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
+          RegularizedLeastSquares.normalize!(reg2, kdata)
         end
-        solver = createLinearSolver(solvername, W*F[j]; reg=reg, recoParams...)
-        kdata = kData(acqData,j,i,k).* weights[j] #kData(acqData2,j,i,k)
+        solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
+
         I = solve(solver, kdata)
 
         if isCircular( trajectory(acqData, j) )
-          circularShutter!(reshape(I, recoParams[:shape]), 1.0)
+          circularShutter!(reshape(I, shape), 1.0)
         end
         Ireco[:,k,j,i] = I
       end
     end
   end
 
-  Ireco = reshape(Ireco, recoParams[:shape]..., acqData.numSlices, acqData.numEchoes, acqData.numCoils)
+  Ireco = reshape(Ireco, shape..., acqData.numSlices, acqData.numEchoes, acqData.numCoils)
   return makeAxisArray(Ireco, acqData)
 end
 
@@ -55,136 +50,173 @@ end
   CS Reconstruction using a joint encoding operator for the different echos
   and regularization on the multi-echo data
 """
-function reconstruction_multiEcho(acqData::AcquisitionData, recoParams::Dict)
+function reconstruction_multiEcho(acqData::AcquisitionData
+                              , shape::NTuple{2,Int64}
+                              , reg::Regularization
+                              , sparseTrafo::AbstractLinearOperator
+                              , weights::Vector{Vector{ComplexF64}}
+                              , solvername::String
+                              , correctionMap::Array{ComplexF64}=ComplexF64[]
+                              , method::String="nfft"
+                              , normalize::Bool=false
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
-  # encoding operator and trafo into sparse domain
-  F = encodingOps2d_multiEcho(acqData,recoParams)
+  # set sparse trafo in reg
+  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],acqData.numEchoes) )
 
-  # sparsifying transform
-  recoParams[:multiEcho] = true
-  recoParams[:numEchoes] = acqData.numEchoes
-  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
-  recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
-
-  # weight kdata with sampling density
-  densityWeighting = get(recoParams,:densityWeighting,true)
-  if densityWeighting
-    weights = vcat(samplingDensity(acqData,recoParams[:shape])...)
-  else
-    weights = vcat([fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]...)
-  end
-  W = WeightingOp(weights)
-
-  # regularization
-  regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
-  normalize = get(recoParams, :normalizeReg, false)
+  W = WeightingOp( vcat(weights...) )
 
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(recoParams[:shape])*acqData.numEchoes, acqData.numCoils, acqData.numSlices)
-  solvername = get(recoParams,:solver,"fista")
+  Ireco = zeros(ComplexF64, prod(shape)*acqData.numEchoes, acqData.numCoils, acqData.numSlices)
   for i = 1:acqData.numSlices
+    F = encodingOps2d_multiEcho(acqData, shape, slice=k, correctionMap=correctionMap, method=method)
     for j = 1:acqData.numCoils
-      reg = Regularization(regName, λ; recoParams...)
-      if normalize
-        RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
-      end
-      solver = createLinearSolver(solvername, W*F; reg=reg, recoParams...)
+      kdata = multiEchoData(acqData, j, i) .* weights
 
-      kdata = multiEchoData(acqData, j, i) .* weights  #multiEchoData(acqData2, j, i)
+      reg2 = deepcopy(reg)
+      if normalize
+        RegularizedLeastSquares.normalize!(reg2, kdata)
+      end
+      solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
+
       Ireco[:,j,i] = solve(solver,kdata)
       # TODO circular shutter
     end
   end
 
-  Ireco = reshape(Ireco, recoParams[:shape]..., acqData.numEchoes, acqData.numCoils, acqData.numSlices)
+  Ireco = reshape(Ireco, shape..., acqData.numEchoes, acqData.numCoils, acqData.numSlices)
   return makeAxisArray(permutedims(Ireco,[1,2,5,3,4]), acqData)
 end
 
 """
   CS-Sense Reconstruction
 """
-function reconstruction_multiCoil(acqData::AcquisitionData, recoParams::Dict)
+function reconstruction_multiCoil(acqData::AcquisitionData
+                              , shape::NTuple{2,Int64}
+                              , reg::Regularization
+                              , sparseTrafo::AbstractLinearOperator
+                              , weights::Vector{Vector{ComplexF64}}
+                              , solvername::String
+                              , senseMaps::Array{ComplexF64}
+                              , correctionMap::Array{ComplexF64}=ComplexF64[]
+                              , method::String="nfft"
+                              , normalize::Bool=false
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
-  # sparsifying transform
-  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
-  recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
-
-  # weight kdata with sampling density
-  densityWeighting = get(recoParams,:densityWeighting,true)
-  if densityWeighting
-    weights = samplingDensity(acqData,recoParams[:shape])
-  else
-    weights = [fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]
-  end
-
-  # regularization
-  regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
-  normalize = get(recoParams, :normalizeReg, false)
+  # set sparse trafo in reg
+  reg.params[:sparseTrafo] = sparseTrafo
 
   # solve optimization problem
-  Ireco = zeros(ComplexF64, prod(recoParams[:shape]), acqData.numSlices, acqData.numEchoes, 1)
-  solvername = get(recoParams,:solver,"fista")
-
+  Ireco = zeros(ComplexF64, prod(shape), acqData.numSlices, acqData.numEchoes, 1)
   for k = 1:acqData.numSlices
-    E = encodingOps2d_parallel(acqData, recoParams; slice=k)
+    E = encodingOps2d_parallel(acqData, shape, senseMaps, slice=k, correctionMap=correctionMap, method=method)
     for j = 1:acqData.numEchoes
       W = WeightingOp(weights[j],acqData.numCoils)
-      reg = Regularization(regName, λ; multiEcho=true, recoParams...)
+      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], acqData.numCoils)
+
+      reg2 = deepcopy(reg)
       if normalize
-        RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
+        RegularizedLeastSquares.normalize!(reg2, kdata)
       end
-      solver = createLinearSolver(solvername, W*E[j]; reg=reg, recoParams...)
-      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], acqData.numCoils) #multiCoilData(acqData2, j, k)
+
+      solver = createLinearSolver(solvername, W*E[j]; reg=reg2, params...)
+
       I = solve(solver, kdata)
 
       if isCircular( trajectory(acqData, j) )
-        circularShutter!(reshape(I, recoParams[:shape]), 1.0)
+        circularShutter!(reshape(I, shape), 1.0)
       end
       Ireco[:,j,k] = I
     end
   end
 
-  Ireco = reshape(Ireco, recoParams[:shape]..., acqData.numSlices, acqData.numEchoes, 1)
+  Ireco = reshape(Ireco, shape..., acqData.numSlices, acqData.numEchoes, 1)
   return makeAxisArray(Ireco, acqData)
 end
 
-function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData, recoParams::Dict)
+function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
+                              , shape::NTuple{2,Int64}
+                              , reg::Regularization
+                              , sparseTrafo::AbstractLinearOperator
+                              , weights::Vector{Vector{ComplexF64}}
+                              , solvername::String
+                              , senseMaps::Array{ComplexF64}
+                              , correctionMap::Array{ComplexF64}=ComplexF64[]
+                              , method::String="nfft"
+                              , normalize::Bool=false
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
-  # sparsifying transform
-  recoParams[:multiEcho] = true
-  recoParams[:numEchoes] = acqData.numEchoes
-  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
-  recoParams[:sparseTrafo] = SparseOp(sparseTrafoName; recoParams...)
+  # set sparse trafo in reg
+  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],acqData.numEchoes) )
 
-  # rescale data for the symmetrized problem
-  densityWeighting = get(recoParams,:densityWeighting,false)
-  if densityWeighting
-    weights = samplingDensity(acqData,recoParams[:shape])
-  else
-    weights = vcat([fill(1.0/sqrt(prod(recoParams[:shape])),size(acqData.kdata[echo,1],2)) for echo=1:acqData.numEchoes]...)
-  end
-  W = WeightingOp(weights,acqData.numCoils)
+  W = WeightingOp( vcat(weights)..., acqData.numCoils )
 
-  # regularization
-  regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
-  reg = Regularization(regName, λ; recoParams...)
-  normalize = get(recoParams, :normalizeReg, false)
-  if normalize
-    RegularizedLeastSquares.normalize!(reg, acqData2.kdata)
-  end
-
-  Ireco = zeros(ComplexF64, prod(recoParams[:shape]), acqData.numEchoes, acqData.numSlices)
-  solvername = get(recoParams,:solver,"fista")
-
+  Ireco = zeros(ComplexF64, prod(shape), acqData.numEchoes, acqData.numSlices)
   for i = 1:acqData.numSlices
-    E = encodingOp_2d_multiEcho_parallel(acqData, recoParams, slice=i)
-    solver = createLinearSolver(solvername, W*E; reg=reg, recoParams...)
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, acqData.numCoils)# multiCoilMultiEchoData(acqData2, i)
+    E = encodingOp_2d_multiEcho_parallel(acqData, shape, senseMaps, slice=k, correctionMap=correctionMap, method=method)
+
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, acqData.numCoils)
+
+    reg2 = deepcopy(reg)
+    if normalize
+      RegularizedLeastSquares.normalize!(reg2, acqData.kdata)
+    end
+    solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
+
     Ireco[:,:,i] = solve(solver, kdata)
   end
 
   Ireco = reshape( permutedims(Ireco, [1,3,2]), recoParams[:shape]..., acqData.numSlices, acqData.numEchoes )
+end
+
+
+###########################################################################
+# setup regularization, sparsifying transform  and density weights for reco
+###########################################################################
+mutable struct RecoParameters{N}
+  shape::NTuple{N,Int64}
+  weights::Vector{Vector{ComplexF64}}
+  sparseTrafo::AbstractLinearOperator
+  reg::Regularization
+  normalize::Bool
+  solvername::String
+  senseMaps::Array{ComplexF64}
+  correctionMap::Array{ComplexF64}
+  method::String
+end
+
+function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
+  shape = recoParams[:shape]
+
+  # density weights
+  densityWeighting = get(recoParams,:densityWeighting,true)
+  if densityWeighting
+    weights = samplingDensity(acqData,shape)
+  else
+    weights = [1.0/sqrt(prod(shape)) for echo=1:acqData.numEcoes]
+  end
+
+  # sparsifying transform
+  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
+  sparseTrafo = SparseOp(sparseTrafoName; recoParams...)
+
+  # bare regularization (without sparsifying transform)
+  regName = get(recoParams, :regularization, "L1")
+  λ = get(recoParams,:λ,0.0)
+  reg = Regularization(regName, λ; recoParams...)
+
+  # normalize regularizer ?
+  normalize = get(recoParams, :normalizeReg, false)
+
+  # solvername
+  solvername = get(recoParams, :solver, "fista")
+
+  # sensitivity maps
+  senseMaps = get(recoParams, :senseMaps, ComplexF64[])
+
+  # field map
+  cmap = get(recoParams, :correctionMap, ComplexF64[])
+  method = get(recoParams, :method, "nfft")
+
+  return RecoParameters(shape, weights, sparseTrafo, reg, normalize, solvername, senseMaps, cmap, method)
 end

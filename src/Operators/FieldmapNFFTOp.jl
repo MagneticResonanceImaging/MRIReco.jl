@@ -29,7 +29,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         method::String="nfft",
                         echoImage::Bool=true,
                         alpha::Float64=1.75,
-                        m::Float64=4.0,
+                        m::Float64=3.0,
                         K=20,
                         kargs...) where D
 

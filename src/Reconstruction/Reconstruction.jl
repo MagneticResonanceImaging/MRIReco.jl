@@ -27,16 +27,23 @@ end
 
 function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
+
+  # direct reco
   if recoParams[:reco] == "direct"
-    return reconstruction_direct_2d(acqData, recoParams)
-  elseif recoParams[:reco] == "standard"
-    return reconstruction_simple(acqData, recoParams)
+    shape, weights, cmap = setupDirectReco(acqData, recoParams)
+    return reconstruction_direct_2d(acqData, shape, weights, cmap)
+  end
+
+  # iterative reco
+  par = setupIterativeReco(acqData, recoParams)
+  if recoParams[:reco] == "standard"
+    return reconstruction_simple(acqData, par.shape, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
   elseif recoParams[:reco] == "multiEcho"
-    return reconstruction_multiEcho(acqData, recoParams)
+    return reconstruction_multiEcho(acqData, par.shape, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
   elseif recoParams[:reco] == "multiCoil"
-    return reconstruction_multiCoil(acqData, recoParams)
+    return reconstruction_multiCoil(acqData, par.shape, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
   elseif recoParams[:reco] == "multiCoilMultiEcho"
-    return reconstruction_multiCoilMultiEcho(acqData, recoParams)
+    return reconstruction_multiCoilMultiEcho(acqData, par.shape, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
   else
     error("RecoModel $(recoParams[:reco]) not found.")
   end
@@ -46,7 +53,8 @@ end
 function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
   if recoParams[:reco] == "direct"
-    return reconstruction_direct_3d(acqData, recoParams)
+    shape, weights, cmap = setupDirectReco(acqData, recoParams)
+    return reconstruction_direct_3d(acqData, shape, weights, cmap)
   else
     error("3D reconstruction is not yet implimented")
   end

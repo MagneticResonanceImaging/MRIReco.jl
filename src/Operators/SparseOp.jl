@@ -6,11 +6,12 @@ export SparseOp
 function SparseOp(name::AbstractString; kargs...)
   params = Dict(kargs)
   if name=="Wavelet"
-    if get(params, :multiEcho, false)
-      return MultiEchoWaveletOp(params[:shape], params[:numEchoes])
-    else
-      return WaveletOp(params[:shape])
-    end
+    # if get(params, :multiEcho, false)
+    #   return MultiEchoWaveletOp(params[:shape], params[:numEchoes])
+    # else
+    #   return WaveletOp(params[:shape])
+    # end
+    return WaveletOp(params[:shape])
   elseif name=="nothing"
     return opEye(prod(params[:shape]))
   else
