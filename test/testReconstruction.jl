@@ -359,7 +359,7 @@ function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
     testGriddingReco3d()
-    sampling = ["simple", "vardens", "poisson", "vdPoisson"] # "lines"
+    sampling = ["random", "poisson", "vdPoisson"] # "lines"
     for samp in sampling
       testCSReco(sampling=samp)
     end

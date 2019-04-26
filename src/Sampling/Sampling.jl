@@ -6,9 +6,8 @@ mutable struct SamplingPattern
   patParams
 end
 
-include("Simple.jl")
 include("Regular.jl")
-include("Vardens.jl")
+include("Random.jl")
 include("Lines.jl")
 include("PoissonDisk.jl")
 include("VDPoissonDisk.jl")
@@ -23,12 +22,10 @@ if redFac < 1
   error("Reduction factor redFac must be >= 1")
 end
 
-if patFunc == "simple"
-  return SamplingPattern(shape,redFac,SimplePatternParams(;kargs...))
+if patFunc == "random"
+  return SamplingPattern(shape,redFac,RandomPatternParams(;kargs...))
 elseif patFunc == "regular"
   return SamplingPattern(shape,redFac,RegularPatternParams(;kargs...))
-elseif patFunc == "vardens"
-  return SamplingPattern(shape,redFac,VardensPatternParams(;kargs...))
 elseif patFunc == "lines"
   return SamplingPattern(shape,redFac,LinesPatternParams(;kargs...))
 elseif patFunc == "poisson"

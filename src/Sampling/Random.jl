@@ -1,26 +1,26 @@
-export VardensPatternParams
+export RandomPatternParams
 
-mutable struct VardensPatternParams
+mutable struct RandomPatternParams
   calsize::Int64
 end
 
-function VardensPatternParams(;calsize::Int64=0,kargs...)
-  VardensPatternParams(calsize)
+function RandomPatternParams(;calsize::Int64=0,kargs...)
+  RandomPatternParams(calsize)
 end
 
-function sample(shape::Tuple{Int64},redFac,patternParams::VardensPatternParams;kargs...)
+function sample(shape::Tuple{Int64},redFac,patternParams::RandomPatternParams;kargs...)
   error("Not implemented")
 end
 
-function sample(shape::Tuple{Int64,Int64},redFac,patternParams::VardensPatternParams;kargs...)
-  sample_vardens(shape[1],shape[2],redFac,calsize=patternParams.calsize)
+function sample(shape::Tuple{Int64,Int64},redFac,patternParams::RandomPatternParams;kargs...)
+  sample_random(shape[1],shape[2],redFac,calsize=patternParams.calsize)
 end
 
-function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::VardensPatternParams;kargs...)
+function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::RandomPatternParams;kargs...)
   error("Not implemented")
 end
 
-function sample_vardens(M::Int64,N::Int64,redFac::Float64;calsize::Int64=0,kargs...)
+function sample_random(M::Int64,N::Int64,redFac::Float64;calsize::Int64=0,kargs...)
 
   A = zeros(Int64,M,N)
   ChosenSamples = 0
