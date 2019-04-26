@@ -57,29 +57,29 @@ function sample_lines(M::Int64,N::Int64,redFac::Float64;sampleFunc="simple",karg
 
 end
 
-function sample_lines_3D(M::Int64,N::Int64,Z::Int64,redFac::Float64;xyFunc="simple",kargs...)
-  A2D = zeros(Int64,M,Z)
+function sample_lines_3D(M::Int64,N::Int64,Z::Int64,redFac::Float64;sampleFunc="simple",kargs...)
+  A2D = zeros(Int64,N,Z)
   A3D = zeros(Int64,M,N,Z)
 
-  if xyFunc=="simple"
+  if sampleFunc=="simple"
     idx = sample(size(A2D),redFac,SimplePatternParams())
-  elseif xyFunc=="regular"
+  elseif sampleFunc=="regular"
     idx = sample(size(A2D),redFac,RegularPatternParams())
-  elseif xyFunc =="vardens"
+  elseif sampleFunc =="vardens"
     idx = sample(size(A2D),redFac,VardensPatternParams(;kargs...))
-  elseif xyFunc =="poisson"
+  elseif sampleFunc =="poisson"
     idx = sample(size(A2D),redFac,PoissonDiskPatternParams(;kargs...))
   else
     error("No valid 2D sampling pattern specified")
   end
 
 
-  A2D[idx] = 1;
+  A2D[idx] .= 1;
 
-  for i=1:N
-    A3D[:,i,:] = A2D[:]
+  for i=1:M
+    A3D[i,:,:] = A2D[:]
   end
 
-  return find(A3D)
+  return (LinearIndices(A3D))[findall(x->x!=0, A3D)] # find(A3D)
 
 end

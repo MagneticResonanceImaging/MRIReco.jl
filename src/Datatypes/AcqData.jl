@@ -1,5 +1,6 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
-       weightData!, weightedData, unweightData!, unweightDataSquared!, changeEncodingSize2D
+       weightData!, weightedData, unweightData!, unweightDataSquared!, changeEncodingSize2D,
+       convert3dTo2d
 
 """
  contains all relevant info for the aquired data.
@@ -203,4 +204,60 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   acqData.kdata = kdata2
 
   return acqData
+end
+
+#
+# convert a 3d cartesian AcquisitionData to the equivalent 2d AcquisitionData
+#
+function convert3dTo2d(acqData::AcquisitionData)
+  # check if all trajectories are cartesian
+  for i=1:acqData.numEchoes
+    if !isCartesian(trajectory(acqData,i))
+      @error "conversion to 2d is not supported for non-cartesian data"
+    end
+  end
+
+  # create 2d trajectories along phase encoding directions
+  tr2d = Vector{Trajectory}(undef,acqData.numEchoes)
+  for i=1:acqData.numEchoes
+    tr3d = trajectory(acqData,i)
+    # 1. arg (numProfiles=>y), 2. arg (numSamp=>x)
+    tr2d[i] = CartesianTrajectory(numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
+  end
+
+  # convert k-space data and place it in the appropriate array structure
+  numSamp = numSamplingPerProfile(trajectory(acqData,1)) # assume the same number of samples for all contrasts
+  numSl = numSlices(trajectory(acqData,1))
+  kdata2d = Array{Matrix{ComplexF64}}(undef,acqData.numEchoes,numSamp, acqData.numReps)
+  for i=1:acqData.numEchoes
+    tr = trajectory(acqData,i)
+    numProf = div( size(acqData.kdata[i,1,1],1), numSamp ) #numProfiles(tr)
+    # kdata_i = zeros(ComplexF64, numSamp, numProf, numSl, acqData.numCoils, acqData.numReps)
+    kdata_i = zeros(ComplexF64, numSamp, numProf, acqData.numCoils, acqData.numReps)
+    #convert
+    F = 1/sqrt(numSamp)*FFTOp(ComplexF64, (numSamp,))
+    for r=1:acqData.numReps
+      for p=1:numProf # including slices
+        for c=1:acqData.numCoils
+          # p_idx = (s-1)*numProf+p
+          kdata_i[:,p,c,r] .= adjoint(F) * acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c]
+        end
+      end
+    end
+    # place kdata in transformed Array structure
+    for r=1:acqData.numReps
+      for j=1:numSamp
+        kdata2d[i,j,r] = kdata_i[j,:,:,r] # numSl/numSamp*kdata_i[j,:,:,r]
+      end
+    end
+  end
+
+  # adapt subsampleIndices
+  subsampleIndices2d = Vector{Vector{Int64}}(undef, acqData.numEchoes)
+  for i=1:acqData.numEchoes
+    idx = div.( acqData.subsampleIndices[i] .- 1, numSamp) .+ 1
+    subsampleIndices2d[i] = sort(unique(idx))
+  end
+
+  return AcquisitionData(acqData.sequenceInfo, tr2d, kdata2d, acqData.numEchoes, acqData.numCoils, numSamp, acqData.numReps, subsampleIndices2d, acqData.encodingSize, acqData.fov)
 end

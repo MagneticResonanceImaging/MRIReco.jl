@@ -97,6 +97,8 @@ function testCSRecoMultCoil(N=32)
   params[:solver] = "admm"    # solver
   params[:iterations] = 100
   params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-5
+  params[:relTol] = 1.e-4
 
   x_approx = reshape( reconstruction(acqData, params), 32,32,2)
 
@@ -138,6 +140,8 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:solver] = "admm"
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-5
+  params[:relTol] = 1.e-4
 
   x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
@@ -279,8 +283,77 @@ function testDirectRecoMultiEcho(N=32)
   @test relErrorEcho2 < 1e-3
 end
 
+function testCSReco3d(N=64)
+  sh = ComplexF64.(shepp_logan(N))
+  I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
+  I = permutedims(I,[3,1,2])
 
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian3D"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = 8
+  params[:numSlices] = N
 
+  acqData = simulation( real(I), params )
+  acqData = MRIReco.sample_kspace(acqData,1.5,"lines",sampleFunc="poisson",calsize=5)
+
+  # 3d reco
+  params[:reco] = "standard"    # encoding model
+  params[:shape] = (8,N,N)
+  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:regularization] = "TV"       # regularization
+  params[:λ] = 1.e-3
+  params[:solver] = "admm"    # solver
+  params[:iterations] = 1000
+  params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-4
+  params[:relTol] = 1.e-3
+
+  Ireco = reconstruction(acqData, params)
+
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
+end
+
+function testCSSenseReco3d(N=64)
+  sh = ComplexF64.(shepp_logan(N))
+  I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
+  I = permutedims(I,[3,1,2])
+
+  sensMaps = zeros(ComplexF64,8,N*N,2)
+  sensMaps[:,1:floor(Int64, N*N/2),1] .= 1.0
+  sensMaps[:,floor(Int64, N*N/2)+1:end,2] .= 1.0
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian3D"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = 8
+  params[:numSlices] = N
+  params[:senseMaps] = reshape(sensMaps,8,N,N,2)
+
+  acqData = simulation( real(I), params )
+  acqData = MRIReco.sample_kspace(acqData,4.0,"lines",sampleFunc="poisson",calsize=5)
+
+  # 3d reco
+  params[:reco] = "multiCoil"    # encoding model
+  params[:shape] = (8,N,N)
+  params[:senseMaps] = reshape(sensMaps,8,N,N,2)
+  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:regularization] = "TV"       # regularization
+  params[:λ] = 1.e-3
+  params[:solver] = "admm"    # solver
+  params[:iterations] = 1000
+  params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-5
+  params[:relTol] = 1.e-4
+
+  Ireco = reconstruction(acqData, params)
+
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 5e-2
+end
 
 function testReco(N=32)
   @testset "Reconstructions" begin
@@ -292,6 +365,8 @@ function testReco(N=32)
     end
     testCSRecoMultCoil()
     testCSSenseReco()
+    testCSReco3d()
+    testCSSenseReco3d()
     accelMethods = ["nfft", "hist", "leastsquare"]
     for a in accelMethods
       testOffresonanceReco(accelMethod=a)

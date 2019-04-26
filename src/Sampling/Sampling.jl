@@ -65,17 +65,21 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
 
   numEchoes = acqData.numEchoes
   numCoils = acqData.numCoils
-  numSlices = acqData.numSlices
+  numSl = acqData.numSlices
 
   idx = Vector{Array{Int64}}(undef,numEchoes)
 
   for echo = 1:numEchoes
     tr = trajectory(acqData,echo)
-    samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr) )
+    if dims(tr)==2
+      samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr) )
+    else
+      samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )
+    end
     pattern = SamplingPattern(samplingShape, redFac, patFunc; seed = seed, kargs...)
     patOut = sample(samplingShape,redFac,pattern.patParams; seed = seed, kargs...)
     patOut = sort(patOut)
-    for slice=1:numSlices
+    for slice=1:numSl
       acqData.kdata[echo,slice] = acqData.kdata[echo,slice][patOut,:]
     end
     acqData.subsampleIndices[echo] = patOut

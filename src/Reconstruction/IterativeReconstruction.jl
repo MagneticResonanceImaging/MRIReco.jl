@@ -126,7 +126,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
       if isCircular( trajectory(acqData, j) )
         circularShutter!(reshape(I, shape), 1.0)
       end
-      Ireco[:,j,k] = I
+      Ireco[:,k,j] = I
     end
   end
 
@@ -186,7 +186,14 @@ mutable struct RecoParameters{N}
 end
 
 function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
-  shape = recoParams[:shape]
+
+  red3d = dims(trajectory(acqData,1))==2 && length(recoParams[:shape])==3
+  if red3d  # acqData is 3d data converted to 2d
+    shape = (recoParams[:shape][2], recoParams[:shape][3])
+    recoParams[:shape] = shape
+  else  # regular case
+    shape = recoParams[:shape]
+  end
 
   # density weights
   densityWeighting = get(recoParams,:densityWeighting,true)
@@ -197,8 +204,12 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   end
 
   # sparsifying transform
-  sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
-  sparseTrafo = SparseOp(sparseTrafoName; recoParams...)
+  if haskey(recoParams,:sparseTrafo)
+    sparseTrafo = recoParams[:sparseTrafo]
+  else
+    sparseTrafoName = get(recoParams, :sparseTrafoName, "Wavelet")
+    sparseTrafo = SparseOp(sparseTrafoName, shape; recoParams...)
+  end
 
   # bare regularization (without sparsifying transform)
   regName = get(recoParams, :regularization, "L1")
@@ -213,6 +224,9 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
 
   # sensitivity maps
   senseMaps = get(recoParams, :senseMaps, ComplexF64[])
+  if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
+    senseMaps = permutedims(senseMaps,[2,3,1,4])
+  end
 
   # field map
   cmap = get(recoParams, :correctionMap, ComplexF64[])
