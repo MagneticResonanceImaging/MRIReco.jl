@@ -1,10 +1,4 @@
-export SamplingPattern, profileIdx
-
-mutable struct SamplingPattern
-  shape::Tuple
-  redFac::Float64
-  patParams
-end
+export profileIdx, sample
 
 include("Regular.jl")
 include("Random.jl")
@@ -15,37 +9,30 @@ include("CalibrationArea.jl")
 include("PointSpreadFunction.jl")
 include("Incoherence.jl")
 
+function sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs...) where N
+  if redFac < 1
+    error("Reduction factor redFac must be >= 1")
+  end
 
-function SamplingPattern(shape::Tuple, redFac::Float64, patFunc::AbstractString; kargs...)
-
-if redFac < 1
-  error("Reduction factor redFac must be >= 1")
+  if patFunc == "random"
+    return sample_random(shape,redFac;kargs...)
+  elseif patFunc == "regular"
+    return sample_regular(shape,redFac;kargs...)
+  elseif patFunc == "lines"
+    return sample_lines(shape,redFac;kargs...)
+  elseif patFunc == "poisson"
+    return sample_poissondisk(shape,redFac;kargs...)
+  elseif patFunc == "vdPoisson"
+    return sample_vdpoisson(shape,redFac;kargs...)
+  else
+    @error "Sample function $(patFunc) not found."
+  end
 end
 
-if patFunc == "random"
-  return SamplingPattern(shape,redFac,RandomPatternParams(;kargs...))
-elseif patFunc == "regular"
-  return SamplingPattern(shape,redFac,RegularPatternParams(;kargs...))
-elseif patFunc == "lines"
-  return SamplingPattern(shape,redFac,LinesPatternParams(;kargs...))
-elseif patFunc == "poisson"
-  return SamplingPattern(shape,redFac,PoissonDiskPatternParams(;kargs...))
-elseif patFunc == "vdPoisson"
-  return SamplingPattern(shape,redFac,VDPoissonDiskParams(;kargs...))
-else
-  error("Sample function $(patFunc) not found.")
-end
-
-end
-
-function sample_kspace(kspace::AbstractArray,redFac::Float64,patFunc::AbstractString;kargs...)
-  sample_kspace(kspace,SamplingPattern(size(kspace),redFac,patFunc;kargs...);kargs...)
-end
-
-function sample_kspace(kspace::AbstractArray,pattern::SamplingPattern;kargs...)
-  patOut = sample(pattern.shape,pattern.redFac,pattern.patParams;kargs...)
+function sample_kspace(data::AbstractArray,redFac::Float64,patFunc::AbstractString;kargs...)
+  patOut = sample(size(data),redFac,patFunc;kargs...)
   patOut = sort(patOut)
-  return kspace[patOut],patOut
+  return data[patOut],patOut
 end
 
 function sample_kspace(acqData::AcquisitionData,redFac::Float64,
@@ -73,8 +60,7 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
     else
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )
     end
-    pattern = SamplingPattern(samplingShape, redFac, patFunc; seed = seed, kargs...)
-    patOut = sample(samplingShape,redFac,pattern.patParams; seed = seed, kargs...)
+    patOut = sample(samplingShape,redFac,patFunc; seed = seed, kargs...)
     patOut = sort(patOut)
     for slice=1:numSl
       acqData.kdata[echo,slice] = acqData.kdata[echo,slice][patOut,:]
@@ -82,19 +68,6 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
     acqData.subsampleIndices[echo] = patOut
     rand && (seed += 1)
   end
-end
-
-function shuffle_vector(vec::Vector{T};patFunc::AbstractString="poisson",redFac::Float64=one(Float64),kargs...) where T
-  shuffle_vector(vec,redFac,patFunc;kargs...)
-end
-
-function shuffle_vector(vec::Vector{T},redFac::Float64,patFunc::AbstractString;kargs...) where T
-  shuffle_vector(vec,SamplingPattern(size(vec),redFac,patFunc;kargs...);kargs...)
-end
-
-function shuffle_vector(vec::Vector{T},pattern::SamplingPattern;kargs...) where T
-  patOut = sample(pattern.shape,pattern.redFac,pattern.patParams;kargs...)
-  return vec[patOut]
 end
 
 function profileIdx(acqData::AcquisitionData,contr::Int)

@@ -1,78 +1,22 @@
-export LinesPatternParams
-
-mutable struct LinesPatternParams
-  nothing
-end
-
-function LinesPatternParams(;kargs...)
-  LinesPatternParams(nothing)
-end
-
-function sample(shape::Tuple{Int64},redFac,patternParams::LinesPatternParams;kargs...)
+function sample_lines(shape::Tuple{Int64},redFac;sampleFunc="random",kargs...)
   error("Not implemented")
 end
 
-function sample(shape::Tuple{Int64,Int64},redFac,patternParams::LinesPatternParams;kargs...)
-  sample_lines(shape[1],shape[2],redFac;kargs...)
-end
-
-function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::LinesPatternParams;kargs...)
-  sample_lines_3D(shape[1],shape[2],shape[3],redFac;kargs...)
-end
-
-function sample_lines(M::Int64,N::Int64,redFac::Float64;sampleFunc="simple",kargs...)
-
-  A = zeros(Int64,M,N)
-
-  #yInd = sample((M,),redFac,SimplePatternParams())
-
-  # OLD version with exchanged order of phase and frequency encoding
-  # if sampleFunc=="simple"
-  #   yInd = sample((M,),redFac,SimplePatternParams())
-  # elseif sampleFunc =="vardens"
-  #   yInd = sample((M,),redFac,VardensPatternParams(;kargs...))
-  # elseif sampleFunc =="poisson"
-  #   yInd = sample((M,),redFac,PoissonDiskPatternParams(;kargs...))
-  # else
-  #   error("No valid sampling pattern specified")
-  # end
-  #
-  # A[yInd,1:N] = 1;
-
-  if sampleFunc=="simple"
-    yInd = sample((N,),redFac,SimplePatternParams(;kargs...); kargs...)
-  elseif sampleFunc=="regular"
-    yInd = sample((N,),redFac,RegularPatternParams())
-  elseif sampleFunc =="vardens"
-    yInd = sample((N,),redFac,VardensPatternParams(;kargs...))
-  elseif sampleFunc =="poisson"
-    yInd = sample((N,),redFac,PoissonDiskPatternParams(;kargs...))
-  else
-    error("No valid sampling pattern specified")
-  end
-
+function sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+  M,N=shape
+  A = zeros(Int64,shape)
+  yInd = sample((N,),redFac,sampleFunc;kargs...)
   A[1:M,yInd] .= 1;
 
-  return (LinearIndices(A))[findall(x->x!=0, A)] # find(A)
-
+  return (LinearIndices(A))[findall(x->x!=0, A)]
 end
 
-function sample_lines_3D(M::Int64,N::Int64,Z::Int64,redFac::Float64;sampleFunc="simple",kargs...)
+function sample_lines(shape::Tuple{Int64,Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+  M,N,Z=shape
   A2D = zeros(Int64,N,Z)
-  A3D = zeros(Int64,M,N,Z)
+  A3D = zeros(Int64,shape)
 
-  if sampleFunc=="simple"
-    idx = sample(size(A2D),redFac,SimplePatternParams())
-  elseif sampleFunc=="regular"
-    idx = sample(size(A2D),redFac,RegularPatternParams())
-  elseif sampleFunc =="vardens"
-    idx = sample(size(A2D),redFac,VardensPatternParams(;kargs...))
-  elseif sampleFunc =="poisson"
-    idx = sample(size(A2D),redFac,PoissonDiskPatternParams(;kargs...))
-  else
-    error("No valid 2D sampling pattern specified")
-  end
-
+  idx = sample(size(A2D),redFac,sampleFunc;kargs...)
 
   A2D[idx] .= 1;
 
@@ -80,6 +24,5 @@ function sample_lines_3D(M::Int64,N::Int64,Z::Int64,redFac::Float64;sampleFunc="
     A3D[i,:,:] = A2D[:]
   end
 
-  return (LinearIndices(A3D))[findall(x->x!=0, A3D)] # find(A3D)
-
+  return (LinearIndices(A3D))[findall(x->x!=0, A3D)]
 end

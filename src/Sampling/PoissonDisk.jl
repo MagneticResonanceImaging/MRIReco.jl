@@ -1,40 +1,24 @@
-export PoissonDiskPatternParams
-
-mutable struct PoissonDiskPatternParams
-  calsize::Int64
-  seed::Int64
+function sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
+  sample_poissondisk((shape[1],1),redFac,calsize=calsize,seed=seed;kargs...)
 end
 
-function PoissonDiskPatternParams(;calsize::Int64=0, seed::Int64 = 1234, kargs...)
-  PoissonDiskPatternParams(calsize, seed)
-end
-
-function sample(shape::Tuple{Int64},redFac,patternParams::PoissonDiskPatternParams;kargs...)
-  sample_poissondisk(shape[1],one(Int64),redFac,calsize=patternParams.calsize,seed=patternParams.seed;kargs...)
-end
-
-function sample(shape::Tuple{Int64,Int64},redFac,patternParams::PoissonDiskPatternParams;kargs...)
-  sample_poissondisk(shape[1],shape[2],redFac,calsize=patternParams.calsize,seed=patternParams.seed;kargs...)
-end
-
-function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::PoissonDiskPatternParams;kargs...)
+function sample_poissondisk(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
   error("Not implemented")
 end
 
-function sample_poissondisk(M::Int64,N::Int64,redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
-  A = zeros(Int64,M,N)
+function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
+  M,N = shape
+  A = zeros(Int64,shape)
   ChosenSamples = 0
   NumberSamples = floor(Int64,M*N/redFac)
   A, ChosenSamples = setcalibrationarea(A,M,N,redFac,calsize)
   chosen = (LinearIndices(A))[findall(x->x!=0, A)]
-  # selection = find(abs.(A .- 1))
   selection = (LinearIndices(abs.(A .- 1)))[findall(x->x!=0, abs.(A .- 1))]
 
   forbiddenradius = floor(Int64,sqrt((M*N-calsize^2)/(NumberSamples-ChosenSamples)/pi))
   if forbiddenradius <= 1
     forbiddenradius = 2
   end
- #println(forbiddenradius)
 
   Random.seed!(seed)
 

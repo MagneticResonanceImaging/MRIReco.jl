@@ -1,27 +1,13 @@
-export RandomPatternParams
-
-mutable struct RandomPatternParams
-  calsize::Int64
+function sample_random(shape::Tuple{Int64},redFac;calsize::Int64=0,kargs...)
+  return sample_random((shape[1],1),redFac;calsize=calsize,kargs...)
 end
 
-function RandomPatternParams(;calsize::Int64=0,kargs...)
-  RandomPatternParams(calsize)
-end
-
-function sample(shape::Tuple{Int64},redFac,patternParams::RandomPatternParams;kargs...)
+function sample_random(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,kargs...)
   error("Not implemented")
 end
 
-function sample(shape::Tuple{Int64,Int64},redFac,patternParams::RandomPatternParams;kargs...)
-  sample_random(shape[1],shape[2],redFac,calsize=patternParams.calsize)
-end
-
-function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::RandomPatternParams;kargs...)
-  error("Not implemented")
-end
-
-function sample_random(M::Int64,N::Int64,redFac::Float64;calsize::Int64=0,kargs...)
-
+function sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,kargs...)
+  M,N = shape
   A = zeros(Int64,M,N)
   ChosenSamples = 0
   NumberSamples = floor(Int64,M*N/redFac)

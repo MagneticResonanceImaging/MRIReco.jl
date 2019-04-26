@@ -1,15 +1,4 @@
-export RegularPatternParams
-
-mutable struct RegularPatternParams
-  nothing
-end
-
-function RegularPatternParams(;kargs...)
-  SimplePatternParams(nothing)
-end
-
-function sample(shape::Tuple, redFac::Float64,
-                patternParams::RegularPatternParams; kargs...)
+function sample_regular(shape::Tuple, redFac::Float64; kargs...)
   sample_regular(prod(shape), redFac)
 end
 

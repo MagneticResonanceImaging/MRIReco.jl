@@ -1,26 +1,13 @@
-export VDPoissonDiskParams
-
-mutable struct VDPoissonDiskParams
-  seed::Int64
+function sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
+  vdPoissonDisk(shape[1],one(Int64),redFac,seed=seed;kargs...)
 end
 
-function VDPoissonDiskParams(;seed::Int64 = 1234, kargs...)
-  VDPoissonDiskParams(seed)
-end
-
-function sample(shape::Tuple{Int64},redFac,patternParams::VDPoissonDiskParams;kargs...)
-  vdPoissonDisk(shape[1],one(Int64),redFac,seed=patternParams.seed;kargs...)
-end
-
-function sample(shape::Tuple{Int64,Int64},redFac,patternParams::VDPoissonDiskParams;kargs...)
-  vdPoissonDisk(shape[1],shape[2],redFac,seed=patternParams.seed;kargs...)
-end
-
-function sample(shape::Tuple{Int64,Int64,Int64},redFac,patternParams::VDPoissonDiskParams;kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;seed::Int64=1234,kargs...)
   error("Not implemented")
 end
 
-function vdPoissonDisk(M::Int64,N::Int64,redFac::Float64; seed::Int64=1234,kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,kargs...)
+  M,N = shape
   samples = collect(1:M*N)
   chosenSamples = []
   forbiddenSamples =[]
