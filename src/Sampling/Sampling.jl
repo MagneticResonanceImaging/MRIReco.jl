@@ -60,7 +60,8 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
     else
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )
     end
-    patOut = sample(samplingShape,redFac,patFunc; seed = seed, kargs...)
+    # only sample full profiles
+    patOut = sample(samplingShape,redFac,"lines"; sampleFunc=patFunc, seed=seed, kargs...)
     patOut = sort(patOut)
     for slice=1:numSl
       acqData.kdata[echo,slice] = acqData.kdata[echo,slice][patOut,:]

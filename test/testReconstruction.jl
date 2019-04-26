@@ -55,6 +55,7 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
   params[:numSamplingPerProfile] = N
 
   acqData = simulation(x, params)
+  Random.seed!(1234)
   acqData = MRIReco.sample_kspace(acqData, redFac, sampling, calsize=5)
   acqData = MRIReco.addNoise(acqData,25.0)
 
@@ -128,6 +129,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:numSamplingPerProfile] = N
 
   acqData = simulation(x,params)
+  Random.seed!(1234)
   acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
 
   # reco
@@ -297,7 +299,8 @@ function testCSReco3d(N=64)
   params[:numSlices] = N
 
   acqData = simulation( real(I), params )
-  acqData = MRIReco.sample_kspace(acqData,1.5,"lines",sampleFunc="poisson",calsize=5)
+  Random.seed!(1234)
+  acqData = MRIReco.sample_kspace(acqData,1.5,"poisson",calsize=5)
 
   # 3d reco
   params[:reco] = "standard"    # encoding model
@@ -335,7 +338,8 @@ function testCSSenseReco3d(N=64)
   params[:senseMaps] = reshape(sensMaps,8,N,N,2)
 
   acqData = simulation( real(I), params )
-  acqData = MRIReco.sample_kspace(acqData,4.0,"lines",sampleFunc="poisson",calsize=5)
+  Random.seed!(1234)
+  acqData = MRIReco.sample_kspace(acqData,4.0,"poisson",calsize=5)
 
   # 3d reco
   params[:reco] = "multiCoil"    # encoding model

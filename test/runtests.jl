@@ -3,6 +3,7 @@ using MRIReco
 using Test
 using LinearAlgebra
 using HTTP
+using Random
 
 
 include("testTrajectories.jl")

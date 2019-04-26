@@ -1,5 +1,5 @@
 function sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
-  vdPoissonDisk(shape[1],one(Int64),redFac,seed=seed;kargs...)
+  return sample_vdpoisson((shape[1],1),redFac,seed=seed;kargs...)
 end
 
 function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;seed::Int64=1234,kargs...)
