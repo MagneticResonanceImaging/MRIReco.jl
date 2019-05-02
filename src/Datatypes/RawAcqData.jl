@@ -106,7 +106,7 @@ end
 
 
 function numChannels(f::RawAcquisitionData)
-  return f.params["receiverChannels"]
+  return f.profiles[1].head.active_channels
 end
 
 encSteps1(f::RawAcquisitionData) =
