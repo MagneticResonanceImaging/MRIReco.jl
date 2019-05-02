@@ -35,7 +35,7 @@ filenameCopy = "simple_gre_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)
 # store data in another ISMRMRD file
 save(fCopy, acq)
-acqCopy = RawAcquisitionData(f)
+acqCopy = RawAcquisitionData(fCopy)
 
 @test acqCopy.profiles[1].head == acq.profiles[1].head
 @test acqCopy.profiles[1].data == acq.profiles[1].data

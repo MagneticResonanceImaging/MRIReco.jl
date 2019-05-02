@@ -412,11 +412,11 @@ function GeneralParametersToXML(params::Dict{String,Any})
   return string(xdoc)
 end
 
-function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};f_res::AbstractFloat=1.2774e8,tr_name::AbstractString="cartesian",numChannels::Int=1)
+function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};f_res::Integer=1,tr_name::AbstractString="cartesian",numChannels::Int=1)
   params = Dict{String,Any}()
   params["H1resonanceFrequency_Hz"] = f_res
-  params["encodedSize"] = encodingSize
-  params["encodedFOV"] = fov
+  params["encodedSize"] = collect(encodingSize)
+  params["encodedFOV"] = collect(fov)
   params["trajectory"] = tr_name
   params["receiverChannels"] = numChannels
 
