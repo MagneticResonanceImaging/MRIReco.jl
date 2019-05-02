@@ -29,9 +29,9 @@ using NIfTI
 
 
 include("Trajectories/Trajectories.jl")
-include("Tools/Tools.jl")
 include("Sequences/Sequence.jl")
 include("Datatypes/Datatypes.jl")
+include("Tools/Tools.jl")
 include("Operators/Operators.jl")
 include("Simulation/Simulation.jl")
 include("Reconstruction/Reconstruction.jl")

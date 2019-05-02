@@ -15,7 +15,9 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
   chosen = (LinearIndices(A))[findall(x->x!=0, A)]
   selection = (LinearIndices(abs.(A .- 1)))[findall(x->x!=0, abs.(A .- 1))]
 
-  forbiddenradius = floor(Int64,sqrt((M*N-calsize^2)/(NumberSamples-ChosenSamples)/pi))
+  cal_x, cal_y = min(calsize,M), min(calsize,N)
+  # forbiddenradius = floor(Int64,sqrt((M*N-calsize^2)/(NumberSamples-ChosenSamples)/pi))
+  forbiddenradius = floor(Int64,sqrt((M*N-cal_x*cal_y)/(NumberSamples-ChosenSamples)/pi))
   if forbiddenradius <= 1
     forbiddenradius = 2
   end
