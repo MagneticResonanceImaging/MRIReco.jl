@@ -239,7 +239,9 @@ function RawAcquisitionData(b::BrukerFile)
                   head = AcquisitionHeader(number_of_samples=N[1], idx=counter,
                                            read_dir=read_dir, phase_dir=phase_dir,
                                            slice_dir=slice_dir, position=position,
-                                           center_sample=div(N[1],2))
+                                           center_sample=div(N[1],2),
+                                           available_channels = 1, #TODO
+                                           active_channels = 1)
                   traj = Matrix{Float32}(undef,0,0)
                   dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,1))
                   push!(profiles, Profile(head,traj,dat) )
