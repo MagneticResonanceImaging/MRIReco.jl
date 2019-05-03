@@ -56,7 +56,7 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
 
   acqData = simulation(x, params)
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData, redFac, sampling, calsize=5)
+  acqData = MRIReco.sample_kspace(acqData, redFac, sampling, calsize=5, profiles=false)
   acqData = MRIReco.addNoise(acqData,25.0)
 
   # reco

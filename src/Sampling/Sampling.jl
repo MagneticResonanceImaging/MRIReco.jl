@@ -1,4 +1,4 @@
-export profileIdx, sample
+export profileIdx, sample, sample_kspace
 
 include("Regular.jl")
 include("Random.jl")
@@ -36,7 +36,7 @@ function sample_kspace(data::AbstractArray,redFac::Float64,patFunc::AbstractStri
 end
 
 function sample_kspace(acqData::AcquisitionData,redFac::Float64,
-                       patFunc::AbstractString; rand=true, profiles=false,
+                       patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
   acqData2 = deepcopy(acqData)
   sample_kspace!(acqData2,redFac,patFunc;rand=rand,profiles=profiles,seed=seed,kargs...)
@@ -44,7 +44,7 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
 end
 
 function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
-                       patFunc::AbstractString; rand=true, profiles=false,
+                       patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
 
   numEchoes = acqData.numEchoes
@@ -61,7 +61,11 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )
     end
     # only sample full profiles
-    patOut = sample(samplingShape,redFac,"lines"; sampleFunc=patFunc, seed=seed, kargs...)
+    if profiles
+      patOut = sample(samplingShape,redFac,"lines"; sampleFunc=patFunc, seed=seed, kargs...)
+    else
+      patOut = sample(samplingShape,redFac,patFunc; seed=seed, kargs...)
+    end
     patOut = sort(patOut)
     for slice=1:numSl
       acqData.kdata[echo,slice] = acqData.kdata[echo,slice][patOut,:]
