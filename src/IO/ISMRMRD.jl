@@ -47,6 +47,9 @@ function RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
   end
 end
 
+function AcquisitionData(f::ISMRMRDFile, dataset="dataset")
+  return AcquisitionData(RawAcquisitionData(f,dataset))
+end
 
 function read_header(header, dtypehead)
   # very important to use the offset here, since the offset varies from

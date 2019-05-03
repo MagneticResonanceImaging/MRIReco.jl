@@ -54,18 +54,18 @@ if !isfile(filename)
 end
 
 f = ISMRMRDFile(filename)
-acq = RawAcquisitionData(f)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
 params[:shape] = (128,128) #this should be clear from context
 
-Ireco = reconstruction(AcquisitionData(acq), params)
+Ireco = reconstruction(AcquisitionData(f), params)
 exportImage("recospiral.png", Ireco[:,:,1,1,1])
 
 filenameCopy = "simple_spiral_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)
 # store data in another ISMRMRD file
+acq = RawAcquisitionData(f)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
