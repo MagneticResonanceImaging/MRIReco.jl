@@ -1,7 +1,7 @@
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
@@ -31,7 +31,8 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 
 [compat]
-julia = "1.1"
+julia = "0.7, 1.0"
+RegularizedLeastSquares = ">= 0.2.3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
