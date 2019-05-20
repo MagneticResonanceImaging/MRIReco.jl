@@ -1,5 +1,28 @@
 # Getting Started
 
+Throughout the entire documentation we assume that you have loaded `MRIReco`
+as well as `PyPlot` via
+```julia
+using PyPlot, MRIReco
+```
+Its important to load these packages in that order, since otherwise `PyPlot`
+will not work correctly on some systems.
+
+All examples discussed in the documentation can be found in the package source
+code in the folder
+```
+    MRIReco/docs/src/examples
+```
+This folder is located in `~/.julia/packages` or `~/.julia/dev` depending if you
+have checked out `MRIReco` for development or not. You can call the first example
+by entering into the Julia REPL:
+```julia
+include(joinpath(dirname(pathof(MRIReco)),"../docs/src/examples/exampleRadial.jl"))
+```
+which should open a plotting window as is outlined in the following example.
+
+## Basic Example
+
 We will start with a very simple example and perform simple simulation and
 reconstruction based on a shepp logan phantom. The program looks like this
 ```julia
@@ -48,7 +71,6 @@ Ireco = reconstruction(acqData, params)
 The resulting image is of type `AxisArray` and has 5 dimensions. One can
 display the image object by calling
 ```julia
-using ImageView
 imshow(abs.(Ireco[:,:,1,1,1]))
 ```
 Alternatively one can store the image into a file, which will be discussed in

@@ -24,9 +24,29 @@ This interaction allows new algorithms to be easily integrated into the software
 
 ## Installation
 
-Start julia and open the package mode by entering `]`. The enter
+Start julia and open the package mode by entering `]`. Then enter
 ```julia
-add https://github.com/tknopp/RegularizedLeastSquares.jl
-add https://github.com/MagneticResonanceImaging/MRIReco.jl
+add MRIReco
 ```
-This will install the packages `RegularizedLeastSquares.jl`, `MRIReco.jl`, and all its dependencies.
+This will install `MRIReco` and all its dependencies. If you want to develop
+`MRIReco` itself you can checkout `MRIReco` by calling
+```julia
+add MRIReco
+```
+More information on how to develop a package can be found in the Julia documentation.
+
+## Plotting
+
+On purpose `MRIReco` is not depending on a particular plotting package since there
+are various plotting packages in the Julia ecosystem. Within the examples outlined
+in the tutorial we will use `PyPlot` for plotting but you may prefer using
+the `Plots` package. You can add both packages the same way
+`MRIReco` has been added.
+
+## Tutorial
+
+There is a Jupyter-based tutorial on `MRIReco` at
+
+[https://github.org/MagneticResonanceImaging/MRIRecoTutorial](https://github.org/MagneticResonanceImaging/MRIRecoTutorial)
+
+that has been presented at the ISMRM conference in Montreal 2019.
