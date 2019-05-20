@@ -1,10 +1,9 @@
-using MRIReco
 using PyPlot
+using MRIReco
 
 #### trajectories ####
 
 trajectories = ["Spiral", "Radial", "Cartesian", "EPI", "SpiralVarDens"]
-#                "Cartesian3D", "StackOfStars", "Kooshball"]
 
 figure(1)
 clf()
@@ -35,8 +34,6 @@ nodes = kspaceNodes(tr)
 plot(nodes[1,:], nodes[2,:],"b.",lw=2)
 title("SpiralVarDens")
 
-
-
 subplots_adjust(top=0.95,
        bottom=0.05,
        left=0.05,
@@ -44,4 +41,5 @@ subplots_adjust(top=0.95,
        hspace=0.3,
        wspace=0.2)
 
-savefig("../assets/trajectories.png", dpi=200)
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/trajectories.png")
+savefig(filename, dpi=200)

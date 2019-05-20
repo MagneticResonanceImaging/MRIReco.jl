@@ -1,5 +1,4 @@
-using MRIReco
-using ImageView
+using PyPlot, MRIReco
 
 ##### simple example ####
 
@@ -22,13 +21,18 @@ params[:reco] = "direct"
 params[:shape] = (N,N)
 Ireco = reconstruction(acqData, params)
 
-# use ImageView for interactive display
+# use PyPlot for interactive display
+figure(1)
+clf()
+subplot(1,2,1)
+title("Phantom")
 imshow(abs.(I))
+subplot(1,2,2)
+title("Reconstruction")
 imshow(abs.(Ireco[:,:,1,1,1]))
 
 # export images
-Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("../assets/simpleReco.png", Icolored[:,:,1,1,1] )
-
-Icolored = colorview(Gray, abs.(I)./maximum(abs.(I)))
-save("../assets/phantom.png", Icolored[:,:] )
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/simpleReco.png")
+exportImage(filename, Ireco[:,:,1,1,1])
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/phantom.png")
+exportImage(filename, I[:,:,1,1,1])
