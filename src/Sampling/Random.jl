@@ -7,7 +7,7 @@ function sample_random(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,k
 end
 
 """
-  sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,kargs...)
+    sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,kargs...)
 
 generates a random sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 

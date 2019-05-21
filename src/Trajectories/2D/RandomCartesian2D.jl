@@ -1,7 +1,7 @@
 export RandomCartesianTrajectory, randomCartesianNodes, randomCartesianDensity
 
 """
-  CartesianTrajectory(numProfiles, numSamplingPerProfile
+    CartesianTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , kmin=(-0.5,-0.5)

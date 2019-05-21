@@ -1,7 +1,7 @@
 export OneLine2Trajectory, oneLine2dNodes, oneLine2dDensity
 
 """
-  OneLine2dTrajectory(numProfiles, numSamplingPerProfile
+    OneLine2dTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , angle::Float64=0.0

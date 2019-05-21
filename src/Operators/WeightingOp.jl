@@ -1,7 +1,7 @@
 export WeightingOp
 
 """
-  WeightingOp(weights::Vector{T}, rep::Int=1) where T
+    WeightingOp(weights::Vector{T}, rep::Int=1) where T
 
 generates a `LinearOperator` which multiplies an input vector `weights`
 

@@ -18,6 +18,7 @@ makedocs(
         "Imaging Operators" => "operators.md",
         "Simulation" => "simulation.md",
         "Reconstruction" => "reconstruction.md",
+        "API" => "API.md",
     ],
     html_prettyurls = false, #!("local" in ARGS),
 )

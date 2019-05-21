@@ -1,7 +1,7 @@
 export SpiralTrajectoryVarDens, spiralVarDensNodes, spiralVarDensDensity
 
 """
-  SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile
+    SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Float64= 6.25

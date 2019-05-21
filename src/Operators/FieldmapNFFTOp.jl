@@ -22,7 +22,7 @@ mutable struct InhomogeneityData
 end
 
 """
-  FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
+    FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{ComplexF64,D};
                         method::String="nfft",
                         echoImage::Bool=true,

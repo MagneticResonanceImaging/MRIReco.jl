@@ -15,7 +15,7 @@ include("SparseOp.jl")
 include("WeightingOp.jl")
 
 """
-  hcat(A::AbstractLinearOperator, n::Int)
+    hcat(A::AbstractLinearOperator, n::Int)
 
 horizontally concatenates alinear operator `A` n times
 """
@@ -28,7 +28,7 @@ function hcat(A::AbstractLinearOperator, n::Int)
 end
 
 """
-  hcat(A::AbstractLinearOperator, n::Int)
+    hcat(A::AbstractLinearOperator, n::Int)
 
 vertically concatenates alinear operator `A` n times
 """
@@ -78,8 +78,8 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...)
 end
 
 """
-  diagOp(ops :: AbstractLinearOperator...)
-  
+    diagOp(ops :: AbstractLinearOperator...)
+
 create a bloc-diagonal operator out of the `LinearOperator`s contained in ops
 """
 function diagOp(ops :: AbstractLinearOperator...)

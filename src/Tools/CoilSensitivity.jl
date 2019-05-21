@@ -1,7 +1,7 @@
 export estimateCoilSensitivities, mergeChannels, espirit
 
 """
-  estimateCoilSensitivities(I::AbstractArray{T,5})
+    estimateCoilSensitivities(I::AbstractArray{T,5})
 
 Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually
@@ -20,14 +20,14 @@ function estimateCoilSensitivities(I::AbstractArray{T,5}) where T
 end
 
 """
-  mergeChannels(I::AbstractArray{T,5})
+    mergeChannels(I::AbstractArray{T,5})
 
 Merge the channels of a multi-coil reconstruction
 """
 mergeChannels(I::AbstractArray{T,5}) where T = sqrt.(sum(abs.(I).^2,dims=5));
 
 """
-  espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
+    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
                ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
 
 obtains coil sensitivities from a calibration area using ESPIRiT

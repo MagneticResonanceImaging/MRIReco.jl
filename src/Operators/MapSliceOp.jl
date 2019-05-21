@@ -9,7 +9,7 @@ function mapSliceBackward(A, y::Vector, size2::Tuple, dim::Int)
 end
 
 """
-  MapSliceOp(trafo, dim::Int64, size1::Tuple, size2::Tuple; T=ComplexF64)
+    MapSliceOp(trafo, dim::Int64, size1::Tuple, size2::Tuple; T=ComplexF64)
 
 generates an operator that applies `trafo` to each slice of dimension `dim` of an array
 

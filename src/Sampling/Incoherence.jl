@@ -1,7 +1,7 @@
 export calculateIncoherence
 
 """
-  calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=1)
+    calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=1)
 
 calculates the incoherence of the sampling pattern contained in `acqData`
 

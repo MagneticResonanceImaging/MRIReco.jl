@@ -65,7 +65,7 @@ include("3D/StackofStars.jl")
 # This dispatches on the file extension and automatically
 # generates the correct type
 """
-  trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, TE::Float64=0.0, AQ::Float64=1.e-3, kargs...)
+    trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, TE::Float64=0.0, AQ::Float64=1.e-3, kargs...)
 
 is a factory method to construct a trajectory from its `name`
 

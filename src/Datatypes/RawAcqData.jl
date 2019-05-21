@@ -177,10 +177,10 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
 end
 
 """
-  rawdata(f::RawAcquisitionData)
+    rawdata(f::RawAcquisitionData)
 
 returns the rawdata contained `RawAcquisitionData` object.
-The output is an 'Array{Matrix{ComplexF64},3}', which can be stored in a `AcquisitionData` object.
+The output is an `Array{Matrix{ComplexF64},3}`, which can be stored in a `AcquisitionData` object.
 """
 function rawdata(f::RawAcquisitionData)
   encSt1 = encSteps1(f)
@@ -233,7 +233,7 @@ function rawdata(f::RawAcquisitionData)
 end
 
 """
-  AcquisitionData(f::RawAcquisitionData)
+    AcquisitionData(f::RawAcquisitionData)
 
 converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 """
@@ -254,7 +254,7 @@ function AcquisitionData(f::RawAcquisitionData)
 end
 
 """
-  RawAcquisitionData(acqData::AcquisitionData)
+    RawAcquisitionData(acqData::AcquisitionData)
 
 converts `acqData` into the equivalent `RawAcquisitionData` object.
 """

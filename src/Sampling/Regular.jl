@@ -1,5 +1,5 @@
 """
-  sample_regular(shape::Tuple{Int64,Int64},redFac::Float64;kargs...)
+    sample_regular(shape::Tuple{Int64,Int64},redFac::Float64;kargs...)
 
 generates a regular sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 

@@ -1,7 +1,7 @@
 export makeAxisArray
 
 """
-  makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
+    makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
 creates an axies array with properly characterized axis from the image `I`.
 For this, it uses the information in `acqData`.

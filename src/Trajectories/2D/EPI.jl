@@ -1,7 +1,7 @@
 export EPITrajectory, epiNodes, epiDensity
 
 """
-  EPITrajectory(numProfiles, numSamplingPerProfile
+    EPITrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , EPI_factor::Int64=1

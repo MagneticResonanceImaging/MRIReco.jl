@@ -1,7 +1,7 @@
 export StackOfStarsTrajectory, stackOfStarsNodes, stackOfStarsDensity
 
 """
-  StackOfStarsTrajectory(numProfiles, numSamplingPerProfile
+    StackOfStarsTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , numSlices=1

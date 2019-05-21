@@ -3,7 +3,7 @@ function sample_lines(shape::Tuple{Int64},redFac;sampleFunc="random",kargs...)
 end
 
 """
-  sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+    sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
 
 generates a pattern to sample complete lines of an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -24,7 +24,7 @@ function sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="rand
 end
 
 """
-  sample_lines(shape::Tuple{Int64,Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+    sample_lines(shape::Tuple{Int64,Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
 
 generates a pattern to sample complete lines of an Array of size `shape` with a subsampling factor `redFac`.
 The arguments are the same as in the 2d case with the exception that shape is of type `NTuple{3,Int64}`

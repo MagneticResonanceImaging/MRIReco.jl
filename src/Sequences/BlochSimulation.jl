@@ -1,7 +1,7 @@
 export epgRotation, epgRelaxation, epgDephasing, rfRotation
 
 """
-  epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing, phi::Float64=0.0)
+    epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing, phi::Float64=0.0)
 
 applies Bloch-rotation (<=> RF pulse) to a set of EPG states.
 
@@ -38,7 +38,7 @@ function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidere
 end
 
 """
-  epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
+    epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
 
 applies relaxation matrices to a set of EPG states.
 
@@ -60,14 +60,14 @@ function epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::V
 end
 
 """
-epgDephasing(F::Vector{T}, n=1) where T = circshift(F[:],n)
+    epgDephasing(F::Vector{T}, n=1) where T = circshift(F[:],n)
 
 shifts the transverse dephasing states `F` corresponding to n dephasing-cycles.
 """
 epgDephasing(F::Vector{T}, n=1) where T = circshift(F[:],n)
 
 """
-  rfRotation(alpha, phi=0.)
+    rfRotation(alpha, phi=0.)
 
 returns the rotation matrix for a pulse with flip angle `alpha` and phase `phi`.
 """

@@ -7,9 +7,9 @@ include("RecoParameters.jl")
 
 
 """
-  reconstruction(acqData::AcquisitionData, recoParams::Dict)
+    reconstruction(acqData::AcquisitionData, recoParams::Dict)
 
-The reconstruction method takes an AcquisitionData object and a parameter
+takes an AcquisitionData object and a parameter
 dictionary and calculates an image from the given raw data.
 
 Reconstruction types are specified by the symbol `:reco`.
@@ -33,7 +33,7 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
 end
 
 """
-  reconstruction2d(acqData::AcquisitionData, recoParams::Dict)
+    reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
 
 Performs image reconstruction of a 2d encoded AcquisitionData object.
 Parameters are specified in a dictionary.
@@ -73,7 +73,7 @@ function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
 end
 
 """
-  reconstruction3d(acqData::AcquisitionData, recoParams::Dict)
+    reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
 
 Performs image reconstruction of a 3d encoded AcquisitionData object.
 Parameters are specified in a dictionary.
@@ -112,10 +112,12 @@ function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
 end
 
 """
-  reconstruction(acqData::AcquisitionData, recoParams::Dict,filename::String)
+    reconstruction(acqData::AcquisitionData, recoParams::Dict,filename::String; force=false)
 
 performs the same image reconstrucion as `reconstruction(acqData::AcquisitionData, recoParams::Dict)`
-and saves the image in a file with name `filename`
+and saves the image in a file with name `filename`.
+If `force=false`, the reconstructed image is loaded from the the file `filename` if the latter is
+present.
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;
                         force=false)

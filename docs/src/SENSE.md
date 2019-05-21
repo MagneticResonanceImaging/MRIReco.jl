@@ -16,10 +16,10 @@ coilsens = birdcageSensitivity(N, 8, 1.5)
 params = Dict{Symbol, Any}()
 params[:simulation] = "fast"
 params[:trajName] = "Spiral"
-params[:numProfiles] = 1
-params[:numSamplingPerProfile] = div(N*N,2)
-params[:windings] = div(N,4)
-params[:AQ] = 3.0e-2
+params[:numProfiles] = 4
+params[:numSamplingPerProfile] = div(N*N,16)
+params[:windings] = div(N,16)
+params[:AQ] = 2.0e-2
 params[:senseMaps] = coilsens
 
 # do simulation
@@ -30,8 +30,9 @@ params = Dict{Symbol, Any}()
 params[:reco] = "multiCoil"
 params[:shape] = (N,N)
 params[:regularization] = "L2"
-params[:iterations] = 10
-params[:solver] = "admm"
+params[:λ] = 1.e-3
+params[:iterations] = 40
+params[:solver] = "cgnr"
 params[:senseMaps] = coilsens
 
 Ireco = reconstruction(acqData, params)

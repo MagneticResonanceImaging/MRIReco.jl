@@ -44,21 +44,21 @@ function MESequence(; T_echo::Union{Float64,Vector{Float64}}=[0.0]
 end
 
 """
-  numEchoes(seq::MESequence)
+    numEchoes(seq::MESequence)
 
 returns the number of echoes of an `ME Sequence`
 """
 numEchoes(seq::MESequence)  = length(seq.T_echo)
 
 """
-  echoTimes(seq::MESequence)
+    echoTimes(seq::MESequence)
 
 returns the echo times of an `ME Sequence`
 """
 echoTimes(seq::MESequence) = seq.T_echo
 
 """
-  flipAngles(seq::MESequence)
+    flipAngles(seq::MESequence)
 
 returns the refocusing flip angles of an `ME Sequence`
 """
@@ -67,7 +67,7 @@ flipAngles(seq::MESequence) = seq.refocusingAngles
 string(seq::MESequence) = "ME"
 
 """
-  echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
+    echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
 
 calculates echo amplitudes for a given `MESequence` and given relaxation Rates R1, R2.
 Calculations are performed using the extended phase graph method.
@@ -93,7 +93,7 @@ function echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=not
 end
 
 """
-  epgAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
+    epgAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
 
 calculates EPG amplitudes after each pulse of a given `MESequence` with the given relaxation Rates R1, R2.
 Calculations are performed using the extended phase graph method.

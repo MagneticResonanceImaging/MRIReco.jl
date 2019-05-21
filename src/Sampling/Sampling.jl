@@ -10,7 +10,7 @@ include("PointSpreadFunction.jl")
 include("Incoherence.jl")
 
 """
-  sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs...)
+    sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs...)
 
 generates a `Vector{Int64}` of indices to sample an Array of of size `shape` with
 a reduction factor `redFac`.
@@ -42,7 +42,7 @@ function sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs.
 end
 
 """
-  sample_kspace(data::AbstractArray, redFac::Float64, patFunc::String; kargs...)
+    sample_kspace(data::AbstractArray, redFac::Float64, patFunc::String; kargs...)
 
 subsamples the Array `data` with a reduction factor `redFac`
 and returns both the subsampled Array (as a vector) and the sampled indices (as a vector)
@@ -61,11 +61,11 @@ function sample_kspace(data::AbstractArray,redFac::Float64,patFunc::AbstractStri
 end
 
 """
-  sample_kspace(acqData::AcquisitionData,redFac::Float64,
+    sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
                 seed = 1234, kargs...)
 
-subsamples the data in acqData object with reduction factor `redFac`
+subsamples the data in `acqData` with reduction factor `redFac`
 and returns a new `AcquisitionData` object.
 
 # Arguments
@@ -87,7 +87,7 @@ function sample_kspace(acqData::AcquisitionData,redFac::Float64,
 end
 
 """
-  sample_kspace(acqData::AcquisitionData,redFac::Float64,
+    sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
                 seed = 1234, kargs...)
 

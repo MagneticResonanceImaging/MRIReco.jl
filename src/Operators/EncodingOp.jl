@@ -1,7 +1,7 @@
 export EncodingOp, lrEncodingOp, fourierEncodingOp2d, fourierEncodingOp3d
 
 """
-  encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               ; slice=1
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft")
@@ -27,7 +27,7 @@ function encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
 end
 
 """
-  encodingOps3d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOps3d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               ; correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft")
 
@@ -46,7 +46,7 @@ function encodingOps3d_simple(acqData::AcquisitionData, shape::NTuple{3,Int64}
 end
 
 """
-  encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               , senseMaps::Array{ComplexF64}
                               ; slice=1
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
@@ -76,7 +76,7 @@ function encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
 end
 
 """
-  encodingOps3d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOps3d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               , senseMaps::Array{ComplexF64}
                               ; correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft")
@@ -98,7 +98,7 @@ function encodingOps3d_parallel(acqData::AcquisitionData, shape::NTuple{3,Int64}
 end
 
 """
-  encodingOp2d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOp2d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                 ; slice::Int64=1
                                 , correctionMap::Array{ComplexF64}=ComplexF64[]
                                 , method::String="nfft")
@@ -123,7 +123,7 @@ function encodingOp2d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
 end
 
 """
-  encodingOp3d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOp3d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                 ; correctionMap::Array{ComplexF64}=ComplexF64[])
 
 generates a LinearOperator which describe combined 3d signal encoding of all
@@ -138,7 +138,7 @@ function encodingOp3d_multiEcho(acqData::AcquisitionData, shape::NTuple{3,Int64}
 end
 
 """
-  encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                           , senseMaps::Array{ComplexF64}
                                           ; slice=1
                                           , correctionMap::Array{ComplexF64}=ComplexF64[]
@@ -168,7 +168,7 @@ function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
 end
 
 """
-  encodingOp3d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
+    encodingOp3d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                           , senseMaps::Array{ComplexF64}
                                           ; correctionMap::Array{ComplexF64}=ComplexF64[]
                                           , method::String="nfft")
@@ -226,8 +226,8 @@ end
 
 """
 return 2d Fourier encoding operator (either Explicit or NFFT)
-  opname : "explicit" or "fast"
-  slice : slice to which the operator will be applied
+  * `opname` : "explicit" or "fast"
+  * `slice` : slice to which the operator will be applied
   echoImage : calculate signal evolution relative to the echo time
 """
 function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::String;

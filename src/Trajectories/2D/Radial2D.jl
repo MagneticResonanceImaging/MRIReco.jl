@@ -1,7 +1,7 @@
 export RadialTrajectory, radialNodes, radialDensity
 
 """
-  RadialTrajectory(numProfiles, numSamplingPerProfile
+    RadialTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , angleOffset= :equispaced

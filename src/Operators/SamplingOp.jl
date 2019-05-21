@@ -9,7 +9,7 @@ function vectorizePattern(idx::Array{Int}, shape::Tuple)
 end
 
 """
-  SamplingOp(pattern::Array{Int}, shape::Tuple)
+    SamplingOp(pattern::Array{Int}, shape::Tuple)
 
 buildsa `LinearOperator` which only returns the vector elements at positions
 indicated by pattern.

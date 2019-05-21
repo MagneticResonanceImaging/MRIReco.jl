@@ -6,7 +6,7 @@ include("CoilSensitivity.jl")
 include("ExpApproximation.jl")
 
 """
-  simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
 
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
@@ -29,7 +29,7 @@ function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF6
 end
 
 """
-  simulation(image::Array{T,3}, simParams::Dict, filename::String) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,3}, simParams::Dict, filename::String) where T<:Union{ComplexF64,Float64}
 
 Performs the same simulation as `simulation(image, simParams)` and saves the result in
 a file with name `filename`
@@ -46,7 +46,7 @@ function simulation(image::Array{T,3}, simParams::Dict, filename::String;
 end
 
 """
-  simulation(image::Array{T,2}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,2}, simParams::Dict) where T<:Union{ComplexF64,Float64}
 
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
@@ -61,9 +61,12 @@ end
 #####################################################################
 
 """
-  Transforms a given image to k-space Domain for a 2d Acquisition.
-  The Fourier integrals can be evaluated exactly or using NFFT
-  Returns the demodulated signal.
+simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[]
+              ; opName="fast", senseMaps=[], verbose=true, kargs...)
+
+Transforms a given image to k-space Domain for a 2d Acquisition.
+The Fourier integrals can be evaluated exactly or using NFFT
+Returns the demodulated signal.
 
 ...
 # Arguments
@@ -121,9 +124,12 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 end
 
 """
-  Transforms a given image to k-space Domain 3d Acquisition.
-  The Fourier integrals can be evaluated exactly or using NFFT
-  Returns the demodulated signal.
+    simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[];
+              opName="fast", senseMaps=[], verbose=true, kargs...)
+
+Transforms a given image to k-space Domain 3d Acquisition.
+The Fourier integrals can be evaluated exactly or using NFFT
+Returns the demodulated signal.
 
 ...
 # Arguments
@@ -180,9 +186,13 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 end
 
 """
-  Simulate k-space data for all echoes of a pulse sequence.
-  The echo intensities are simulated using the EPG formalism
-  The Fourier integrals can be evaluated exactly or using NFFT
+    simulation(seq::AbstractSequence, tr::Vector{Trajectory}, image::Array{ComplexF64,3}
+                    ; opName="fast", r1map=[], r2map=[], fmap=[], senseMaps=[]
+                    , verbose=true, kargs...)
+
+Simulate k-space data for all echoes of a pulse sequence.
+The echo intensities are simulated using the EPG formalism
+The Fourier integrals can be evaluated exactly or using NFFT
 
 ...
 # Arguments
@@ -270,10 +280,13 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
 end
 
 """
-  Transforms a given image to k-space Domain.
-  Dispatches whether the trajectory is 2d or 3d
-  The Fourier integrals can be evaluated exactly or using NFFT
-  Returns the demodulated signal.
+    simulation(tr::Trajectory, image::Array{ComplexF64}, correctionMap = []; opName="fast"
+              , senseMaps=[], verbose=true, kargs...)
+
+Transforms a given image to k-space Domain.
+Dispatches whether the trajectory is 2d or 3d
+The Fourier integrals can be evaluated exactly or using NFFT
+Returns the demodulated signal.
 
 ...
 # Arguments

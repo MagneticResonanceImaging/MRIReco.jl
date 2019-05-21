@@ -1,7 +1,7 @@
 export reconstruction_direct_2d, reconstruction_direct_3d
 
 """
-  reconstruction_direct_2d(acqData::AcquisitionData, shape::NTuple{2,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
+    reconstruction_direct_2d(acqData::AcquisitionData, shape::NTuple{2,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
 
 Performs a direct Fourier-based image reconstruction of 2d encoded AcquisitionData
 
@@ -40,7 +40,7 @@ end
 
 
 """
-  reconstruction_direct_3d(acqData::AcquisitionData, shape::NTuple{3,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
+    reconstruction_direct_3d(acqData::AcquisitionData, shape::NTuple{3,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
 
 Performs a direct Fourier-based image reconstruction of 3d encoded AcquisitionData
 

@@ -11,7 +11,7 @@ mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <: AbstractLine
 end
 
 """
-  ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
+    ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
             ; echoImage::Bool=false, kargs...) where D
 
 generates a `ExplicitOp` which explicitely evaluates the MRI Fourier signal encoding operator.

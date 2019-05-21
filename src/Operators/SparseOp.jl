@@ -1,7 +1,7 @@
 export SparseOp
 
 """
-  SparseOp(name::AbstractString, shape::NTuple{N,Int64}; kargs...) where N
+    SparseOp(name::AbstractString, shape::NTuple{N,Int64}; kargs...) where N
 
 generates the sparsifying transform (`<: AbstractLinearOperator`) given its name.
 

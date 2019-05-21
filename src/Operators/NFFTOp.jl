@@ -14,7 +14,7 @@ mutable struct NFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
 end
 
 """
-  NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
+    NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
 
 generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator using the NFFT.
 

@@ -1,7 +1,7 @@
 export CartesianTrajectory3D, cartesian3dNodes, cartesian3dDensity
 
 """
-  CartesianTrajectory3D(numProfiles, numSamplingPerProfile
+    CartesianTrajectory3D(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , numSlices=1

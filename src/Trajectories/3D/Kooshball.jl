@@ -1,7 +1,7 @@
 export KooshballTrajectory, kooshballNodes, kooshballDensity, kooshBallTimes
 
 """
-  KooshballTrajectory(numProfiles, numSamplingPerProfile
+    KooshballTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , kargs...)

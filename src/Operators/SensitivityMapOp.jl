@@ -23,7 +23,7 @@ function normalizeSensitivityMap!(sensMaps::Matrix{ComplexF64})
 end
 
 """
-  SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
+    SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`
@@ -38,7 +38,7 @@ function SensitivityOp(sensMaps::Matrix{ComplexF64}, numEchoes::Int=1)
 end
 
 """
-  SensitivityOp(sensMaps::Array{T,4}, numEchoes::Int=1) where T
+    SensitivityOp(sensMaps::Array{T,4}, numEchoes::Int=1) where T
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`

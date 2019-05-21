@@ -1,7 +1,7 @@
 export SpiralTrajectory, spiralNodes, spiralDensity
 
 """
-  SpiralTrajectory(numProfiles, numSamplingPerProfile
+    SpiralTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Real= 6.25
