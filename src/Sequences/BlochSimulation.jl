@@ -1,8 +1,17 @@
 export epgRotation, epgRelaxation, epgDephasing, rfRotation
 
-#
-# apply Bloch-rotation (<=> RF pulse) to a set of EPG states
-#
+"""
+  epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing, phi::Float64=0.0)
+
+applies Bloch-rotation (<=> RF pulse) to a set of EPG states.
+
+# Arguments
+* `alpha::Float64`           - flip angle of the RF pulse
+* `F::Vector{T}`             - transverse dephasing stats
+* `Z::Vector{T}`             - longitudinal dephasing stats
+* `statesConsidered=nothing` - number of dephasing states to consider (nothing means all states are taken into account)
+* `phi::Float64=0.0`         - phase of the RF pulse
+"""
 function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidered=nothing, phi::Float64=0.0) where T
   # apply rotation to all states per default
   numStates = length(Z)
@@ -28,9 +37,18 @@ function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidere
   return rotatedF, rotatedZ
 end
 
-#
-# calculate relaxation between two RF pulses for a set of EPG states
-#
+"""
+  epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
+
+applies relaxation matrices to a set of EPG states.
+
+# Arguments
+* `R1::Float64`   - R1
+* `R2::Float64`   - R2
+* `t::Float64`    - length of time interval in s
+* `F::Vector{T}`  - transverse dephasing stats
+* `Z::Vector{T}`  - longitudinal dephasing stats
+"""
 function epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
 
   relaxedF = exp(-R2*t).*F
@@ -41,14 +59,18 @@ function epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::V
   return relaxedF, relaxedZ
 end
 
-#
-# calculate dephasing of EPG-states
-#
+"""
 epgDephasing(F::Vector{T}, n=1) where T = circshift(F[:],n)
 
-#
-# RF-rotation matrix
-#
+shifts the transverse dephasing states `F` corresponding to n dephasing-cycles.
+"""
+epgDephasing(F::Vector{T}, n=1) where T = circshift(F[:],n)
+
+"""
+  rfRotation(alpha, phi=0.)
+
+returns the rotation matrix for a pulse with flip angle `alpha` and phase `phi`.
+"""
 function rfRotation(alpha, phi=0.)
   R = [ cos(alpha/2.)^2   exp(2*im*phi)*sin(alpha/2.)^2   -im*exp(im*phi)*sin(alpha);
         exp(-2*im*phi)*sin(alpha/2.)^2   cos(alpha/2.)^2   im*exp(-im*phi)*sin(alpha);

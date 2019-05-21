@@ -11,6 +11,14 @@ include("RecoParameters.jl")
 
 The reconstruction method takes an AcquisitionData object and a parameter
 dictionary and calculates an image from the given raw data.
+
+Reconstruction types are specified by the symbol `:reco`.
+Valid reconstruction names are:
+* :direct - direct Fourier reconstruction
+* :standard           - iterative reconstruction for all contrasts, coils & slices independently
+* :multiEcho          - iterative joint reconstruction of all echo images
+* :multiCoil          - SENSE-type iterative reconstruction
+* :multiCoilMultiEcho - SENSE-type iterative reconstruction of all echo images
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   encodingDims = dims(trajectory(acqData))
@@ -24,7 +32,20 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   return reconstruction_2d(acqData,recoParams)
 end
 
+"""
+  reconstruction2d(acqData::AcquisitionData, recoParams::Dict)
 
+Performs image reconstruction of a 2d encoded AcquisitionData object.
+Parameters are specified in a dictionary.
+
+Reconstruction types are specified by the symbol `:reco`.
+Valid reconstruction names are:
+* :direct - direct Fourier reconstruction
+* :standard           - iterative reconstruction for all contrasts, coils & slices independently
+* :multiEcho          - iterative joint reconstruction of all echo images
+* :multiCoil          - SENSE-type iterative reconstruction
+* :multiCoilMultiEcho - SENSE-type iterative reconstruction of all echo images
+"""
 function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
 
@@ -51,6 +72,20 @@ function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
   return reconstruction_direct_2d(acqData, recoParams)
 end
 
+"""
+  reconstruction3d(acqData::AcquisitionData, recoParams::Dict)
+
+Performs image reconstruction of a 3d encoded AcquisitionData object.
+Parameters are specified in a dictionary.
+
+Reconstruction types are specified by the symbol `:reco`.
+Valid reconstruction names are:
+* :direct - direct Fourier reconstruction
+* :standard           - iterative reconstruction for all contrasts, coils & slices independently
+* :multiEcho          - iterative joint reconstruction of all echo images
+* :multiCoil          - SENSE-type iterative reconstruction
+* :multiCoilMultiEcho - SENSE-type iterative reconstruction of all echo images
+"""
 function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
   if recoParams[:reco] == "direct"
@@ -76,7 +111,12 @@ function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
   return Ireco
 end
 
-# This version stores the reconstructed data into a file
+"""
+  reconstruction(acqData::AcquisitionData, recoParams::Dict,filename::String)
+
+performs the same image reconstrucion as `reconstruction(acqData::AcquisitionData, recoParams::Dict)`
+and saves the image in a file with name `filename`
+"""
 function reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;
                         force=false)
   if !force && isfile(filename)

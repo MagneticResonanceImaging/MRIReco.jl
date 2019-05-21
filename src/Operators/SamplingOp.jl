@@ -9,7 +9,14 @@ function vectorizePattern(idx::Array{Int}, shape::Tuple)
 end
 
 """
-  return only the vector elements at positions indicated by pattern.
+  SamplingOp(pattern::Array{Int}, shape::Tuple)
+
+buildsa `LinearOperator` which only returns the vector elements at positions
+indicated by pattern.
+
+# Arguents
+* `pattern::Array{Int}` - indices to sample
+* `shape::Tuple`        - size of the array to sample
 """
 function SamplingOp(pattern::Array{Int}, shape::Tuple)
   ndims(pattern)>1 ?  idx = vectorizePattern(pattern, shape) : idx = pattern

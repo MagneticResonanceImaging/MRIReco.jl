@@ -13,9 +13,17 @@ mutable struct NFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
   ctprod :: F2
 end
 
-#
-# Linear Operator to perform NFFT
-#
+"""
+  NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
+
+generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator using the NFFT.
+
+# Arguments:
+* `shape::NTuple{D,Int64}`  - size of image to encode/reconstruct
+* `tr::Trajectory`          - Trajectory with the kspace nodes to sample
+* (`nodes=nothing`)         - Array containg the trajectory nodes (redundant)
+* (`kargs`)                   - additional keyword arguments
+"""
 function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
   plan = NFFTPlan(nodes, shape, 3, 1.25)

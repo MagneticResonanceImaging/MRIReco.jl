@@ -3,14 +3,22 @@ export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
        convert3dTo2d
 
 """
- contains all relevant info for the aquired data.
- kdata is stored as a Array{Matrix{Float64}}, where
- each matrix contains data for one measurement
-    (1.dim k-space nodes, 2. dim coils)
- The outer Array spans the following dimensions
- 1. dim : echoes
- 2. dim : slices
- (3. dim : repetitions)
+struct describing MRI acquisition data.
+
+# Fields
+* `sequenceInfo::Dict{Symbol,Any}`          - additional information on the pulse sequence
+* `traj::Vector{Trajectory}`                - trajectories for each echo/contrast
+* `kdata::Array{Matrix{ComplexF64},3}`      - each matrix contains data for one trajectory
+                                              (1. dim k-space nodes, 2. dim coils)
+                                              the outer dims describe:
+                                              1. dim echoes, 2. dim slices, 3. dim repetitions
+* `numEchoes::Int64`                        - number of echoes/contrasts
+* `numCoils::Int64`                         - number of coils
+* `numSlices::Int64`                        - number of slices
+* `numReps::Int64`                          - number of repetitions
+* `subsampleIndices::Vector{Array{Int64}}`  - indices sampled for each echo/contrast
+* `encodingSize::Vector{Int64}`             - size of the underlying image matrix
+* `fov::Vector{Float64}`                    - field of view in m
 """
 mutable struct AcquisitionData
   sequenceInfo::Dict{Symbol,Any}
@@ -25,9 +33,15 @@ mutable struct AcquisitionData
   fov::Vector{Float64}
 end
 
-##############
-# constructors
-##############
+"""
+  constructor for `AcquisitionData`
+
+# Arguments
+* `tr <: Union{Trajectory,Vector{Trajectory}}` - trajectories
+* `kdata::Array{Matrix{ComplexF64},3}`         - k-space data
+
+the other fields of `AcquisitionData` can be passed as keyword arguments.
+"""
 function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}
                         ; seqInfo=Dict{Symbol,Any}()
                         , numCoils=1
@@ -53,25 +67,30 @@ function Images.pixelspacing(acqData::AcquisitionData)
   #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
 end
 
-############
-# trajectory
-############
+"""
+  trajectory(acqData::AcquisitionData,i::Int64=1)
+
+returns the `i`-th trajectory contained in `acqData`.
+"""
 trajectory(acqData::AcquisitionData,i::Int64=1) = acqData.traj[i]
 
 ######################
 # getting k-space data
 ######################
+"""
+  kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1;rep::Int64=1)
 
-#
-# return kdata for a given coil, echo and image slice
-#
+returns the k-space contained in `acqData` for given `echo`, `coil`, `slice` and `rep`(etition).
+"""
 function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1;rep::Int64=1)
   return acqData.kdata[echo,slice,rep][:,coil]
 end
 
-#
-# return multi-echo-data for a given coil and image slice
-#
+"""
+  multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::Int64=1)
+
+returns the k-space contained in `acqData` for all echoes and given `coil`, `slice` and `rep`(etition).
+"""
 function multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::Int64=1)
   kdata = ComplexF64[]
   for echo=1:acqData.numEchoes
@@ -80,16 +99,20 @@ function multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::
   return kdata
 end
 
-#
-# return multi-coil-data for a given echo and image slice
-#
+"""
+  multiCoilData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::Int64=1)
+
+returns the k-space contained in `acqData` for all coils and given `echo`, `slice` and `rep`(etition).
+"""
 function multiCoilData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::Int64=1)
   return vec(acqData.kdata[echo,slice,rep])
 end
 
-#
-# return multi-coil-multi-echo-data for a given slice (for all coils and echoes)
-#
+"""
+  multiCoilMultiEchoData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::Int64=1)
+
+returns the k-space contained in `acqData` for all coils, echoes and given `slice` and `rep`(etition).
+"""
 function multiCoilMultiEchoData(acqData::AcquisitionData,slice::Int64;rep=1)
   kdata = ComplexF64
   for coil=1:acqData.numCoils
@@ -100,9 +123,11 @@ function multiCoilMultiEchoData(acqData::AcquisitionData,slice::Int64;rep=1)
   return kdata
 end
 
-#
-# return kdata for a given profile
-#
+"""
+  profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
+
+returns the profile-data `prof_tr` contained in `acqData` for given `echo`, `coil`, `slice` and `rep`(etition).
+"""
 function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
   tr = trajectory(acqData,echo)
   numSamp, numSl = numSamplingPerProfile(tr), numSlices(tr)
@@ -121,9 +146,11 @@ end
 # utilities to convert and edit acqData
 ######################################
 """
- convert undersampled AcquisitionData, where only profiles contained in
- acqData.subsampleIndices are sampled,
- into a format where trajectories only contain the sampled profiles
+  convertUndersampledData(acqData::AcquisitionData)
+
+converts undersampled AcquisitionData, where only profiles contained in
+acqData.subsampleIndices are sampled,
+into a format where trajectories only contain the sampled profiles.
 """
 function convertUndersampledData(acqData::AcquisitionData)
 
@@ -149,6 +176,11 @@ end
 ##################
 # sampling weights
 ##################
+"""
+  samplingDensity(acqData::AcquisitionData,shape::Tuple)
+
+returns the sampling density for all trajectories contained in `acqData`.
+"""
 function samplingDensity(acqData::AcquisitionData,shape::Tuple)
   numEchoes = acqData.numEchoes
   numSlices = acqData.numSlices
@@ -169,11 +201,22 @@ end
 #########################################################################
 # convert acqData for a reconstruction with a encodingSize (resolution)
 #########################################################################
+"""
+  changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+
+changes the encoding size of 2d encoded `acqData` to `newEncodingSize`.
+Returns a new `AcquisitionData` object.
+"""
 function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
   dest = deepcopy(acqData)
   changeEncodingSize2D!(dest,newEncodingSize)
 end
 
+"""
+  changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+
+does the same thing as `changeEncodingSize2D` but acts in-place on `acqData`.
+"""
 function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
   fac = acqData.encodingSize ./ newEncodingSize
   idx = Vector{Vector{Int64}}(undef,acqData.numEchoes)
@@ -206,9 +249,11 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   return acqData
 end
 
-#
-# convert a 3d cartesian AcquisitionData to the equivalent 2d AcquisitionData
-#
+"""
+  convert3dTo2d(acqData::AcquisitionData)
+
+convert the 3d encoded AcquisitionData `acqData` to the equivalent 2d AcquisitionData.
+"""
 function convert3dTo2d(acqData::AcquisitionData)
   # check if all trajectories are cartesian
   for i=1:acqData.numEchoes

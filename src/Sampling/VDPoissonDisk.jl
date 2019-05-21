@@ -1,3 +1,9 @@
+"""
+  sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
+
+generates a Poisson disk sampling pattern for an Vector of size `shape` with a subsampling factor `redFac`.
+The arguments are the same as in the 2d case with the exception that shape is of type `Tuple{Int64}`
+"""
 function sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
   return sample_vdpoisson((shape[1],1),redFac,seed=seed;kargs...)
 end
@@ -6,6 +12,16 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;seed::Int64=123
   error("Not implemented")
 end
 
+"""
+  sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,kargs...)
+
+generates a variable density Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
+
+# Arguments
+* `shape::NTuple{2,Int64}` - size of the Array to be sampled
+* `redFac::Float64`        - subsampling factor
+* (`seed=1234`)            - seed for the random number generator
+"""
 function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,kargs...)
   M,N = shape
   samples = collect(1:M*N)

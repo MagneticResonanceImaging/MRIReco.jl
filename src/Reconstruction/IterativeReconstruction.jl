@@ -1,7 +1,20 @@
 export reconstruction_simple, reconstruction_multiEcho, reconstruction_multiCoil, reconstruction_multiCoilMultiEcho, reconstruction_lowRank, RecoParameters
 
 """
-  CS-Sense Reconstruction using sparsity in the wavelet domain
+Performs iterative image reconstruction independently for the data of all coils,
+contrasts and slices
+
+# Arguments
+* `acqData::AcquisitionData`            - AcquisitionData object
+* `shape::NTuple{2,Int64}`              - size of image to reconstruct
+* `reg::Regularization`                 - Regularization to be used
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `solvername::String`                  - name of the solver to use
+* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
+* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
+* (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
+* (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_simple( acqData::AcquisitionData
                               , shape::NTuple{2,Int64}
@@ -47,8 +60,20 @@ function reconstruction_simple( acqData::AcquisitionData
 end
 
 """
-  CS Reconstruction using a joint encoding operator for the different echos
-  and regularization on the multi-echo data
+Performs a iterative image reconstruction jointly for all contrasts. Different slices and coil images
+are reconstructed independently.
+
+# Arguments
+* `acqData::AcquisitionData`            - AcquisitionData object
+* `shape::NTuple{2,Int64}`              - size of image to reconstruct
+* `reg::Regularization`                 - Regularization to be used
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `solvername::String`                  - name of the solver to use
+* (`correctionMap::Array{ComplexF64})`  - fieldmap for the correction of off-resonance effects
+* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
+* (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
+* (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiEcho(acqData::AcquisitionData
                               , shape::NTuple{2,Int64}
@@ -89,7 +114,21 @@ function reconstruction_multiEcho(acqData::AcquisitionData
 end
 
 """
-  CS-Sense Reconstruction
+Performs a SENSE-type iterative image reconstruction. Different slices and contrasts images
+are reconstructed independently.
+
+# Arguments
+* `acqData::AcquisitionData`            - AcquisitionData object
+* `shape::NTuple{2,Int64}`              - size of image to reconstruct
+* `reg::Regularization`                 - Regularization to be used
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `solvername::String`                  - name of the solver to use
+* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
+* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
+* (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
+* (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoil(acqData::AcquisitionData
                               , shape::NTuple{2,Int64}
@@ -134,6 +173,23 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   return makeAxisArray(Ireco, acqData)
 end
 
+"""
+Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly.
+Different slices are reconstructed independently.
+
+# Arguments
+* `acqData::AcquisitionData`            - AcquisitionData object
+* `shape::NTuple{2,Int64}`              - size of image to reconstruct
+* `reg::Regularization`                 - Regularization to be used
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `solvername::String`                  - name of the solver to use
+* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
+* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
+* (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
+* (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
+"""
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , shape::NTuple{2,Int64}
                               , reg::Regularization
@@ -170,9 +226,20 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
 end
 
 
-###########################################################################
-# setup regularization, sparsifying transform  and density weights for reco
-###########################################################################
+"""
+Auxilary struct that holds parameters relevant for image reconstruction
+
+# Fields
+* `shape::NTuple{2,Int64}`              - size of image to reconstruct
+* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `reg::Regularization`                 - Regularization to be used
+* `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
+* `solvername::String`                  - name of the solver to use
+* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
+* `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
+"""
 mutable struct RecoParameters{N}
   shape::NTuple{N,Int64}
   weights::Vector{Vector{ComplexF64}}

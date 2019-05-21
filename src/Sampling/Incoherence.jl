@@ -1,5 +1,15 @@
 export calculateIncoherence
 
+"""
+  calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=1)
+
+calculates the incoherence of the sampling pattern contained in `acqData`
+
+# Arguments
+* `acqData::AcquisitionData`  - AcquisitionData containing the sampling pattern
+* `recoParams::Dict`          - Dict containing reconstruction parameters
+* (`slice=1`)                 - slice for which to calculate the incoherence
+"""
 function calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=1)
 
   N = prod(recoParams[:shape])

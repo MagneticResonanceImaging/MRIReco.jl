@@ -1,5 +1,17 @@
 export reconstruction_direct_2d, reconstruction_direct_3d
 
+"""
+  reconstruction_direct_2d(acqData::AcquisitionData, shape::NTuple{2,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
+
+Performs a direct Fourier-based image reconstruction of 2d encoded AcquisitionData
+
+input:
+  `acqData::AcquisitionData`            - AcquisitionData object
+  `shape::NTuple{2,Int64}`              - size of image to reconstruct
+  `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+  (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
+
+"""
 function reconstruction_direct_2d(acqData::AcquisitionData
                                   , shape::NTuple{2,Int64}
                                   , weights::Vector{Vector{ComplexF64}}
@@ -27,7 +39,18 @@ function reconstruction_direct_2d(acqData::AcquisitionData
 end
 
 
-# function reconstruction_direct_3d(acqData::AcquisitionData, recoParams::Dict)
+"""
+  reconstruction_direct_3d(acqData::AcquisitionData, shape::NTuple{3,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
+
+Performs a direct Fourier-based image reconstruction of 3d encoded AcquisitionData
+
+input:
+  `acqData::AcquisitionData`            - AcquisitionData object
+  `shape::NTuple{3,Int64}`              - size of image to reconstruct
+  `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+  `(correctionMap::Array{ComplexF64})`  - fieldmap for the correction of off-resonance effects
+
+"""
 function reconstruction_direct_3d(acqData::AcquisitionData
                                   , shape::NTuple{3,Int64}
                                   , weights::Vector{Vector{ComplexF64}}

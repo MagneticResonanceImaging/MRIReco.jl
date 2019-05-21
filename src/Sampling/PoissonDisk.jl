@@ -1,3 +1,9 @@
+"""
+  sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
+
+generates a Poisson disk sampling pattern for an Vector of size `shape` with a subsampling factor `redFac`.
+The arguments are the same as in the 2d case with the exception that shape is of type `Tuple{Int64}`
+"""
 function sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
   sample_poissondisk((shape[1],1),redFac,calsize=calsize,seed=seed;kargs...)
 end
@@ -6,6 +12,17 @@ function sample_poissondisk(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int6
   error("Not implemented")
 end
 
+"""
+  sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
+
+generates a Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
+
+# Arguments
+* `shape::NTuple{2,Int64}` - size of the Array to be sampled
+* `redFac::Float64`        - subsampling factor
+* (`calsize::Int64=0`)     - size of the fully sampled calibration area
+* (`seed=1234`)            - seed for the random number generator
+"""
 function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
   M,N = shape
   A = zeros(Int64,shape)

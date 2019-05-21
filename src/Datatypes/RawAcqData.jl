@@ -1,5 +1,8 @@
 export RawAcquisitionData, EncodingCounters, AcquisitionHeader
 
+"""
+Encoding counters used in each Profile of a RawAcquisitionData object.
+"""
 Base.@kwdef struct EncodingCounters
   kspace_encode_step_1::Int16 = 0
   kspace_encode_step_2::Int16 = 0
@@ -13,6 +16,9 @@ Base.@kwdef struct EncodingCounters
   user::NTuple{8,Int16} = ntuple(i->Int16(0),8)
 end
 
+"""
+Encoding counters used in each Profile of a RawAcquisitionData object.
+"""
 Base.@kwdef struct AcquisitionHeader
   version::Int16 = 0
   flags::Int64 = 0
@@ -40,17 +46,33 @@ Base.@kwdef struct AcquisitionHeader
   user_float::NTuple{8,Float32} = ntuple(i->Float32(0),8)
 end
 
+"""
+Struct to describe data from one profile of a trajectory (from all coils).
+"""
 mutable struct Profile
   head::AcquisitionHeader
   traj::Array{Float32,2}
   data::Array{Complex{Float32},2}
 end
 
+"""
+RawAcquisitionData object.
+
+# Fields
+* `params::Dict{String, Any}` - Dict containing the information of the XML header in ISMRMRD
+* `profiles::Vector{Profile}` - Vector containing all the profiles of the acquisition
+
+"""
 mutable struct RawAcquisitionData
   params::Dict{String, Any}
   profiles::Vector{Profile}
 end
 
+"""
+  trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+
+returns the `Trajectory` for given `slice` and `contrast` of a `RawAcquisitionData` object.
+"""
 function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   name = get(f.params, "trajectory","cartesian")
   if lowercase(name) == "cartesian"
@@ -104,7 +126,11 @@ function sequence(f::RawAcquisitionData)
   # TODO
 end
 
+"""
+  numChannels(f::RawAcquisitionData)
 
+returns the number of channels in a `RawAcquisitionData` object.
+"""
 function numChannels(f::RawAcquisitionData)
   return f.profiles[1].head.active_channels
 end
@@ -121,7 +147,11 @@ contrasts(f::RawAcquisitionData) =
   [f.profiles[l].head.idx.contrast+1 for l=1:length(f.profiles)]
 
 
-# get sampled points for a cartesian trajectory
+  """
+    subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+
+  returns the sampled indices for a given `slice` and `contrast` in a `RawAcquisitionData` object.
+  """
 function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   idx = Int64[]
   encSt1 = encSteps1(f)
@@ -146,7 +176,12 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   return sort(unique(idx))
 end
 
+"""
+  rawdata(f::RawAcquisitionData)
 
+returns the rawdata contained `RawAcquisitionData` object.
+The output is an 'Array{Matrix{ComplexF64},3}', which can be stored in a `AcquisitionData` object.
+"""
 function rawdata(f::RawAcquisitionData)
   encSt1 = encSteps1(f)
   encSt2 = encSteps2(f)
@@ -197,6 +232,11 @@ function rawdata(f::RawAcquisitionData)
   return [reshape(kdata[c,s,r],:,numChan) for c=1:numContr, s=1:numSl, r=1:numRep]
 end
 
+"""
+  AcquisitionData(f::RawAcquisitionData)
+
+converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
+"""
 function AcquisitionData(f::RawAcquisitionData)
   numSl = length(unique(slices(f)))
   numRep = length(unique(repetitions(f)))
@@ -213,7 +253,11 @@ function AcquisitionData(f::RawAcquisitionData)
                           fov = collect(f.params["encodedFOV"]) )
 end
 
+"""
+  RawAcquisitionData(acqData::AcquisitionData)
 
+converts `acqData` into the equivalent `RawAcquisitionData` object.
+"""
 function RawAcquisitionData(acqData::AcquisitionData)
   # XML header
   params = minimalHeader(Tuple(acqData.encodingSize),Tuple(acqData.fov),tr_name=string(trajectory(acqData,1)))

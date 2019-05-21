@@ -14,9 +14,11 @@ include("SparseOp.jl")
 # master branch of RegularizedLeastSquares.jl
 include("WeightingOp.jl")
 
-#
-# horizontally concatenate linear operators n times
-#
+"""
+  hcat(A::AbstractLinearOperator, n::Int)
+
+horizontally concatenates alinear operator `A` n times
+"""
 function hcat(A::AbstractLinearOperator, n::Int)
   op = A
   for i = 2:n
@@ -25,9 +27,11 @@ function hcat(A::AbstractLinearOperator, n::Int)
   return op
 end
 
-#
-# vertically concatenate linear operators n times
-#
+"""
+  hcat(A::AbstractLinearOperator, n::Int)
+
+vertically concatenates alinear operator `A` n times
+"""
 function vcat(A::AbstractLinearOperator, n::Int)
   op = A
   for i = 2:n
@@ -73,9 +77,11 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...)
   return y
 end
 
-#
-# create a bloc-diagonal operator out of smaller operators
-#
+"""
+  diagOp(ops :: AbstractLinearOperator...)
+  
+create a bloc-diagonal operator out of the `LinearOperator`s contained in ops
+"""
 function diagOp(ops :: AbstractLinearOperator...)
   nrow=0
   ncol=0

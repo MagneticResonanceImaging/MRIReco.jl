@@ -1,7 +1,13 @@
 export makeAxisArray
 
-# x, y, z, acqData.numEchoes, acqData.numCoils
+"""
+  makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
+creates an axies array with properly characterized axis from the image `I`.
+For this, it uses the information in `acqData`.
+The axies respectively describe the following coordinates:
+x, y, z, acqData.numEchoes, acqData.numCoils
+"""
 function makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
   offset = [0.0, 0.0, 0.0]*Unitful.mm

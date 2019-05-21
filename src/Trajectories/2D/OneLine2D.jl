@@ -1,5 +1,21 @@
 export OneLine2Trajectory, oneLine2dNodes, oneLine2dDensity
 
+"""
+  OneLine2dTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , angle::Float64=0.0
+                  , kargs...)
+
+returns a trajectory consisting of one arbitrarily rotated profile.
+
+# Arguments
+* `numProfiles::Int64`            - number of profiles
+* `numSamplingPerProfile::Int64`  - number of sampling points per profile
+* (`TE::Float64=0.0`)             - echo time in s
+* (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
+* (`angle::Float64=0.0`)          - angle of the profile (with respect to the x-axis) in radians
+"""
 function OneLine2dTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3

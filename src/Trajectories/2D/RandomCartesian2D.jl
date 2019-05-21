@@ -1,5 +1,23 @@
 export RandomCartesianTrajectory, randomCartesianNodes, randomCartesianDensity
 
+"""
+  CartesianTrajectory(numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , kmin=(-0.5,-0.5)
+                  , kmax=(0.5,0.5)
+                  , kargs...)
+
+returns a 2d cartesian trajectory with random subsampling
+
+# Arguments
+* `numProfiles::Int64`            - number of profiles
+* `numSamplingPerProfile::Int64`  - number of sampling points per profile
+* (`TE::Float64=0.0`)             - echo time in s
+* (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
+* (`redFac=1.0)`)                 - subsampling Factor
+* (`patFunc="poisson"`)           - name of sampling pattern to use
+"""
 function RandomCartesianTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
