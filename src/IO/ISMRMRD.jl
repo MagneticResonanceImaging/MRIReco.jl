@@ -6,6 +6,11 @@ struct ISMRMRDFile
   filename::String
 end
 
+"""
+    RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
+
+reads the `ISMRMRDFile` f and stores the result in a `RawAcquisitionDataObject`
+"""
 function RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
 
   h5open(f.filename) do h
@@ -47,6 +52,11 @@ function RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
   end
 end
 
+"""
+    AcquisitionData(f::ISMRMRDFile, dataset="dataset")
+
+reads the `ISMRMRDFile` f and stores the result in an `AcquisitionDataObject`
+"""
 function AcquisitionData(f::ISMRMRDFile, dataset="dataset")
   return AcquisitionData(RawAcquisitionData(f,dataset))
 end

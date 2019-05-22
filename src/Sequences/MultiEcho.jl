@@ -1,4 +1,4 @@
-export MESequence, echoAmplitudes, flipAngles, numEchoes, T_echo
+export MESequence, echoAmplitudes, flipAngles, numContrasts, T_echo
 
 """
 General Multi-Echo sequence with variable flip angles and TR.
@@ -8,7 +8,7 @@ in order to fulfill CPMG conditions.
 
 For simplicity instantaneous pulses are assumed.
 
-echoes apperat at times T_echo, 2*T_echo,..., numEchoes*T_echo after the excitation pulse
+echoes apperat at times T_echo, 2*T_echo,..., numContrasts*T_echo after the excitation pulse
 
 # Fields
 * `excitationAngle::Float64`            - flip angle of the excitation pulse
@@ -44,11 +44,11 @@ function MESequence(; T_echo::Union{Float64,Vector{Float64}}=[0.0]
 end
 
 """
-    numEchoes(seq::MESequence)
+    numContrasts(seq::MESequence)
 
 returns the number of echoes of an `ME Sequence`
 """
-numEchoes(seq::MESequence)  = length(seq.T_echo)
+numContrasts(seq::MESequence)  = length(seq.T_echo)
 
 """
     echoTimes(seq::MESequence)
@@ -87,7 +87,7 @@ function echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=not
 
   # evolution of the relevant states until T_echo
   T_rel = seq.T_echo .- seq.T_rf
-  amp = f[2*numEchoes(seq)-1,2:end] .* exp.(-T_rel*R2)
+  amp = f[2*numContrasts(seq)-1,2:end] .* exp.(-T_rel*R2)
 
   return amp
 end
@@ -109,7 +109,7 @@ If `numStates=nothing` all dephasing states will be taken into account
 """
 function epgAmplitudes(seq::MESequence, R1::Real, R2::Real, numStates=nothing)
   # repetion time and number of pulses
-  np=numEchoes(seq)
+  np=numContrasts(seq)
 
   # initial states for the dephased (f) and longitudinal (z) magnetization.
   # the magnetization after the RF pulse is described by f_deph and z_deph.

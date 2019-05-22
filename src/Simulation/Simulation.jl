@@ -18,7 +18,7 @@ function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF6
   trajName = get(simParams,:trajName,"Cartesian")
   seq = sequence(seqName, simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
   numSamp, numProf = get(simParams, :numSamplingPerProfile,1), get(simParams, :numProfiles,1)
-  tr = [trajectory(trajName, numProf,numSamp; simParams...) for i=1:numEchoes(seq)]
+  tr = [trajectory(trajName, numProf,numSamp; simParams...) for i=1:numContrasts(seq)]
 
   opName = get(simParams,:simulation,"fast")
   if opName!="fast" && opName!="explicit"
@@ -120,7 +120,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     end
   end
 
-  return AcquisitionData(tr, kdata,numCoils=nc,numSlices=nz,encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr, kdata,encodingSize=[nx,ny,nz])
 end
 
 """
@@ -182,7 +182,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     verbose && next!(p)
   end
 
-  return AcquisitionData(tr, kdata ,numCoils=nc,numSlices=1,encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr,kdata,encodingSize=[nx,ny,nz])
 end
 
 """
@@ -219,7 +219,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
                     , verbose=true
                     , kargs...)
   nx,ny,nz = size(image)
-  ne = numEchoes(seq)
+  ne = numContrasts(seq)
 
   correctionMap = zeros(ComplexF64,nx,ny,nz)
   if isempty(r1map)
@@ -252,9 +252,9 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
   out = Vector{Matrix{ComplexF64}}(undef,ne)
 
   if verbose
-    p = Progress(numEchoes(seq), 1, "Simulating data...")
+    p = Progress(numContrasts(seq), 1, "Simulating data...")
   end
-  # tr = [trajectory(seq,i) for i=1:numEchoes(seq)]
+  # tr = [trajectory(seq,i) for i=1:numContrasts(seq)]
   for i = 1:ne
     te = echoTime(tr[i])
     nodes = kspaceNodes(tr[i])
@@ -276,7 +276,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
   end
 
   dims(tr[1])==2 ? numSl=nz : numSl=1
-  return AcquisitionData(tr, reshape(out,ne,1,1), numEchoes=ne, numCoils=nc, numSlices=numSl,encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr, reshape(out,ne,1,1), encodingSize=[nx,ny,nz])
 end
 
 """
@@ -335,7 +335,7 @@ function simulateTempSubspace(seq::AbstractSequence
   # simulate training data
   Nr1 = length(r1sample)
   Nr2 = length(r2sample)
-  signal = Array(Float64,numEchoes(seq),Nr1*Nr2)
+  signal = Array(Float64,numContrasts(seq),Nr1*Nr2)
   param = Array(Float64,Nr1*Nr2,2)                # simulated parameters
   for i=1:Nr1, j=1:Nr2
     signal[:,(i-1)*Nr2+j] = abs( echoAmplitudes( seq, r1sample[i], r2sample[j] ) )
@@ -448,11 +448,6 @@ end
 
 """
 function addNoise(acqData::AcquisitionData, snr::Float64)
-  # noisyData = addNoise(acqData.kdata, snr, true)
-
-  # return AcquisitionData(acqData.sequenceInfo, acqData.traj, noisyData, acqData.numEchoes,
-  #                        acqData.numCoils, acqData.numSlices, acqData.samplePointer,
-  #                        acqData.subsampleIndices, acqData.encodingSize, acqData.fov)
   acqData2 = deepcopy(acqData)
   addNoise!(acqData2,snr)
   return acqData2

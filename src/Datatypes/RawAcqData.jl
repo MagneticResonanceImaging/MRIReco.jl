@@ -99,7 +99,7 @@ function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
 
     # assume constant number of samplings per profile
     numSampPerProfile = size(f.profiles[1].data,1)
-    numChannels = size(f.profiles[1].data,2)
+    numChan = size(f.profiles[1].data,2)
     D = Int(f.profiles[1].head.trajectory_dimensions)
 
     # remove data that should be discarded
@@ -127,7 +127,7 @@ function sequence(f::RawAcquisitionData)
 end
 
 """
-  numChannels(f::RawAcquisitionData)
+    numChannels(f::RawAcquisitionData)
 
 returns the number of channels in a `RawAcquisitionData` object.
 """
@@ -238,16 +238,10 @@ end
 converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 """
 function AcquisitionData(f::RawAcquisitionData)
-  numSl = length(unique(slices(f)))
-  numRep = length(unique(repetitions(f)))
   numContr = length(unique(contrasts(f)))
   tr = [trajectory(f,contrast=contr) for contr=1:numContr]
   subsampleIdx = [subsampleIndices(f,contrast=contr) for contr=1:numContr]
   return AcquisitionData(tr, rawdata(f),
-                          numCoils=numChannels(f),
-                          numEchoes=numContr,
-                          numSlices=numSl,
-                          numReps=numRep,
                           idx=subsampleIdx,
                           encodingSize=collect(f.params["encodedSize"]),
                           fov = collect(f.params["encodedFOV"]) )
@@ -265,9 +259,9 @@ function RawAcquisitionData(acqData::AcquisitionData)
   counter = 1
   # profiles
   profiles = Vector{Profile}()
-  for rep = 1:acqData.numReps
-    for slice=1:acqData.numSlices
-      for contr = 1:acqData.numEchoes
+  for rep = 1:numRepititions(acqData)
+    for slice=1:numSlices(acqData)
+      for contr = 1:numEchoes(acqData)
         tr = trajectory(acqData,contr)
         profIdx = profileIdx(acqData,contr)
         numSamp = numSamplingPerProfile(tr)
@@ -297,7 +291,7 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
                             , contr::Int, prof_tr::Int, counter::Int
                             ; phase::Int=1, set::Int=1, segment::Int=1, repetition::Int=1
                             , user::NTuple{8,Int16} = ntuple(i->Int16(0),8), kargs...)
-  numChannels = acqData.numCoils
+  numChan = numChannels(acqData)
   tr = trajectory(acqData,contr)
   numSamples = numSamplingPerProfile(tr)
   isCartesian(tr) ? center_sample=div(numSamples,2) : center_sample=0 # needs to be fixed for partial Fourier,etc
@@ -317,8 +311,8 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
 
   return AcquisitionHeader(; scan_counter=Int32(counter)
                           , number_of_samples=Int16(numSamples)
-                          , available_channels=Int16(numChannels)
-                          , active_channels=Int16(numChannels)
+                          , available_channels=Int16(numChan)
+                          , active_channels=Int16(numChan)
                           , center_sample=Int16(center_sample)
                           , trajectory_dimensions=Int16(tr_dims)
                           , sample_time_us=Float32(sample_time_us)

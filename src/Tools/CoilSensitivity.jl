@@ -7,12 +7,12 @@ Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually
 """
 function estimateCoilSensitivities(I::AbstractArray{T,5}) where T
-  numCoils = size(I,5)
+  numChan = size(I,5)
 
   I_sum = sqrt.( sum(abs.(I).^2, dims=5) )
 
   s = similar(I)
-  for i=1:numCoils
+  for i=1:numChan
     s[:,:,:,:,i] = I[:,:,:,:,i] ./ I_sum
   end
 
@@ -54,17 +54,18 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
   end
 
   nx,ny = acqData.encodingSize[1:2]
-  maps = zeros(ComplexF64,acqData.encodingSize[1],acqData.encodingSize[2],acqData.numSlices,acqData.numCoils)
+  numChan, numSl = numChannels(acqData), numSlices(acqData)
+  maps = zeros(ComplexF64,acqData.encodingSize[1],acqData.encodingSize[2],numSl,numChan)
 
-  for slice = 1:acqData.numSlices
+  for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(ComplexF64,nx*ny,acqData.numCoils)
-    for coil = 1:acqData.numCoils
+    kdata = zeros(ComplexF64,nx*ny,numChan)
+    for coil = 1:numChan
       kdata[acqData.subsampleIndices[1],coil] .= kData(acqData,1,coil,slice)
     end
-    kdata = reshape(kdata,nx,ny,acqData.numCoils)
+    kdata = reshape(kdata,nx,ny,numChan)
 
-    calib = crop(kdata,(ncalib,ncalib,acqData.numCoils))
+    calib = crop(kdata,(ncalib,ncalib,numChan))
 
     maps[:,:,slice,:] .= espirit(calib,(nx,ny),ksize,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
   end
@@ -118,8 +119,8 @@ end
 #         imSize - size of the image to compute maps
 #
 # outputs :
-#         eigenvecs: images representing the eigenvectors (sx,sy,numCoils,numCoils)
-#         eigenvals: images representing th eigenvalues (sx,sy,numCoils)
+#         eigenvecs: images representing the eigenvectors (sx,sy,numChan,numChan)
+#         eigenvals: images representing th eigenvalues (sx,sy,numChan)
 function kernelEig(kernel::Array{T,4},imsize::NTuple{2,Int64}) where T
   nx,ny,nc,nv = size(kernel)
   ksize = (nx,ny)

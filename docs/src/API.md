@@ -37,15 +37,15 @@ MRIReco.RegularizedLeastSquares.WeightingOp
 MRIReco.AcquisitionData
 MRIReco.AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}
                         ; seqInfo=Dict{Symbol,Any}()
-                        , numCoils=1
-                        , numEchoes=1
-                        , numSlices=1
-                        , numReps=1
                         , idx=nothing
                         , encodingSize=Int64[0,0,0]
                         , fov=Float64[0,0,0]
                         , kargs...) where T <: Union{Trajectory,Vector{Trajectory}}
 MRIReco.trajectory(acqData::AcquisitionData,i::Int64=1)
+MRIReco.numContrasts(acqData::AcquisitionData)
+MRIReco.numChannels
+MRIReco.numSlices
+MRIReco.numRepititions
 MRIReco.kData
 MRIReco.multiEchoData
 MRIReco.multiCoilData
@@ -58,6 +58,8 @@ MRIReco.RawAcquisitionData
 MRIReco.trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
 MRIReco.rawdata(f::RawAcquisitionData)
 MRIReco.AcquisitionData(f::RawAcquisitionData)
+MRIReco.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
+MRIReco.AcquisitionData(f::ISMRMRDFile, dataset="dataset")
 ```
 
 ## Trajectories
@@ -89,7 +91,7 @@ MRIReco.StackOfStarsTrajectory
 ## Sequences
 ```@docs
 MRIReco.MESequence
-MRIReco.numEchoes(seq::MESequence)
+MRIReco.numContrasts(seq::MESequence)
 MRIReco.echoTimes(seq::MESequence)
 MRIReco.flipAngles(seq::MESequence)
 MRIReco.echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)

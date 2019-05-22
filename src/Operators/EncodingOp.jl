@@ -21,9 +21,10 @@ function encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft")
 
-  tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
+  numContr = numContrasts(acqData)
+  tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
-  return [fourierEncodingOp2d(shape, tr[i], "fast", slice=slice, subsampleIdx=idx[i], correctionMap=correctionMap, method=method) for i=1:acqData.numEchoes]
+  return [fourierEncodingOp2d(shape, tr[i], "fast", slice=slice, subsampleIdx=idx[i], correctionMap=correctionMap, method=method) for i=1:numContr]
 end
 
 """
@@ -40,9 +41,10 @@ function encodingOps3d_simple(acqData::AcquisitionData, shape::NTuple{3,Int64}
                               ; correctionMap=ComplexF64[]
                               , method::String="nfft")
 
-  tr = [trajectory(acqData,i) for i=1:acqData.numEchoes]
+  numContr = numContrasts(acqData)
+  tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
-  return [fourierEncodingOp3d(shape, tr[i], "fast", subsampleIdx=idx[i], method=method) for i=1:acqData.numEchoes]
+  return [fourierEncodingOp3d(shape, tr[i], "fast", subsampleIdx=idx[i], method=method) for i=1:numContr]
 end
 
 """
@@ -69,10 +71,12 @@ function encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                 ; slice=1
                                 , correctionMap::Array{ComplexF64}=ComplexF64[]
                                 , method::String="nfft")
+
+  numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
   ft = encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap)
-  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,acqData.numCoils),1)
-  return [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
+  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
+  return [ diagOp( [ft[i] for k=1:numChan]... )*S for i=1:numContr]
 end
 
 """
@@ -91,10 +95,12 @@ function encodingOps3d_parallel(acqData::AcquisitionData, shape::NTuple{3,Int64}
                                 , senseMaps::Array{ComplexF64}
                                 ; correctionMap::Array{ComplexF64}=ComplexF64[]
                                 , method::String="nfft")
+
+  numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
   ft = encodingOps3d_simple(acqData, shape, correctionMap=correctionMap)
-  S = SensitivityOp(reshape(senseMaps,:,acqData.numCoils),1)
-  return [ diagOp( [ft[i] for k=1:acqData.numCoils]... )*S for i=1:acqData.numEchoes]
+  S = SensitivityOp(reshape(senseMaps,:,numChan),1)
+  return [ diagOp( [ft[i] for k=1:numChan]... )*S for i=1:numContr]
 end
 
 """
@@ -161,10 +167,12 @@ function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
                                           ; slice=1
                                           , correctionMap::Array{ComplexF64}=ComplexF64[]
                                           , method::String="nfft")
+
+  numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap)
-  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,acqData.numCoils),1)
-  return diagOp( repeat(ft, acqData.numCoils)... )*S
+  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
+  return diagOp( repeat(ft, numChan)... )*S
 end
 
 """
@@ -183,22 +191,25 @@ function encodingOp3d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
                                           , senseMaps::Array{ComplexF64}
                                           ; correctionMap::Array{ComplexF64}=ComplexF64[]
                                           , method::String="nfft")
+
+  numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps3d_simple(acqData, shape, correctionMap=correctionMap)
-  S = SensitivityOp(reshape(senseMaps,:,acqData.numCoils),1)
-  return diagOp( repeat(ft, acqData.numCoils)... )*S
+  S = SensitivityOp(reshape(senseMaps,:,numChan),1)
+  return diagOp( repeat(ft, numChan)... )*S
 end
 
 ###################################
 # Encoding with low rank projection
 ###################################
-function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1, parallel::Bool=false,)
+function lrEncodingOp(acqData::AcquisitionData,params::Dict; numContr::Int64=1, parallel::Bool=false,)
 
+  numChan = numChannels(acqData)
   # low rank operator
   N=prod(params[:shape])
   subspace = get( params, :phi, Matrix{Float64}(I,N,N) )
   K = size(subspace,2)
-  Φ = MapSliceOp(subspace[:,:,1],2,(N, K, acqData.numCoils), (N, numEchoes, acqData.numCoils))
+  Φ = MapSliceOp(subspace[:,:,1],2,(N, K, acqData.numChannels), (N, numContr, numChan))
 
   # Fourier Operator
   tr = trajectory(acqData,1)
@@ -208,7 +219,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
     S = SensitivityOp(params[:senseMaps][:,:],K)
-    E = diagOp( [ft for i=1:acqData.numCoils*K]... )*S
+    E = diagOp( [ft for i=1:numChan*K]... )*S
   else
     E = diagOp( [ft for i=1:K]... )
   end
@@ -217,7 +228,7 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numEchoes::Int64=1,
   if get(params,:sampling, nothing) == "binary"
     M = SamplingOp(Array{Bool}(acqData.subsampleIndices))
   else
-    M = SamplingOp(acqData.subsampleIndices,(N, numEchoes, acqData.numCoils))
+    M = SamplingOp(acqData.subsampleIndices,(N, numContr, numChan))
   end
 
   return M*Φ*E

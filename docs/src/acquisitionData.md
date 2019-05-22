@@ -40,10 +40,6 @@ mutable struct AcquisitionData
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
   kdata::Array{Matrix{ComplexF64},3}
-  numEchoes::Int64
-  numCoils::Int64
-  numSlices::Int64
-  numReps::Int64
   subsampleIndices::Vector{Array{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
@@ -53,12 +49,12 @@ It consists of the sequence informations stored in a dictionary, the k-space
 trajectory, the k-space data, and several parameters describing the dimension of the data and some additional index vectors.
 
 The k-space data `kdata` has three dimensions encoding
-1. dim : echoes
+1. dim : contrasts/echoes
 2. dim : slices
 3. dim : repetitions
-Each element it a matrix encoding
+Each element is a matrix encoding
 1. dim : k-space nodes
-2. dim : num coils
+2. dim : channels/coils
 
 In case of undersampled data, the subsampling indices are stored in `subsampleIndices`.
 One check if the data is undersampled by checking if `isempty(subsampleIndices)`.

@@ -27,16 +27,18 @@ function reconstruction_simple( acqData::AcquisitionData
                               , normalize::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
+  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = sparseTrafo
 
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(shape), acqData.numSlices, acqData.numEchoes, acqData.numCoils)
-  for k = 1:acqData.numSlices
+  Ireco = zeros(ComplexF64, prod(shape), numSl, numContr, numChan)
+  for k = 1:numSl
     F = encodingOps2d_simple(acqData, shape, slice=k, correctionMap=correctionMap, method=method)
-    for j = 1:acqData.numEchoes
+    for j = 1:numContr
       W = WeightingOp(weights[j])
-      for i = 1:acqData.numCoils
+      for i = 1:numChan
         kdata = kData(acqData,j,i,k).* weights[j]
 
         reg2 = deepcopy(reg)
@@ -55,7 +57,7 @@ function reconstruction_simple( acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, shape..., acqData.numSlices, acqData.numEchoes, acqData.numCoils)
+  Ireco = reshape(Ireco, shape..., numSl, numContr, numChan)
   return makeAxisArray(Ireco, acqData)
 end
 
@@ -86,16 +88,18 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , normalize::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
+  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],acqData.numEchoes) )
+  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
 
   W = WeightingOp( vcat(weights...) )
 
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(shape)*acqData.numEchoes, acqData.numCoils, acqData.numSlices)
-  for i = 1:acqData.numSlices
+  Ireco = zeros(ComplexF64, prod(shape)*numContr, numChan, numSl)
+  for i = 1:numSl
     F = encodingOps2d_multiEcho(acqData, shape, slice=k, correctionMap=correctionMap, method=method)
-    for j = 1:acqData.numCoils
+    for j = 1:numChan
       kdata = multiEchoData(acqData, j, i) .* weights
 
       reg2 = deepcopy(reg)
@@ -109,7 +113,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, shape..., acqData.numEchoes, acqData.numCoils, acqData.numSlices)
+  Ireco = reshape(Ireco, shape..., numContr, numChan, numSl)
   return makeAxisArray(permutedims(Ireco,[1,2,5,3,4]), acqData)
 end
 
@@ -142,16 +146,18 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , normalize::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
+  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = sparseTrafo
 
   # solve optimization problem
-  Ireco = zeros(ComplexF64, prod(shape), acqData.numSlices, acqData.numEchoes, 1)
-  for k = 1:acqData.numSlices
+  Ireco = zeros(ComplexF64, prod(shape), numSl, numContr, 1)
+  for k = 1:numSl
     E = encodingOps2d_parallel(acqData, shape, senseMaps, slice=k, correctionMap=correctionMap, method=method)
-    for j = 1:acqData.numEchoes
-      W = WeightingOp(weights[j],acqData.numCoils)
-      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], acqData.numCoils)
+    for j = 1:numContr
+      W = WeightingOp(weights[j],numChan)
+      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
 
       reg2 = deepcopy(reg)
       if normalize
@@ -169,7 +175,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, shape..., acqData.numSlices, acqData.numEchoes, 1)
+  Ireco = reshape(Ireco, shape..., numSl, numContr, 1)
   return makeAxisArray(Ireco, acqData)
 end
 
@@ -202,16 +208,18 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , normalize::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
+  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],acqData.numEchoes) )
+  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
 
-  W = WeightingOp( vcat(weights)..., acqData.numCoils )
+  W = WeightingOp( vcat(weights)..., numChan )
 
-  Ireco = zeros(ComplexF64, prod(shape), acqData.numEchoes, acqData.numSlices)
-  for i = 1:acqData.numSlices
+  Ireco = zeros(ComplexF64, prod(shape), numContr, numSl)
+  for i = 1:numSl
     E = encodingOp_2d_multiEcho_parallel(acqData, shape, senseMaps, slice=k, correctionMap=correctionMap, method=method)
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, acqData.numCoils)
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, numChan)
 
     reg2 = deepcopy(reg)
     if normalize
@@ -222,7 +230,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
     Ireco[:,:,i] = solve(solver, kdata)
   end
 
-  Ireco = reshape( permutedims(Ireco, [1,3,2]), recoParams[:shape]..., acqData.numSlices, acqData.numEchoes )
+  Ireco = reshape( permutedims(Ireco, [1,3,2]), recoParams[:shape]..., numSl, numContr )
 end
 
 

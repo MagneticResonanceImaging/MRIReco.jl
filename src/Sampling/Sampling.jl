@@ -98,13 +98,11 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
                        patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
 
-  numEchoes = acqData.numEchoes
-  numCoils = acqData.numCoils
-  numSl = acqData.numSlices
+  numContr, numSl = numContrasts(acqData), numSlices(acqData)
 
-  idx = Vector{Array{Int64}}(undef,numEchoes)
+  idx = Vector{Array{Int64}}(undef,numContr)
 
-  for echo = 1:numEchoes
+  for echo = 1:numContr
     tr = trajectory(acqData,echo)
     if dims(tr)==2
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr) )
