@@ -32,7 +32,7 @@ acqData = simulation(I, params)
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (N,N)
+params[:reconSize] = (N,N)
 params[:correctionMap] = cmap
 params[:alpha] = 1.75
 params[:m] = 4.0

@@ -28,7 +28,7 @@ acqData = simulation(I, params)
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "multiCoil"
-params[:shape] = (N,N)
+params[:reconSize] = (N,N)
 params[:regularization] = "L2"
 params[:λ] = 1.e-3
 params[:iterations] = 40

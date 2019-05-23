@@ -17,7 +17,7 @@ N = acqData.encodingSize
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (N[1],N[2]) #this should be clear from context
+params[:reconSize] = (N[1],N[2]) #this should be clear from context
 
 Ireco = reconstruction(acqData, params)
 exportImage("brukerCart.png", Ireco[:,:,1,1,1])

@@ -43,7 +43,7 @@ acqData = simulation(I, params)
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (N,N)
+params[:reconSize] = (N,N)
 Ireco = reconstruction(acqData, params)
 ```
 We will go through the program step by step. First we create a 2D shepp logan

@@ -26,7 +26,7 @@ acq = RawAcquisitionData(f)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (256,128) #this should be clear from context
+params[:reconSize] = (256,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(acq), params)
 exportImage("recogre.png", Ireco[:,:,1,1,1])
@@ -57,7 +57,7 @@ f = ISMRMRDFile(filename)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (128,128) #this should be clear from context
+params[:reconSize] = (128,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(f), params)
 exportImage("recospiral.png", Ireco[:,:,1,1,1])

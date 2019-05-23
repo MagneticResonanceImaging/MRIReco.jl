@@ -14,7 +14,7 @@ function testGriddingReco(N=32)
 
   #reco
   params[:reco] = "direct"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
 
   x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
@@ -36,7 +36,7 @@ function testGriddingReco3d(N=32)
 
   # reco
   params[:reco] = "direct"
-  params[:shape] = (N,N,8)
+  params[:reconSize] = (N,N,8)
 
   x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
@@ -61,8 +61,8 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
 
   # reco
   params[:reco] = "standard"    # encoding model
-  params[:shape] = (N,N)
-  params[:sparseTrafoName] = "Wavelet" #sparse trafo
+  params[:reconSize] = (N,N)
+  params[:sparseTrafo] = "Wavelet" #sparse trafo
   params[:regularization] = "L1"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver
@@ -91,8 +91,8 @@ function testCSRecoMultCoil(N=32)
 
   # reco
   params[:reco] = "standard"    # encoding model
-  params[:shape] = (N,N)
-  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:reconSize] = (N,N)
+  params[:sparseTrafo] = "nothing" #sparse trafo
   params[:regularization] = "TV"       # regularization
   params[:λ] = 2.e-3
   params[:solver] = "admm"    # solver
@@ -134,9 +134,9 @@ function testCSSenseReco(N=32,redFac=1.1)
 
   # reco
   params[:reco] = "multiCoil"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
   params[:senseMaps] = sensMaps
-  params[:sparseTrafoName] = "Wavelet" # sparse trafo
+  params[:sparseTrafo] = "Wavelet" # sparse trafo
   params[:regularization] = "L1"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"
@@ -174,7 +174,7 @@ function testOffresonanceReco(N = 128; accelMethod="nfft")
   params[:regularization] = "L2"
   params[:iterations] = 3
   params[:solver] = "admm"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
   params[:correctionMap] = cmap
   params[:method] = accelMethod
 
@@ -207,7 +207,7 @@ function testSENSEReco(N = 64)
   # reco parameters
   params = Dict{Symbol, Any}()
   params[:reco] = "multiCoil" #"standard"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
   params[:regularization] = "L2"
   params[:iterations] = 3
   params[:solver] = "admm"
@@ -244,7 +244,7 @@ function testOffresonanceSENSEReco(N = 64)
   # reco parameters
   params = Dict{Symbol, Any}()
   params[:reco] = "multiCoil" #"standard"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
   params[:regularization] = "L2"
   params[:iterations] = 3
   params[:solver] = "admm"
@@ -275,7 +275,7 @@ function testDirectRecoMultiEcho(N=32)
   acqData = simulation( real(x), params )
 
   params[:reco] = "direct"
-  params[:shape] = (N,N)
+  params[:reconSize] = (N,N)
 
   x_approx = reshape(reconstruction(acqData,params),N,N,2)
 
@@ -304,8 +304,8 @@ function testCSReco3d(N=64)
 
   # 3d reco
   params[:reco] = "standard"    # encoding model
-  params[:shape] = (8,N,N)
-  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:reconSize] = (8,N,N)
+  params[:sparseTrafo] = "nothing" #sparse trafo
   params[:regularization] = "TV"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver
@@ -343,9 +343,9 @@ function testCSSenseReco3d(N=64)
 
   # 3d reco
   params[:reco] = "multiCoil"    # encoding model
-  params[:shape] = (8,N,N)
+  params[:reconSize] = (8,N,N)
   params[:senseMaps] = reshape(sensMaps,8,N,N,2)
-  params[:sparseTrafoName] = "nothing" #sparse trafo
+  params[:sparseTrafo] = "nothing" #sparse trafo
   params[:regularization] = "TV"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver

@@ -125,6 +125,40 @@ function test_changeEncodingSize(N=32)
     @test relError < 1.e-3
 end
 
+function testAcqData(N=32)
+    @test "testing AcquisitionData"
+    # image
+    x = shepp_logan(N)
+    rmap = 20.0*ones(N,N)
+
+    # coil sensitivites
+    sensMaps = zeros(ComplexF64,N*N,2,1)
+    sensMaps[1:floor(Int64, N*N/2),1,1] .= 1.0
+    sensMaps[floor(Int64, N*N/2)+1:end,2,1] .= 1.0
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian"
+    params[:numProfiles] = floor(Int64, N)
+    params[:senseMaps] = reshape(sensMaps,N,N,1,2)
+    params[:numSamplingPerProfile] = N
+
+    #sequence parameters
+    params[:r2map] = rmap
+    params[:T_echo] = [2.e-2, 4.e-2]
+    params[:seqName] = "ME"
+    params[:refocusingAngles] = Float64[pi,pi]
+
+    acqData = simulation(x,params)
+
+    @test numContrasts(acqData) = 2
+    @test numChannels(acqData) = 2
+    @test numSlices(acqData) = 1
+    @test numRepititions(acqData) = 1
+
+end
+
 function testSimulation()
   @testset "simulations" begin
     test_kdata()

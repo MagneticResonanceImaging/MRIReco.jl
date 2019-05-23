@@ -18,7 +18,7 @@ acqData = simulation(I, params)
 # reco parameters
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:shape] = (N,N)
+params[:reconSize] = (N,N)
 Ireco = reconstruction(acqData, params)
 
 # use PyPlot for interactive display

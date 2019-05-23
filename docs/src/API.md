@@ -150,6 +150,7 @@ MRIReco.quadraticFieldmap
 ```@docs
 MRIReco.reconstruction(acqData::AcquisitionData, recoParams::Dict)
 MRIReco.reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;force=false)
+MRIReco.setupIterativeReco
 MRIReco.reconstruction_direct_2d
 MRIReco.reconstruction_direct_3d
 MRIReco.reconstruction_simple
