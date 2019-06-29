@@ -1,10 +1,11 @@
 export estimateCoilSensitivities, mergeChannels, espirit
 
 """
-    estimateCoilSensitivities(I::AbstractArray{T,5})
+    `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
 
 Estimates the coil sensitivity based on a reconstruction where the data
-from each coil has been reconstructed individually
+from each coil has been reconstructed individually.
+Returns a 5D array.
 """
 function estimateCoilSensitivities(I::AbstractArray{T,5}) where T
   numChan = size(I,5)
@@ -19,32 +20,36 @@ function estimateCoilSensitivities(I::AbstractArray{T,5}) where T
   return s
 end
 
-"""
-    mergeChannels(I::AbstractArray{T,5})
-
-Merge the channels of a multi-coil reconstruction
-"""
-mergeChannels(I::AbstractArray{T,5}) where T = sqrt.(sum(abs.(I).^2,dims=5));
 
 """
-    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
-               ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
+    `I4 = mergeChannels(I::AbstractArray{T,5})`
+
+Merge the channels of a multi-coil reconstruction.
+Returns a 4D array.
+"""
+mergeChannels(I::AbstractArray{T,5}) where T = sqrt.(sum(abs.(I).^2,dims=5))
+
+
+"""
+    `maps = espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
+               ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)`
 
 obtains coil sensitivities from a calibration area using ESPIRiT
 adapted from the MATLAB code by Uecker et al. for the paper'
 M. Uecker, P. Lai, MJ Murphy, P. Virtue, M Elad, JM Pauly, SS Vasanawala and M Lustig, "ESPIRiT- an
 eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA", Magn Reson Med, 2013
 
-the matlab code can be found at: http://people.eecs.berkeley.edu/~mlustig/Software.html
+the matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Software.html]
 
 # Arguments
 * `acqData::AcquisitionData`  - AcquisitionData
 * `ksize::NTuple{2,Int64}`    - size of the k-space matrix
 * `ncalib::Int64`             - number of calibration points in each dimension
 * `eigThresh_1::Float64=0.02` - threshold for the singular values of the calibration matrix (relative to the largest value)
-* `eigThresh_2::Float64=0.95` - threshold of the image space kernels (if no singular value > eigThresh_2 exists)
+* `eigThresh_2::Float64=0.95` - threshold of the image space kernels (if no singular value > `eigThresh_2` exists)
                                 , the corresponding pixel has a sensitivity of 0.
 
+Returns a 4D array.
 """
 function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
                 ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
@@ -72,6 +77,12 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
   return maps
 end
 
+
+"""
+`maps = espirit(calibData::Array{ComplexF64,3}, imsize::NTuple{2,Int64}, ksize::NTuple{2,Int64}
+                ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)`
+Returns a 3D array.
+"""
 function espirit(calibData::Array{ComplexF64,3}, imsize::NTuple{2,Int64}, ksize::NTuple{2,Int64}
                 ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
   sx,sy = imsize
