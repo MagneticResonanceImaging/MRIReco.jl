@@ -47,6 +47,6 @@ the `Plots` package. You can add both packages the same way
 
 There is a Jupyter-based tutorial on `MRIReco` at
 
-[https://github.org/MagneticResonanceImaging/MRIRecoTutorial](https://github.org/MagneticResonanceImaging/MRIRecoTutorial)
+[https://github.com/MagneticResonanceImaging/MRIRecoTutorial](https://github.com/MagneticResonanceImaging/MRIRecoTutorial)
 
 that has been presented at the ISMRM conference in Montreal 2019.
