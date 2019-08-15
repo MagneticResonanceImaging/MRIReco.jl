@@ -202,19 +202,19 @@ end
 ###################################
 # Encoding with low rank projection
 ###################################
-function lrEncodingOp(acqData::AcquisitionData,params::Dict; numContr::Int64=1, parallel::Bool=false,)
+function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::Int64=1, parallel::Bool=false,)
 
   numChan = numChannels(acqData)
   # low rank operator
-  N=prod(params[:shape])
+  N=prod(shape)
   subspace = get( params, :phi, Matrix{Float64}(I,N,N) )
   K = size(subspace,2)
-  Φ = MapSliceOp(subspace[:,:,1],2,(N, K, acqData.numChannels), (N, numContr, numChan))
+  Φ = MapSliceOp(subspace[:,:,1],2,(N, K, numChan), (N, numContr, numChan))
 
   # Fourier Operator
   tr = trajectory(acqData,1)
-  params[:fft] = true
-  ft = fourierEncodingOp2d(tr, params)
+  # params[:fft] = true
+  ft = fourierEncodingOp2d(shape, tr, "fast"; params...)
 
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
@@ -225,10 +225,13 @@ function lrEncodingOp(acqData::AcquisitionData,params::Dict; numContr::Int64=1, 
   end
 
   #  TODO: sampling operator in case of undersampled cartesian acquisitions
+  # vectorize sampling pattern
   if get(params,:sampling, nothing) == "binary"
     M = SamplingOp(Array{Bool}(acqData.subsampleIndices))
   else
-    M = SamplingOp(acqData.subsampleIndices,(N, numContr, numChan))
+    # sampling idx for all contrasts but one coil
+    subIdx = hcat(acqData.subsampleIndices...)
+    M = SamplingOp( hcat([subIdx for c=1:numChan]...), (N, numContr, numChan))
   end
 
   return M*Φ*E

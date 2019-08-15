@@ -64,6 +64,13 @@ returns the refocusing flip angles of an `ME Sequence`
 """
 flipAngles(seq::MESequence) = seq.refocusingAngles
 
+"""
+    numEchoes(seq::MESequence)
+
+returns the number of echos of a `ME Sequence`
+"""
+numEchoes(seq::MESequence) = length(seq.T_echo)
+
 string(seq::MESequence) = "ME"
 
 """
