@@ -1,5 +1,9 @@
 # API
 
+This page contains documentation of the public API of MRIReco. In the Julia
+REPL one can access this documentation by entering the help mode with `?` and
+then writing the function for which the documentation should be shown.
+
 ## Operators
 Operators are implemented as subtypes of `AbstractLinearOperator`, which is defined in the package `LinearOperators.jl`. Such operators must provide a function implementing the product and a function implementing the product with the adjoint. Furthermore, the number of rows and columns of the operator must be specified.
 

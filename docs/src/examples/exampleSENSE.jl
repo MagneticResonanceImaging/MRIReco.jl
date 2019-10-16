@@ -1,4 +1,4 @@
-using MRIReco
+using PyPlot, MRIReco
 
 ##### simple example ####
 
@@ -13,7 +13,7 @@ coilsens = birdcageSensitivity(N, 8, 1.5)
 params = Dict{Symbol, Any}()
 params[:simulation] = "fast"
 params[:trajName] = "Spiral"
-params[:numProfiles] = 4
+params[:numProfiles] = 6
 params[:numSamplingPerProfile] = div(N*N,16)
 params[:windings] = div(N,16)
 params[:AQ] = 2.0e-2
@@ -33,6 +33,16 @@ params[:solver] = "cgnr"
 params[:senseMaps] = coilsens
 Ireco = reconstruction(acqData, params)
 
+# use PyPlot for interactive display
+figure(1)
+clf()
+subplot(1,2,1)
+title("Phantom")
+imshow(abs.(I))
+subplot(1,2,2)
+title("Reconstruction")
+imshow(abs.(Ireco[:,:,1,1,1]))
+
 # export images
-Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("../assets/senseReco.png", Icolored[:,:,1,1,1] )
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/senseReco.png")
+exportImage(filename, abs.(Ireco[:,:,1,1,1]) )

@@ -49,4 +49,6 @@ There is a Jupyter-based tutorial on `MRIReco` at
 
 [https://github.com/MagneticResonanceImaging/MRIRecoTutorial](https://github.com/MagneticResonanceImaging/MRIRecoTutorial)
 
-that has been presented at the ISMRM conference in Montreal 2019.
+that has been presented at the ISMRM conference in Montreal 2019. Since the API
+has slightly changed, we, however recommend that you read this documentation and
+in particular execute the example scripts as is described in the [Getting Started](@ref) section.

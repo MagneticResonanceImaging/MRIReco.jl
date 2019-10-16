@@ -1,18 +1,13 @@
 module MRIReco
 
-#using Compat
-using ImageMagick
-if Sys.isapple()
-  using QuartzImageIO
-end
+using Reexport
 using FileIO
 using ProgressMeter
-using Reexport
-@reexport using Images
+@reexport using ImageUtils
 using NFFT
 using Distributions
 using LinearOperators
-using RegularizedLeastSquares
+@reexport using RegularizedLeastSquares
 using StatsBase
 using LinearAlgebra
 using Random

@@ -1,9 +1,8 @@
-import ImageMagick
 using Documenter, MRIReco
 
 makedocs(
     modules = [MRIReco],
-    format = :html,
+    format = Documenter.HTML(),
     sitename = "Julia MRI Package",
     authors = "Tobias Knopp, Mirco Grosser",
     pages = [
@@ -13,12 +12,12 @@ makedocs(
         "Acquisition Data" => "acquisitionData.md",
         "File Handling" => "filehandling.md",
         "Images" => "image.md",
-        "Offresonance" => "offresonance.md",
-        "Parallel Imaging" => "SENSE.md",
         "Trajectory" => "trajectories.md",
         "Imaging Operators" => "operators.md",
-        "Simulation" => "simulation.md",
-        "Reconstruction" => "reconstruction.md",
+        "Offresonance" => "offresonance.md",
+        "Parallel Imaging" => "SENSE.md",
+        "Compressed Sensing" => "compressedSensing.md",
+        "Customize" => "custom.md",
         "API" => "API.md",
     ],
     html_prettyurls = false, #!("local" in ARGS),

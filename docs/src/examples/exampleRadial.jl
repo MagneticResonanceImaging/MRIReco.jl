@@ -1,4 +1,4 @@
-using PyPlot, MRIReco
+using PyPlot, MRIReco 
 
 ##### simple example ####
 
@@ -33,6 +33,6 @@ imshow(abs.(Ireco[:,:,1,1,1]))
 
 # export images
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/simpleReco.png")
-exportImage(filename, Ireco[:,:,1,1,1])
+exportImage(filename, abs.(Ireco[:,:,1,1,1]))
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/phantom.png")
-exportImage(filename, I[:,:,1,1,1])
+exportImage(filename, abs.(I[:,:,1,1,1]))

@@ -1,4 +1,4 @@
-# Offresonance correction
+# Offresonance Correction
 
 For trajectories with long readouts the MRI images are degraded by offresonance
 artifacts, if the offresonance is not taken into account during reconstruction.
@@ -7,7 +7,12 @@ artifacts provided that the offresonance map is known. Our framework is also cap
 of correcting T2* relaxation effects. The later are encoded in the real part of the
 correction map while the offresoanance is encoded in the imaginary part. The
 following example shows an example of a simulation and reconstruction of MRI data
-that takes offresonance due to an inhomogeneous fieldmap into account.
+that takes offresonance due to an inhomogeneous fieldmap into account. The example
+can be run by entering
+```julia
+include(joinpath(dirname(pathof(MRIReco)),"../docs/src/examples/exampleFieldmap.jl"))
+```
+into the Julia REPL.
 ```julia
 using MRIReco
 
@@ -37,13 +42,15 @@ params[:correctionMap] = cmap
 params[:alpha] = 1.75
 params[:m] = 4.0
 params[:K] = 28
+
+# do reconstruction
 Ireco = reconstruction(acqData, params)
 ```
 The considered quadratic fieldmap looks like this:
 
-![Phantom](./assets/fieldmap.png)
+![Fieldmap](./assets/fieldmap.png)
 
 The reconstruction without and with offresonance correction are shown below:
 
-![Phantom](./assets/fieldmapReco1.png)
+![NoCorrection](./assets/fieldmapReco1.png)
 ![Reconstruction](./assets/fieldmapReco2.png)

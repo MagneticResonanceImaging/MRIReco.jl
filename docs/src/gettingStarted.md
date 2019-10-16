@@ -81,5 +81,5 @@ The original phantom and the reconstructed image are shown below
 ![Phantom](./assets/phantom.png)
 ![Reconstruction](./assets/simpleReco.png)
 
-We will discuss reconstruction in more detail in the [Reconstruction](@ref) section.
-Simulation will be discussed in more detail in the [Simulation](@ref) section.
+We will discuss reconstruction in more detail in the sections on [Offresonance Correction](@ref),
+[Parallel Imaging](@ref), and [Compressed Sensing](@ref)

@@ -29,7 +29,7 @@ params[:reco] = "direct"
 params[:reconSize] = (256,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(acq), params)
-exportImage("recogre.png", Ireco[:,:,1,1,1])
+exportImage("recogre.png", abs.(Ireco[:,:,1,1,1]))
 
 filenameCopy = "simple_gre_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)
@@ -60,7 +60,7 @@ params[:reco] = "direct"
 params[:reconSize] = (128,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(f), params)
-exportImage("recospiral.png", Ireco[:,:,1,1,1])
+exportImage("recospiral.png", abs.(Ireco[:,:,1,1,1]))
 
 filenameCopy = "simple_spiral_copy.h5"
 fCopy = ISMRMRDFile(filenameCopy)

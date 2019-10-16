@@ -1,7 +1,7 @@
 # Basic Image(Shepp Logan Phantom) and
 
 function test_kdata(N::Int64=32)
-    @info "Testing simulating kdata with NFFT and exact evauluation"
+    @info "Testing simulating kdata with NFFT and exact evaluation"
     I = shepp_logan(N)
     tr = RadialTrajectory(N,N)
     println("Simulating kdata using NFFT")
@@ -15,7 +15,7 @@ function test_kdata(N::Int64=32)
 end
 
 function test_kdataMultipleSlices(N::Int64=32)
-    @info "Testing simulating multiple 2d-slices with NFFT and exact evauluation"
+    @info "Testing simulating multiple 2d-slices with NFFT and exact evaluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.6*sh,0.3*sh,dims=3)
     tr = CartesianTrajectory(N,N)
@@ -30,7 +30,7 @@ function test_kdataMultipleSlices(N::Int64=32)
 end
 
 function test_kdata3d(N::Int64=16)
-    @info "Testing simulating 3d-kdata with NFFT and exact evauluation"
+    @info "Testing simulating 3d-kdata with NFFT and exact evaluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
     tr = CartesianTrajectory3D(N,N,numSlices=8)
@@ -102,7 +102,7 @@ function test_kdataMultiEcho(N=32)
 end
 
 function test_noise(N::Int64=32, snr::Float64=25.0)
-    @info "Testing simulating kdata with NFFT and exact evauluation"
+    @info "Testing simulating kdata with NFFT and exact evaluation"
     I = shepp_logan(N)
     tr = RadialTrajectory(N,N)
     @time acqData = simulation_explicit(tr,I)

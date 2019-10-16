@@ -1,5 +1,3 @@
-export makeAxisArray
-
 """
     makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
@@ -8,7 +6,7 @@ For this, it uses the information in `acqData`.
 The axies respectively describe the following coordinates:
 x, y, z, acqData.numEchoes, acqData.numCoils
 """
-function makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
+function ImageUtils.makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
   offset = [0.0, 0.0, 0.0]*Unitful.mm
   spacing = pixelspacing(acqData)
@@ -25,7 +23,7 @@ function makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
   return im
 end
 
-function makeAxisArray(I::AbstractArray{T,5}, spacing::Vector{Float64}) where T
+function ImageUtils.makeAxisArray(I::AbstractArray{T,5}, spacing::Vector{Float64}) where T
 
   offset = [0.0, 0.0, 0.0]*Unitful.mm
 

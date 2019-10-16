@@ -7,7 +7,7 @@ While the former is used to hold the data in the form, how it will be written
 out from the scanner, the later has already performed some data permutations
 bringing the data into the shape how the reconstruction expects it.
 
-## Raw
+## Raw Data
 
 The `RawAcquisitionData` is a data type that closely resembles the ISMRMRD data
 format. It looks like
@@ -29,9 +29,9 @@ The `params` member of `RawAcquisitionData` is basically the a flattened diction
 derived from the XML part of an ISMRMRD file. A `Profile` describes the data
 measured after a single excitation during an MRI experiment. It has members
 `head`, `traj`, and `data`, which exactly resemble the structures specified
-by the ISMRMRD file format. See [here](???) for more details.
+by the ISMRMRD file format.
 
-## Preprocessed
+## Preprocessed Data
 
 The `RawAcquisitionData` can be preprocessed into a form, which makes it more
 convenient for reconstruction algorithms. The `AcquisitionData` type looks like

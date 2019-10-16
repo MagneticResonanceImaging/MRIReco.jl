@@ -36,7 +36,7 @@ title("SpiralVarDens")
 
 subplots_adjust(top=0.95,
        bottom=0.05,
-       left=0.05,
+       left=0.09,
        right=0.95,
        hspace=0.3,
        wspace=0.2)

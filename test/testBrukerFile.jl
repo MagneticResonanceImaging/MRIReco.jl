@@ -20,7 +20,7 @@ params[:reco] = "direct"
 params[:reconSize] = (N[1],N[2]) #this should be clear from context
 
 Ireco = reconstruction(acqData, params)
-exportImage("brukerCart.png", Ireco[:,:,1,1,1])
+exportImage("brukerCart.png", abs.(Ireco[:,:,1,1,1]))
 
 # Convert to ISMRMRD file
 fout = ISMRMRDFile("brukerfileCart.h5")
