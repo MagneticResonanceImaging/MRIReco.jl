@@ -27,8 +27,8 @@ params[:reconSize] = (N,N)
 Ireco = reconstruction(acqData, params)
 
 # export image
-Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("../assets/fieldmapReco1.png", Icolored[:,:,1,1,1] )
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/fieldmapReco1.png")
+exportImage(filename, abs.(Ireco[:,:,1,1,1]) )
 
 # now with fieldmap correction
 params[:reco] = "standard"
@@ -44,11 +44,11 @@ Ireco = reconstruction(acqData, params)
 
 
 # export images
-Icolored = colorview(Gray, abs.(Ireco)./maximum(abs.(Ireco)))
-save("../assets/fieldmapReco2.png", Icolored[:,:,1,1,1] )
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/fieldmapReco2.png")
+exportImage(filename, abs.(Ireco[:,:,1,1,1]) )
 
 
 # export fieldmap image
 cmap_ = imag(cmap[:,:,1]) .+ 125*2pi
-cmapColored = colorview(Gray, abs.(cmap_)./maximum(abs.(cmap_)))
-save("../assets/fieldmap.png", cmapColored )
+filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/fieldmap.png")
+exportImage(filename, abs.(cmap_) )
