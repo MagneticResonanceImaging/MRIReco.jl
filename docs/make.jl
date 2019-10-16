@@ -2,7 +2,7 @@ using Documenter, MRIReco
 
 makedocs(
     modules = [MRIReco],
-    format = Documenter.HTML(),
+    format = Documenter.HTML(prettyurls = false),
     sitename = "Julia MRI Package",
     authors = "Tobias Knopp, Mirco Grosser",
     pages = [
@@ -20,7 +20,6 @@ makedocs(
         "Customize" => "custom.md",
         "API" => "API.md",
     ],
-    html_prettyurls = false, #!("local" in ARGS),
 )
 
 deploydocs(

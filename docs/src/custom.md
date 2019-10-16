@@ -103,6 +103,16 @@ params[:sparseTrafoName] = "Wavelet"
 img_w = reconstruction(acqData,params)
 ```
 
-The following pictures show from left to right: The original data, the wavelet
-based CS reconstruction, and the dictionary based CS reconstruction. One can
-clearly see the advantage of using the dictionary.
+The following pictures shows the wavelet
+based CS reconstruction on the left and the dictionary based CS reconstruction
+on the right:
+
+![BrainWavelet](./assets/brainWavelet.png)
+![BrainDict](./assets/brainDict.png)
+
+For reference, the original data is shown here:
+
+![BrainOrig](./assets/brainOrig.png)
+
+One can clearly see that the dictionary approach performs better than a simple
+Wavelet L1 prior.
