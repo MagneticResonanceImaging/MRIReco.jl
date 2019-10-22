@@ -215,7 +215,7 @@ function samplingDensity(acqData::AcquisitionData,shape::Tuple)
       nodes = kspaceNodes(tr)
     end
     plan = NFFTPlan(nodes, shape,3, 1.25)
-    weights[echo] = sqrt.(sdc(plan, iters=2))
+    weights[echo] = sqrt.(sdc(plan, iters=3))
   end
   return weights
 end

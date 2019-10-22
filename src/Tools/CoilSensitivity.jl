@@ -1,4 +1,4 @@
-export estimateCoilSensitivities, mergeChannels, espirit
+export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint
 
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
@@ -241,3 +241,41 @@ function ifft2c(x::Array{T}) where T
   end
   return reshape(res,s)
 end
+
+
+
+
+
+
+function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
+                                             iterations=1, outerIterations=3, cmap = nothing)
+
+  N = acqData.encodingSize
+
+  params = Dict{Symbol, Any}()
+  params[:reco] = "standard" # "multiCoil"
+  #params[:solver] = "cgnr" #solver
+  #params[:iterations] = iterations
+  params[:reconSize] = (N,N)
+  params[:alpha] = 1.25
+  #params[:iterationsInner] = 5
+  params[:normalizeReg] = true
+
+
+  if cmap != nothing
+    params[:correctionMap] = cmap
+    params[:K] = 15
+    params[:m] = 3.0
+  end
+  
+  Ireco = reconstruction(acqData, params)
+  s = estimateCoilSensitivities(IrecoCorr).data
+  
+  #if !isempty(coilsens)
+  #  params[:senseMaps] = coilsens
+  #end
+
+
+
+end
+
