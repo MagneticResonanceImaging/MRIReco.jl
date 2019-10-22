@@ -1,6 +1,6 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
-       weightData!, weightedData, unweightData!, unweightDataSquared!, changeEncodingSize2D,
-       convert3dTo2d, numContrasts,numChannels,numSlices,numRepititions
+       changeEncodingSize2D, convert3dTo2d, samplingDensity,
+       numContrasts, numChannels, numSlices, numRepititions
 
 """
 struct describing MRI acquisition data.
@@ -215,7 +215,7 @@ function samplingDensity(acqData::AcquisitionData,shape::Tuple)
       nodes = kspaceNodes(tr)
     end
     plan = NFFTPlan(nodes, shape,3, 1.25)
-    weights[echo] = sqrt.(sdc(plan))
+    weights[echo] = sqrt.(sdc(plan, iters=2))
   end
   return weights
 end

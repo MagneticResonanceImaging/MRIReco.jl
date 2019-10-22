@@ -33,8 +33,9 @@ mutable struct Trajectory
   circular::Bool
 end
 
-function Trajectory(nodes::Matrix{T}, numProfiles::Int64, numSamplingPerProfile
-              ; times=nothing, TE::Float64=0.0, AQ::Float64=1.e-3, numSlices::Int64=1, cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
+function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile; 
+                    times=nothing, TE::Float64=0.0, AQ::Float64=1.e-3, numSlices::Int64=1,
+                    cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
   if times != nothing
     ttimes = readoutTimes
   else
