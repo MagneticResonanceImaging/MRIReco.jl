@@ -47,7 +47,7 @@ function reconstruction_simple( acqData::AcquisitionData
         end
         solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
 
-        I = solve(solver, kdata)
+        I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]))
 
         if isCircular( trajectory(acqData, j) )
           circularShutter!(reshape(I, reconSize), 1.0)
