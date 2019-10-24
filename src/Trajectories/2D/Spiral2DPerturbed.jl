@@ -1,9 +1,9 @@
 export SpiralPerturbedTrajectory, spiralPerturbedTrajectoryNodes
 
 function SpiralPerturbedTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
-                  , windings::Float64= 6.25
+                  ; TE::Real=0.0
+                  , AQ::Real=1.e-3
+                  , windings::Real= 6.25
                   , alpha=2.0
                   , angleOffset::String="equispaced"
                   , kargs...)

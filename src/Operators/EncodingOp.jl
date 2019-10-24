@@ -1,4 +1,7 @@
-export EncodingOp, lrEncodingOp, fourierEncodingOp2d, fourierEncodingOp3d
+export EncodingOp, lrEncodingOp, fourierEncodingOp2d, fourierEncodingOp3d,
+       encodingOps2d_simple, encodingOps3d_simple, encodingOps2d_parallel,
+       encodingOps3d_parallel, encodingOp2d_multiEcho, encodingOp3d_multiEcho,
+       encodingOp2d_multiEcho_parallel, encodingOp3d_multiEcho_parallel
 
 """
     encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}

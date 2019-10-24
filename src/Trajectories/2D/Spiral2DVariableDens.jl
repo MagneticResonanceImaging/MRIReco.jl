@@ -4,7 +4,7 @@ export SpiralTrajectoryVarDens, spiralVarDensNodes, spiralVarDensDensity
     SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
-                  , windings::Float64= 6.25
+                  , windings::Real= 6.25
                   , alpha=2.0
                   , angleOffset= :equispaced
                   , kargs...)
@@ -21,10 +21,10 @@ returns a 2d spiral trajectory with variable density
 * (`angleOffset= :equispaced`)    - spacing of profile angles (`:equispaced` sampling, `:golden` angle sampling or `:random` sampling)
 """
 function SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
-                  , windings::Float64= 6.25
-                  , alpha=2.0
+                  ; TE::Real=0.0
+                  , AQ::Real=1.e-3
+                  , windings::Real= 6.25
+                  , alpha::Real=2.0
                   , angleOffset::String="equispaced"
                   , kargs...)
   nodes = spiralVarDensNodes(numProfiles, numSamplingPerProfile; windings=windings, alpha=alpha, angleOffset=angleOffset)
@@ -35,8 +35,8 @@ end
 # Constructing the amplitude limited case of the variable density spiral Trajectory
 function spiralVarDensNodes(numProfiles::Int64
                         , numSamplingPerProfile::Int64
-                        ; windings::Float64=6.25
-                        , alpha::Float64=2.0
+                        ; windings::Real=6.25
+                        , alpha::Real=2.0
                         , angleOffset::String= "equispaced" #:equispaced
                         , kargs...)
 
