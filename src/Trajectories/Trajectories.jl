@@ -56,6 +56,7 @@ include("2D/Spiral2D.jl")
 include("2D/OneLine2D.jl")
 include("2D/Spiral2DVariableDens.jl")
 include("2D/Spiral2DDualDens.jl")
+include("2D/Spiral2DPerturbed.jl")
 include("2D/EPI.jl")
 
 include("3D/Kooshball.jl")
@@ -93,6 +94,8 @@ function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerPr
     tr = OneLine2dTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
   elseif trajName == "SpiralVarDens"
     tr = SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+elseif trajName == "SpiralPerturbed"
+    tr = SpiralPerturbedTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
   elseif trajName == "SpiralDualDens"
     tr = SpiralTrajectoryDualDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
   elseif trajName == "Cartesian3D"

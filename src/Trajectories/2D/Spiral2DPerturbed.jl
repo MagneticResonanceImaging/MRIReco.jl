@@ -1,19 +1,19 @@
-export SpiralVarDensPerturbTrajectory, spiralVarDensPeturbNodes,spiralVarDensPeturbDensity
+export SpiralPerturbedTrajectory, spiralPerturbedTrajectoryNodes
 
-function SpiralVarDensPerturbTrajectory(numProfiles, numSamplingPerProfile
+function SpiralPerturbedTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Float64= 6.25
                   , alpha=2.0
                   , angleOffset::String="equispaced"
                   , kargs...)
-  nodes = spiralVarDensPerturbNodes(numProfiles, numSamplingPerProfile; windings=windings, alpha=alpha, angleOffset=angleOffset)
+  nodes = spiralPerturbedTrajectoryNodes(numProfiles, numSamplingPerProfile; windings=windings, alpha=alpha, angleOffset=angleOffset)
   times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("SpiralVarDensPerturb", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("SpiralPerturbed", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 # Constructing the amplitude limited case of the variable density spiral Trajectory
-function spiralVarDensPeturbNodes(numProfiles::Int64
+function spiralPerturbedTrajectoryNodes(numProfiles::Int64
                         , numSamplingPerProfile::Int64
                         ; windings=6.25
                         , alpha=2.0
@@ -59,9 +59,4 @@ function spiralVarDensPeturbNodes(numProfiles::Int64
     end
   end
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
-end
-
-
-function spiralVarDensPeturbDensity(numSamplingPerProfile::Int64, numProfiles::Int64)
-  error("Not implemented!")
 end
