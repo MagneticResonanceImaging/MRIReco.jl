@@ -27,7 +27,13 @@ function reconstruction_direct_2d(acqData::AcquisitionData
     for k = 1:numContr
       for j = 1:numChan
         kdata = kData(acqData,k,j,i) .* (weights[k].^2)
-        Ireco[:,i,k,j] = adjoint(F[k]) * kdata
+        I = adjoint(F[k]) * kdata
+
+        if isCircular( trajectory(acqData, j) )
+          circularShutter!(reshape(I, reconSize), 1.0)
+        end
+        Ireco[:,i,k,j] = I
+
         next!(p)
       end
     end
