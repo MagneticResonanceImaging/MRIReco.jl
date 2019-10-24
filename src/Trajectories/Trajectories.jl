@@ -33,7 +33,7 @@ mutable struct Trajectory
   circular::Bool
 end
 
-function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile; 
+function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile;
                     times=nothing, TE::Float64=0.0, AQ::Float64=1.e-3, numSlices::Int64=1,
                     cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
   if times != nothing
@@ -55,6 +55,7 @@ include("2D/Radial2D.jl")
 include("2D/Spiral2D.jl")
 include("2D/OneLine2D.jl")
 include("2D/Spiral2DVariableDens.jl")
+include("2D/Spiral2DDualDens.jl")
 include("2D/EPI.jl")
 
 include("3D/Kooshball.jl")
@@ -92,6 +93,8 @@ function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerPr
     tr = OneLine2dTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
   elseif trajName == "SpiralVarDens"
     tr = SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+  elseif trajName == "SpiralDualDens"
+    tr = SpiralTrajectoryDualDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
   elseif trajName == "Cartesian3D"
     tr = CartesianTrajectory3D(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, numSlices=numSlices, kargs...)
   elseif trajName == "StackOfStars"
