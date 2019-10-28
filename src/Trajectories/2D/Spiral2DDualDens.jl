@@ -23,11 +23,12 @@ function SpiralTrajectoryDualDens(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Real= 6.25
+                  , kmax::Real=0.5
                   , angleOffset::String="equispaced"
                   , densityFactor::Float64=2.0
                   , kargs...)
-  nodes = spiralNodesDualDens(numProfiles, numSamplingPerProfile; windings=windings, angleOffset=angleOffset,
-                                 densityFactor=densityFactor)
+  nodes = spiralNodesDualDens(numProfiles, numSamplingPerProfile; windings=windings,
+              angleOffset=angleOffset, densityFactor=densityFactor, kmax=kmax)
   times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("SpiralDualDens", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
@@ -35,6 +36,7 @@ end
 function spiralNodesDualDens(numProfiles::Int64
                             , numSamplingPerProfile::Int64
                             ; windings::Real= 6.25
+                            , kmax::Real=0.5
                             , angleOffset::String="equispaced"
                             , densityFactor::Float64
                             , kargs...)
@@ -48,7 +50,6 @@ function spiralNodesDualDens(numProfiles::Int64
       angles = collect((0:numProfiles-1)/numProfiles)
   end
 
-  A = 0.5 # Maximum radius is 0.5
   w = windings
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
@@ -61,8 +62,8 @@ function spiralNodesDualDens(numProfiles::Int64
         tau = 0.5/densityFactor + (t-0.5)*2*(1.0-0.5/densityFactor)
       end
 
-      nodes[1,k,l] = A*tau*cos(2*pi*( w*t + angles[l] ))
-      nodes[2,k,l] = A*tau*sin(2*pi*( w*t + angles[l] ))
+      nodes[1,k,l] = kmax*tau*cos(2*pi*( w*t + angles[l] ))
+      nodes[2,k,l] = kmax*tau*sin(2*pi*( w*t + angles[l] ))
     end
   end
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)

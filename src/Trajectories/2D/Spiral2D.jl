@@ -22,9 +22,11 @@ function SpiralTrajectory(numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Real= 6.25
+                  , kmax::Real=0.5
                   , angleOffset::String="equispaced"
                   , kargs...)
-  nodes = spiralNodes(numProfiles, numSamplingPerProfile; windings=windings, angleOffset=angleOffset)
+  nodes = spiralNodes(numProfiles, numSamplingPerProfile; windings=windings,
+                      angleOffset=angleOffset, kmax=kmax)
   times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("Spiral", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
@@ -32,6 +34,7 @@ end
 function spiralNodes(numProfiles::Int64
                             , numSamplingPerProfile::Int64
                             ; windings::Real= 6.25
+                            , kmax::Real=0.5
                             , angleOffset::String="equispaced"
                             , kargs...)
 
@@ -44,7 +47,6 @@ function spiralNodes(numProfiles::Int64
       angles = collect((0:numProfiles-1)/numProfiles)
   end
 
-  A = 0.5 # Maximum radius is 0.5
   w = windings # 8/64 * 50 = 6.25 which means we have 6.25 turns aka windings
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
@@ -54,8 +56,8 @@ function spiralNodes(numProfiles::Int64
       # other words, the readout gradients reach their maximum
       # performance at the end of the acquisition.
       t = sqrt((k-1)/(numSamplingPerProfile-1)) #
-      nodes[1,k,l] = A*t*cos(2*pi*( w*t + angles[l] ))
-      nodes[2,k,l] = A*t*sin(2*pi*( w*t + angles[l] ))
+      nodes[1,k,l] = kmax*t*cos(2*pi*( w*t + angles[l] ))
+      nodes[2,k,l] = kmax*t*sin(2*pi*( w*t + angles[l] ))
     end
   end
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)

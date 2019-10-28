@@ -25,9 +25,11 @@ function SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile
                   , AQ::Real=1.e-3
                   , windings::Real= 6.25
                   , alpha::Real=2.0
+                  , kmax::Real=0.5
                   , angleOffset::String="equispaced"
                   , kargs...)
-  nodes = spiralVarDensNodes(numProfiles, numSamplingPerProfile; windings=windings, alpha=alpha, angleOffset=angleOffset)
+  nodes = spiralVarDensNodes(numProfiles, numSamplingPerProfile; windings=windings,
+                             alpha=alpha, angleOffset=angleOffset, kmax=kmax)
   times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("SpiralVarDens", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
@@ -37,12 +39,12 @@ function spiralVarDensNodes(numProfiles::Int64
                         , numSamplingPerProfile::Int64
                         ; windings::Real=6.25
                         , alpha::Real=2.0
+                        , kmax::Real=0.5
                         , angleOffset::String= "equispaced" #:equispaced
                         , kargs...)
 
   nodes = zeros(2,numSamplingPerProfile, numProfiles)
-  A = 0.5 # Maximum radius is 0.5
-
+  
   if angleOffset == "golden" #:golden
       angles = [i*(3-sqrt(5))/2  for i=0:numProfiles-1 ]
   elseif angleOffset == "random" #:random
@@ -58,8 +60,8 @@ function spiralVarDensNodes(numProfiles::Int64
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
       tau = (times[k])^(1/(alpha+1))
-      nodes[1,k,l] = A*tau^alpha*cos(2*pi*( windings*tau + angles[l] ))
-      nodes[2,k,l] = A*tau^alpha*sin(2*pi*( windings*tau + angles[l] ))
+      nodes[1,k,l] = kmax*tau^alpha*cos(2*pi*( windings*tau + angles[l] ))
+      nodes[2,k,l] = kmax*tau^alpha*sin(2*pi*( windings*tau + angles[l] ))
     end
   end
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)

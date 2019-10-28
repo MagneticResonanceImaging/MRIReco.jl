@@ -37,10 +37,12 @@ a file with name `filename`
 function simulation(image::Array{T,3}, simParams::Dict, filename::String;
                         force=false) where T<:Union{ComplexF64,Float64}
   if !force && isfile(filename)
-    return loadIBIFile(filename)
+    f = ISMRMRDFile(filename)
+    return AcquisitionData(f)
   else
     acq = simulation(image, simParams)
-    saveasIBIFile(filename, acq)
+    f = ISMRMRDFile(filename)
+    save(f, RawAcquisitionData(acq))
     return acq
   end
 end

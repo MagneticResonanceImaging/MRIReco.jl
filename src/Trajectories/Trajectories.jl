@@ -1,6 +1,7 @@
 export Trajectory,trajectory,
        kspaceNodes, echoTime, acqTimePerProfile, readoutTimes,
-       numSamplingPerProfile, numProfiles, numSlices, findCenters, samplingFreq
+       numSamplingPerProfile, numProfiles, numSlices, findCenters, samplingFreq,
+       scale
 
 import Base: string
 
@@ -49,6 +50,11 @@ Base.vec(tr::Trajectory) = [tr]
 Base.vec(tr::Vector{Trajectory}) = tr
 Base.size(tr::Trajectory) = size(kspaceNodes(tr))
 Base.size(tr::Trajectory,i::Int) = size(kspaceNodes(tr),i)
+function scale(tr::Trajectory, factor::Real)
+  trC = deepcopy(tr)
+  trC.nodes ./= factor
+  return trC
+end
 
 include("2D/Cartesian2D.jl")
 include("2D/Radial2D.jl")
