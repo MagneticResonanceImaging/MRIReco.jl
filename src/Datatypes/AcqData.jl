@@ -20,7 +20,7 @@ mutable struct AcquisitionData
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
   kdata::Array{Matrix{ComplexF64},3}
-  subsampleIndices::Vector{Array{Int64}}
+  subsampleIndices::Vector{Vector{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
 end
