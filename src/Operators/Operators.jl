@@ -3,7 +3,7 @@ export hcat, vcat, \, diagOp, A_mul_B
 
 include("NFFTOp.jl")
 include("ExplicitOp.jl")
-include("SensitivityMapOp.jl")
+include("SensitivityOp.jl")
 include("SamplingOp.jl")
 include("MapSliceOp.jl")
 include("FieldmapNFFTOp.jl")
