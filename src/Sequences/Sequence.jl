@@ -4,7 +4,7 @@ abstract type AbstractSequence end
 
 # define interface for a sequence
 @mustimplement echoAmplitudes(seq::AbstractSequence,R1::Float64,R2::Float64)
-@mustimplement numEchoes(seq::AbstractSequence)
+@mustimplement numContrasts(seq::AbstractSequence)
 @mustimplement string(seq::AbstractSequence)
 
 include("BlochSimulation.jl")

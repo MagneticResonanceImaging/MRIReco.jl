@@ -295,7 +295,12 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   if densityWeighting
     weights = samplingDensity(acqData,reconSize)
   else
-    weights = [1.0/sqrt(prod(reconSize)) for echo=1:acqData.numEcoes]
+    numContr = numContrasts(acqData)
+    weights = Array{Vector{ComplexF64}}(undef,numContr)
+    for contr=1:numContr
+      numNodes = size(acqData.kdata[contr],1)
+      weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
+    end
   end
 
   # sparsifying transform

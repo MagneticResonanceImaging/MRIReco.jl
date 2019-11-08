@@ -77,7 +77,12 @@ function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}
     subsampleIndices = idx
   else
     numContr = size(kdata,1)
-    subsampleIndices = [collect(1:size(tr_vec[echo],2)) for echo=1:numContr]
+    if length(tr_vec) == numContr
+      subsampleIndices = [collect(1:size(kspaceNodes(tr_vec[echo]),2)) for echo=1:numContr]
+    else
+      numSamp = size(kspaceNodes(tr_vec[1]),2)
+      subsampleIndices = [collect(1:numSamp) for echo=1:numContr]
+    end
   end
 
   return AcquisitionData(seqInfo,tr_vec,kdata,subsampleIndices,encodingSize,fov)
@@ -240,7 +245,7 @@ end
 does the same thing as `changeEncodingSize2D` but acts in-place on `acqData`.
 """
 function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
-  fac = (acqData.encodingSize ./ newEncodingSize)[1:2]
+  fac = acqData.encodingSize[1:2] ./ newEncodingSize[1:2]
   numContr = numContrasts(acqData)
   numSl = numSlices(acqData)
   numReps = numRepititions(acqData)
@@ -253,7 +258,7 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
     # filter out nodes with magnitude > 0.5
     idxX = findall(x->(x>=-0.5)&&(x<0.5), nodes[1,:])
     idxY = findall(x->(x>=-0.5)&&(x<0.5), nodes[2,:])
-    idx[i] = intersect(idxX,idxY)
+    idx[i] = intersect(idxX,idxY, acqData.subsampleIndices[i])
 
     tr.nodes = nodes[:,idx[i]]
     times = readoutTimes(tr)
@@ -271,6 +276,11 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
     end
   end
   acqData.kdata = kdata2
+
+  # adjust subsample Indices
+  for echo=1:numContr
+    acqData.subsampleIndices[echo] = collect(1:length(idx[echo]))
+  end
 
   return acqData
 end

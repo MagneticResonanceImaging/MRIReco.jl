@@ -10,10 +10,6 @@ include("FieldmapNFFTOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
 
-# FIXME: Weighting Op should be removed, as it is contained on the
-# master branch of RegularizedLeastSquares.jl
-include("WeightingOp.jl")
-
 """
     hcat(A::AbstractLinearOperator, n::Int)
 
@@ -57,7 +53,6 @@ function diagOpTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) 
   xIdx=1
   yIdx=1
   for i=1:length(ops)
-    # y[yIdx:yIdx+ops[i].ncol-1] = (ops[i].')*x[xIdx:xIdx+ops[i].nrow-1]
     y[yIdx:yIdx+ops[i].ncol-1] = transpose(ops[i])*x[xIdx:xIdx+ops[i].nrow-1]
     xIdx += ops[i].nrow
     yIdx += ops[i].ncol
@@ -70,7 +65,7 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...)
   xIdx=1
   yIdx=1
   for i=1:length(ops)
-    y[yIdx:yIdx+ops[i].ncol-1] = (ops[i])'*x[xIdx:xIdx+ops[i].nrow-1]
+    y[yIdx:yIdx+ops[i].ncol-1] = adjoint(ops[i])*x[xIdx:xIdx+ops[i].nrow-1]
     xIdx += ops[i].nrow
     yIdx += ops[i].ncol
   end

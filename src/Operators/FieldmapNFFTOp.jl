@@ -51,8 +51,8 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{ComplexF64,D};
                         method::String="nfft",
                         echoImage::Bool=true,
-                        alpha::Float64=1.75,
-                        m::Float64=3.0,
+                        alpha::Float64=1.25,
+                        m::Float64=2.0,
                         K=20,
                         kargs...) where D
 

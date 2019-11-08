@@ -174,7 +174,7 @@ function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap)
-  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
+  S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),numContrasts(acqData))
   return diagOp( repeat(ft, numChan)... )*S
 end
 
@@ -216,7 +216,6 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
 
   # Fourier Operator
   tr = trajectory(acqData,1)
-  # params[:fft] = true
   ft = fourierEncodingOp2d(shape, tr, "fast"; params...)
 
   # coil sensitivities in case of SENSE-reconstruction
