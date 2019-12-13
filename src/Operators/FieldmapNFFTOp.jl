@@ -1,7 +1,7 @@
 export FieldmapNFFTOp, createInhomogeneityData_
 
-mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
-                      AbstractLinearOperator{T,Function,F1,F2}
+mutable struct FieldmapNFFTOp{T,F1,F2} <:
+                      AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -9,6 +9,9 @@ mutable struct FieldmapNFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
   prod :: Function
   tprod :: F1
   ctprod :: F2
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
 end
 
 mutable struct InhomogeneityData
@@ -90,7 +93,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   return FieldmapNFFTOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
             , mul
             , nothing
-            , ctmul)
+            , ctmul, 0, 0, 0)
 end
 
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
@@ -225,6 +228,6 @@ function createInhomogeneityData_(times::Vector,
 end
 
 function adjoint(op::FieldmapNFFTOp{T}) where T
-  return LinearOperator{T,Function,Nothing,Function}(op.ncol, op.nrow, op.symmetric, op.hermitian,
+  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
                         op.ctprod, nothing, op.prod)
 end

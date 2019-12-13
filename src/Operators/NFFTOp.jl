@@ -1,9 +1,7 @@
 export NFFTOp
 import Base.adjoint
-import LinearOperators.FuncOrNothing
 
-mutable struct NFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
-                      AbstractLinearOperator{T,Function,F1,F2}
+mutable struct NFFTOp{T,F1,F2} <: AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -11,6 +9,9 @@ mutable struct NFFTOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <:
   prod :: Function
   tprod :: F1
   ctprod :: F2
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
 end
 
 """
@@ -41,10 +42,10 @@ function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
   return NFFTOp{ComplexF64,Nothing,Function}(size(nodes,2), prod(shape), false, false
             , produ
             , nothing
-            , ctprodu)
+            , ctprodu, 0, 0, 0)
 end
 
 function adjoint(op::NFFTOp{T}) where T
-  return LinearOperator{T,Function,Nothing,Function}(op.ncol, op.nrow, op.symmetric, op.hermitian,
+  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
                         op.ctprod, nothing, op.prod)
 end

@@ -87,7 +87,7 @@ function diagOp(ops :: AbstractLinearOperator...)
     S = promote_type(S, eltype(ops[i]))
   end
 
-  return LinearOperator{S,Function,Function,Function}( nrow, ncol, false, false
+  return LinearOperator{S}( nrow, ncol, false, false
                             , x->diagOpProd(x,nrow,ops...)
                             , y->diagOpTProd(y,ncol,ops...)
                             , y->diagOpCTProd(y,ncol,ops...) )

@@ -14,8 +14,6 @@ using Random
 @reexport using FFTW
 using Distributed
 using Graphics: @mustimplement
-using ColorTypes
-using ColorVectorSpace
 using Wavelets
 using HDF5
 using LightXML

@@ -1,6 +1,6 @@
 export ExplicitOp
 
-mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <: AbstractLinearOperator{T,Function,F1,F2}
+mutable struct ExplicitOp{T,F1,F2} <: AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -8,6 +8,9 @@ mutable struct ExplicitOp{T,F1<:FuncOrNothing,F2<:FuncOrNothing} <: AbstractLine
   prod :: Function
   tprod :: F1
   ctprod :: F2
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
 end
 
 """
@@ -41,7 +44,7 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array
   return ExplicitOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
             , x->produ(x, shape, nodes, times, echoOffset, correctionmap)
             , nothing
-            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap))
+            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap),0,0,0)
 end
 
 function produ(x::Vector{T}, shape::NTuple{2,Int64},
@@ -144,6 +147,6 @@ function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
 end
 
 function adjoint(op::ExplicitOp{T}) where T
-  return LinearOperator{T,Function,Nothing,Function}(op.ncol, op.nrow, op.symmetric, op.hermitian,
+  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
                         op.ctprod, nothing, op.prod)
 end
