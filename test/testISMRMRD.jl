@@ -7,7 +7,7 @@ using HTTP
 filename = "simple_gre.h5"
 
 if !isfile(filename)
-  HTTP.open("GET", "https://netix.dl.sourceforge.net/project/ismrmrd/data/simple_gre.h5") do http
+  HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/simple_gre.h5") do http
     open(filename, "w") do file
       write(file, http)
     end
@@ -46,7 +46,7 @@ IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
 filename = "simple_spiral.h5"
 if !isfile(filename)
-  HTTP.open("GET", "https://netix.dl.sourceforge.net/project/ismrmrd/data/simple_spiral.h5") do http
+  HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/simple_spiral.h5") do http
     open(filename, "w") do file
       write(file, http)
     end
@@ -75,7 +75,7 @@ acqCopy = RawAcquisitionData(f)
 
 # 3D_partial_fourier.h5
 
-filename = "3D_partial_fourier.h5"
+#=filename = "3D_partial_fourier.h5"
 if !isfile(filename)
   HTTP.open("GET", "https://netix.dl.sourceforge.net/project/ismrmrd/data/3D_partial_fourier.h5") do http
     open(filename, "w") do file
@@ -85,9 +85,11 @@ if !isfile(filename)
 end
 
 f = ISMRMRDFile(filename)
+=#
+
 #@test size(f.data) == (909, 32, 160)
 
-end
+#end
 
 #=
 
