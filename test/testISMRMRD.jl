@@ -89,7 +89,7 @@ f = ISMRMRDFile(filename)
 
 #@test size(f.data) == (909, 32, 160)
 
-#end
+end
 
 #=
 
