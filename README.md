@@ -12,3 +12,7 @@
 
 
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://magneticresonanceimaging.github.io/MRIReco.jl/latest)
+
+# Community Standards
+
+This project is part of the Julia community and follows the [Julia community standards](https://julialang.org/community/standards/). 
