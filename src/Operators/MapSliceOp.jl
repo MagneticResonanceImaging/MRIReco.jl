@@ -20,7 +20,7 @@ generates an operator that applies `trafo` to each slice of dimension `dim` of a
 * (`T=ComplexF64`)  - type of the transformation
 """
 function MapSliceOp(trafo, dim::Int64, size1::Tuple, size2::Tuple; T=ComplexF64)
-  return LinearOperator{T,Function,Nothing,Function}(prod(size2), prod(size1), false, false
+  return LinearOperator(prod(size2), prod(size1), false, false
             , x->mapSliceForeward(trafo, x, size1, dim)
             , nothing
             , y->mapSliceBackward(trafo, y, size2, dim) )

@@ -36,7 +36,7 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
   # forbiddenradius = floor(Int64,sqrt((M*N-calsize^2)/(NumberSamples-ChosenSamples)/pi))
   forbiddenradius = floor(Int64,sqrt((M*N-cal_x*cal_y)/(NumberSamples-ChosenSamples)/pi))
   if forbiddenradius <= 1
-    forbiddenradius = 2
+    forbiddenradius = 1 #2
   end
 
   Random.seed!(seed)
@@ -67,18 +67,21 @@ function deleteinsideforbiddenradius(chosen::Int64,selection::Array{Int64},rad::
 
   for xi = x-rad:x+rad
       for yi = y-rad:y+rad
+        if (x-xi)^2+(y-yi)^2>rad^2
+          continue
+        end
         if (xi > 0 && xi<= M && yi > 0 && yi<= N)
-        index = (LinearIndices((M,N)))[xi,yi]
-        deleteindex = 0
-        for (indexi,valuei) in enumerate(selection)
-           if valuei == index
+          index = (LinearIndices((M,N)))[xi,yi]
+          deleteindex = 0
+          for (indexi,valuei) in enumerate(selection)
+            if valuei == index
               deleteindex = indexi
-           end
+            end
+          end
+          if deleteindex > 0
+            deleteat!(selection,deleteindex)
+          end
         end
-        if deleteindex > 0
-          deleteat!(selection,deleteindex)
-        end
-      end
       end
   end
   return selection
