@@ -7,14 +7,17 @@ Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually.
 Returns a 5D array.
 """
-function estimateCoilSensitivities(I::AbstractArray{T,5}) where T
-  numChan = size(I,5)
+function estimateCoilSensitivities(I::AbstractArray{T,5}, thresh=1.e-2) where T
+  nx,ny,nz,ne,numChan = size(I)
 
-  I_sum = sqrt.( sum(abs.(I).^2, dims=5) )
+  I_sum = sqrt.( sum(abs.(I).^2, dims=5) ).+eps()
+  I_max = maximum(abs.(I_sum))
+  msk = zeros(size(I_sum))
+  msk[findall(x->x>thresh*I_max,I_sum)] .= 1
 
-  s = similar(I)
+  s = zeros(eltype(I),size(I))
   for i=1:numChan
-    s[:,:,:,:,i] = I[:,:,:,:,i] ./ I_sum
+      s[:,:,:,:,i] = msk .* I[:,:,:,:,i] ./ I_sum
   end
 
   return s
@@ -43,7 +46,7 @@ the matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Softw
 
 # Arguments
 * `acqData::AcquisitionData`  - AcquisitionData
-* `ksize::NTuple{2,Int64}`    - size of the k-space matrix
+* `ksize::NTuple{2,Int64}`    - size of the k-space kernel
 * `ncalib::Int64`             - number of calibration points in each dimension
 * `eigThresh_1::Float64=0.02` - threshold for the singular values of the calibration matrix (relative to the largest value)
 * `eigThresh_2::Float64=0.95` - threshold of the image space kernels (if no singular value > `eigThresh_2` exists)
@@ -267,10 +270,10 @@ function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
     params[:K] = 15
     params[:m] = 3.0
   end
-  
+
   Ireco = reconstruction(acqData, params)
   s = estimateCoilSensitivities(IrecoCorr).data
-  
+
   #if !isempty(coilsens)
   #  params[:senseMaps] = coilsens
   #end
@@ -278,4 +281,3 @@ function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
 
 
 end
-
