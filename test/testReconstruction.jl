@@ -209,8 +209,8 @@ function testSENSEReco(N = 64)
   params[:reco] = "multiCoil" #"standard"
   params[:reconSize] = (N,N)
   params[:regularization] = "L2"
-  params[:iterations] = 3
-  params[:solver] = "admm"
+  params[:iterations] = 50
+  params[:solver] = "cgnr"
   params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
 
   Ireco = reconstruction(acqData, params)
@@ -359,6 +359,49 @@ function testCSSenseReco3d(N=64)
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 5e-2
 end
 
+function testRegridding(N=64)
+
+  # image
+  x = shepp_logan(N)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Radial"
+  params[:numProfiles] = round(Int64,1.25*N)
+  params[:numSamplingPerProfile] = round(Int64,1.25*N)
+
+  acqDataRad = simulation(x, params)
+
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = N
+  params[:numSamplingPerProfile] = N
+  acqDataCart = simulation(x, params)
+
+  # regridding
+  acqDataReg = regrid2d(acqDataRad,(N,N))
+  # cartesian reconstruction
+  params[:reco] = "standard"
+  params[:reconSize] = (N,N)
+  params[:solver] = "cgnr"
+  params[:regularization] = "L2"
+  params[:λ] = 0.0
+  params[:iterations] = 3
+
+  x_reg = collect(reshape(reconstruction(acqDataReg, params),N,N))
+  circularShutter!(x_reg)
+  x_rad = collect(reshape(reconstruction(acqDataRad, params),N,N))
+  circularShutter!(x_rad)
+
+  k_reg = reshape(acqDataReg.kdata[1],N,N)
+  k_cart = reshape(acqDataCart.kdata[1],N,N)
+  circularShutter!(k_reg)
+  circularShutter!(k_cart)
+
+  @test (norm(vec(k_cart)-vec(k_reg))/norm(vec(k_cart))) < 1e-1
+  @test (norm(vec(x_rad).-vec(x_reg))/norm(vec(x_rad))) < 1e-2
+end
+
 function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
@@ -378,6 +421,7 @@ function testReco(N=32)
     testSENSEReco()
     testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
+    testRegridding()
   end
 end
 
