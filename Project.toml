@@ -1,7 +1,7 @@
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -27,7 +27,7 @@ SparsityOperators = "a5ff1dd3-4e0a-50db-9022-6d011c1d5846"
 
 [compat]
 julia = "0.7, 1.0"
-RegularizedLeastSquares = "0.5"
+RegularizedLeastSquares = "0.6.2"
 ImageUtils = "0.2"
 SparsityOperators = "0.1.5"
 ProgressMeter = "1.2"
