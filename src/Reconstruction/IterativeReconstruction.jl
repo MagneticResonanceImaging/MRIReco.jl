@@ -109,7 +109,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
       end
       solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
 
-      Ireco[:,j,i] = solve(solver,kdata)
+      Ireco[:,j,i] = solve(solver,kdata; params...)
       # TODO circular shutter
     end
   end
@@ -166,8 +166,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
       end
 
       solver = createLinearSolver(solvername, W*E[j]; reg=reg2, params...)
-
-      I = solve(solver, kdata)
+      I = solve(solver, kdata; params...)
 
       if isCircular( trajectory(acqData, j) )
         circularShutter!(reshape(I, reconSize), 1.0)
@@ -228,7 +227,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
     end
     solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
 
-    Ireco[:,:,i] = solve(solver, kdata)
+    Ireco[:,:,i] = solve(solver, kdata; params...)
   end
 
   Ireco = reshape( permutedims(Ireco, [1,3,2]), recoParams[:reconSize]..., numSl, numContr )
