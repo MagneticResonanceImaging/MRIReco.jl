@@ -31,7 +31,7 @@ add MRIReco
 This will install `MRIReco` and all its dependencies. If you want to develop
 `MRIReco` itself you can checkout `MRIReco` by calling
 ```julia
-add MRIReco
+dev MRIReco
 ```
 More information on how to develop a package can be found in the Julia documentation.
 
