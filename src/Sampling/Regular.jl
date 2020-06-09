@@ -8,10 +8,10 @@ generates a regular sampling pattern for an Array of size `shape` with a subsamp
 * `redFac::Float64`        - subsampling factor
 """
 function sample_regular(shape::Tuple, redFac::Float64; kargs...)
-  sample_regular(prod(shape), redFac)
+  sample_regular(prod(shape), redFac; kargs...)
 end
 
-function sample_regular(maxInd::Int64, redFact::Float64; kargs...)
-  outSet = range(1,step=floor(Int,redFact),length=floor(Int,maxInd/redFact))
+function sample_regular(maxInd::Int64, redFact::Float64; step=floor(Int,redFact), kargs...)
+  outSet = range(1,step=step,length=floor(Int,maxInd/redFact))
   return outSet
 end

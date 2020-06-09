@@ -23,7 +23,7 @@ generates a Poisson disk sampling pattern for an Array of size `shape` with a su
 * (`calsize::Int64=0`)     - size of the fully sampled calibration area
 * (`seed=1234`)            - seed for the random number generator
 """
-function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
+function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,densityFac::Float64=0.8,kargs...)
   M,N = shape
   A = zeros(Int64,shape)
   ChosenSamples = 0
@@ -33,11 +33,7 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
   selection = (LinearIndices(abs.(A .- 1)))[findall(x->x!=0, abs.(A .- 1))]
 
   cal_x, cal_y = min(calsize,M), min(calsize,N)
-  # forbiddenradius = floor(Int64,sqrt((M*N-calsize^2)/(NumberSamples-ChosenSamples)/pi))
-  forbiddenradius = floor(Int64,sqrt((M*N-cal_x*cal_y)/(NumberSamples-ChosenSamples)/pi))
-  if forbiddenradius <= 1
-    forbiddenradius = 1 #2
-  end
+  forbiddenradius = densityFac*sqrt((M*N-cal_x*cal_y)/(NumberSamples-ChosenSamples))
 
   Random.seed!(seed)
 
@@ -62,11 +58,11 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
   return chosen
 end
 
-function deleteinsideforbiddenradius(chosen::Int64,selection::Array{Int64},rad::Int64,M::Int64,N::Int64)
+function deleteinsideforbiddenradius(chosen::Int64,selection::Array{Int64},rad::Float64,M::Int64,N::Int64)
   x,y=Tuple(CartesianIndices((M,N))[chosen])
 
-  for xi = x-rad:x+rad
-      for yi = y-rad:y+rad
+  for xi = x-ceil(Int64,rad):x+ceil(Int64,rad)
+      for yi = y-ceil(Int64,rad):y+ceil(Int64,rad)
         if (x-xi)^2+(y-yi)^2>rad^2
           continue
         end
