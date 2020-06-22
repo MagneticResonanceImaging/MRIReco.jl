@@ -92,16 +92,16 @@ function reconstruction_multiEcho(acqData::AcquisitionData
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
 
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
+  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...) )
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numChan, numSl)
   for i = 1:numSl
-    F = encodingOps2d_multiEcho(acqData, reconSize, slice=k, correctionMap=correctionMap, method=method)
+    F = encodingOp2d_multiEcho(acqData, reconSize, slice=i, correctionMap=correctionMap, method=method)
     for j = 1:numChan
-      kdata = multiEchoData(acqData, j, i) .* weights
+      kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
 
       reg2 = deepcopy(reg)
       if normalize
@@ -213,13 +213,13 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
 
-  W = WeightingOp( vcat(weights)..., numChan )
+  W = WeightingOp( vcat(weights...), numChan )
 
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
   for i = 1:numSl
-    E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=k, correctionMap=correctionMap, method=method)
+    E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, method=method)
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(weights, numChan)
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
     reg2 = deepcopy(reg)
     if normalize
