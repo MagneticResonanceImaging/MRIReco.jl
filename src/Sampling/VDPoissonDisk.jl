@@ -22,7 +22,7 @@ generates a variable density Poisson disk sampling pattern for an Array of size 
 * `redFac::Float64`        - subsampling factor
 * (`seed=1234`)            - seed for the random number generator
 """
-function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,densityFac::Float64=1/pi,kargs...)
   M,N = shape
   samples = collect(1:M*N)
   chosenSamples = []
@@ -30,7 +30,7 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64
 
   # set number of samples and mean distance
   numSamples = floor(Int64,M*N/redFac)
-  rmean = M*N/numSamples/pi
+  rmean = densityFac*M*N/numSamples
 
   # srand(seed)
   while length(chosenSamples)<numSamples
