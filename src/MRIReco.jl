@@ -18,6 +18,7 @@ using Wavelets
 using HDF5
 using LightXML
 using NIfTI
+using ThreadPools
 @reexport using Unitful
 
 

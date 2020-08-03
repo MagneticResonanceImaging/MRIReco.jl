@@ -77,9 +77,9 @@ function encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
 
   numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
-  ft = encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap)
+  ft = tmap(x->encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap),1:numChan)
   S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
-  return [ diagOp( [ft[i] for k=1:numChan]... )*S for i=1:numContr]
+  return [ diagOp( [ft[k][i] for k=1:numChan]... )*S for i=1:numContr]
 end
 
 """

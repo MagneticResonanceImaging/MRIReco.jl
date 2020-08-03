@@ -38,36 +38,37 @@ end
 
 function diagOpProd(x::Vector{T}, nrow::Int, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, nrow)
-  xIdx=1
-  yIdx=1
-  for i=1:length(ops)
-    y[yIdx:yIdx+ops[i].nrow-1] = ops[i]*x[xIdx:xIdx+ops[i].ncol-1]
-    xIdx += ops[i].ncol
-    yIdx += ops[i].nrow
+  xIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
+  yIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
+  @sync for i=1:length(ops)
+    Threads.@spawn begin
+      y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
+      y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
+    end
   end
   return y
 end
 
 function diagOpTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, ncol)
-  xIdx=1
-  yIdx=1
-  for i=1:length(ops)
-    y[yIdx:yIdx+ops[i].ncol-1] = transpose(ops[i])*x[xIdx:xIdx+ops[i].nrow-1]
-    xIdx += ops[i].nrow
-    yIdx += ops[i].ncol
+  xIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
+  yIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
+  @sync for i=1:length(ops)
+    Threads.@spawn begin  
+      y[yIdx[i]:yIdx[i+1]-1] = transpose(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
+    end
   end
   return y
 end
 
 function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, ncol)
-  xIdx=1
-  yIdx=1
-  for i=1:length(ops)
-    y[yIdx:yIdx+ops[i].ncol-1] = adjoint(ops[i])*x[xIdx:xIdx+ops[i].nrow-1]
-    xIdx += ops[i].nrow
-    yIdx += ops[i].ncol
+  xIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
+  yIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
+  @sync for i=1:length(ops)
+    Threads.@spawn begin    
+      y[yIdx[i]:yIdx[i+1]-1] = adjoint(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
+    end
   end
   return y
 end

@@ -113,12 +113,14 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   if verbose==true
     p = Progress(nz*nc, 1, "Simulating data...")
   end
-  for z = 1:nz
-    E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
-    for c = 1:nc
-      # kdata[:,c,z] = E*vec(sensFac[:,:,z,c].*image[:,:,z])
-      kdata[1,z,1][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
-      verbose && next!(p)
+
+  @sync for z = 1:nz
+    Threads.@spawn begin
+      E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
+      for c = 1:nc
+        kdata[1,z,1][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
+        verbose && next!(p)
+      end
     end
   end
 
@@ -251,7 +253,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
 
   # this assumes the same number of readout points per echo
   isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
-  out = Vector{Matrix{ComplexF64}}(undef,ne)
+  out = Vector{Matrix{ComplexF64}}(undef,0)
 
   if verbose
     p = Progress(numContrasts(seq), 1, "Simulating data...")
@@ -269,8 +271,9 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
       error("scaled image contains NaN")
     end
 
-    # out[:,i,:] = simulation(tr, ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata
-    out[i] = simulation(tr[i], ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=true, kargs...).kdata[1]
+    acq = simulation(tr[i], ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=verbose, kargs...)
+    
+    append!(out, vec(acq.kdata))
 
     # if length(findall(x->isfinite(x),out[:,i,:])) != length(out[:,i,:])
     #   error("out contains NaN")
@@ -278,7 +281,8 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
   end
 
   dims(tr[1])==2 ? numSl=nz : numSl=1
-  return AcquisitionData(tr, reshape(out,ne,1,1), encodingSize=[nx,ny,nz])
+  
+  return AcquisitionData(tr, reshape(out,ne,numSl,1), encodingSize=[nx,ny,nz])
 end
 
 """
@@ -307,7 +311,6 @@ function simulation(tr::Trajectory
                     , correctionMap = []
                     ; opName="fast"
                     , senseMaps=[]
-                    , verbose=true
                     , kargs...)
 
   ndims(image) > 2 ? numSlices=size(image,3) : numSlices=1

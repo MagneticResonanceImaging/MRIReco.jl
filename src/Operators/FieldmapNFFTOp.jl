@@ -79,14 +79,12 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
     plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
   end
 
-  p = [zeros(ComplexF64, ncol) for t=1:Threads.nthreads() ]
-  y = [zeros(ComplexF64, nrow) for t=1:Threads.nthreads() ]
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
 
   mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,nrow,ncol,shape,plan,idx,cparam,isCircular(tr),p,y,d)
+     produ(x,nrow,ncol,shape,plan,idx,cparam,isCircular(tr),d)
   ctmul(y::Vector{T}) where T<:ComplexF64 =
-     ctprodu(y,shape,plan,idx,cparam,isCircular(tr),p,y,d)
+     ctprodu(y,shape,plan,idx,cparam,isCircular(tr),d)
   inverse(y::Vector{T}) where T<:ComplexF64 =
      inv(y,shape,plan,idx,cparam,isCircular(tr),p,y,d)
 
@@ -99,7 +97,7 @@ end
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-               shutter::Bool, p, y, d) where T<:ComplexF64
+               shutter::Bool, d) where T<:ComplexF64
   K = size(cparam.A_k,2)
   s = zeros(ComplexF64,numOfNodes)
 
@@ -115,7 +113,7 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
   end
 
   sp = Threads.SpinLock()
-  produ_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, s, sp, plan, idx, x_)
+  produ_inner(K,cparam.C_k, cparam.A_k, shape, d, s, sp, plan, idx, x_)
 
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
@@ -124,31 +122,28 @@ function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, pla
   return s
 end
 
-function produ_inner(K, C, A, shape, p, d, y, s, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
-    t = Threads.threadid()
-    for l=1:length(x_)
-      p[t][l] = C[κ,l] * x_[l]
+function produ_inner(K, C, A, shape, d, s, sp, plan, idx, x_)
+  @sync for κ=1:K
+    Threads.@spawn begin
+      p_ = C[κ,:] .* x_
+      NFFT.nfft!(plan[κ], reshape(p_, shape), d[κ])
+    
+      lock(sp)
+      for k=1:length(idx[κ])
+        l=idx[κ][k]
+        s[l] += d[κ][k]*A[l,κ]
+      end
+      unlock(sp)
     end
-    NFFT.nfft!(plan[κ], reshape(p[t], shape), d[κ])
-    fill!(y[t], 0.0)
-    for k=1:length(idx[κ])
-      y[t][idx[κ][k]] = d[κ][k]
-    end
-    for l=1:size(A,1)
-      y[t][l] *= A[l,κ]
-    end
-    lock(sp)
-    s .+= y[t]
-    unlock(sp)
   end
+  
   return
 end
 
 
 # function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData, shutter::Bool, p, y_, d) where T<:ComplexF64
+                 cparam::InhomogeneityData, shutter::Bool, d) where T<:ComplexF64
 
   y = zeros(ComplexF64,prod(shape))
   K = size(cparam.A_k,2)
@@ -161,7 +156,7 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   end
 
   sp = Threads.SpinLock()
-  ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, p, d, y, sp, plan, idx, x_)
+  ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, d, y, sp, plan, idx, x_)
 
   if cparam.method == "nfft"
     y .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
@@ -174,20 +169,25 @@ function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
   return y
 end
 
-function ctprodu_inner(K, C, A, shape, p, d, y, sp, plan, idx, x_)
-  Threads.@threads for κ=1:K
-    t = Threads.threadid()
-    for k=1:length(idx[κ])
-      d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
-    end
-    NFFT.nfft_adjoint!(plan[κ], d[κ], reshape(p[t], shape))
-    for k=1:length(p[t])
-      p[t][k] = conj(C[κ,k]) * p[t][k]
-    end
-    lock(sp)
-    y .+= p[t]
-    unlock(sp)
+function ctprodu_inner(K, C, A, shape, d, y, sp, plan, idx, x_)
+
+  @sync for κ=1:K
+    Threads.@spawn begin
+       for k=1:length(idx[κ])
+         d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
+       end
+       p_ = zeros(ComplexF64, shape) 
+     
+       NFFT.nfft_adjoint!(plan[κ], d[κ], p_)
+     
+       lock(sp)
+       for k=1:length(p_)
+         y[k] += conj(C[κ,k]) * p_[k]
+       end
+       unlock(sp)
+    end   
   end
+    
   return
 end
 
