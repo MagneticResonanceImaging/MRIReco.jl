@@ -32,4 +32,11 @@ include("Reconstruction/Reconstruction.jl")
 include("IO/IO.jl")
 include("Sampling/Sampling.jl")
 
+function __init__()
+  if Threads.nthreads() > 1
+    BLAS.set_num_threads(1)
+    FFTW.set_num_threads(1)
+  end
+end
+
 end # module
