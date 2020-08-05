@@ -85,6 +85,7 @@ mutable struct DiagOp{T} <: AbstractLinearOperator{T}
   ntprod :: Int
   nctprod :: Int
   ops
+  equalOps :: Bool
 end
 
 
@@ -106,7 +107,21 @@ function diagOp(ops :: AbstractLinearOperator...)
   Op = DiagOp{S}( nrow, ncol, false, false,
                      x->diagOpProd(x,nrow,ops...),
                      y->diagOpTProd(y,ncol,ops...),
-                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, [ops...] )
+                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, [ops...], false )
+
+  return Op
+end
+
+function diagOp(op::AbstractLinearOperator, N=1)
+  nrow = N*op.nrow
+  ncol = N*op.ncol
+  S = eltype(op)
+  ops = [copy(op) for n=1:N]
+
+  Op = DiagOp{S}( nrow, ncol, false, false,
+                     x->diagOpProd(x,nrow,ops...),
+                     y->diagOpTProd(y,ncol,ops...),
+                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, ops, true )
 
   return Op
 end
@@ -126,14 +141,15 @@ function SparsityOperators.normalOperator(S::DiagOp, W=I)
   weights = W*ones(S.nrow)
   yIdx = cumsum(vcat(1,[S.ops[i].nrow for i=1:length(S.ops)]))
 
-  # this line is extremly expensive -> redundant work
-  #@time op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
-  #                   for i in 1:length(S.ops)], S.ncol, S.ncol )
-
-  # this opimization is only allow if all ops are the same
-  t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[yIdx[1]:yIdx[2]-1].^2))
-  @info "Time so build normalOp: $t seconds"
-  op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol )
+  if S.equalOps
+    # this opimization is only allow if all ops are the same
+    t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[yIdx[1]:yIdx[2]-1].^2))
+    @info "Time so build normalOp: $t seconds"
+    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol )
+  else
+    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
+                     for i in 1:length(S.ops)], S.ncol, S.ncol )
+  end
 
   return op
 end

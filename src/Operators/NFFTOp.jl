@@ -1,14 +1,14 @@
 export NFFTOp
 import Base.adjoint
 
-mutable struct NFFTOp{T,F1,F2} <: AbstractLinearOperator{T}
+mutable struct NFFTOp{T} <: AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
   prod :: Function
-  tprod :: F1
-  ctprod :: F2
+  tprod :: Nothing
+  ctprod :: Function
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
@@ -31,32 +31,41 @@ function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, kar
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
   plan = NFFTPlan(nodes, shape, 3, 1.25, precompute=NFFT.FULL)
 
-  function produ(x::Vector{T}) where T<:Union{Real,Complex}
-    y = nfft(plan,reshape(x[:],shape))
-    return vec(y)
-  end
-
-  function ctprodu(y::Vector{T}) where T<:Union{Real,Complex}
-    x = nfft_adjoint(plan, y[:])
-    return vec(x)
-  end
-
-  return NFFTOp{ComplexF64,Nothing,Function}(size(nodes,2), prod(shape), false, false
-            , produ
+  return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
+            , x->produ(plan,x)
             , nothing
-            , ctprodu, 0, 0, 0, plan, toeplitz)
+            , y->ctprodu(plan,y), 0, 0, 0, plan, toeplitz)
 end
 
-function adjoint(op::NFFTOp{T}) where T
-  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-                        op.ctprod, nothing, op.prod)
+function produ(plan::NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
+  y = nfft(plan,reshape(x[:],plan.N))
+  return vec(y)
 end
+
+function ctprodu(plan::NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
+  x = nfft_adjoint(plan, y[:])
+  return vec(x)
+end
+
+
+function Base.copy(S::NFFTOp)
+  plan = copy(S.plan)
+  return NFFTOp{ComplexF64}(size(plan.x,2), prod(plan.N), false, false
+         , x->produ(plan,x)
+         , nothing
+         , y->ctprodu(plan,y), 0, 0, 0, plan, S.toeplitz)
+end
+
+#function adjoint(op::NFFTOp{T}) where T
+#  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
+#                        op.ctprod, nothing, op.prod)
+#end
 
 
 ### Normal Matrix Code ###
 
 struct NFFTNormalOp{S,D} 
-  parent::S
+  shape::S
   weights::D
   fftplan
   ifftplan
@@ -64,10 +73,9 @@ struct NFFTNormalOp{S,D}
 end
 
 function Base.copy(S::NFFTNormalOp)
-  shape = S.parent.plan.N
-  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
-  return NFFTNormalOp(S.parent, S.weights, fftplan, ifftplan, S.λ)
+  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
+  return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ)
 end
 
 function NFFTNormalOp(S::NFFTOp, W)
@@ -75,7 +83,7 @@ function NFFTNormalOp(S::NFFTOp, W)
 
   λ, ft, ift = diagonalizeOp(S.plan, weights)
 
-  return NFFTNormalOp(S, W, ft, ift, λ)
+  return NFFTNormalOp(S.plan.N, W, ft, ift, λ)
 end
 
 function SparsityOperators.normalOperator(S::NFFTOp, W=I)
@@ -87,14 +95,14 @@ function SparsityOperators.normalOperator(S::NFFTOp, W=I)
 end
 
 
-function Base.:*(N::NFFTNormalOp, x::AbstractVector{T}) where T
-  shape = N.parent.plan.N
+function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
+  shape = S.shape
 
   xL = zeros(T,Tuple(2*collect(shape)))
   xL[1:shape[1],1:shape[2]] = x
-  λ = reshape(N.λ,Tuple(2*collect(shape)))
+  λ = reshape(S.λ,Tuple(2*collect(shape)))
   
-  y = (N.ifftplan*( λ.*(N.fftplan*xL)))[1:shape[1],1:shape[2]]
+  y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
   
   return vec(y)
 end
