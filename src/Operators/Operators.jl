@@ -43,7 +43,7 @@ function diagOpProd(x::Vector{T}, nrow::Int, ops :: AbstractLinearOperator...) w
   @sync for i=1:length(ops)
     Threads.@spawn begin
       y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
-      y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
+      # y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
     end
   end
   return y
