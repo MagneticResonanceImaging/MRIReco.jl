@@ -126,8 +126,16 @@ function SparsityOperators.normalOperator(S::DiagOp, W=I)
   weights = W*ones(S.nrow)
   yIdx = cumsum(vcat(1,[S.ops[i].nrow for i=1:length(S.ops)]))
 
-  return DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
-                     for i in 1:length(S.ops)], S.ncol, S.ncol )
+  # this line is extremly expensive -> redundant work
+  #@time op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
+  #                   for i in 1:length(S.ops)], S.ncol, S.ncol )
+
+  # this opimization is only allow if all ops are the same
+  t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[yIdx[1]:yIdx[2]-1].^2))
+  @info "Time so build normalOp: $t seconds"
+  op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol )
+
+  return op
 end
 
 function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T

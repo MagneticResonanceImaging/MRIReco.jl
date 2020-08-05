@@ -63,6 +63,13 @@ struct NFFTNormalOp{S,D}
   λ
 end
 
+function Base.copy(S::NFFTNormalOp)
+  shape = S.parent.plan.N
+  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
+  return NFFTNormalOp(S.parent, S.weights, fftplan, ifftplan, S.λ)
+end
+
 function NFFTNormalOp(S::NFFTOp, W)
   weights = W*ones(S.nrow)
 
@@ -94,7 +101,6 @@ end
 
 
 function diagonalizeOp(p::NFFTPlan, weights=nothing)
-  @info "in diagonalizeOp"
   shape = p.N
   nodes = p.x
 
@@ -131,8 +137,6 @@ function diagonalizeOp(p::NFFTPlan, weights=nothing)
   eigMat[shape[1]+2:end, 1:shape[2]] = copy(transpose(firstRow[:, end:-1:2]))
   eigMat[1:shape[1], shape[2]+2:end] = firstRow[end:-1:2,:]'
   eigMat[shape[1]+2:end, shape[2]+2:end] =  conj(firstCol[end:-1:2,end:-1:2])
-
-  @info "in diagonalizeOp done"
 
   return vec(fftplan*eigMat), fftplan, ifftplan
 end
