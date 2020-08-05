@@ -29,7 +29,7 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 """
 function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  plan = NFFTPlan(nodes, shape, 3, 1.25, precompute = NFFT.FULL)
+  plan = NFFTPlan(nodes, shape, 3, 1.25, precompute=NFFT.FULL)
 
   function produ(x::Vector{T}) where T<:Union{Real,Complex}
     y = nfft(plan,reshape(x[:],shape))
@@ -145,19 +145,19 @@ end
 #
 # calculate the matrix element A_{j,k} explicitely
 #
-function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
-  elem=0.
-  x = mod(k-1,shape[1])-mod(j-1,shape[1])
-  y = div(k-1,shape[1])-div(j-1,shape[1])
-  if weights != nothing
-    for i=1:size(nodes,2)
-      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )*weights[i]
-    end
-  else
-    for i=1:size(nodes,2)
-      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )
-    end
-  end
-
-  return elem
-end
+#function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
+#  elem=0.
+#  x = mod(k-1,shape[1])-mod(j-1,shape[1])
+#  y = div(k-1,shape[1])-div(j-1,shape[1])
+#  if weights != nothing
+#    for i=1:size(nodes,2)
+#      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )*weights[i]
+#    end
+#  else
+#    for i=1:size(nodes,2)
+#      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )
+#    end
+#  end
+#
+#  return elem
+#end
