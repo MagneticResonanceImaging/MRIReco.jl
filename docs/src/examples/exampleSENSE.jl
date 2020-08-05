@@ -31,7 +31,8 @@ params[:λ] = 1.e-3
 params[:iterations] = 40
 params[:solver] = "cgnr"
 params[:senseMaps] = coilsens
-Ireco = reconstruction(acqData, params)
+params[:toeplitz] = false
+@time Ireco = reconstruction(acqData, params)
 
 # use PyPlot for interactive display
 figure(1)

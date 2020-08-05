@@ -22,12 +22,13 @@ contrasts in an MRI acquisition (for a given slice).
 function encodingOps2d_simple(acqData::AcquisitionData, shape::NTuple{2,Int64}
                               ; slice=1
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
-                              , method::String="nfft")
+                              , method::String="nfft", toeplitz=false)
 
   numContr = numContrasts(acqData)
   tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
-  return [fourierEncodingOp2d(shape, tr[i], "fast", slice=slice, subsampleIdx=idx[i], correctionMap=correctionMap, method=method) for i=1:numContr]
+  return [fourierEncodingOp2d(shape, tr[i], "fast", slice=slice, subsampleIdx=idx[i], 
+                 correctionMap=correctionMap, method=method, toeplitz=toeplitz) for i=1:numContr]
 end
 
 """
@@ -73,13 +74,16 @@ function encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                 , senseMaps::Array{ComplexF64}
                                 ; slice=1
                                 , correctionMap::Array{ComplexF64}=ComplexF64[]
-                                , method::String="nfft")
+                                , method::String="nfft", toeplitz=false)
 
   numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
-  ft = tmap(x->encodingOps2d_simple(acqData, shape, slice=slice, correctionMap=correctionMap),1:numChan)
+  ft = tmap(x->encodingOps2d_simple(acqData, shape, slice=slice, 
+                     correctionMap=correctionMap, toeplitz=toeplitz), 1:numChan)
   S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
-  return [ diagOp( [ft[k][i] for k=1:numChan]... )*S for i=1:numContr]
+  Op = [ prodOp(diagOp( [ft[k][i] for k=1:numChan]... ),S) for i=1:numContr]
+
+  return Op
 end
 
 """
@@ -248,7 +252,7 @@ return 2d Fourier encoding operator (either Explicit or NFFT)
 """
 function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::String;
           subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap=[]
-          , echoImage::Bool=true, method::String="nfft", kargs...)
+          , echoImage::Bool=true, method::String="nfft", toeplitz=false, kargs...)
   # Fourier transformations
   if opName=="explicit"
     @debug "ExplicitOp"
@@ -261,7 +265,7 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
       @debug "FFTOp"
       ftOp = sqrt(prod(shape))*FFTOp(ComplexF64, shape)
     else
-      ftOp = NFFTOp(shape, tr)
+      ftOp = NFFTOp(shape, tr, toeplitz=toeplitz)
     end
   else
     @error "opName $(opName) is not known"

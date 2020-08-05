@@ -25,6 +25,7 @@ function reconstruction_simple( acqData::AcquisitionData
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft"
                               , normalize::Bool=false
+                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -89,6 +90,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft"
                               , normalize::Bool=false
+                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -149,6 +151,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft"
                               , normalize::Bool=false
+                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -160,7 +163,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
   @sync for k = 1:numSl
     Threads.@spawn begin
-      E = encodingOps2d_parallel(acqData, reconSize, senseMaps, slice=k, correctionMap=correctionMap, method=method)
+      E = encodingOps2d_parallel(acqData, reconSize, senseMaps;
+                                 slice=k, correctionMap=correctionMap, method=method, toeplitz=toeplitz)
+      
       for j = 1:numContr
         W = WeightingOp(weights[j],numChan)
         kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
@@ -170,7 +175,8 @@ function reconstruction_multiCoil(acqData::AcquisitionData
           RegularizedLeastSquares.normalize!(reg2, kdata)
         end
 
-        solver = createLinearSolver(solvername, W*E[j]; reg=reg2, params...)
+        EFull = prodOp(W,E[j],isWeighting=true)
+        solver = createLinearSolver(solvername, EFull; reg=reg2, params...)
         I = solve(solver, kdata; params...)
 
         if isCircular( trajectory(acqData, j) )
@@ -212,6 +218,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , correctionMap::Array{ComplexF64}=ComplexF64[]
                               , method::String="nfft"
                               , normalize::Bool=false
+                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -224,7 +231,8 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, method=method)
+      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, 
+                                          method=method)
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
@@ -265,6 +273,7 @@ mutable struct RecoParameters{N}
   senseMaps::Array{ComplexF64}
   correctionMap::Array{ComplexF64}
   method::String
+  toeplitz::Bool
 end
 
 
@@ -337,6 +346,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   # field map
   cmap = get(recoParams, :correctionMap, ComplexF64[])
   method = get(recoParams, :method, "nfft")
+  toeplitz = get(recoParams, :toeplitz, false)
 
-  return RecoParameters(reconSize, weights, sparseTrafo, reg, normalize, solvername, senseMaps, cmap, method)
+  return RecoParameters(reconSize, weights, sparseTrafo, reg, normalize, solvername, senseMaps, cmap, method, toeplitz)
 end

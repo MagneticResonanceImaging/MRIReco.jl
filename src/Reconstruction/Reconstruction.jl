@@ -58,13 +58,13 @@ function reconstruction_2d(acqData::AcquisitionData, recoParams::Dict)
   # iterative reco
   par = setupIterativeReco(acqData, recoParams)
   if recoParams[:reco] == "standard"
-    return reconstruction_simple(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
+    return reconstruction_simple(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiEcho"
-    return reconstruction_multiEcho(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
+    return reconstruction_multiEcho(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiCoil"
-    return reconstruction_multiCoil(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
+    return reconstruction_multiCoil(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiCoilMultiEcho"
-    return reconstruction_multiCoilMultiEcho(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
+    return reconstruction_multiCoilMultiEcho(acqData, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   else
     @error "RecoModel $(recoParams[:reco]) not found."
   end
@@ -96,13 +96,13 @@ function reconstruction_3d(acqData::AcquisitionData, recoParams::Dict)
   acqData2d = convert3dTo2d(acqData)
   par = setupIterativeReco(acqData2d, recoParams)
   if recoParams[:reco] == "standard"
-    Ireco = reconstruction_simple(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
+    Ireco = reconstruction_simple(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiEcho"
-    Ireco = reconstruction_multiEcho(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, recoParams)
+    Ireco = reconstruction_multiEcho(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiCoil"
-    Ireco = reconstruction_multiCoil(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
+    Ireco = reconstruction_multiCoil(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   elseif recoParams[:reco] == "multiCoilMultiEcho"
-    Ireco = reconstruction_multiCoilMultiEcho(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, recoParams)
+    Ireco = reconstruction_multiCoilMultiEcho(acqData2d, par.reconSize, par.reg, par.sparseTrafo, par.weights, par.solvername, par.senseMaps, par.correctionMap, par.method, par.normalize, par.toeplitz, recoParams)
   else
     @error "RecoModel $(recoParams[:reco]) not found."
   end

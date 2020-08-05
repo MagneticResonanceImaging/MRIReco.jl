@@ -43,7 +43,6 @@ function diagOpProd(x::Vector{T}, nrow::Int, ops :: AbstractLinearOperator...) w
   @sync for i=1:length(ops)
     Threads.@spawn begin
       y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
-      y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
     end
   end
   return y
@@ -73,6 +72,22 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...)
   return y
 end
 
+
+mutable struct DiagOp{T} <: AbstractLinearOperator{T}
+  nrow :: Int
+  ncol :: Int
+  symmetric :: Bool
+  hermitian :: Bool
+  prod :: Function
+  tprod :: Function
+  ctprod :: Function
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
+  ops
+end
+
+
 """
     diagOp(ops :: AbstractLinearOperator...)
 
@@ -88,11 +103,115 @@ function diagOp(ops :: AbstractLinearOperator...)
     S = promote_type(S, eltype(ops[i]))
   end
 
-  return LinearOperator{S}( nrow, ncol, false, false
-                            , x->diagOpProd(x,nrow,ops...)
-                            , y->diagOpTProd(y,ncol,ops...)
-                            , y->diagOpCTProd(y,ncol,ops...) )
+  Op = DiagOp{S}( nrow, ncol, false, false,
+                     x->diagOpProd(x,nrow,ops...),
+                     y->diagOpTProd(y,ncol,ops...),
+                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, [ops...] )
+
+  return Op
 end
+
+
+
+### Normal Matrix Code ###
+
+struct DiagNormalOp
+  ops
+  normalOps
+  nrow
+  ncol
+end
+
+function SparsityOperators.normalOperator(S::DiagOp, W=I)
+  weights = W*ones(S.nrow)
+  yIdx = cumsum(vcat(1,[S.ops[i].nrow for i=1:length(S.ops)]))
+
+  return DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
+                     for i in 1:length(S.ops)], S.ncol, S.ncol )
+end
+
+function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
+  y = Vector{T}(undef, S.nrow)
+  xIdx=cumsum(vcat(1,[S.ops[i].ncol for i=1:length(S.ops)]))
+  yIdx=cumsum(vcat(1,[S.ops[i].ncol for i=1:length(S.ops)]))
+  @sync for i=1:length(S.ops)
+    Threads.@spawn begin
+      y[yIdx[i]:yIdx[i+1]-1] = S.normalOps[i]*x[xIdx[i]:xIdx[i+1]-1]
+    end
+  end
+  return y  
+end
+
+mutable struct ProdOp{T} <: AbstractLinearOperator{T}
+  nrow :: Int
+  ncol :: Int
+  symmetric :: Bool
+  hermitian :: Bool
+  prod :: Function
+  tprod :: Function
+  ctprod :: Function
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
+  isWeighting :: Bool
+  A
+  B
+end
+
+
+"""
+    prodOp(ops :: AbstractLinearOperator...)
+
+product of two Operators. Differs with * since it can handle normal operator
+"""
+function prodOp(A,B;isWeighting=false)
+  nrow=A.nrow
+  ncol=B.ncol
+  S = eltype(A)
+
+  function produ(x::Vector{T}) where T<:Union{Real,Complex}
+    return A*(B*x)
+  end
+
+  function tprodu(y::Vector{T}) where T<:Union{Real,Complex}
+    return transposed(B)*(transposed(A)*y)
+  end
+
+  function ctprodu(y::Vector{T}) where T<:Union{Real,Complex}
+    return adjoint(B)*(adjoint(A)*y)
+  end
+
+  Op = ProdOp{S}( nrow, ncol, false, false,
+                     produ,
+                     tprodu,
+                     ctprodu, 0, 0, 0, isWeighting, A, B )
+
+  return Op
+end
+
+
+
+
+### Normal Matrix Code ###
+# Left matrix can be build into a normal operator
+
+struct ProdNormalOp{S,U} 
+  opOuter::S
+  normalOpInner::U
+end
+
+function SparsityOperators.normalOperator(S::ProdOp, W=I)
+  if S.isWeighting && W==I
+    normalOperator(S.B, S.A)
+  else
+    return ProdNormalOp(S.B, normalOperator(S.A, W) )
+  end
+end
+
+function Base.:*(S::ProdNormalOp, x::AbstractVector)
+  return adjoint(S.opOuter)*(S.normalOpInner*(S.opOuter*x))
+end
+
 
 # implement A_mul_B for the product
 A_mul_B(A::AbstractLinearOperator, x::Vector) = A*x
