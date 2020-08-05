@@ -34,26 +34,28 @@ function reconstruction_simple( acqData::AcquisitionData
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
-  for k = 1:numSl
-    F = encodingOps2d_simple(acqData, reconSize, slice=k, correctionMap=correctionMap, method=method)
-    for j = 1:numContr
-      W = WeightingOp(weights[j])
-      for i = 1:numChan
-        kdata = kData(acqData,j,i,k).* weights[j]
+  @sync for k = 1:numSl
+    Threads.@spawn begin
+      F = encodingOps2d_simple(acqData, reconSize, slice=k, correctionMap=correctionMap, method=method)
+      for j = 1:numContr
+        W = WeightingOp(weights[j])
+        for i = 1:numChan
+          kdata = kData(acqData,j,i,k).* weights[j]
 
-        reg2 = deepcopy(reg)
-        if normalize
-          RegularizedLeastSquares.normalize!(reg2, kdata)
-        end
-        solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
+          reg2 = deepcopy(reg)
+          if normalize
+            RegularizedLeastSquares.normalize!(reg2, kdata)
+          end
+          solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
 
-        I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]),
+          I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]),
                                  solverInfo=get(params,:solverInfo,nothing))
 
-        if isCircular( trajectory(acqData, j) )
-          circularShutter!(reshape(I, reconSize), 1.0)
+          if isCircular( trajectory(acqData, j) )
+            circularShutter!(reshape(I, reconSize), 1.0)
+          end
+          Ireco[:,k,j,i] = I
         end
-        Ireco[:,k,j,i] = I
       end
     end
   end
@@ -98,19 +100,21 @@ function reconstruction_multiEcho(acqData::AcquisitionData
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numChan, numSl)
-  for i = 1:numSl
-    F = encodingOp2d_multiEcho(acqData, reconSize, slice=i, correctionMap=correctionMap, method=method)
-    for j = 1:numChan
-      kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
+  @sync for i = 1:numSl
+    Threads.@spawn begin
+      F = encodingOp2d_multiEcho(acqData, reconSize, slice=i, correctionMap=correctionMap, method=method)
+      for j = 1:numChan
+        kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
 
-      reg2 = deepcopy(reg)
-      if normalize
-        RegularizedLeastSquares.normalize!(reg2, kdata)
+        reg2 = deepcopy(reg)
+        if normalize
+          RegularizedLeastSquares.normalize!(reg2, kdata)
+        end
+        solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
+
+        Ireco[:,j,i] = solve(solver,kdata; params...)
+        # TODO circular shutter
       end
-      solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
-
-      Ireco[:,j,i] = solve(solver,kdata; params...)
-      # TODO circular shutter
     end
   end
 
@@ -154,24 +158,26 @@ function reconstruction_multiCoil(acqData::AcquisitionData
 
   # solve optimization problem
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
-  for k = 1:numSl
-    E = encodingOps2d_parallel(acqData, reconSize, senseMaps, slice=k, correctionMap=correctionMap, method=method)
-    for j = 1:numContr
-      W = WeightingOp(weights[j],numChan)
-      kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
+  @sync for k = 1:numSl
+    Threads.@spawn begin
+      E = encodingOps2d_parallel(acqData, reconSize, senseMaps, slice=k, correctionMap=correctionMap, method=method)
+      for j = 1:numContr
+        W = WeightingOp(weights[j],numChan)
+        kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
 
-      reg2 = deepcopy(reg)
-      if normalize
-        RegularizedLeastSquares.normalize!(reg2, kdata)
+        reg2 = deepcopy(reg)
+        if normalize
+          RegularizedLeastSquares.normalize!(reg2, kdata)
+        end
+
+        solver = createLinearSolver(solvername, W*E[j]; reg=reg2, params...)
+        I = solve(solver, kdata; params...)
+
+        if isCircular( trajectory(acqData, j) )
+          circularShutter!(reshape(I, reconSize), 1.0)
+        end
+        Ireco[:,k,j] = I
       end
-
-      solver = createLinearSolver(solvername, W*E[j]; reg=reg2, params...)
-      I = solve(solver, kdata; params...)
-
-      if isCircular( trajectory(acqData, j) )
-        circularShutter!(reshape(I, reconSize), 1.0)
-      end
-      Ireco[:,k,j] = I
     end
   end
 
@@ -216,21 +222,22 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   W = WeightingOp( vcat(weights...), numChan )
 
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
-  for i = 1:numSl
-    E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, method=method)
+  @sync for i = 1:numSl
+    Threads.@spawn begin
+      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, method=method)
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+      kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
-    reg2 = deepcopy(reg)
-    if normalize
-      RegularizedLeastSquares.normalize!(reg2, acqData.kdata)
+      reg2 = deepcopy(reg)
+      if normalize
+        RegularizedLeastSquares.normalize!(reg2, acqData.kdata)
+      end
+      solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
+
+      Ireco[:,:,i] = solve(solver, kdata; params...)
     end
-    solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
-
-    Ireco[:,:,i] = solve(solver, kdata; params...)
   end
-
-  Ireco = reshape( permutedims(Ireco, [1,3,2]), recoParams[:reconSize]..., numSl, numContr )
+  return reshape( permutedims(Ireco, [1,3,2]), recoParams[:reconSize]..., numSl, numContr )
 end
 
 
