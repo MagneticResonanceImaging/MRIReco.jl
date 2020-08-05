@@ -66,7 +66,7 @@ end
 function NFFTNormalOp(S::NFFTOp, W)
   weights = W*ones(S.nrow)
 
-  λ, ft, ift = diagonalizeOp(S.plan, weights.^(0.5))
+  λ, ft, ift = diagonalizeOp(S.plan, weights)
 
   return NFFTNormalOp(S, W, ft, ift, λ)
 end
@@ -109,8 +109,7 @@ function diagonalizeOp(p::NFFTPlan, weights=nothing)
   # TODO: more efficient implementation using NFFTs
    e1 = zeros(ComplexF64,shape)
    e1[1] = 1.
-   #firstCol = nfft_adjoint(p, nfft(p,e1)[:].*weights)
-   firstCol = nfft_adjoint(p, nfft(p,e1)[:])
+   firstCol = nfft_adjoint(p, nfft(p,e1)[:].*weights)
    firstCol = reshape(firstCol, shape)
 
   # calculate first rows of the leftmost Toeplitz blocks
@@ -123,8 +122,7 @@ function diagonalizeOp(p::NFFTPlan, weights=nothing)
      for i=1:shape[2]
        e1 = zeros(ComplexF64,shape)
        e1[1,i] = 1.
-       #firstRow[i,:] = conj( nfft_adjoint(p, nfft(p,e1)[:].*weights)[1:shape[1]] )
-       firstRow[i,:] = conj( nfft_adjoint(p, nfft(p,e1)[:])[1:shape[1]] )
+       firstRow[i,:] = conj( nfft_adjoint(p, nfft(p,e1)[:].*weights)[1:shape[1]] )
      end
 
   # construct FT matrix of the eigentvalues
