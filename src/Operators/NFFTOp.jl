@@ -27,7 +27,7 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 """
 function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  plan = NFFTPlan(nodes, shape, 3, 1.25)
+  plan = NFFTPlan(nodes, shape, 3, 1.25, precompute=NFFT.FULL)
 
   function produ(x::Vector{T}) where T<:Union{Real,Complex}
     y = nfft(plan,reshape(x[:],shape))
