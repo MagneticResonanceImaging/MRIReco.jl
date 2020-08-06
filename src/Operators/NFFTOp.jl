@@ -69,21 +69,24 @@ struct NFFTNormalOp{S,D}
   weights::D
   fftplan
   ifftplan
-  λ
+  λ::Array{ComplexF64}
+  xL::Matrix{ComplexF64}
 end
 
 function Base.copy(S::NFFTNormalOp)
   fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
-  return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ)
+  return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ, S.xL)
 end
 
 function NFFTNormalOp(S::NFFTOp, W)
+  shape = S.plan.N
   weights = W*ones(S.nrow)
 
   λ, ft, ift = diagonalizeOp(S.plan, weights)
+  xL = zeros(ComplexF64,2*shape[1], 2*shape[2])
 
-  return NFFTNormalOp(S.plan.N, W, ft, ift, λ)
+  return NFFTNormalOp(shape, W, ft, ift, λ, xL)
 end
 
 function SparsityOperators.normalOperator(S::NFFTOp, W=I)
@@ -98,11 +101,17 @@ end
 function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
   shape = S.shape
 
-  xL = zeros(T,Tuple(2*collect(shape)))
-  xL[1:shape[1],1:shape[2]] = x
+  # xL = zeros(T,Tuple(2*collect(shape)))
+  # xL[1:shape[1],1:shape[2]] = x
+  # λ = reshape(S.λ,Tuple(2*collect(shape)))
+  
+  # y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
+
+  S.xL .= 0
+  S.xL[1:shape[1],1:shape[2]] .= reshape(x,shape)
   λ = reshape(S.λ,Tuple(2*collect(shape)))
   
-  y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
+  y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[1:shape[1],1:shape[2]]
   
   return vec(y)
 end
@@ -117,34 +126,25 @@ function diagonalizeOp(p::NFFTPlan, weights=nothing)
   ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
 
   # calculate first column of block Toeplitz matrix
-  #firstCol = [getMatrixElement(j,1,shape,nodes,weights=weights) for j=1:prod(shape)]
-  #firstCol = reshape(firstCol, shape)
-
-  # TODO: more efficient implementation using NFFTs
    e1 = zeros(ComplexF64,shape)
    e1[1] = 1.
    firstCol = nfft_adjoint(p, nfft(p,e1)[:].*weights)
    firstCol = reshape(firstCol, shape)
 
   # calculate first rows of the leftmost Toeplitz blocks
-  #firstRow = zeros(ComplexF64,shape[2],shape[1])
-  #for i=1:shape[2]
-  #   firstRow[i,:] = [ getMatrixElement((i-1)*shape[1]+1,k,shape,nodes,weights=weights) for k=1:shape[1] ] # first row of the relevant blocks
-  #end
-
-   firstRow = zeros(ComplexF64,shape[2],shape[1])
-     for i=1:shape[2]
-       e1 = zeros(ComplexF64,shape)
-       e1[1,i] = 1.
-       firstRow[i,:] = conj( nfft_adjoint(p, nfft(p,e1)[:].*weights)[1:shape[1]] )
-     end
+  p2 = NFFTPlan([-1,1].*nodes, shape, 3, 1.25)
+  firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
+  firstRow = reshape(firstRow, shape)
 
   # construct FT matrix of the eigentvalues
+  # here a row and column in the center is filled with zeros.
+  # this is done to ensure that the FFT can operate
+  # on arrays with even size in each dimension
   eigMat = zeros(ComplexF64, Tuple(2*collect(shape)))
-  eigMat[1:shape[1], 1:shape[2]] = firstCol
-  eigMat[shape[1]+2:end, 1:shape[2]] = copy(transpose(firstRow[:, end:-1:2]))
-  eigMat[1:shape[1], shape[2]+2:end] = firstRow[end:-1:2,:]'
-  eigMat[shape[1]+2:end, shape[2]+2:end] =  conj(firstCol[end:-1:2,end:-1:2])
+  eigMat[1:shape[1], 1:shape[2]] .= firstCol
+  eigMat[shape[1]+2:end, 1:shape[2]] .= firstRow[end:-1:2,:]
+  eigMat[1:shape[1], shape[2]+2:end] .= conj.(firstRow[:,end:-1:2])
+  eigMat[shape[1]+2:end, shape[2]+2:end] .=  conj.(firstCol[end:-1:2,end:-1:2])
 
   return vec(fftplan*eigMat), fftplan, ifftplan
 end
