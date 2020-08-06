@@ -36,10 +36,8 @@ function vcat(A::AbstractLinearOperator, n::Int)
   return op
 end
 
-function diagOpProd(x::Vector{T}, nrow::Int, ops :: AbstractLinearOperator...) where T
+function diagOpProd(x::Vector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, nrow)
-  xIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
-  yIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
   @sync for i=1:length(ops)
     Threads.@spawn begin
       y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
@@ -48,10 +46,8 @@ function diagOpProd(x::Vector{T}, nrow::Int, ops :: AbstractLinearOperator...) w
   return y
 end
 
-function diagOpTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) where T
+function diagOpTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, ncol)
-  xIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
-  yIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
   @sync for i=1:length(ops)
     Threads.@spawn begin  
       y[yIdx[i]:yIdx[i+1]-1] = transpose(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
@@ -60,10 +56,8 @@ function diagOpTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) 
   return y
 end
 
-function diagOpCTProd(x::Vector{T}, ncol::Int, ops :: AbstractLinearOperator...) where T
+function diagOpCTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   y = Vector{T}(undef, ncol)
-  xIdx=cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
-  yIdx=cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
   @sync for i=1:length(ops)
     Threads.@spawn begin    
       y[yIdx[i]:yIdx[i+1]-1] = adjoint(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
@@ -86,6 +80,8 @@ mutable struct DiagOp{T} <: AbstractLinearOperator{T}
   nctprod :: Int
   ops
   equalOps :: Bool
+  xIdx :: Vector{Int}
+  yIdx :: Vector{Int}
 end
 
 
@@ -95,8 +91,8 @@ end
 create a bloc-diagonal operator out of the `LinearOperator`s contained in ops
 """
 function diagOp(ops :: AbstractLinearOperator...)
-  nrow=0
-  ncol=0
+  nrow = 0
+  ncol = 0
   S = eltype(ops[1])
   for i = 1:length(ops)
     nrow += ops[i].nrow
@@ -104,10 +100,14 @@ function diagOp(ops :: AbstractLinearOperator...)
     S = promote_type(S, eltype(ops[i]))
   end
 
+  xIdx = cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
+  yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
+
   Op = DiagOp{S}( nrow, ncol, false, false,
-                     x->diagOpProd(x,nrow,ops...),
-                     y->diagOpTProd(y,ncol,ops...),
-                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, [ops...], false )
+                     x->diagOpProd(x,nrow,xIdx,yIdx,ops...),
+                     y->diagOpTProd(y,ncol,yIdx,xIdx,ops...),
+                     y->diagOpCTProd(y,ncol,yIdx,xIdx,ops...), 0, 0, 0, 
+                     [ops...], false, xIdx, yIdx)
 
   return Op
 end
@@ -118,10 +118,14 @@ function diagOp(op::AbstractLinearOperator, N=1)
   S = eltype(op)
   ops = [copy(op) for n=1:N]
 
+  xIdx = cumsum(vcat(1,[ops[i].ncol for i=1:length(ops)]))
+  yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
+
   Op = DiagOp{S}( nrow, ncol, false, false,
-                     x->diagOpProd(x,nrow,ops...),
-                     y->diagOpTProd(y,ncol,ops...),
-                     y->diagOpCTProd(y,ncol,ops...), 0, 0, 0, ops, true )
+                     x->diagOpProd(x,nrow,xIdx,yIdx,ops...),
+                     y->diagOpTProd(y,ncol,yIdx,xIdx,ops...),
+                     y->diagOpCTProd(y,ncol,yIdx,xIdx,ops...), 0, 0, 0, 
+                     ops, true, xIdx, yIdx )
 
   return Op
 end
@@ -135,35 +139,39 @@ struct DiagNormalOp
   normalOps
   nrow
   ncol
+  idx
+  y
 end
 
 function SparsityOperators.normalOperator(S::DiagOp, W=I)
   weights = W*ones(S.nrow)
-  yIdx = cumsum(vcat(1,[S.ops[i].nrow for i=1:length(S.ops)]))
 
   if S.equalOps
-    # this opimization is only allow if all ops are the same
-    t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[yIdx[1]:yIdx[2]-1].^2))
-    @info "Time so build normalOp: $t seconds"
-    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol )
+    # this opimization is only allowed if all ops are the same
+    t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[S.yIdx[1]:S.yIdx[2]-1].^2))
+    @info "Time to build normalOp: $t seconds"
+    @info eltype(S)
+    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(eltype(S), S.ncol) )
   else
-    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[yIdx[i]:yIdx[i+1]-1].^2)) 
-                     for i in 1:length(S.ops)], S.ncol, S.ncol )
+    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)) 
+                     for i in 1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(eltype(S), S.ncol) )
   end
 
   return op
 end
 
 function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
-  y = Vector{T}(undef, S.nrow)
-  xIdx=cumsum(vcat(1,[S.ops[i].ncol for i=1:length(S.ops)]))
-  yIdx=cumsum(vcat(1,[S.ops[i].ncol for i=1:length(S.ops)]))
-  @sync for i=1:length(S.ops)
+  _produ_diagnormalop(S.normalOps, S.idx, x, S.y) 
+  return S.y
+end
+
+function _produ_diagnormalop(ops, idx, x, y)
+  @time @sync for i=1:length(ops)
     Threads.@spawn begin
-      y[yIdx[i]:yIdx[i+1]-1] = S.normalOps[i]*x[xIdx[i]:xIdx[i+1]-1]
+       y[idx[i]:idx[i+1]-1] = ops[i]*x[idx[i]:idx[i+1]-1]
     end
   end
-  return y  
+  return
 end
 
 mutable struct ProdOp{T} <: AbstractLinearOperator{T}
