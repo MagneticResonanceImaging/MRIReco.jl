@@ -150,7 +150,6 @@ function SparsityOperators.normalOperator(S::DiagOp, W=I)
     # this opimization is only allowed if all ops are the same
     t = @elapsed opInner = normalOperator(S.ops[1], WeightingOp(weights[S.yIdx[1]:S.yIdx[2]-1].^2))
     @info "Time to build normalOp: $t seconds"
-    @info eltype(S)
     op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(eltype(S), S.ncol) )
   else
     op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)) 
@@ -166,7 +165,7 @@ function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
 end
 
 function _produ_diagnormalop(ops, idx, x, y)
-  @time @sync for i=1:length(ops)
+  @sync for i=1:length(ops)
     Threads.@spawn begin
        y[idx[i]:idx[i+1]-1] = ops[i]*x[idx[i]:idx[i+1]-1]
     end
