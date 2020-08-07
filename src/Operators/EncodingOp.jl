@@ -263,7 +263,7 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
       ftOp = FieldmapNFFTOp(shape, tr, correctionMap[:,:,slice], echoImage=echoImage, method=method)
     elseif isCartesian(tr)
       @debug "FFTOp"
-      ftOp = sqrt(prod(shape))*FFTOp(ComplexF64, shape)
+      ftOp = FFTOp(ComplexF64, shape; unitary=false)
     else
       ftOp = NFFTOp(shape, tr, toeplitz=toeplitz)
     end
@@ -275,10 +275,10 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
   if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
     S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles))
   else
-    S = opEye()
+    S = opEye(ComplexF64,size(ftOp,1))
   end
 
-  return S*ftOp
+  return prodOp(S,ftOp) #S*ftOp
 end
 
 """
@@ -308,7 +308,7 @@ function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::Trajectory, opName::Str
   if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
     S = SamplingOp(subsampleIdx,shape)
   else
-    S = opEye()
+    S = opEye(ComplexF64,prod(shape))
   end
 
   return S*ftOp

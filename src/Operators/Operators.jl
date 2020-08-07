@@ -66,6 +66,9 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinear
   return y
 end
 
+function Base.copy(S::LinearOperator{T}) where T
+  deepcopy(S)
+end
 
 mutable struct DiagOp{T} <: AbstractLinearOperator{T}
   nrow :: Int
@@ -134,25 +137,25 @@ end
 
 ### Normal Matrix Code ###
 
-struct DiagNormalOp
-  ops
-  normalOps
-  nrow
-  ncol
-  idx
-  y
+struct DiagNormalOp{U,V,T}
+  ops::U
+  normalOps::V
+  nrow::Int64
+  ncol::Int64
+  idx::Vector{Int64}
+  y::Vector{T}
 end
 
-function SparsityOperators.normalOperator(S::DiagOp, W=I)
+function SparsityOperators.normalOperator(S::DiagOp, W=I, T::Type=ComplexF64)
   weights = W*ones(S.nrow)
 
   if S.equalOps
     # this opimization is only allowed if all ops are the same
     opInner = normalOperator(S.ops[1], WeightingOp(weights[S.yIdx[1]:S.yIdx[2]-1].^2))
-    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(eltype(S), S.ncol) )
+    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
   else
     op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)) 
-                     for i in 1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(eltype(S), S.ncol) )
+                     for i in 1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
   end
 
   return op
@@ -219,7 +222,11 @@ function prodOp(A,B;isWeighting=false)
   return Op
 end
 
-
+function Base.copy(S::ProdOp{T}) where T
+  A = copy(S.A)
+  B = copy(S.B)
+  return prodOp(A,B; isWeighting=S.isWeighting)
+end
 
 
 ### Normal Matrix Code ###
@@ -245,6 +252,12 @@ end
 
 # implement A_mul_B for the product
 A_mul_B(A::AbstractLinearOperator, x::Vector) = A*x
+
+function Base.copy(S::ProdNormalOp{T,U}) where {T,U}
+  opOuter = copy(S.opOuter)
+  opInner = copy(S.normalOpInner)
+  return ProdNormalOp(opOuter, opInner)
+end
 
 #
 # use hermitian conjugate as an estimate for the inverse (fallback)

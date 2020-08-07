@@ -1,7 +1,16 @@
-export FieldmapNFFTOp, createInhomogeneityData_
+export FieldmapNFFTOp, InhomogeneityData, createInhomogeneityData_
 
-mutable struct FieldmapNFFTOp{T,F1,F2} <:
-                      AbstractLinearOperator{T}
+mutable struct InhomogeneityData
+  A_k::Matrix{ComplexF64}
+  C_k::Matrix{ComplexF64}
+  times::Vector{Float64}
+  Cmap::Matrix{ComplexF64}
+  t_hat::Float64
+  z_hat::ComplexF64
+  method::String
+end
+
+mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -12,16 +21,11 @@ mutable struct FieldmapNFFTOp{T,F1,F2} <:
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
-end
-
-mutable struct InhomogeneityData
-  A_k::Matrix{ComplexF64}
-  C_k::Matrix{ComplexF64}
-  times::Vector{Float64}
-  Cmap::Matrix{ComplexF64}
-  t_hat::Float64
-  z_hat::ComplexF64
-  method::String
+  plans
+  idx::Vector{Vector{Int64}}
+  circTraj::Bool
+  shape::NTuple{D,Int64}
+  cparam::InhomogeneityData
 end
 
 """
@@ -72,26 +76,51 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plan = Vector{NFFTPlan{D,0,Float64}}(undef,K)
+  plans = Vector{NFFTPlan{D,0,Float64}}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plan[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
+    plans[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
   end
 
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
+  
+  circTraj = isCircular(tr)
 
   mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,nrow,ncol,shape,plan,idx,cparam,isCircular(tr),d)
+     produ(x,nrow,ncol,shape,plans,idx,cparam,circTraj,d)
   ctmul(y::Vector{T}) where T<:ComplexF64 =
-     ctprodu(y,shape,plan,idx,cparam,isCircular(tr),d)
+     ctprodu(y,shape,plans,idx,cparam,circTraj,d)
   inverse(y::Vector{T}) where T<:ComplexF64 =
-     inv(y,shape,plan,idx,cparam,isCircular(tr),p,y,d)
+     inv(y,shape,plans,idx,cparam,circTraj,p,y,d)
 
-  return FieldmapNFFTOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
+  return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(nrow, ncol, false, false
             , mul
             , nothing
-            , ctmul, 0, 0, 0)
+            , ctmul, 0, 0, 0, plans, idx, circTraj, shape, cparam)
+end
+
+function Base.copy(S::FieldmapNFFTOp)
+  K=length(S.plans)
+  plans = [copy(S.plans[i]) for i=1:K]
+  idx = deepcopy(S.idx)
+
+  d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
+
+  cparam = deepcopy(S.cparam)
+
+  mul(x::Vector{T}) where T<:ComplexF64 =
+     produ(x,S.nrow,S.ncol,S.shape,plans,idx,cparam,S.circTraj,d)
+  ctmul(y::Vector{T}) where T<:ComplexF64 =
+     ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d)
+  inverse(y::Vector{T}) where T<:ComplexF64 =
+     inv(y,S.shape,plans,idx,cparam,S.circTraj,p,y,d)
+
+  D = length(S.shape)
+  return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(S.nrow, S.ncol, false, false
+            , mul
+            , nothing
+            , ctmul, 0, 0, 0, plans, idx, S.circTraj, S.shape, cparam)
 end
 
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
@@ -227,7 +256,7 @@ function createInhomogeneityData_(times::Vector,
     return InhomogeneityData(A,C,vec(times),correctionmap,t_hat,z_hat,method)
 end
 
-function adjoint(op::FieldmapNFFTOp{T}) where T
-  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-                        op.ctprod, nothing, op.prod)
-end
+# function adjoint(op::FieldmapNFFTOp{T}) where T
+#   return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
+#                         op.ctprod, nothing, op.prod)
+# end
