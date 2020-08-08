@@ -232,11 +232,10 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
   # subsampling
   if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
     S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles))
+    return prodOp(S,ftOp)
   else
-    S = opEye(ComplexF64,size(ftOp,1))
+    return ftOp
   end
-
-  return prodOp(S,ftOp)
 end
 
 """
