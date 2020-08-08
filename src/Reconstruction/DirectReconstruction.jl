@@ -79,11 +79,3 @@ function reconstruction_direct_3d(acqData::AcquisitionData
   return makeAxisArray(Ireco, acqData)
 end
 
-function setupDirectReco(acqData::AcquisitionData, recoParams::Dict)
-  reconSize = recoParams[:reconSize]
-  weights = samplingDensity(acqData,recoParams[:reconSize])
-  # field map
-  cmap = get(recoParams, :cmap, ComplexF64[])
-
-  return reconSize, weights, cmap
-end

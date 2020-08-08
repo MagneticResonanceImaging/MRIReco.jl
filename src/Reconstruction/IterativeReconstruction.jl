@@ -11,8 +11,6 @@ contrasts and slices
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
-* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -22,13 +20,12 @@ function reconstruction_simple( acqData::AcquisitionData
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
-                              , correctionMap::Array{ComplexF64}=ComplexF64[]
-                              , method::String="nfft"
                               , normalize::Bool=false
-                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+
+  encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = sparseTrafo
@@ -37,7 +34,7 @@ function reconstruction_simple( acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
   @sync for k = 1:numSl
     Threads.@spawn begin
-      F = encodingOps2d_simple(acqData, reconSize, slice=k, correctionMap=correctionMap, method=method)
+      F = encodingOps2d_simple(acqData, reconSize, slice=k; encParams...)
       for j = 1:numContr
         W = WeightingOp(weights[j])
         for i = 1:numChan
@@ -76,8 +73,6 @@ are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
-* (`correctionMap::Array{ComplexF64})`  - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -87,13 +82,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
-                              , correctionMap::Array{ComplexF64}=ComplexF64[]
-                              , method::String="nfft"
                               , normalize::Bool=false
-                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
@@ -104,7 +97,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numChan, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      F = encodingOp2d_multiEcho(acqData, reconSize, slice=i, correctionMap=correctionMap, method=method)
+      F = encodingOp2d_multiEcho(acqData, reconSize, slice=i; encParams...)
       for j = 1:numChan
         kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
 
@@ -136,8 +129,6 @@ are reconstructed independently.
 * `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
 * `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -148,13 +139,11 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , senseMaps::Array{ComplexF64}
-                              , correctionMap::Array{ComplexF64}=ComplexF64[]
-                              , method::String="nfft"
                               , normalize::Bool=false
-                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = sparseTrafo
@@ -163,8 +152,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
   @sync for k = 1:numSl
     Threads.@spawn begin
-      E = encodingOps2d_parallel(acqData, reconSize, senseMaps;
-                                 slice=k, correctionMap=correctionMap, method=method, toeplitz=toeplitz)
+      E = encodingOps2d_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
       
       for j = 1:numContr
         W = WeightingOp(weights[j],numChan)
@@ -203,8 +191,6 @@ Different slices are reconstructed independently.
 * `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
 * `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)             - method to use for time-segmentation when correctio field inhomogeneities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -215,13 +201,11 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , senseMaps::Array{ComplexF64}
-                              , correctionMap::Array{ComplexF64}=ComplexF64[]
-                              , method::String="nfft"
                               , normalize::Bool=false
-                              , toeplitz::Bool=false
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
   reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
@@ -231,8 +215,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps, slice=i, correctionMap=correctionMap, 
-                                          method=method)
+      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
@@ -248,105 +231,3 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   return reshape( permutedims(Ireco, [1,3,2]), recoParams[:reconSize]..., numSl, numContr )
 end
 
-
-"""
-Auxilary struct that holds parameters relevant for image reconstruction
-
-# Fields
-* `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
-* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `reg::Regularization`                 - Regularization to be used
-* `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
-* `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
-* `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
-"""
-mutable struct RecoParameters{N}
-  reconSize::NTuple{N,Int64}
-  weights::Vector{Vector{ComplexF64}}
-  sparseTrafo::AbstractLinearOperator
-  reg::Regularization
-  normalize::Bool
-  solvername::String
-  senseMaps::Array{ComplexF64}
-  correctionMap::Array{ComplexF64}
-  method::String
-  toeplitz::Bool
-end
-
-
-"""
-    setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
-
-builds relevant parameters and operators from the entries in `recoParams`
-
-# relevant parameters
-* `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
-* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `reg::Regularization`                 - Regularization to be used
-* `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
-* `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
-* `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
-
-`sparseTrafo` and `reg` can also be speficied using their names in form of a string.
-"""
-function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
-
-  red3d = dims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
-  if red3d  # acqData is 3d data converted to 2d
-    reconSize = (recoParams[:reconSize][2], recoParams[:reconSize][3])
-    recoParams[:reconSize] = reconSize
-  else  # regular case
-    reconSize = recoParams[:reconSize]
-  end
-
-  # density weights
-  densityWeighting = get(recoParams,:densityWeighting,true)
-  if densityWeighting
-    weights = samplingDensity(acqData,reconSize)
-  else
-    numContr = numContrasts(acqData)
-    weights = Array{Vector{ComplexF64}}(undef,numContr)
-    for contr=1:numContr
-      numNodes = size(acqData.kdata[contr],1)
-      weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
-    end
-  end
-
-  # sparsifying transform
-  if haskey(recoParams,:sparseTrafo) && typeof(recoParams[:sparseTrafo]) != String
-    sparseTrafo = recoParams[:sparseTrafo]
-  else
-    sparseTrafoName = get(recoParams, :sparseTrafo, "nothing")
-    sparseTrafo = SparseOp(sparseTrafoName, reconSize; recoParams...)
-  end
-
-  # bare regularization (without sparsifying transform)
-  regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
-  reg = Regularization(regName, λ; shape=reconSize, recoParams...)
-
-  # normalize regularizer ?
-  normalize = get(recoParams, :normalizeReg, false)
-
-  # solvername
-  solvername = get(recoParams, :solver, "fista")
-
-  # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, ComplexF64[])
-  if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
-    senseMaps = permutedims(senseMaps,[2,3,1,4])
-  end
-
-  # field map
-  cmap = get(recoParams, :correctionMap, ComplexF64[])
-  method = get(recoParams, :method, "nfft")
-  toeplitz = get(recoParams, :toeplitz, false)
-
-  return RecoParameters(reconSize, weights, sparseTrafo, reg, normalize, solvername, senseMaps, cmap, method, toeplitz)
-end

@@ -255,8 +255,3 @@ function createInhomogeneityData_(times::Vector,
 
     return InhomogeneityData(A,C,vec(times),correctionmap,t_hat,z_hat,method)
 end
-
-# function adjoint(op::FieldmapNFFTOp{T}) where T
-#   return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-#                         op.ctprod, nothing, op.prod)
-# end

@@ -27,9 +27,10 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 * (`nodes=nothing`)         - Array containg the trajectory nodes (redundant)
 * (`kargs`)                   - additional keyword arguments
 """
-function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, kargs...)
+function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, 
+                oversamplingFactor=1.25, kernelSize=3, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  plan = NFFTPlan(nodes, shape, 3, 1.25, precompute=NFFT.FULL)
+  plan = NFFTPlan(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
 
   return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
             , x->produ(plan,x)
@@ -55,12 +56,6 @@ function Base.copy(S::NFFTOp)
          , nothing
          , y->ctprodu(plan,y), 0, 0, 0, plan, S.toeplitz)
 end
-
-#function adjoint(op::NFFTOp{T}) where T
-#  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-#                        op.ctprod, nothing, op.prod)
-#end
-
 
 ### Normal Matrix Code ###
 
