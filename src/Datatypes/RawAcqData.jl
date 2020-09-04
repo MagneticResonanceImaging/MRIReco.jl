@@ -146,13 +146,12 @@ repetitions(f::RawAcquisitionData) =
 contrasts(f::RawAcquisitionData) =
   [f.profiles[l].head.idx.contrast+1 for l=1:length(f.profiles)]
 
-
   """
     subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
 
   returns the sampled indices for a given `slice` and `contrast` in a `RawAcquisitionData` object.
   """
-function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, estimateProfileCenter::Bool=false)
   idx = Int64[]
   encSt1 = encSteps1(f)
   encSt2 = encSteps2(f)
@@ -163,7 +162,11 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
       continue
     end
     numSamp = size(f.profiles[i].data,1)  # number of measured points
-    center_sample = f.profiles[i].head.center_sample+1 # idx of the center trajectory in the measurement
+    if estimateProfileCenter
+      center_sample = div(numSamp,2)+1
+    else
+      center_sample = f.profiles[i].head.center_sample+1 # idx of the center trajectory in the measurement
+    end
     tr_center_idx = div(numEncSamp,2)+1 # center of the encoded trajectory
 
     # start and end indices of sampled profile
@@ -173,7 +176,8 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
     lineIdx = collect(i1:i2) .+ numSamp*((encSt2[i]-1)*numProf + (encSt1[i]-1))
     append!(idx, lineIdx)
   end
-  return sort(unique(idx))
+
+  return unique(idx)
 end
 
 """
@@ -182,66 +186,57 @@ end
 returns the rawdata contained `RawAcquisitionData` object.
 The output is an `Array{Matrix{ComplexF64},3}`, which can be stored in a `AcquisitionData` object.
 """
-function rawdata(f::RawAcquisitionData)
-  encSt1 = encSteps1(f)
-  encSt2 = encSteps2(f)
+function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetition::Int=1)
+
+  # find profiles corresponding to the given slice contrast and repitiion
   sl = slices(f)
   rep = repetitions(f)
   contr = contrasts(f)
+  idx_sl = findall(x->x==slice,sl)
+  idx_contr = findall(x->x==contrast,contr)
+  idx_rep = findall(x->x==repetition,rep)
+  idx = intersect(idx_sl,idx_contr,idx_rep)
 
-  numSl = length(unique(sl))
-  numRep = length(unique(rep))
-  numContr = length(unique(contr))
-  numChan = size(f.profiles[1].data,2)
+  # number of unique combination of encoding statuses
+  encSt1 = encSteps1(f)[idx]
+  encSt2 = encSteps2(f)[idx]
+  # find first occurence of each combination of encoding statuses (as `unique` returns)
+  idx_unique = uniqueidx(hcat(encSt1,encSt2))
+  numEncSt = length(idx_unique)
 
-  kdata = Array{Array{ComplexF64,4}}(undef,numContr,numSl,numRep)
-  encIdx1 = Array{Vector{Int64}}(undef,numContr,numSl)
-  encIdx2 = Array{Vector{Int64}}(undef,numContr,numSl)
-  numSampPerProfile = zeros(Int64, numContr,numSl)
-  for j = 1:numSl
-    idx_sl = findall(x->x==j,sl)
-    for i = 1:numContr
-      # initialize kdata with proper sized arrays for all contrasts and slices
-      idx_contr = findall(x->x==i,contr)
-      idx = intersect(idx_sl,idx_contr)
-      numEncSt1 = length(unique(encSt1[idx]))
-      numEncSt2 = length(unique(encSt2[idx]))
-      numSampPerProfile[i,j] = size(f.profiles[idx[1]].data,1)
-      numDiscard = f.profiles[idx[1]].head.discard_pre + f.profiles[idx[1]].head.discard_post
-      for k = 1:numRep
-        kdata[i,j,k] = zeros(ComplexF64,numSampPerProfile[i,j]-numDiscard,numEncSt1,numEncSt2,numChan)
-      end
+  # allocate space for k-space data
+  # assume the same number of samples for all profiles
+  numSampPerProfile, numChan = size(f.profiles[idx[1]].data)
+  numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
+  kdata = zeros(ComplexF64, numSampPerProfile, numEncSt, numChan)
 
-      # permutation from stored k-space data to the sampled locations
-      encIdx1[i,j]=sort(unique(encSt1[idx]))
-      encIdx2[i,j]=sort(unique(encSt2[idx]))
-    end
-  end
-
-  # get k-space data
-  for l=1:length(f.profiles)
-    # remove data that should be discarded
+  # store one profile (kspace data) for each unique encoding status
+  cnt = 1
+  for l in idx_unique # TODO: set of profiles (with unique encoding status)
     i1 = f.profiles[l].head.discard_pre + 1
-    i2 = numSampPerProfile[contr[l], sl[l]] - f.profiles[l].head.discard_post
-    # find k-space location idx of the current profile
-    idx1 = findfirst(x->x==encSt1[l], encIdx1[contr[l],sl[l]])
-    idx2 = findfirst(x->x==encSt2[l], encIdx2[contr[l],sl[l]])
-    kdata[contr[l], sl[l],rep[l]][:, idx1, idx2, :] .= ComplexF64.(f.profiles[l].data[i1:i2, :])
+    i2 = i1+numSampPerProfile-1
+    kdata[:,cnt,:] .= ComplexF64.(f.profiles[l].data[i1:i2, :])
+    cnt += 1
   end
 
-  return [reshape(kdata[c,s,r],:,numChan) for c=1:numContr, s=1:numSl, r=1:numRep]
+  return reshape(kdata, :, numChan)
 end
 
+
 """
-    AcquisitionData(f::RawAcquisitionData)
+    AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
 
 converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 """
-function AcquisitionData(f::RawAcquisitionData)
+function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
   numContr = length(unique(contrasts(f)))
+  numSl = length(unique(slices(f)))
+  numRep = length(unique(repetitions(f)))
   tr = [trajectory(f,contrast=contr) for contr=1:numContr]
-  subsampleIdx = [subsampleIndices(f,contrast=contr) for contr=1:numContr]
-  return AcquisitionData(tr, rawdata(f),
+  subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
+  kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
+
+  return AcquisitionData(tr, kdata,
                           idx=subsampleIdx,
                           encodingSize=collect(f.params["encodedSize"]),
                           fov = collect(f.params["encodedFOV"]) )
@@ -320,4 +315,19 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
                           , phase_dir=Float32.((0,1,0))
                           , slice_dir=Float32.((0,0,1))
                           , idx=idx )
+end
+
+# get indices of the first occurence of unique elements in the matrix x
+function uniqueidx(x::Matrix{T}) where T
+  uniqueset = Set{Vector{T}}()
+  ex = eachindex(x[:,1])
+  idxs = Vector{eltype(ex)}()
+  for i in ex
+      xi = x[i,:]
+      if !(xi in uniqueset)
+          push!(idxs, i)
+          push!(uniqueset, xi)
+      end
+  end
+  idxs
 end
