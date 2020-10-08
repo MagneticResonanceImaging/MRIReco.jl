@@ -27,7 +27,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 
 [compat]
-Distributions = "0.21, 0.23"
+Distributions = "0.21, 0.23, 0.24"
 FFTW = "0.2, 1.0"
 FileIO = "1.2"
 Graphics = "0.4, 1.0"
