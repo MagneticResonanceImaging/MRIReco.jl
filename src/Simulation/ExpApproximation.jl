@@ -136,8 +136,6 @@ function get_AC_coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
   C = zeros(ComplexF64,K,length(z_p))
   G = zeros(ComplexF64,length(z_p),K)
 
-  progr = Progress(length(times), 1, "Using leastsquares to get Coefficients...")
-
   t_hat = zeros(K)
   t_hat = collect(range(times[1], stop=times[length(times)], length=K))
 
@@ -150,12 +148,10 @@ function get_AC_coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
   end
 
   systemMat = G'*G
-  err = zeros(length(times))
-  for j=1:length(times)
-    b = [exp(-times[j]*z_p[p]) for p=1:length(z_p) ]
-    A[j,:] = systemMat \ (G'*b)
-    next!(progr)
-  end
+  b = [exp(-times[j]*z_p[p]) for p=1:length(z_p), j=1:length(times)]
+  At = systemMat \ (G'*b)
+  A .= transpose(At)
+  
   return A,C
 end
 
@@ -203,10 +199,7 @@ function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
   A = zeros(ComplexF64,length(times),K)
   G = zeros(ComplexF64,numBins,K)
 
-  # progr = Progress(length(times), 1, "Using leastsquares to get Hist-coefficients...")
-
   t_hat = zeros(K)
-  # t_hat = collect(linspace(times[1],times[length(times)],K))
   t_hat = collect(range(times[1], stop=times[end], length=K))
 
   z_p = vec(z_p)
@@ -216,14 +209,11 @@ function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
     end
   end
 
-  # systemMat = G'*diagm(z_weights)*G
   systemMat = G'*Diagonal(z_weights)*G
-  err = zeros(length(times))
-  @showprogress 1 "Using leastsquares to get Hist-coefficients..." for j=1:length(times) #length(times)
-    b = [z_weights[p]*exp(-times[j]*z_center[p]) for p=1:numBins ]
-    A[j,:] = systemMat \ (G'*b)
-    # next!(progr)
-  end
+  b = [z_weights[p]*exp(-times[j]*z_center[p]) for p=1:numBins, j=1:length(times)]
+  At = systemMat \ (G'*b)
+  A .= transpose(At)
+    
   return A
 end
 
