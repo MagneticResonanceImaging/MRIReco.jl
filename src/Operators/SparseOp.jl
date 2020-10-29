@@ -18,7 +18,7 @@ function SparseOp(name::AbstractString, shape::NTuple{N,Int64}; kargs...) where 
     # else
     #   return WaveletOp(params[:shape])
     # end
-    return WaveletOp(shape)
+    return WaveletOp(ComplexF64,shape)
   elseif name=="nothing"
     return opEye(prod(shape))
   else

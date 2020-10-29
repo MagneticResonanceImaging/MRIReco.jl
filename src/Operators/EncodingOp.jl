@@ -99,7 +99,7 @@ the contrasts in an MRI acquisition (for a given slice).
 function encodingOp2d_multiEcho(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                 ; kargs...)
   # fourier operators
-  ft = encodingOps2d_simple(acqData, shape, kargs...)
+  ft = encodingOps2d_simple(acqData, shape; kargs...)
   return diagOp(ft...)
 end
 
@@ -133,7 +133,7 @@ in terms of their sensitivities
 """
 function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
                                           , senseMaps::Array{ComplexF64}
-                                          ; kargs...)
+                                          ; slice::Int64=1, kargs...)
 
   numChan = numChannels(acqData)
   # fourier operators

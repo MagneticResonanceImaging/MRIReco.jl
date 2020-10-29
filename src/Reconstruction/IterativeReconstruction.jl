@@ -16,7 +16,7 @@ contrasts and slices
 """
 function reconstruction_simple( acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
-                              , reg::Regularization
+                              , reg::Vector{Regularization}
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
@@ -28,7 +28,7 @@ function reconstruction_simple( acqData::AcquisitionData
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = sparseTrafo
+  reg[1].params[:sparseTrafo] = sparseTrafo
 
   # reconstruction
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
@@ -42,7 +42,9 @@ function reconstruction_simple( acqData::AcquisitionData
 
           reg2 = deepcopy(reg)
           if normalize
-            RegularizedLeastSquares.normalize!(reg2, kdata)
+            for r=1:length(reg)
+              RegularizedLeastSquares.normalize!(reg2[r], kdata)
+            end
           end
           solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
 
@@ -78,7 +80,7 @@ are reconstructed independently.
 """
 function reconstruction_multiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
-                              , reg::Regularization
+                              , reg::Vector{Regularization}
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
@@ -89,7 +91,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
+  reg[1].params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...) )
 
@@ -103,7 +105,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData
 
         reg2 = deepcopy(reg)
         if normalize
-          RegularizedLeastSquares.normalize!(reg2, kdata)
+          for r=1:length(reg)
+            RegularizedLeastSquares.normalize!(reg2[r], kdata)
+          end
         end
         solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
 
@@ -134,7 +138,7 @@ are reconstructed independently.
 """
 function reconstruction_multiCoil(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
-                              , reg::Regularization
+                              , reg::Vector{Regularization}
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
@@ -146,7 +150,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = sparseTrafo
+  reg[1].params[:sparseTrafo] = sparseTrafo
 
   # solve optimization problem
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
@@ -160,7 +164,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData
 
         reg2 = deepcopy(reg)
         if normalize
-          RegularizedLeastSquares.normalize!(reg2, kdata)
+          for r=1:length(reg)
+            RegularizedLeastSquares.normalize!(reg2[r], kdata)
+          end
         end
 
         EFull = prodOp(W,E[j],isWeighting=true)
@@ -196,7 +202,7 @@ Different slices are reconstructed independently.
 """
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
-                              , reg::Regularization
+                              , reg::Vector{Regularization}
                               , sparseTrafo::AbstractLinearOperator
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
@@ -208,26 +214,28 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg.params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr) )
+  reg[1].params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...), numChan )
 
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      E = encodingOp_2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+      E = encodingOp2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
       reg2 = deepcopy(reg)
       if normalize
-        RegularizedLeastSquares.normalize!(reg2, acqData.kdata)
+        for r=1:length(reg)
+          RegularizedLeastSquares.normalize!(reg2[r], acqData.kdata)
+        end
       end
       solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
 
       Ireco[:,:,i] = solve(solver, kdata; params...)
     end
   end
-  return reshape( permutedims(Ireco, [1,3,2]), recoParams[:reconSize]..., numSl, numContr )
+  return reshape( permutedims(Ireco, [1,3,2]), reconSize..., numSl, numContr )
 end
 

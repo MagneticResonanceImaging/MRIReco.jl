@@ -3,6 +3,7 @@ export simulation,simulation_fast,simulation_explicit,simulateTempSubspace,addNo
 include("Fieldmap.jl")
 include("RelaxationMap.jl")
 include("CoilSensitivity.jl")
+include("LoydMaxAlg.jl")
 include("ExpApproximation.jl")
 
 """

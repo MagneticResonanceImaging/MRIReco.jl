@@ -43,7 +43,7 @@ mutable struct RecoParameters{N}
   reconSize::NTuple{N,Int64}
   weights::Vector{Vector{ComplexF64}}
   sparseTrafo::AbstractLinearOperator
-  reg::Regularization
+  reg::Vector{Regularization}
   normalize::Bool
   solvername::String
   senseMaps::Array{ComplexF64}
@@ -116,11 +116,11 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
-  return RecoParameters(reconSize, weights, sparseTrafo, reg, normalize, solvername, senseMaps)
+  return RecoParameters(reconSize, weights, sparseTrafo, vec(reg), normalize, solvername, senseMaps)
 end
 
 
 function getEncodingOperatorParams(; kargs...)
-  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize]
+  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol]
   return Dict([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
 end

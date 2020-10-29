@@ -61,6 +61,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         alpha::Float64=1.25,
                         m::Float64=2.0,
                         K=20,
+                        K_tol::Float64=1.e-3,
                         kargs...) where D
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
@@ -71,7 +72,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ncol = prod(shape)
 
  # create and truncate low-rank expansion
-  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method)
+  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr))
   K = size(cparam.A_k,2)
 
   @debug "K = $K"
@@ -224,9 +225,11 @@ end
 function createInhomogeneityData_(times::Vector,
                                   correctionmap::Array{ComplexF64,D};
                                   K::Int64=20,
+                                  K_tol::Float64=1.e-3,
                                   alpha::Float64=1.75,
                                   m::Float64 = 4.0,
-                                  method="nfft") where D
+                                  method="nfft",
+                                  numSamp::Int64=length(times)) where D
 
     if method == "const"
       A = get_AC_coefficients_one_term(K,vec(times),vec(correctionmap))
@@ -241,10 +244,20 @@ function createInhomogeneityData_(times::Vector,
     elseif method == "hist"
       A = get_A_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
       C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
+    elseif method == "leastsquareFS"
+      A,C = get_AC_coefficients_lsqr_fs(K,vec(times),vec(correctionmap))
+    elseif method == "histFS"
+      A = get_A_coefficients_hist_lsqr_fs(K,vec(times),vec(correctionmap))
+      # C = get_C_coefficients_hist_lsqr_fs(K,vec(times),vec(correctionmap))
+      C = get_C_coefficients_lsqr(vec(times),vec(correctionmap),A,numSamp)
+    elseif method == "svd"
+      A = get_A_coefficients_svd(K,vec(times),vec(correctionmap); K_tol=K_tol)
+      C = get_C_coefficients_lsqr(vec(times),vec(correctionmap),A,numSamp)
     else
       error("approximation scheme $(interp) is not yet implemented")
     end
     if size(A,2) != size(C,1)
+      @info "method: $(method), A: $(size(A)), C: $(size(C))"
       error("Consistency check failed! A and C are not compatible")
     end
 

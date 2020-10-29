@@ -129,7 +129,7 @@ end
   Returns the a_j,k and c_k,p Coefficients considering the approximation of the
   exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
 
-  Using the least squares method
+  Using the least squares method and time-segmentation
 """
 function get_AC_coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
   A = zeros(ComplexF64,length(times),K)
@@ -159,7 +159,7 @@ end
   Returns the a_j,k Coefficients considering the approximation of the
   exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
 
-  Using the least squares method with histogramms
+  Using the least squares method with histogramms and time-segmentation
 """
 function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
 
@@ -238,84 +238,97 @@ function get_C_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
   return C
 end
 
-function get_A_coefficients_one_term(K::Int64, times::Vector, z_p::Vector)
+
+"""
+  Returns the a_j,k and c_k,p Coefficients considering the approximation of the
+  exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
+
+  Using the least squares method and frequency-segmentation
+"""
+function get_AC_coefficients_lsqr_fs(K::Int64, times::Vector, z_p::Vector)
+
+  ω = imag.(z_p) # field map
+  # ω_hat = collect(range(minimum(ω), stop=maximum(ω),length=K)) # translate frequencies
+  ω_hat = loydMax(vec(ω),K, iterations=1000)
+
   A = zeros(ComplexF64,length(times),K)
-  t_hat = collect(range(times[1],stop=times[end],length=K))
-  for p=1:length(times)
-    diff, idx = findmin(abs.(t_hat .- times[p]))
-    A[p,idx]=1.0
+  G = zeros(ComplexF64,length(times),K)
+  
+  for kappa=1:K
+    for j=1:length(times)
+      G[j,kappa] = exp(-1im*times[j]*ω_hat[kappa])
+      A[j,kappa] = exp(-1im*times[j]*ω_hat[kappa])
+    end
   end
-  return A
+
+  systemMat = G'*G
+  b = [exp(-times[j]*z_p[p]) for j=1:length(times), p=1:length(z_p)]
+  C = systemMat \ (G'*b)
+    
+  return A,C
 end
 
 """
   Returns the a_j,k Coefficients considering the approximation of the
   exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
 
-  Using the least squares method with histogramms
+  Using the least squares method with histogramms and frequency-segmentation
 """
-function get_AC_coefficients_two_terms(K::Int64, times::Vector, z_p::Vector)
-
-  # build histogram
-  numBins = 10*K
-  if real.(z_p)== zeros(length(z_p))
-    fmax_im = maximum(imag.(z_p))
-    fmin_im = minimum(imag.(z_p))
-    δf = (fmax_im-fmin_im)/(numBins-1)
-    edges_im = [fmin_im-δf/2 + i*δf for i = 0:numBins]
-    h = fit(Histogram, imag.(z_p),edges_im,closed=:left)
-    z_center = 0.5*1im*vec( [edges_im[i]+edges_im[i+1] for i=1:numBins] )
-    z_weights = h.weights
-  elseif imag.(z_p)== zeros(length(z_p))
-    fmax_re = maximum(real.(z_p))
-    fmin_re = minimum(real.(z_p))
-    δf = (fmax_re-fmin_re)/(numBins-1)
-    edges_re = collect(fmin_re-δf/2.:δf:fmax_re+δf/2)
-    h = fit(Histogram, real.(z_p),edges_re,closed=:left)
-    z_center = 0.5*vec( [edges_re[i]+edges_re[i+1] for i=1:numBins] )
-    z_weights = h.weights
-  else
-    nbins = ceil(Int, sqrt(numBins))
-    fmax_re = maximum(real.(z_p))
-    fmin_re = minimum(real.(z_p))
-    δf_re = (fmax_re-fmin_re)/(nbins-1)
-    edges_re = collect(fmin_re-δf/2.:δf:fmax_re+δf/2)
-    fmax_im = maximum(imag.(z_p))
-    fmin_im = minimum(imag.(z_p))
-    δf = (fmax_im-fmin_im)/(nbins-1)
-    edges_im = collect(fmin_im-δf/2.:δf:fmax_im+δf/2)
-    h = fit(Histogram, (real.(z_p),imag.(z_p)),(edges_re,edges_im),closed=:left)
-    z_center = 0.5*vec( [edges_re[i]+edges_re[i+1]+1im*(edges_im[j]+edges_im[j+1]) for i=1:numBins[1], j=1:numBins[2] ] )
-    z_weights = vec(h.weights)
-    numBins = nbins^2
-  end
+function get_A_coefficients_hist_lsqr_fs(K::Int64, times::Vector, z_p::Vector)
+  ω = imag.(z_p) # field map
+  # ω_hat = collect(range(minimum(ω), stop=maximum(ω),length=K)) # translate frequencies
+  ω_hat = loydMax(vec(ω),K, iterations=1000)
 
   A = zeros(ComplexF64,length(times),K)
-  G = zeros(ComplexF64,numBins,K)
-
-  progr = Progress(length(times), 1, "Using leastsquares to get Hist-coefficients...")
-
-  # t_hat = zeros(K)
-  t_hat = collect(range(times[1],stop=times[end],length=K))
-
-  z_p = vec(z_p)
-  for p=1:numBins
-    for kappa=1:K
-      G[p,kappa] = exp(-t_hat[kappa]*z_center[p])
+  for kappa=1:K
+    for j=1:length(times)
+      A[j,kappa] = exp(-1im*times[j]*ω_hat[kappa])
     end
   end
 
-  for j=1:length(times) #length(times)
-    # find closest translate with smaller sampling time
-    diff, idx = findmin(abs.(t_hat .- times[j]))
-    if (t_hat[idx] >= times[j]) && idx > 1
-      idx -= 1
-    end
-
-    systemMat = G[:,idx:idx+1]'*diagm(0 => z_weights)*G[:,idx:idx+1]
-    b = [z_weights[p]*exp(-times[j]*z_center[p]) for p=1:numBins ]
-    A[j,idx:idx+1] = systemMat \ (G[:,idx:idx+1]'*b)
-    next!(progr)
-  end
   return A
+end
+
+function get_A_coefficients_svd(K::Int64, times::Vector, z_p::Vector; numBins=10*K, K_tol::Float64=1.e-4)
+  ω = imag.(z_p)
+
+  # create histrogram of field map
+  fmax = maximum(ω)
+  fmin = minimum(ω)
+  δf = (fmax-fmin)/(numBins-1)
+  edges = [fmin-δf/2 + i*δf for i = 0:numBins]
+  h = fit( Histogram, ω, edges, closed=:left )
+  z_center = 0.5*1im * ( edges[1:numBins].+edges[2:numBins+1] )
+  z_weights = h.weights
+
+  # from reduced exponential matrix
+  A = zeros(ComplexF64, length(times), numBins)
+  for j=1:numBins, i=1:length(times)
+    A[i,j] = sqrt(z_weights[j])*exp(-z_center[j]*times[i])
+  end
+
+  # compute SVD
+  U,S,V = psvd(A, rank=2*K)
+  # estimate accuracy of the approximation and determine rank threshold
+  acc = sqrt.(cumsum(S.^2)./sum(S.^2))
+  K0 = findfirst(x->x>=(1-K_tol-1e-14), acc)
+  @debug "accuracy: $(acc)"
+  @info " K_tol=$(K_tol) => chose K= $(K0)"
+  
+  return U[:,1:K0]
+end
+
+"""
+  Returns the c_k,p Coefficients considering the approximation of the
+  exponential term exp(-t_j * z_p) = sum( k : a_j,k * c_k,p )
+
+  Uses the LSQR-method for a given set of a_j,k-coefficients
+"""
+function get_C_coefficients_lsqr(times::Vector, z_p::Vector, A::Matrix{ComplexF64}, numSamp::Int64, step=10)
+
+  systemMat = adjoint(A[1:step:numSamp,:])* A[1:step:numSamp,:]
+  b = [exp(-times[j]*z_p[i]) for j=1:step:numSamp, i=1:length(z_p)]
+  C = systemMat \ ( adjoint(A[1:step:numSamp,:])*b )
+  
+  return C
 end

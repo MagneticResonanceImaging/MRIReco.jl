@@ -20,6 +20,7 @@ using LightXML
 using NIfTI
 using ThreadPools
 @reexport using Unitful
+import LowRankApprox.psvd
 
 
 include("Trajectories/Trajectories.jl")
