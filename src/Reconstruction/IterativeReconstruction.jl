@@ -46,7 +46,7 @@ function reconstruction_simple( acqData::AcquisitionData
               RegularizedLeastSquares.normalize!(reg2[r], kdata)
             end
           end
-          solver = createLinearSolver(solvername, W*F[j]; reg=reg2, params...)
+          solver = createLinearSolver(solvername, W∘F[j]; reg=reg2, params...)
 
           I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]),
                                  solverInfo=get(params,:solverInfo,nothing))
@@ -109,7 +109,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
             RegularizedLeastSquares.normalize!(reg2[r], kdata)
           end
         end
-        solver = createLinearSolver(solvername, W*F; reg=reg2, params...)
+        solver = createLinearSolver(solvername, W∘F; reg=reg2, params...)
 
         Ireco[:,j,i] = solve(solver,kdata; params...)
         # TODO circular shutter
@@ -169,7 +169,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
           end
         end
 
-        EFull = prodOp(W,E[j],isWeighting=true)
+        EFull = ∘(W, E[j], isWeighting=true)
         solver = createLinearSolver(solvername, EFull; reg=reg2, params...)
         I = solve(solver, kdata; params...)
 
@@ -231,7 +231,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
           RegularizedLeastSquares.normalize!(reg2[r], acqData.kdata)
         end
       end
-      solver = createLinearSolver(solvername, W*E; reg=reg2, params...)
+      solver = createLinearSolver(solvername, W∘E; reg=reg2, params...)
 
       Ireco[:,:,i] = solve(solver, kdata; params...)
     end

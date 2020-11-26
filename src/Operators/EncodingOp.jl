@@ -59,7 +59,7 @@ function encodingOps2d_parallel(acqData::AcquisitionData, shape::NTuple{2,Int64}
   # fourier operators
   ft = encodingOps2d_simple(acqData, shape; slice=slice, kargs...)
   S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),1)
-  Op = [ prodOp(diagOp( ft[i], numChan),S) for i=1:numContr]
+  Op = [ diagOp(ft[i], numChan) ∘ S for i=1:numContr]
 
   return Op
 end
@@ -83,7 +83,7 @@ function encodingOps3d_parallel(acqData::AcquisitionData, shape::NTuple{3,Int64}
   # fourier operators
   ft = encodingOps3d_simple(acqData, shape; kargs...)
   S = SensitivityOp(reshape(senseMaps,:,numChan),1)
-  return [ diagOp( [ft[i] for k=1:numChan]... )*S for i=1:numContr]
+  return [ diagOp(ft[i], numChan) ∘ S for i=1:numContr]
 end
 
 """
@@ -139,7 +139,7 @@ function encodingOp2d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
   # fourier operators
   ft = encodingOps2d_simple(acqData, shape; kargs...)
   S = SensitivityOp(reshape(senseMaps[:,:,slice,:],:,numChan),numContrasts(acqData))
-  return diagOp( repeat(ft, numChan)... )*S
+  return diagOp(ft, numChan) ∘ S
 end
 
 """
@@ -161,7 +161,7 @@ function encodingOp3d_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple
   # fourier operators
   ft = encodingOps3d_simple(acqData, shape; kargs...)
   S = SensitivityOp(reshape(senseMaps,:,numChan),1)
-  return diagOp( repeat(ft, numChan)... )*S
+  return diagOp(ft, numChan) ∘ S
 end
 
 ###################################
@@ -198,7 +198,7 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
     M = SamplingOp( hcat([subIdx for c=1:numChan]...), (N, numContr, numChan))
   end
 
-  return M*Φ*E
+  return M ∘ (Φ ∘ E)
 
 end
 
@@ -232,7 +232,7 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
   # subsampling
   if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
     S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles))
-    return prodOp(S,ftOp)
+    return S ∘ ftOp
   else
     return ftOp
   end
@@ -265,9 +265,8 @@ function fourierEncodingOp3d(shape::NTuple{3,Int64}, tr::Trajectory, opName::Str
   # subsampling
   if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
     S = SamplingOp(subsampleIdx,shape)
+    return S ∘ ftOp
   else
-    S = opEye(ComplexF64,prod(shape))
+    return ftOp
   end
-
-  return S*ftOp
 end

@@ -1,6 +1,7 @@
 import Base: hcat, vcat, \
 export hcat, vcat, \, diagOp, A_mul_B
 
+include("Composition.jl")
 include("NFFTOp.jl")
 include("ExplicitOp.jl")
 include("SensitivityOp.jl")
@@ -173,90 +174,6 @@ function _produ_diagnormalop(ops, idx, x, y)
     end
   end
   return
-end
-
-mutable struct ProdOp{T} <: AbstractLinearOperator{T}
-  nrow :: Int
-  ncol :: Int
-  symmetric :: Bool
-  hermitian :: Bool
-  prod :: Function
-  tprod :: Function
-  ctprod :: Function
-  nprod :: Int
-  ntprod :: Int
-  nctprod :: Int
-  isWeighting :: Bool
-  A
-  B
-end
-
-
-"""
-    prodOp(ops :: AbstractLinearOperator...)
-
-product of two Operators. Differs with * since it can handle normal operator
-"""
-function prodOp(A,B;isWeighting=false)
-  nrow=A.nrow
-  ncol=B.ncol
-  S = eltype(A)
-
-  function produ(x::Vector{T}) where T<:Union{Real,Complex}
-    return A*(B*x)
-  end
-
-  function tprodu(y::Vector{T}) where T<:Union{Real,Complex}
-    return transposed(B)*(transposed(A)*y)
-  end
-
-  function ctprodu(y::Vector{T}) where T<:Union{Real,Complex}
-    return adjoint(B)*(adjoint(A)*y)
-  end
-
-  Op = ProdOp{S}( nrow, ncol, false, false,
-                     produ,
-                     tprodu,
-                     ctprodu, 0, 0, 0, isWeighting, A, B )
-
-  return Op
-end
-
-function Base.copy(S::ProdOp{T}) where T
-  A = copy(S.A)
-  B = copy(S.B)
-  return prodOp(A,B; isWeighting=S.isWeighting)
-end
-
-
-### Normal Matrix Code ###
-# Left matrix can be build into a normal operator
-
-struct ProdNormalOp{S,U} 
-  opOuter::S
-  normalOpInner::U
-end
-
-function SparsityOperators.normalOperator(S::ProdOp, W=I)
-  if S.isWeighting && W==I
-    normalOperator(S.B, S.A)
-  else
-    return ProdNormalOp(S.B, normalOperator(S.A, W) )
-  end
-end
-
-function Base.:*(S::ProdNormalOp, x::AbstractVector)
-  return adjoint(S.opOuter)*(S.normalOpInner*(S.opOuter*x))
-end
-
-
-# implement A_mul_B for the product
-A_mul_B(A::AbstractLinearOperator, x::Vector) = A*x
-
-function Base.copy(S::ProdNormalOp{T,U}) where {T,U}
-  opOuter = copy(S.opOuter)
-  opInner = copy(S.normalOpInner)
-  return ProdNormalOp(opOuter, opInner)
 end
 
 #
