@@ -39,14 +39,7 @@ function reconstruction_simple( acqData::AcquisitionData
         W = WeightingOp(weights[j])
         for i = 1:numChan
           kdata = kData(acqData,j,i,k).* weights[j]
-
-          reg2 = deepcopy(reg)
-          if normalize
-            for r=1:length(reg)
-              RegularizedLeastSquares.normalize!(reg2[r], kdata)
-            end
-          end
-          solver = createLinearSolver(solvername, W∘F[j]; reg=reg2, params...)
+          solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
 
           I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]),
                                  solverInfo=get(params,:solverInfo,nothing))
@@ -102,14 +95,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
       F = encodingOp2d_multiEcho(acqData, reconSize, slice=i; encParams...)
       for j = 1:numChan
         kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
-
-        reg2 = deepcopy(reg)
-        if normalize
-          for r=1:length(reg)
-            RegularizedLeastSquares.normalize!(reg2[r], kdata)
-          end
-        end
-        solver = createLinearSolver(solvername, W∘F; reg=reg2, params...)
+        solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
 
         Ireco[:,j,i] = solve(solver,kdata; params...)
         # TODO circular shutter
@@ -162,15 +148,8 @@ function reconstruction_multiCoil(acqData::AcquisitionData
         W = WeightingOp(weights[j],numChan)
         kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
 
-        reg2 = deepcopy(reg)
-        if normalize
-          for r=1:length(reg)
-            RegularizedLeastSquares.normalize!(reg2[r], kdata)
-          end
-        end
-
         EFull = ∘(W, E[j], isWeighting=true)
-        solver = createLinearSolver(solvername, EFull; reg=reg2, params...)
+        solver = createLinearSolver(solvername, EFull; reg=reg, params...)
         I = solve(solver, kdata; params...)
 
         if isCircular( trajectory(acqData, j) )
@@ -224,14 +203,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
       E = encodingOp2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
-
-      reg2 = deepcopy(reg)
-      if normalize
-        for r=1:length(reg)
-          RegularizedLeastSquares.normalize!(reg2[r], acqData.kdata)
-        end
-      end
-      solver = createLinearSolver(solvername, W∘E; reg=reg2, params...)
+      solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
 
       Ireco[:,:,i] = solve(solver, kdata; params...)
     end
