@@ -30,7 +30,8 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, 
                 oversamplingFactor=1.25, kernelSize=3, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  plan = NFFTPlan(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
+  # plan = NFFTPlan(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
+  plan = plan_nfft(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
 
   return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
             , x->produ(plan,x)
@@ -38,12 +39,12 @@ function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false,
             , y->ctprodu(plan,y), 0, 0, 0, plan, toeplitz)
 end
 
-function produ(plan::NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
+function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
   y = nfft(plan,reshape(x[:],plan.N))
   return vec(y)
 end
 
-function ctprodu(plan::NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
+function ctprodu(plan::NFFT.NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
   x = nfft_adjoint(plan, y[:])
   return vec(x)
 end
@@ -112,7 +113,7 @@ function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
 end
 
 
-function diagonalizeOp(p::NFFTPlan, weights=nothing)
+function diagonalizeOp(p::NFFT.NFFTPlan, weights=nothing)
   shape = p.N
   nodes = p.x
 
@@ -127,7 +128,7 @@ function diagonalizeOp(p::NFFTPlan, weights=nothing)
    firstCol = reshape(firstCol, shape)
 
   # calculate first rows of the leftmost Toeplitz blocks
-  p2 = NFFTPlan([-1,1].*nodes, shape, 3, 1.25)
+  p2 = plan_nfft([-1,1].*nodes, shape, 3, 1.25)
   firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
   firstRow = reshape(firstRow, shape)
 

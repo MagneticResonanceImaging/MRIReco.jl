@@ -77,11 +77,11 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plans = Vector{NFFTPlan{D,0,Float64}}(undef,K)
+  plans = Vector{NFFT.NFFTPlan{D,0,Float64}}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = NFFTPlan(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
+    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
   end
 
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
