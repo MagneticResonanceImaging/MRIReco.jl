@@ -2,7 +2,6 @@ using Documenter, MRIReco
 
 makedocs(
     modules = [MRIReco],
-    format = Documenter.HTML(prettyurls = false),
     sitename = "Julia MRI Package",
     authors = "Tobias Knopp, Mirco Grosser",
     pages = [
@@ -18,11 +17,10 @@ makedocs(
         "Parallel Imaging" => "SENSE.md",
         "Compressed Sensing" => "compressedSensing.md",
         "Customize" => "custom.md",
-        "API" => "API.md",
+        "API" => "API.md"
     ],
 )
 
 deploydocs(
-    repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git",
-    target = "build",
+    repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git"
 )
