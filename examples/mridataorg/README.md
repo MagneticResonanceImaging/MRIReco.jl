@@ -11,7 +11,7 @@ In order to use this code one first has to download Julia (version 1.5) and inst
 
 ```julia
 using Pkg
-Pkg.add("MPIReco")
+Pkg.add("MRIReco")
 ```
 
 Load the package by entering
