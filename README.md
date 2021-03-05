@@ -17,7 +17,8 @@
 ## How to give credit
 If you use this package please acknowledge us by citing:
 
-T. Knopp and M. Grosser (2019). MRIReco.jl: An Extensible Open-Source Image Reconstruction Framework written in Julia. *Proc. ISMRM* 2019.
+T. Knopp and M. Grosser (2021). MRIReco.jl: An MRI Reconstruction Framework written in Julia. [*arXiv:2101.12624*](https://arxiv.org/abs/2101.12624)
+<!--T. Knopp and M. Grosser (2019). MRIReco.jl: An Extensible Open-Source Image Reconstruction Framework written in Julia. *Proc. ISMRM* 2019.  -->
 
 A BibTeX file is directly contained within this package `MRIReco.bib`.
 
