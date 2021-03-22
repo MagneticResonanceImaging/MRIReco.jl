@@ -37,7 +37,7 @@ function __init__()
   if Threads.nthreads() > 1
     BLAS.set_num_threads(1)
     FFTW.set_num_threads(1)
-  else if Sys.iswindows()
+  elseif Sys.iswindows()
     BLAS.set_num_threads(1) # see https://github.com/JuliaLang/julia/issues/36976
   end
 end
