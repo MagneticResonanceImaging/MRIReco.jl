@@ -212,7 +212,7 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
 
   # store one profile (kspace data) for each unique encoding status
   cnt = 1
-  for l in idx_unique # TODO: set of profiles (with unique encoding status)
+  for l in idx[idx_unique] # TODO: set of profiles (with unique encoding status)
     i1 = f.profiles[l].head.discard_pre + 1
     i2 = i1+numSampPerProfile-1
     kdata[:,cnt,:] .= ComplexF64.(f.profiles[l].data[i1:i2, :])
