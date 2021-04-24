@@ -1,5 +1,5 @@
 import HDF5: h5t_create, hdf5_type_id, h5t_insert, h5t_array_create, h5t_close,
-             h5t_vlen_create, Hsize, h5s_create_simple, h5d_create, h5d_write,
+             h5t_vlen_create, hsize_t, h5s_create_simple, h5d_create, h5d_write,
              h5d_close, h5s_close, h5p_create, h5p_set_chunk, h5t_get_member_offset,
              h5t_get_member_type, h5t_get_member_offset, h5t_get_member_type
 
@@ -41,7 +41,7 @@ function get_hdf5type_encoding()
   h5t_insert(datatype, "set", off(8), hdf5_type_id(UInt16))
   h5t_insert(datatype, "segment", off(9), hdf5_type_id(UInt16))
 
-  hsz = Hsize[8]
+  hsz = hsize_t[8]
   d = h5t_array_create(hdf5_type_id(UInt16), convert(Cuint, 1), hsz)
   h5t_insert(datatype, "user", off(10), d)
   h5t_close(d)
@@ -87,7 +87,7 @@ function get_hdf5type_acquisitionheader()
   h5t_insert(datatype, "scan_counter", off(4), hdf5_type_id(UInt32))
   h5t_insert(datatype, "acquisition_time_stamp", off(5), hdf5_type_id(UInt32))
 
-  hsz1 = Hsize[3]
+  hsz1 = hsize_t[3]
   d1 = h5t_array_create(hdf5_type_id(UInt32), convert(Cuint, 1), hsz1)
   h5t_insert(datatype, "physiology_time_stamp", off(6), d1)
   h5t_close(d1)
@@ -96,7 +96,7 @@ function get_hdf5type_acquisitionheader()
   h5t_insert(datatype, "available_channels", off(8), hdf5_type_id(UInt16))
   h5t_insert(datatype, "active_channels", off(9), hdf5_type_id(UInt16))
 
-  hsz2 = Hsize[16]
+  hsz2 = hsize_t[16]
   d2 = h5t_array_create(hdf5_type_id(UInt64), convert(Cuint, 1), hsz2)
   h5t_insert(datatype, "channel_mask", off(10), d2)
   h5t_close(d2)
@@ -108,7 +108,7 @@ function get_hdf5type_acquisitionheader()
   h5t_insert(datatype, "trajectory_dimensions", off(15), hdf5_type_id(UInt16))
   h5t_insert(datatype, "sample_time_us", off(16), hdf5_type_id(Float32))
 
-  hsz3 = Hsize[3]
+  hsz3 = hsize_t[3]
   d3 = h5t_array_create(hdf5_type_id(Float32), convert(Cuint, 1), hsz3)
   h5t_insert(datatype, "position", off(17), d3)
   h5t_insert(datatype, "read_dir", off(18), d3)
@@ -121,12 +121,12 @@ function get_hdf5type_acquisitionheader()
   h5t_insert(datatype, "idx", off(22), denc)
   h5t_close(denc)
 
-  hsz4 = Hsize[8]
+  hsz4 = hsize_t[8]
   d4 = h5t_array_create(hdf5_type_id(Int32), convert(Cuint, 1), hsz4)
   h5t_insert(datatype, "user_int", off(23), d4)
   h5t_close(d4)
 
-  hsz5 = Hsize[8]
+  hsz5 = hsize_t[8]
   d5 = h5t_array_create(hdf5_type_id(Float32), convert(Cuint, 1), hsz5)
   h5t_insert(datatype, "user_float", off(24), d5)
   h5t_close(d5)
@@ -192,9 +192,9 @@ function writeProfiles(file, dataset, profiles::Vector{Profile})
 
   d_type_compound = get_hdf5type_acquisition()
 
-  shape = Hsize[length(profiles)]
-  maxshape = Hsize[typemax(Hsize)]
-  chunkshape = Hsize[1]#length(profiles)]
+  shape = hsize_t[length(profiles)]
+  maxshape = hsize_t[typemax(hsize_t)]
+  chunkshape = hsize_t[1]#length(profiles)]
   space = h5s_create_simple(1, shape, maxshape)
 
   props = h5p_create(HDF5.H5P_DATASET_CREATE)

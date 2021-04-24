@@ -1,7 +1,7 @@
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.3.3"
+version = "0.3.4"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -32,8 +32,8 @@ Distributions = "0.21, 0.23"
 FFTW = "0.2, 1.0"
 FileIO = "1.2"
 Graphics = "0.4, 1.0"
-HDF5 = "0.13"
-ImageUtils = "0.2"
+HDF5 = "0.15"
+ImageUtils = "0.2.5"
 LightXML = "0.8.1, 0.9"
 LinearOperators = "1.0"
 LowRankApprox = "0.4.2"
