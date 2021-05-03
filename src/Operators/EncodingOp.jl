@@ -230,7 +230,7 @@ function fourierEncodingOp2d(shape::NTuple{2,Int64}, tr::Trajectory, opName::Str
   end
 
   # subsampling
-  if !isempty(subsampleIdx) && length(subsampleIdx)!=size(tr,2)
+  if !isempty(subsampleIdx) && (subsampleIdx != collect(1:size(tr,2))) 
     S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles))
     return S ∘ ftOp
   else
