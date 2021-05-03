@@ -157,7 +157,7 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, 
   encSt2 = encSteps2(f)
   numEncSamp, numProf, numSl = f.params["encodedSize"]
   for i=1:length(f.profiles)
-    # only consider data for the specified slice, constrast and repetition
+    # only consider data for the specified slice, contrast and repetition
     if f.profiles[i].head.idx.slice+1 != slice || f.profiles[i].head.idx.contrast+1 != contrast || f.profiles[i].head.idx.repetition != 0
       continue
     end
