@@ -22,6 +22,7 @@ using ThreadPools
 @reexport using Unitful
 import LowRankApprox.psvd
 
+const Trafo = Union{AbstractMatrix, AbstractLinearOperator, Nothing}
 
 include("Trajectories/Trajectories.jl")
 include("Sequences/Sequence.jl")
