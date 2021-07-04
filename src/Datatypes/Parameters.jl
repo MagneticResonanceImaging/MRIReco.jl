@@ -265,10 +265,17 @@ function insertNode(xs, paramName::String, param::T) where T
 end
 
 function insertNode(xs, paramName::String, param::Vector{T}) where T <: Number
-  xsp = new_child(xs, paramName)
-  insertNode(xsp, "x", param[1])
-  insertNode(xsp, "y", param[2])
-  insertNode(xsp, "z", param[3])
+
+  if paramName in ["TE", "TR"]
+    for p in param
+      insertNode(xs, paramName, p)
+    end
+  else
+    xsp = new_child(xs, paramName)
+    insertNode(xsp, "x", param[1])
+    insertNode(xsp, "y", param[2])
+    insertNode(xsp, "z", param[3])
+  end
 end
 
 function insertNode(xs, paramName::String, param::Vector{T}) where T
