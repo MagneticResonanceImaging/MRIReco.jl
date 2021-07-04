@@ -62,6 +62,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         m::Float64=2.0,
                         K=20,
                         K_tol::Float64=1.e-3,
+                        step::Int64=10,
                         kargs...) where D
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
@@ -72,7 +73,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ncol = prod(shape)
 
  # create and truncate low-rank expansion
-  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr))
+  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
 
   @debug "K = $K"
@@ -229,15 +230,10 @@ function createInhomogeneityData_(times::Vector,
                                   alpha::Float64=1.75,
                                   m::Float64 = 4.0,
                                   method="nfft",
-                                  numSamp::Int64=length(times)) where D
+                                  numSamp::Int64=length(times),
+                                  step::Int64=10) where D
 
-    if method == "const"
-      A = get_AC_coefficients_one_term(K,vec(times),vec(correctionmap))
-      C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
-    elseif method== "linear"
-      A = get_AC_coefficients_two_terms(K,vec(times),vec(correctionmap))
-      C = get_C_coefficients_hist_lsqr(K,vec(times),vec(correctionmap))
-    elseif method == "nfft"
+    if method == "nfft"
       A,C = get_AC_coefficients_nfft(K,vec(times),vec(correctionmap), alpha, m)
     elseif method == "leastsquare"
       A,C = get_AC_coefficients_lsqr(K,vec(times),vec(correctionmap))
@@ -251,8 +247,10 @@ function createInhomogeneityData_(times::Vector,
       # C = get_C_coefficients_hist_lsqr_fs(K,vec(times),vec(correctionmap))
       C = get_C_coefficients_lsqr(vec(times),vec(correctionmap),A,numSamp)
     elseif method == "svd"
-      A = get_A_coefficients_svd(K,vec(times),vec(correctionmap); K_tol=K_tol)
-      C = get_C_coefficients_lsqr(vec(times),vec(correctionmap),A,numSamp)
+      A = get_A_coefficients_svd(K,vec(times)[1:numSamp],vec(correctionmap); K_tol=K_tol)
+      C = get_C_coefficients_lsqr(vec(times),vec(correctionmap),A,numSamp,step)
+      rep = div(length(times),numSamp)
+      A = repeat(A,outer=(rep,1))
     else
       error("approximation scheme $(interp) is not yet implemented")
     end

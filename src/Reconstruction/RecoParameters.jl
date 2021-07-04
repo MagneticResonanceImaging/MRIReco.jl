@@ -25,29 +25,30 @@ function setupDirectReco(acqData::AcquisitionData, recoParams::Dict)
 end
 
 
-"""
-Auxilary struct that holds parameters relevant for image reconstruction
+# """
+# Auxilary struct that holds parameters relevant for image reconstruction
 
-# Fields
-* `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
-* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `reg::Regularization`                 - Regularization to be used
-* `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
-* `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
-* `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
-"""
-mutable struct RecoParameters{N}
-  reconSize::NTuple{N,Int64}
-  weights::Vector{Vector{ComplexF64}}
-  sparseTrafo::AbstractLinearOperator
-  reg::Vector{Regularization}
-  normalize::Bool
-  solvername::String
-  senseMaps::Array{ComplexF64}
-end
+# # Fields
+# * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
+# * `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+# * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+# * `reg::Regularization`                 - Regularization to be used
+# * `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
+# * `solvername::String`                  - name of the solver to use
+# * `senseMaps::Array{ComplexF64}`        - coil sensitivities
+# * `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
+# * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
+# """
+# mutable struct RecoParameters{N}
+#   reconSize::NTuple{N,Int64}
+#   weights::Vector{Vector{ComplexF64}}
+#   sparseTrafo::AbstractLinearOperator
+#   reg::Vector{Regularization}
+#   normalize::Bool
+#   encodingOps::
+#   solvername::String
+#   senseMaps::Array{ComplexF64}
+# end
 
 
 """
@@ -94,9 +95,11 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   # sparsifying transform
   if haskey(recoParams,:sparseTrafo) && typeof(recoParams[:sparseTrafo]) != String
     sparseTrafo = recoParams[:sparseTrafo]
-  else
+  elseif haskey(recoParams,:sparseTrafo)
     sparseTrafoName = get(recoParams, :sparseTrafo, "nothing")
     sparseTrafo = SparseOp(sparseTrafoName, reconSize; recoParams...)
+  else
+    sparseTrafo=nothing
   end
 
   # bare regularization (without sparsifying transform)
@@ -107,6 +110,8 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   # normalize regularizer ?
   normalize = get(recoParams, :normalizeReg, false)
 
+  encOps = get(recoParams, :encodingOps, nothing)
+
   # solvername
   solvername = get(recoParams, :solver, "fista")
 
@@ -116,7 +121,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
-  return RecoParameters(reconSize, weights, sparseTrafo, vec(reg), normalize, solvername, senseMaps)
+  return reconSize, weights, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
 end
 
 

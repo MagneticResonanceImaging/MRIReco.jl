@@ -17,10 +17,11 @@ contrasts and slices
 function reconstruction_simple( acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::AbstractLinearOperator
+                              , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , normalize::Bool=false
+                              , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -34,7 +35,11 @@ function reconstruction_simple( acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
   @sync for k = 1:numSl
     Threads.@spawn begin
-      F = encodingOps2d_simple(acqData, reconSize, slice=k; encParams...)
+      if encodingOps!=nothing
+        F = encodingOps[:,k]
+      else
+        F = encodingOps2d_simple(acqData, reconSize, slice=k; encParams...)
+      end
       for j = 1:numContr
         W = WeightingOp(weights[j])
         for i = 1:numChan
@@ -74,10 +79,11 @@ are reconstructed independently.
 function reconstruction_multiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::AbstractLinearOperator
+                              , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , normalize::Bool=false
+                              , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -92,7 +98,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numChan, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      F = encodingOp2d_multiEcho(acqData, reconSize, slice=i; encParams...)
+      if encodingOps != nothing
+        F = encodingOps[i]
+      else
+        F = encodingOp2d_multiEcho(acqData, reconSize, slice=i; encParams...)
+      end
       for j = 1:numChan
         kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
         solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
@@ -125,11 +135,12 @@ are reconstructed independently.
 function reconstruction_multiCoil(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::AbstractLinearOperator
+                              , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , senseMaps::Array{ComplexF64}
                               , normalize::Bool=false
+                              , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -142,8 +153,12 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
   @sync for k = 1:numSl
     Threads.@spawn begin
-      E = encodingOps2d_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
-      
+      if encodingOps != nothing
+        E = encodingOps[:,k]
+      else
+        E = encodingOps2d_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
+      end
+
       for j = 1:numContr
         W = WeightingOp(weights[j],numChan)
         kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
@@ -182,11 +197,12 @@ Different slices are reconstructed independently.
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{2,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::AbstractLinearOperator
+                              , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , senseMaps::Array{ComplexF64}
                               , normalize::Bool=false
+                              , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
@@ -200,7 +216,11 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
   Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
-      E = encodingOp2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+      if encodingOps != nothing
+        E = encodingOps[i]
+      else
+        E = encodingOp2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+      end
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
       solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
