@@ -38,7 +38,7 @@ function BrukerFile(path::String; maxEntriesAcqp=2000)
 end
 
 function getindex(b::BrukerFile, parameter)#::String
-  if !b.acqpRead && ( parameter=="NA" || parameter=="NR" || parameter=="NI" ||
+  if !b.acqpRead && ( parameter=="NA" || parameter=="NR" || parameter=="NI" || parameter=="NSLICES" ||
                       parameter=="SW" || parameter[1:2] == "GO" || parameter[1:3] == "ACQ" )
     acqppath = joinpath(b.path, "acqp")
     read(b.params, acqppath, maxEntries=b.maxEntriesAcqp)
@@ -153,7 +153,25 @@ pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
 pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
 pvmEncValues2(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps2"])
 pvmMatrix(b::BrukerFile) = parse.(Int,b["PVM_Matrix"])
+pvmSpiralMode(b::BrukerFile) = b["PVM_SpiralMode"]
+pvmSpiralNbOfInterleaves(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfInterleaves"])
+pvmSpiralNbOfGradientPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfGradientPoints"])
+pvmSpiralNbOfAcqPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfAcqPoints"])
+pvmSpiralEchoTime(b::BrukerFile) = parse.(Int,b["PVM_SpiralEchoTime"])
+pvmSpiralNavSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralNavSize"])
+pvmSpiralPreSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralPreSize"])
+pvmSpiralSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralSize"])
+pvmSpiralPostSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralPostSize"])
+pvmSpiralPointsPerRotation(b::BrukerFile) = parse.(Int,b["PVM_SpiralPointsPerRotation"])
+pvmSpiralShape1(b::BrukerFile) = parse.(Float32,b["PVM_SpiralShape1"])
+pvmSpiralShape2(b::BrukerFile) = parse.(Float32,b["PVM_SpiralShape2"])
 
+pvmTrajInterleaves(b::BrukerFile) = parse(Int,b["PVM_TrajInterleaves"])
+pvmTrajSamples(b::BrukerFile) = parse(Int,b["PVM_TrajSamples"])
+pvmTrajResultSize(b::BrukerFile) = parse(Int,b["PVM_TrajResultSize"])
+
+pvmTrajKx(b::BrukerFile) = parse.(Float32,b["PVM_TrajKx"])
+pvmTrajKy(b::BrukerFile) = parse.(Float32,b["PVM_TrajKy"])
 
 function acqDataType(b::BrukerFile)
   format = b["GO_raw_data_format"]
@@ -169,6 +187,44 @@ function acqDataType(b::BrukerFile)
 end
 
 function RawAcquisitionData(b::BrukerFile)
+  if isfile(joinpath(b.path, "fid"))
+    return RawAcquisitionDataFid(b)
+  else
+    if contains(MRIReco.pvmSpiralMode(b), "SPIRAL")
+      return RawAcquisitionDataRawDataSpiral(b)
+    else
+      error("Not implemented yet!")
+    end
+  end
+end
+
+function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
+  # Have not a way to read out this. Not sure if its true
+  dtype = Complex{Int32}
+  
+  filename = joinpath(b.path, "rawdata.job0")
+
+  profileLength = pvmTrajSamples(b)
+  phaseFactor = acqPhaseFactor(b)
+  numSlices = acqNumSlices(b)
+  numEchos = acqNumEchos(b)
+  numRep = acqNumRepetitions(b)
+  numProfiles = pvmTrajInterleaves(b)
+
+  I = open(filename,"r") do fd
+    read!(fd,Array{dtype,6}(undef, profileLength,
+                                   numEchos,
+                                   phaseFactor,
+                                   numSlices,
+                                   numProfiles,
+                                   numRep))
+  end
+
+  # TODO the following of course is just for debugging
+  return I
+end
+
+function RawAcquisitionDataFid(b::BrukerFile)
     dtype = Complex{acqDataType(b)}
 
     filename = joinpath(b.path, "fid")
