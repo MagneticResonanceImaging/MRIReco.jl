@@ -245,10 +245,47 @@ function ifft2c(x::Array{T}) where T
   return reshape(res,s)
 end
 
+"""
+perform compression on k-space data
+"""
+function coilCompression(kdata::Matrix{ComplexF64}, coilTrafo::Matrix{T}) where T
+  return kdata*coilTrafo
+end
 
+function coilCompression(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, coilTrafo::Matrix{T}) where T
+  # compress kspace data
+  kdataCC = kdata*coilTrafo
+  # compress smaps
+  smapsCC = reshape( reshape(smaps,:,size(smaps,4))*coilTrafo, size(smaps))
 
+  return kdataCC, smaps
+end
 
+"""
+return SVD-based coil compression matrix for `numVC` virtual coils
+"""
+function geometricCC(kdata::Matrix{ComplexF64}, numVC::Int64=size(kdata,2))
+  return svd(kdata).Vt[:,1:numVC]
+end
 
+function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64=size(kdata,2))
+  usv = svd(kdata)
+  kdataCC = kdata*usv.Vt[:,1:numVc]
+  smapsCC = zeros(ComplexF64,size(smaps))
+  for j=1:size(smaps,3), i=1:size(smaps,2)
+    smapsCC[:,i,j,:] .= smaps[:,i,j,:]*usv.Vt[:,1:numVc]
+  end
+  return kdata*usv.Vt, usv.V[1:numVC,:]
+end
+
+"""
+ geometric coil compression matrix
+"""
+function geometricCCMat(kdata::Matrix{ComplexF64}) 
+  usv = svd(kdata)
+
+  return usv.V, usv.S
+end
 
 function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
                                              iterations=1, outerIterations=3, cmap = nothing)
