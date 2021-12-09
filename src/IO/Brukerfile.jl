@@ -323,6 +323,11 @@ function RawAcquisitionDataFid(b::BrukerFile)
     params["encodedFOV"] = F
     params["receiverChannels"] = 1
     params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
+
+    params["accelerationFactor"] = (1,1) # TODO: This is just a dummy value
+    params["calibrationMode"] = "other" # TODO: This is just a dummy value
+
+
     params["studyID"] = b["VisuStudyId"]
     #params["studyDescription"] = b["ACQ_scan_name"]
     #params["studyInstanceUID"] =
