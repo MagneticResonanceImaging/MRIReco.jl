@@ -317,6 +317,8 @@ function RawAcquisitionDataFid(b::BrukerFile)
       N = N_
     end
     params["encodedSize"] = N
+    params["reconSize"] = recoSize(b)
+    params["reconFOV"] = recoFov(b)
     F = acqFov(b)
     params["encodedFOV"] = F
     params["receiverChannels"] = 1
