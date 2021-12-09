@@ -327,6 +327,17 @@ function RawAcquisitionDataFid(b::BrukerFile)
     params["accelerationFactor"] = (1,1) # TODO: This is just a dummy value
     params["calibrationMode"] = "other" # TODO: This is just a dummy value
 
+    min_enc1 = minimum([ profiles[i].head.idx.kspace_encode_step_1 for i in 1:length(profiles) ])
+    max_enc1 = maximum([ profiles[i].head.idx.kspace_encode_step_1 for i in 1:length(profiles) ])
+    params["enc_lim_kspace_encoding_step_1"] = 
+        Limit(min_enc1, max_enc1, round(Int,mean([min_enc1,max_enc1])))
+    min_enc2 = minimum([ profiles[i].head.idx.kspace_encode_step_2 for i in 1:length(profiles) ])
+    max_enc2 = maximum([ profiles[i].head.idx.kspace_encode_step_2 for i in 1:length(profiles) ])
+    params["enc_lim_kspace_encoding_step_2"] = 
+        Limit(min_enc2, max_enc2, round(Int,mean([min_enc2,max_enc2])))
+    params["enc_lim_kspace_encoding_step_2"] = Limit(0, 0, 0)
+    params["enc_lim_set"] = Limit(0, 0, 0)
+    params["enc_lim_slice"] = Limit(0, 0, 0)
 
     params["studyID"] = b["VisuStudyId"]
     #params["studyDescription"] = b["ACQ_scan_name"]
