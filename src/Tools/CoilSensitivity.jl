@@ -1,4 +1,4 @@
-export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint
+export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
 
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
@@ -246,45 +246,47 @@ function ifft2c(x::Array{T}) where T
 end
 
 """
-perform compression on k-space data
-"""
-function coilCompression(kdata::Matrix{ComplexF64}, coilTrafo::Matrix{T}) where T
-  return kdata*coilTrafo
-end
-
-function coilCompression(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, coilTrafo::Matrix{T}) where T
-  # compress kspace data
-  kdataCC = kdata*coilTrafo
-  # compress smaps
-  smapsCC = reshape( reshape(smaps,:,size(smaps,4))*coilTrafo, size(smaps))
-
-  return kdataCC, smaps
-end
-
-"""
 return SVD-based coil compression matrix for `numVC` virtual coils
 """
-function geometricCC(kdata::Matrix{ComplexF64}, numVC::Int64=size(kdata,2))
+function geometricCCMat(kdata::Matrix{ComplexF64}, numVC::Int64=size(kdata,2))
   return svd(kdata).Vt[:,1:numVC]
 end
 
+"""
+perform SVD-based coil compression for the given `kdata` and `smaps`
+"""
 function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64=size(kdata,2))
+  nx,ny,nz,nc = size(smaps)
   usv = svd(kdata)
-  kdataCC = kdata*usv.Vt[:,1:numVc]
-  smapsCC = zeros(ComplexF64,size(smaps))
-  for j=1:size(smaps,3), i=1:size(smaps,2)
-    smapsCC[:,i,j,:] .= smaps[:,i,j,:]*usv.Vt[:,1:numVc]
+  kdataCC = kdata*usv.Vt[:,1:numVC]
+  smapsCC = zeros(ComplexF64,nx,ny,nz,numVC)
+  for j=1:nz, i=1:ny
+    smapsCC[:,i,j,:] .= smaps[:,i,j,:]*usv.Vt[:,1:numVC]
   end
-  return kdata*usv.Vt, usv.V[1:numVC,:]
+
+  return kdataCC, smapsCC
 end
 
 """
- geometric coil compression matrix
+perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCCMat(kdata::Matrix{ComplexF64}) 
-  usv = svd(kdata)
-
-  return usv.V, usv.S
+function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, numVC::Int64=size(smaps,4))
+  nx,ny,nz,nc = size(smaps)
+  acqDataCC = deepcopy(acqData)
+  smapsCC = zeros(ComplexF64,nx,ny,nz,numVC)
+  for sl=1:numSlices(acqData)
+    # use first echo and first repetition to determine compression matrix
+    ccMat = geometricCCMat(acqData.kdata[1,sl,1], numVC)
+    # compress slice of the smaps
+    for i=1:ny 
+      smapsCC[:,i,sl,:] .= smaps[:,i,sl,:]*ccMat
+    end
+    # compress kdata-slice
+    for rep=1:numRepititions(acqData), contr=1:numContrasts(acqData)
+      acqDataCC.kdata[contr,sl,rep] = acqData.kdata[contr,sl,rep]*ccMat
+    end
+  end
+  return acqDataCC, smapsCC
 end
 
 function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
