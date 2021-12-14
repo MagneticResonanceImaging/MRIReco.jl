@@ -158,6 +158,8 @@ pvmSpiralNbOfInterleaves(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfInterleave
 pvmSpiralNbOfGradientPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfGradientPoints"])
 pvmSpiralNbOfAcqPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfAcqPoints"])
 pvmSpiralEchoTime(b::BrukerFile) = parse.(Int,b["PVM_SpiralEchoTime"])
+pvmSpiralAcqDwellTime(b::BrukerFile) = parse(Float32, b["PVM_SpiralAcqDwellTime"])
+pvmSpiralAcquisitionTime(b::BrukerFile) = parse(Float32, b["PVM_SpiralAcquisitionTime"])
 pvmSpiralNavSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralNavSize"])
 pvmSpiralPreSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralPreSize"])
 pvmSpiralSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralSize"])
@@ -210,9 +212,11 @@ function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   numEchos = acqNumEchos(b)
   numRep = acqNumRepetitions(b)
   numProfiles = pvmTrajInterleaves(b)
+  numChannels = acqNumCoils(b)
 
   I = open(filename,"r") do fd
-    read!(fd,Array{dtype,6}(undef, profileLength,
+    read!(fd,Array{dtype,7}(undef, profileLength,
+                                   numChannels,
                                    numEchos,
                                    phaseFactor,
                                    numSlices,
@@ -317,28 +321,10 @@ function RawAcquisitionDataFid(b::BrukerFile)
       N = N_
     end
     params["encodedSize"] = N
-    params["reconSize"] = recoSize(b)
-    params["reconFOV"] = recoFov(b)
     F = acqFov(b)
     params["encodedFOV"] = F
     params["receiverChannels"] = 1
     params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
-
-    params["accelerationFactor"] = (1,1) # TODO: This is just a dummy value
-    params["calibrationMode"] = "other" # TODO: This is just a dummy value
-
-    min_enc1 = minimum([ profiles[i].head.idx.kspace_encode_step_1 for i in 1:length(profiles) ])
-    max_enc1 = maximum([ profiles[i].head.idx.kspace_encode_step_1 for i in 1:length(profiles) ])
-    params["enc_lim_kspace_encoding_step_1"] = 
-        Limit(min_enc1, max_enc1, round(Int,mean([min_enc1,max_enc1])))
-    min_enc2 = minimum([ profiles[i].head.idx.kspace_encode_step_2 for i in 1:length(profiles) ])
-    max_enc2 = maximum([ profiles[i].head.idx.kspace_encode_step_2 for i in 1:length(profiles) ])
-    params["enc_lim_kspace_encoding_step_2"] = 
-        Limit(min_enc2, max_enc2, round(Int,mean([min_enc2,max_enc2])))
-    params["enc_lim_kspace_encoding_step_2"] = Limit(0, 0, 0)
-    params["enc_lim_set"] = Limit(0, 0, 0)
-    params["enc_lim_slice"] = Limit(0, 0, 0)
-
     params["studyID"] = b["VisuStudyId"]
     #params["studyDescription"] = b["ACQ_scan_name"]
     #params["studyInstanceUID"] =
