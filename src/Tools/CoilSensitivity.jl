@@ -1,5 +1,5 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
-
+using Polyester
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
 
@@ -7,17 +7,17 @@ Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually.
 Returns a 5D array.
 """
-function estimateCoilSensitivities(I::AbstractArray{T,5}, thresh=1.e-2) where T
-  nx,ny,nz,ne,numChan = size(I)
+function estimateCoilSensitivities(I::AbstractArray{T,5}, thresh = 1.e-2) where {T}
+  nx, ny, nz, ne, numChan = size(I)
 
-  I_sum = sqrt.( sum(abs.(I).^2, dims=5) ).+eps()
+  I_sum = sqrt.(sum(abs.(I) .^ 2, dims = 5)) .+ eps()
   I_max = maximum(abs.(I_sum))
   msk = zeros(size(I_sum))
-  msk[findall(x->x>thresh*I_max,I_sum)] .= 1
+  msk[findall(x -> x > thresh * I_max, I_sum)] .= 1
 
-  s = zeros(eltype(I),size(I))
-  for i=1:numChan
-      s[:,:,:,:,i] = msk .* I[:,:,:,:,i] ./ I_sum
+  s = zeros(eltype(I), size(I))
+  for i = 1:numChan
+    s[:, :, :, :, i] = msk .* I[:, :, :, :, i] ./ I_sum
   end
 
   return s
@@ -30,7 +30,7 @@ end
 Merge the channels of a multi-coil reconstruction.
 Returns a 4D array.
 """
-mergeChannels(I::AbstractArray{T,5}) where T = sqrt.(sum(abs.(I).^2,dims=5))
+mergeChannels(I::AbstractArray{T,5}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
 
 
 """
@@ -55,27 +55,27 @@ the matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Softw
 Returns a 4D array.
 """
 function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
-                ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
+  ; eigThresh_1::Float64 = 0.02, eigThresh_2::Float64 = 0.95)
 
-  if !isCartesian(trajectory(acqData,1))
+  if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
   end
 
-  nx,ny = acqData.encodingSize[1:2]
+  nx, ny = acqData.encodingSize[1:2]
   numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(ComplexF64,acqData.encodingSize[1],acqData.encodingSize[2],numSl,numChan)
+  maps = zeros(ComplexF64, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan)
 
   for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(ComplexF64,nx*ny,numChan)
+    kdata = zeros(ComplexF64, nx * ny, numChan)
     for coil = 1:numChan
-      kdata[acqData.subsampleIndices[1],coil] .= kData(acqData,1,coil,slice)
+      kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, slice)
     end
-    kdata = reshape(kdata,nx,ny,numChan)
+    kdata = reshape(kdata, nx, ny, numChan)
 
-    calib = crop(kdata,(ncalib,ncalib,numChan))
+    calib = crop(kdata, (ncalib, ncalib, numChan))
 
-    maps[:,:,slice,:] .= espirit(calib,(nx,ny),ksize,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
+    maps[:, :, slice, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2)
   end
   return maps
 end
@@ -86,25 +86,25 @@ end
                 ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)`
 Returns a 3D array.
 """
-function espirit(calibData::Array{ComplexF64,3}, imsize::NTuple{2,Int64}, ksize::NTuple{2,Int64}
-                ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)
-  sx,sy = imsize
-  nc = size(calibData,3)
+function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,Int64}
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95) where {T,N}
+  nc = size(calibData)[end]
 
   # compute calibration matrix, perform SVD and convert right singular vectors
   # into k-space kernels
-  k, S = dat2Kernel(calibData,ksize)
-  idx = findlast(x->x>=S[1]*eigThresh_1,S) # last singular vector to keep
+  k, S = dat2Kernel(calibData, ksize)
+  idx = findlast(x -> x >= S[1] * eigThresh_1, S) # last singular vector to keep
 
   # crop kernels and compute eigenvalue decomposition in images space
   # to get sensitivity maps
-  M, W = kernelEig(k[:,:,:,1:idx],(sx,sy))
+  M, W = kernelEig(k[:, :, :, 1:idx], imsize)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
-  msk = zeros(size(W,1),size(W,2),1)
-  msk[findall(x->x>eigThresh_2, abs.(W[:,:,end]))] .= 1
-  maps = M[:,:,:,end] .* repeat(msk,1,1,nc)
-
+  msk = zeros(size(W, 1), size(W, 2), 1)
+  msk[findall(x -> x > eigThresh_2, abs.(W[:, :, end]))] .= 1
+  maps = M[:, :, :, end] .* repeat(msk, 1, 1, nc)
+  maps = fftshift(maps, 1:length(imsize))
+  
   return maps
 end
 
@@ -113,15 +113,15 @@ end
 #   form calibration matrix from data, perform SVD and convert right singular vectors
 #   into k-space kernels
 #
-function dat2Kernel(data::Array{T,3}, ksize::NTuple{2,Int64}) where T
-  sx,sy,nc = size(data)
-  imSize=(sx,sy)
+function dat2Kernel(data::Array{T,3}, ksize::NTuple{2,Int64}) where {T}
+  sx, sy, nc = size(data)
+  imSize = (sx, sy)
 
-  tmp = im2row(data,ksize)
-  tsx,tsy,tsz = size(tmp)
-  A = reshape(tmp, tsx, tsy*tsz)
+  tmp = im2row(data, ksize)
+  tsx, tsy, tsz = size(tmp)
+  A = reshape(tmp, tsx, tsy * tsz)
   usv = svd(A)
-  kernel = reshape(usv.V,ksize[1],ksize[2],nc,size(usv.V,2))
+  kernel = reshape(usv.V, ksize[1], ksize[2], nc, size(usv.V, 2))
   return kernel, usv.S
 end
 
@@ -135,43 +135,48 @@ end
 # outputs :
 #         eigenvecs: images representing the eigenvectors (sx,sy,numChan,numChan)
 #         eigenvals: images representing th eigenvalues (sx,sy,numChan)
-function kernelEig(kernel::Array{T,4},imsize::NTuple{2,Int64}) where T
-  nx,ny,nc,nv = size(kernel)
-  ksize = (nx,ny)
+function kernelEig(kernel::Array{T}, imsize::Tuple) where {T}
+  kern_size = size(kernel)
+  ksize = kern_size[1:end-2]
+  nc = kern_size[end-1]
+  nv = kern_size[end]
+  flip_nc_nv = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
 
   # rotate kernel to order by maximum variance
-  k = permutedims(kernel,[1,2,4,3])
-  k = reshape(k,nx*ny*nv,nc)
+  k = permutedims(kernel, flip_nc_nv)
+  k = reshape(k, :, nc)
 
-  if size(k,1) < size(k,2)
-    usv = svd(k,full=true)
+  if size(k, 1) < size(k, 2)
+    usv = svd(k, full = true)
   else
     usv = svd(k)
   end
 
-  k = k*usv.V
-  kernel = reshape(k, nx,ny,nv,nc)
-  kernel = permutedims(kernel,[1,2,4,3])
-  kern2 = zeros(ComplexF64, imsize[1],imsize[2],size(kernel,3),size(kernel,4))
-  for n = 1:size(kernel,4)
-    kern2[:,:,:,n] .= fft2c( zeropad( conj.(kernel[end:-1:1,end:-1:1,:,n])*sqrt(imsize[1]*imsize[2]), (imsize[1],imsize[2],size(kernel,3)) ) )
-  end
-  kern2 = kern2/sqrt(prod(ksize))
+  k = k * usv.V
+  kernel = reshape(k, ksize..., nv, nc)
+  kernel = permutedims(kernel, flip_nc_nv)
 
-  eigenVecs = zeros(ComplexF64,imsize[1],imsize[2],nc,min(nc,nv))
-  eigenVals = zeros(ComplexF64,imsize[1],imsize[2],min(nc,nv))
+  kern2 = zeros(T, imsize..., nc, nv)
+  kern2[CartesianIndices(kernel)] .= kernel
+  @views fft!(kern2, 1:length(ksize))
+  kern2 ./= sqrt(prod(ksize))
+  kern2 .= conj.(kern2)
 
-  for n = 1:prod(imsize)
-    x,y = Tuple( CartesianIndices((imsize[1],imsize[2]))[n] )
-    mtx = kern2[x,y,:,:]
+
+  eigenVecs = Array{T}(undef, imsize..., nc, min(nc, nv))
+  eigenVals = Array{T}(undef, imsize..., min(nc, nv))
+
+  @batch for n ∈ CartesianIndices(imsize)
+    mtx = @view kern2[n, :, :]
 
     cdv = svd(mtx)
-    ph = transpose( repeat( exp.(-1im*angle.(cdv.U[1,:])), 1,size(cdv.U,1) ) )
-    C = usv.V*(cdv.U .* ph)
-    D = real.(cdv.S)
-    eigenVals[x,y,:] .= D[end:-1:1]
-    eigenVecs[x,y,:,:] .= C[:,end:-1:1]
+    ph = transpose(exp.(-1im * angle.(cdv.U[1, :])))
+
+    eigenVals[n, :] .= real.(cdv.S)
+    eigenVecs[n, :, :] .= usv.V * (cdv.U .* ph)
   end
+  reverse!(eigenVals; dims = ndims(eigenVals))
+  reverse!(eigenVecs; dims = ndims(eigenVecs))
 
   return eigenVecs, eigenVals
 end
@@ -179,15 +184,14 @@ end
 #
 # rearrange data from the image data to form kernels for dat2Kernel
 #
-function im2row(img::Array{T,3}, winSize::NTuple{2,Int64}) where T
-  sx,sy,sz = size(img)
-  res = zeros(T,(sx-winSize[1]+1)*(sy-winSize[2]+1),prod(winSize),sz)
+function im2row(img::Array{T,3}, winSize::NTuple{2,Int64}) where {T}
+  sx, sy, sz = size(img)
+  res = zeros(T, (sx - winSize[1] + 1) * (sy - winSize[2] + 1), prod(winSize), sz)
   cnt = 0
   for y = 1:winSize[2]
     for x = 1:winSize[1]
       cnt += 1
-      res[:,cnt,:] .= reshape(img[x:sx-winSize[1]+x,y:sy-winSize[2]+y,:]
-                              ,(sx-winSize[1]+1)*(sy-winSize[2]+1),sz)
+      res[:, cnt, :] .= reshape(img[x:sx-winSize[1]+x, y:sy-winSize[2]+y, :], (sx - winSize[1] + 1) * (sy - winSize[2] + 1), sz)
     end
   end
   return res
@@ -196,25 +200,25 @@ end
 #
 # crop the central area (of size s) of an array A
 #
-function crop(A::Array{T,3},s::NTuple{3,Int64}) where T
-  nx,ny,nz = size(A)
-  idx_x = div(nx,2)-div(s[1],2)+1:div(nx,2)-div(s[1],2)+s[1]
-  idx_y = div(ny,2)-div(s[2],2)+1:div(ny,2)-div(s[2],2)+s[2]
-  idx_z = div(nz,2)-div(s[3],2)+1:div(nz,2)-div(s[3],2)+s[3]
-  return A[idx_x,idx_y,idx_z]
+function crop(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
+  nx, ny, nz = size(A)
+  idx_x = div(nx, 2)-div(s[1], 2)+1:div(nx, 2)-div(s[1], 2)+s[1]
+  idx_y = div(ny, 2)-div(s[2], 2)+1:div(ny, 2)-div(s[2], 2)+s[2]
+  idx_z = div(nz, 2)-div(s[3], 2)+1:div(nz, 2)-div(s[3], 2)+s[3]
+  return A[idx_x, idx_y, idx_z]
 end
 
 #
 # zeropoad an array A to a target size s
 #
-function zeropad(A::Array{T,3},s::NTuple{3,Int64}) where T
-  nx,ny,nz = size(A)
-  idx_x = div(s[1],2)-div(nx,2)+1:div(s[1],2)-div(nx,2)+nx
-  idx_y = div(s[2],2)-div(ny,2)+1:div(s[2],2)-div(ny,2)+ny
-  idx_z = div(s[3],2)-div(nz,2)+1:div(s[3],2)-div(nz,2)+nz
+function zeropad(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
+  nx, ny, nz = size(A)
+  idx_x = div(s[1], 2)-div(nx, 2)+1:div(s[1], 2)-div(nx, 2)+nx
+  idx_y = div(s[2], 2)-div(ny, 2)+1:div(s[2], 2)-div(ny, 2)+ny
+  idx_z = div(s[3], 2)-div(nz, 2)+1:div(s[3], 2)-div(nz, 2)+nz
 
-  res = zeros(T,s[1],s[2],s[3])
-  res[idx_x,idx_y,idx_z] .= A
+  res = zeros(T, s)
+  res[idx_x, idx_y, idx_z] .= A
 
   return res
 end
@@ -222,46 +226,39 @@ end
 #
 #  apply 2d fft to all slices of a higher dimensional array
 #
-function fft2c(x::Array{T}) where T
-  s = size(x)
-  x = reshape(x,s[1],s[2],:)
-  res = zeros(ComplexF64,size(x))
-  for n=1:size(x,3)
-    res[:,:,n] = 1/sqrt(s[1]*s[2])*fftshift(fft(ifftshift(x[:,:,n])))
-  end
-  return reshape(res,s)
+function fft2c(x::Array{T}) where {T}
+  # s = size(x)
+  # println(s)
+  # x = reshape(x, s[1], s[2], :)
+  # res = zeros(ComplexF64, size(x))
+  # for n = 1:size(x, 3)
+  #   res[:, :, n] = 1 / sqrt(s[1] * s[2]) * fftshift(fft(ifftshift(x[:, :, n])))
+  # end
+  # return reshape(res, s)
+
+  # res = fftshift(fft(ifftshift(x, (1,2)), (1,2)), (1,2))
+  fft!(x, (1, 2))
+  x ./= sqrt(size(x, 1) * size(x, 2))
 end
 
-#
-#  apply 2d ifft to all slices of a higher dimensional array
-#
-function ifft2c(x::Array{T}) where T
-  s = size(x)
-  x = reshape(x,s[1],s[2],:)
-  res = zeros(ComplexF64,size(x))
-  for n=1:size(x,3)
-    res[:,:,n] = sqrt(s[1]*s[2])*fftshift(fft(ifftshift(x[:,:,n])))
-  end
-  return reshape(res,s)
-end
 
 """
 return SVD-based coil compression matrix for `numVC` virtual coils
 """
-function geometricCCMat(kdata::Matrix{ComplexF64}, numVC::Int64=size(kdata,2))
-  return svd(kdata).Vt[:,1:numVC]
+function geometricCCMat(kdata::Matrix{ComplexF64}, numVC::Int64 = size(kdata, 2))
+  return svd(kdata).Vt[:, 1:numVC]
 end
 
 """
 perform SVD-based coil compression for the given `kdata` and `smaps`
 """
-function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64=size(kdata,2))
-  nx,ny,nz,nc = size(smaps)
+function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64 = size(kdata, 2))
+  nx, ny, nz, nc = size(smaps)
   usv = svd(kdata)
-  kdataCC = kdata*usv.Vt[:,1:numVC]
-  smapsCC = zeros(ComplexF64,nx,ny,nz,numVC)
-  for j=1:nz, i=1:ny
-    smapsCC[:,i,j,:] .= smaps[:,i,j,:]*usv.Vt[:,1:numVC]
+  kdataCC = kdata * usv.Vt[:, 1:numVC]
+  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  for j = 1:nz, i = 1:ny
+    smapsCC[:, i, j, :] .= smaps[:, i, j, :] * usv.Vt[:, 1:numVC]
   end
 
   return kdataCC, smapsCC
@@ -270,35 +267,35 @@ end
 """
 perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, numVC::Int64=size(smaps,4))
-  nx,ny,nz,nc = size(smaps)
+function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, numVC::Int64 = size(smaps, 4))
+  nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(ComplexF64,nx,ny,nz,numVC)
-  for sl=1:numSlices(acqData)
+  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  for sl = 1:numSlices(acqData)
     # use first echo and first repetition to determine compression matrix
-    ccMat = geometricCCMat(acqData.kdata[1,sl,1], numVC)
+    ccMat = geometricCCMat(acqData.kdata[1, sl, 1], numVC)
     # compress slice of the smaps
-    for i=1:ny 
-      smapsCC[:,i,sl,:] .= smaps[:,i,sl,:]*ccMat
+    for i = 1:ny
+      smapsCC[:, i, sl, :] .= smaps[:, i, sl, :] * ccMat
     end
     # compress kdata-slice
-    for rep=1:numRepititions(acqData), contr=1:numContrasts(acqData)
-      acqDataCC.kdata[contr,sl,rep] = acqData.kdata[contr,sl,rep]*ccMat
+    for rep = 1:numRepititions(acqData), contr = 1:numContrasts(acqData)
+      acqDataCC.kdata[contr, sl, rep] = acqData.kdata[contr, sl, rep] * ccMat
     end
   end
   return acqDataCC, smapsCC
 end
 
 function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
-                                             iterations=1, outerIterations=3, cmap = nothing)
+  iterations = 1, outerIterations = 3, cmap = nothing)
 
   N = acqData.encodingSize
 
-  params = Dict{Symbol, Any}()
+  params = Dict{Symbol,Any}()
   params[:reco] = "standard" # "multiCoil"
   #params[:solver] = "cgnr" #solver
   #params[:iterations] = iterations
-  params[:reconSize] = (N,N)
+  params[:reconSize] = (N, N)
   params[:alpha] = 1.25
   #params[:iterationsInner] = 5
   params[:normalizeReg] = true
