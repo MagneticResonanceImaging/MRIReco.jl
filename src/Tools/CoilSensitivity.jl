@@ -97,7 +97,7 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,I
 
   # crop kernels and compute eigenvalue decomposition in images space
   # to get sensitivity maps
-  M, W = kernelEig(k[:, :, :, 1:idx], imsize)
+  M, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
   msk = falses(size(W)[1:end-1])
@@ -194,7 +194,7 @@ function im2row(img::Array{T,M}, winSize::NTuple{N,Int}) where {N,M,T}
   res = Array{T}(undef, prod(sk .- winSize .+ 1), prod(winSize), ncoils)
 
   m = CartesianIndices(sk .- winSize .+ 1)
-  m = m .- CartesianIndex(1,1)
+  m = m .- CartesianIndex(ntuple(_ -> 1, N))
   cnt = 0
   for ms ∈ CartesianIndices(winSize)
     cnt += 1
