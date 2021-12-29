@@ -100,11 +100,11 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,I
   M, W = kernelEig(k[:, :, :, 1:idx], imsize)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
-  msk = zeros(size(W, 1), size(W, 2), 1)
-  msk[findall(x -> x > eigThresh_2, abs.(W[:, :, end]))] .= 1
-  maps = M[:, :, :, end] .* repeat(msk, 1, 1, nc)
+  msk = falses(size(W)[1:end-1])
+  msk[findall(x -> x > eigThresh_2, abs.(W[CartesianIndices(msk), nc]))] .= true
+  maps = M[CartesianIndices(msk), :, nc] .* msk
   maps = fftshift(maps, 1:length(imsize))
-  
+
   return maps
 end
 
@@ -113,15 +113,16 @@ end
 #   form calibration matrix from data, perform SVD and convert right singular vectors
 #   into k-space kernels
 #
-function dat2Kernel(data::Array{T,3}, ksize::NTuple{2,Int64}) where {T}
-  sx, sy, nc = size(data)
-  imSize = (sx, sy)
+function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
+  M != N+1 && error("data must have 1 dimension more than the length of ksize")
+
+  nc = size(data)[end]
 
   tmp = im2row(data, ksize)
   tsx, tsy, tsz = size(tmp)
   A = reshape(tmp, tsx, tsy * tsz)
   usv = svd(A)
-  kernel = reshape(usv.V, ksize[1], ksize[2], nc, size(usv.V, 2))
+  kernel = reshape(usv.V, ksize..., nc, size(usv.V, 2))
   return kernel, usv.S
 end
 
@@ -184,15 +185,20 @@ end
 #
 # rearrange data from the image data to form kernels for dat2Kernel
 #
-function im2row(img::Array{T,3}, winSize::NTuple{2,Int64}) where {T}
-  sx, sy, sz = size(img)
-  res = zeros(T, (sx - winSize[1] + 1) * (sy - winSize[2] + 1), prod(winSize), sz)
+function im2row(img::Array{T,M}, winSize::NTuple{N,Int}) where {N,M,T}
+
+  simg = size(img)
+  sk = simg[1:end-1]
+  ncoils = simg[end]
+
+  res = Array{T}(undef, prod(sk .- winSize .+ 1), prod(winSize), ncoils)
+
+  m = CartesianIndices(sk .- winSize .+ 1)
+  m = m .- CartesianIndex(1,1)
   cnt = 0
-  for y = 1:winSize[2]
-    for x = 1:winSize[1]
-      cnt += 1
-      res[:, cnt, :] .= reshape(img[x:sx-winSize[1]+x, y:sy-winSize[2]+y, :], (sx - winSize[1] + 1) * (sy - winSize[2] + 1), sz)
-    end
+  for ms ∈ CartesianIndices(winSize)
+    cnt += 1
+    res[:, cnt, :] .= reshape(img[m .+ ms, :], :, ncoils)
   end
   return res
 end
@@ -208,38 +214,7 @@ function crop(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
   return A[idx_x, idx_y, idx_z]
 end
 
-#
-# zeropoad an array A to a target size s
-#
-function zeropad(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
-  nx, ny, nz = size(A)
-  idx_x = div(s[1], 2)-div(nx, 2)+1:div(s[1], 2)-div(nx, 2)+nx
-  idx_y = div(s[2], 2)-div(ny, 2)+1:div(s[2], 2)-div(ny, 2)+ny
-  idx_z = div(s[3], 2)-div(nz, 2)+1:div(s[3], 2)-div(nz, 2)+nz
 
-  res = zeros(T, s)
-  res[idx_x, idx_y, idx_z] .= A
-
-  return res
-end
-
-#
-#  apply 2d fft to all slices of a higher dimensional array
-#
-function fft2c(x::Array{T}) where {T}
-  # s = size(x)
-  # println(s)
-  # x = reshape(x, s[1], s[2], :)
-  # res = zeros(ComplexF64, size(x))
-  # for n = 1:size(x, 3)
-  #   res[:, :, n] = 1 / sqrt(s[1] * s[2]) * fftshift(fft(ifftshift(x[:, :, n])))
-  # end
-  # return reshape(res, s)
-
-  # res = fftshift(fft(ifftshift(x, (1,2)), (1,2)), (1,2))
-  fft!(x, (1, 2))
-  x ./= sqrt(size(x, 1) * size(x, 2))
-end
 
 
 """
