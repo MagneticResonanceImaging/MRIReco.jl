@@ -34,27 +34,52 @@ mergeChannels(I::AbstractArray{T,5}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 
 
 
 """
-    `maps = espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
-               ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)`
+    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
+               ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95, nmaps = 1)
 
-obtains coil sensitivities from a calibration area using ESPIRiT
-adapted from the MATLAB code by Uecker et al. for the paper'
-M. Uecker, P. Lai, MJ Murphy, P. Virtue, M Elad, JM Pauly, SS Vasanawala and M Lustig, "ESPIRiT- an
-eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA", Magn Reson Med, 2013
+    espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = (6,6[,6])
+               ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1)
 
-the matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Software.html]
+Obtains coil sensitivities from a calibration area using ESPIRiT. The code is adapted from the MATLAB code by Uecker et al. (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Software.html]
 
-# Arguments
+# Method 1
+  The first method of this function works with 2D/multi-slice data in the MRIReco.jl data format:
+
+    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
+              ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95)
+
+## Required Arguments
 * `acqData::AcquisitionData`  - AcquisitionData
-* `ksize::NTuple{2,Int64}`    - size of the k-space kernel
-* `ncalib::Int64`             - number of calibration points in each dimension
-* `eigThresh_1::Float64=0.02` - threshold for the singular values of the calibration matrix (relative to the largest value)
-* `eigThresh_2::Float64=0.95` - threshold of the image space kernels (if no singular value > `eigThresh_2` exists)
-                                , the corresponding pixel has a sensitivity of 0.
 
-Returns a 4D array.
+## Optional Arguments
+* `ksize::NTuple{2,Int64}`    - size of the k-space kernel; `default = (6,6)`
+* `ncalib::Int64`             - number of calibration points in each dimension; `default = 30`
+
+## Keyword Arguments
+  * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
+  * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
+  * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
+
+# Method 2
+  The second method of this function works with single slice 2D or 3D data; the first argument is the calibration data, i.e. the cropped center of k-space:
+
+    espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = (6,6[,6])
+              ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1)
+
+
+# Required Arguments
+  * `calibData::Array{T}`       - Center of k-space in the format `kx × ky [× kz] × coils`, where the kz dimension is optional. The type `T` of the input data determines the type of the calculated maps. Reasonable choises are in the range of `Nx = Ny [= Nz] = 24`.
+  * `imsize::NTuple{N,Int}`     - matrix size of the final maps
+
+# Optional Arguments
+  * `ksize::NTuple{N,Int}`      - number of calibration points in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
+
+# Keyword Arguments
+  * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
+  * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
+  * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
 """
-function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int
+function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
   ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1)
 
   if !isCartesian(trajectory(acqData, 1))
@@ -85,12 +110,7 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int
 end
 
 
-"""
-`maps = espirit(calibData::Array{ComplexF64,3}, imsize::NTuple{2,Int64}, ksize::NTuple{2,Int64}
-                ; eigThresh_1::Float64=0.02, eigThresh_2::Float64=0.95)`
-Returns a 3D array.
-"""
-function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,Int64}
+function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = ntuple(_ -> 6, N)
   ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1) where {T,N}
   nc = size(calibData)[end]
 
