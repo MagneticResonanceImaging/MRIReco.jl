@@ -54,8 +54,8 @@ the matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Softw
 
 Returns a 4D array.
 """
-function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
-  ; eigThresh_1::Float64 = 0.02, eigThresh_2::Float64 = 0.95)
+function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1)
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -63,7 +63,7 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
 
   nx, ny = acqData.encodingSize[1:2]
   numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(ComplexF64, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan)
+  maps = zeros(ComplexF64, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
 
   for slice = 1:numSl
     # form zeropadded array with kspace data
@@ -75,7 +75,11 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int64}, ncalib::Int64
 
     calib = crop(kdata, (ncalib, ncalib, numChan))
 
-    maps[:, :, slice, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2)
+    maps[:, :, slice, :, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2, nmaps = nmaps)
+  end
+
+  if nmaps == 1
+    maps = maps[:,:,:,:,1]
   end
   return maps
 end
@@ -87,7 +91,7 @@ end
 Returns a 3D array.
 """
 function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,Int64}
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95) where {T,N}
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1) where {T,N}
   nc = size(calibData)[end]
 
   # compute calibration matrix, perform SVD and convert right singular vectors
@@ -97,12 +101,12 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int64}, ksize::NTuple{N,I
 
   # crop kernels and compute eigenvalue decomposition in images space
   # to get sensitivity maps
-  M, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize)
+  maps, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize, nmaps)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
-  msk = falses(size(W)[1:end-1])
-  msk[findall(x -> x > eigThresh_2, abs.(W[CartesianIndices(msk), nc]))] .= true
-  maps = M[CartesianIndices(msk), :, nc] .* msk
+  msk = falses(size(W))
+  msk[findall(x -> x > eigThresh_2, abs.(W))] .= true
+  maps .*= msk
   maps = fftshift(maps, 1:length(imsize))
 
   return maps
@@ -121,7 +125,12 @@ function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
   tmp = im2row(data, ksize)
   tsx, tsy, tsz = size(tmp)
   A = reshape(tmp, tsx, tsy * tsz)
+
+  nblas = BLAS.get_num_threads()
+  BLAS.set_num_threads(Threads.nthreads())
   usv = svd(A)
+  BLAS.set_num_threads(nblas)
+
   kernel = reshape(usv.V, ksize..., nc, size(usv.V, 2))
   return kernel, usv.S
 end
@@ -135,26 +144,29 @@ end
 #
 # outputs :
 #         eigenvecs: images representing the eigenvectors (sx,sy,numChan,numChan)
-#         eigenvals: images representing th eigenvalues (sx,sy,numChan)
-function kernelEig(kernel::Array{T}, imsize::Tuple) where {T}
+#         eigenvals: images representing the eigenvalues (sx,sy,numChan)
+function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
+
   kern_size = size(kernel)
   ksize = kern_size[1:end-2]
   nc = kern_size[end-1]
   nv = kern_size[end]
   flip_nc_nv = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
 
-  # rotate kernel to order by maximum variance
-  k = permutedims(kernel, flip_nc_nv)
-  k = reshape(k, :, nc)
+  nmaps = min(nc, nv, nmaps)
 
-  if size(k, 1) < size(k, 2)
-    usv = svd(k, full = true)
+  # rotate kernel to order by maximum variance
+  kernel = permutedims(kernel, flip_nc_nv)
+  kernel = reshape(kernel, :, nc)
+
+  if size(kernel, 1) < size(kernel, 2)
+    usv = svd(kernel, full = true)
   else
-    usv = svd(k)
+    usv = svd(kernel)
   end
 
-  k = k * usv.V
-  kernel = reshape(k, ksize..., nv, nc)
+  kernel = kernel * usv.V
+  kernel = reshape(kernel, ksize..., nv, nc)
   kernel = permutedims(kernel, flip_nc_nv)
 
   kern2 = zeros(T, imsize..., nc, nv)
@@ -163,21 +175,22 @@ function kernelEig(kernel::Array{T}, imsize::Tuple) where {T}
   kern2 ./= sqrt(prod(ksize))
   kern2 .= conj.(kern2)
 
+  eigenVecs = Array{T}(undef, imsize..., nc, nmaps)
+  eigenVals = Array{T}(undef, imsize...,  1, nmaps)
 
-  eigenVecs = Array{T}(undef, imsize..., nc, min(nc, nv))
-  eigenVals = Array{T}(undef, imsize..., min(nc, nv))
-
+  nblas = BLAS.get_num_threads()
+  BLAS.set_num_threads(1)
   @batch for n ∈ CartesianIndices(imsize)
     mtx = @view kern2[n, :, :]
 
     cdv = svd(mtx)
     ph = transpose(exp.(-1im * angle.(cdv.U[1, :])))
 
-    eigenVals[n, :] .= real.(cdv.S)
-    eigenVecs[n, :, :] .= usv.V * (cdv.U .* ph)
+    @views eigenVals[n, 1, :] .= real.(cdv.S[1:nmaps])
+    D = usv.V * (cdv.U .* ph)
+    @views eigenVecs[n, :, :] .= D[:,1:nmaps]
   end
-  reverse!(eigenVals; dims = ndims(eigenVals))
-  reverse!(eigenVecs; dims = ndims(eigenVecs))
+  BLAS.set_num_threads(nblas)
 
   return eigenVecs, eigenVals
 end
