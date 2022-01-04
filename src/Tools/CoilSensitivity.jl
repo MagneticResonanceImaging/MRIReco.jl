@@ -147,9 +147,12 @@ function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
   A = reshape(tmp, tsx, tsy * tsz)
 
   nblas = BLAS.get_num_threads()
-  BLAS.set_num_threads(Threads.nthreads())
-  usv = svd(A)
-  BLAS.set_num_threads(nblas)
+  usv = try
+    BLAS.set_num_threads(Threads.nthreads())
+    svd(A)
+  finally
+    BLAS.set_num_threads(nblas)
+  end
 
   kernel = reshape(usv.V, ksize..., nc, size(usv.V, 2))
   return kernel, usv.S
@@ -199,18 +202,21 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   eigenVals = Array{T}(undef, imsize...,  1, nmaps)
 
   nblas = BLAS.get_num_threads()
-  BLAS.set_num_threads(1)
-  @batch for n ∈ CartesianIndices(imsize)
-    mtx = @view kern2[n, :, :]
+  try
+    BLAS.set_num_threads(1)
+    @batch for n ∈ CartesianIndices(imsize)
+      mtx = @view kern2[n, :, :]
 
-    cdv = svd(mtx)
-    ph = transpose(exp.(-1im * angle.(cdv.U[1, :])))
+      cdv = svd(mtx)
+      ph = transpose(exp.(-1im * angle.(cdv.U[1, :])))
 
-    @views eigenVals[n, 1, :] .= real.(cdv.S[1:nmaps])
-    D = usv.V * (cdv.U .* ph)
-    @views eigenVecs[n, :, :] .= D[:,1:nmaps]
+      @views eigenVals[n, 1, :] .= real.(cdv.S[1:nmaps])
+      D = usv.V * (cdv.U .* ph)
+      @views eigenVecs[n, :, :] .= D[:,1:nmaps]
+    end
+  finally
+    BLAS.set_num_threads(nblas)
   end
-  BLAS.set_num_threads(nblas)
 
   return eigenVecs, eigenVals
 end
