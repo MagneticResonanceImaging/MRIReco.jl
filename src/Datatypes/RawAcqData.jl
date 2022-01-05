@@ -264,7 +264,7 @@ function RawAcquisitionData(acqData::AcquisitionData)
   counter = 1
   # profiles
   profiles = Vector{Profile}()
-  for rep = 1:numRepititions(acqData)
+  for rep = 1:numRepetitions(acqData)
     for slice=1:numSlices(acqData)
       for contr = 1:numContrasts(acqData)
         tr = trajectory(acqData,contr)

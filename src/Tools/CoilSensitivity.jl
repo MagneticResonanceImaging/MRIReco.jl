@@ -293,7 +293,7 @@ function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, nu
       smapsCC[:, i, sl, :] .= smaps[:, i, sl, :] * ccMat
     end
     # compress kdata-slice
-    for rep = 1:numRepititions(acqData), contr = 1:numContrasts(acqData)
+    for rep = 1:numRepetitions(acqData), contr = 1:numContrasts(acqData)
       acqDataCC.kdata[contr, sl, rep] = acqData.kdata[contr, sl, rep] * ccMat
     end
   end

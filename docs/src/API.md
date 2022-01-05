@@ -49,7 +49,7 @@ MRIReco.trajectory(acqData::AcquisitionData,i::Int64=1)
 MRIReco.numContrasts(acqData::AcquisitionData)
 MRIReco.numChannels
 MRIReco.numSlices
-MRIReco.numRepititions
+MRIReco.numRepetitions
 MRIReco.kData
 MRIReco.multiEchoData
 MRIReco.multiCoilData
