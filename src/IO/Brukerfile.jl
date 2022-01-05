@@ -158,6 +158,8 @@ pvmSpiralNbOfInterleaves(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfInterleave
 pvmSpiralNbOfGradientPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfGradientPoints"])
 pvmSpiralNbOfAcqPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfAcqPoints"])
 pvmSpiralEchoTime(b::BrukerFile) = parse.(Int,b["PVM_SpiralEchoTime"])
+pvmSpiralAcqDwellTime(b::BrukerFile) = parse(Float32, b["PVM_SpiralAcqDwellTime"])
+pvmSpiralAcquisitionTime(b::BrukerFile) = parse(Float32, b["PVM_SpiralAcquisitionTime"])
 pvmSpiralNavSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralNavSize"])
 pvmSpiralPreSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralPreSize"])
 pvmSpiralSize(b::BrukerFile) = parse.(Int,b["PVM_SpiralSize"])
@@ -210,9 +212,11 @@ function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   numEchos = acqNumEchos(b)
   numRep = acqNumRepetitions(b)
   numProfiles = pvmTrajInterleaves(b)
+  numChannels = acqNumCoils(b)
 
   I = open(filename,"r") do fd
-    read!(fd,Array{dtype,6}(undef, profileLength,
+    read!(fd,Array{dtype,7}(undef, profileLength,
+                                   numChannels,
                                    numEchos,
                                    phaseFactor,
                                    numSlices,

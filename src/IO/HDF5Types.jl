@@ -136,7 +136,7 @@ function get_hdf5type_acquisitionheader()
 end
 
 #=
-typedef struct HDF5_Acquisiton
+typedef struct HDF5_Acquisition
 {
     ISMRMRD_AcquisitionHeader head;
     hvl_t traj;

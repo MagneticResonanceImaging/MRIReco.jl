@@ -107,16 +107,20 @@ function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
     i2 = numSampPerProfile - f.profiles[1].head.discard_post
 
     traj = zeros(Float32, D, length(i1:i2), numEncSt1, numEncSt2, numSl, numRep)
+    times = zeros(Float32, length(i1:i2), numEncSt1, numEncSt2, numSl, numRep)
 
     for l=1:length(f.profiles)
       if f.profiles[l].head.idx.slice+1 != slice || f.profiles[l].head.idx.contrast+1 != contrast
         continue
       end
-      traj[:, :, encSt1[l], encSt2[l], sl[l], rep[l]] .= f.profiles[l].traj[:,i1:i2]
+      traj[:, :, encSt1[l], encSt2[l], sl[l]-minimum(sl)+1, rep[l]-minimum(rep)+1] .= f.profiles[l].traj[:,i1:i2]
+      dt = f.profiles[l].head.sample_time_us*1e-6
+      times[:, encSt1[l], encSt2[l], sl[l]-minimum(sl)+1, rep[l]-minimum(rep)+1] .= 0:dt:(length(i1:i2)-1)*dt
     end
 
     traj_ = reshape(traj[:,:,:,:,1,1], D, :)
-    tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
+    # tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
+    tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true, times=vec(times[:,:,:,1,1]))
   end
   return tr
 end
@@ -229,12 +233,18 @@ end
 converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 """
 function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
+  contrs = sort(unique(contrasts(f)))
+  sls = sort(unique(slices(f)))
+  reps = sort(unique(repetitions(f)))
   numContr = length(unique(contrasts(f)))
   numSl = length(unique(slices(f)))
   numRep = length(unique(repetitions(f)))
-  tr = [trajectory(f,contrast=contr) for contr=1:numContr]
-  subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
-  kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
+  # tr = [trajectory(f,contrast=contr) for contr=1:numContr]
+  # subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
+  # kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
+  tr = [trajectory(f,contrast=contr) for contr=contrs]
+  subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
+  kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
 
   return AcquisitionData(tr, kdata,
                           idx=subsampleIdx,
@@ -254,7 +264,7 @@ function RawAcquisitionData(acqData::AcquisitionData)
   counter = 1
   # profiles
   profiles = Vector{Profile}()
-  for rep = 1:numRepititions(acqData)
+  for rep = 1:numRepetitions(acqData)
     for slice=1:numSlices(acqData)
       for contr = 1:numContrasts(acqData)
         tr = trajectory(acqData,contr)

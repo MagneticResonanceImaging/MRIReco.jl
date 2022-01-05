@@ -416,10 +416,10 @@ function testReco(N=32)
     testCSSenseReco3d()
     accelMethods = ["nfft", "hist", "leastsquare"]
     for a in accelMethods
-      testOffresonanceReco(accelMethod=a)
+      !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
     end
     testSENSEReco()
-    testOffresonanceSENSEReco()
+    !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
     testRegridding()
   end

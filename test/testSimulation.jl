@@ -155,7 +155,7 @@ function testAcqData(N=32)
     @test numContrasts(acqData) = 2
     @test numChannels(acqData) = 2
     @test numSlices(acqData) = 1
-    @test numRepititions(acqData) = 1
+    @test numRepetitions(acqData) = 1
 
 end
 

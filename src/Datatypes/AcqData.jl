@@ -1,6 +1,6 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
-       numContrasts, numChannels, numSlices, numRepititions, apodization!
+       numContrasts, numChannels, numSlices, numRepetitions, apodization!
 
 """
 struct describing MRI acquisition data.
@@ -47,11 +47,11 @@ returns the number of slices in acqData
 numSlices(acqData::AcquisitionData) = size(acqData.kdata,2)
 
 """
-    numRepititions(acqData::AcquisitionData)
+    numRepetitions(acqData::AcquisitionData)
 
 returns the number of repetitions in acqData
 """
-numRepititions(acqData::AcquisitionData) = size(acqData.kdata,3)
+numRepetitions(acqData::AcquisitionData) = size(acqData.kdata,3)
 
 """
     AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}; seqInfo=Dict{Symbol,Any}()
@@ -248,7 +248,7 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   fac = acqData.encodingSize[1:2] ./ newEncodingSize[1:2]
   numContr = numContrasts(acqData)
   numSl = numSlices(acqData)
-  numReps = numRepititions(acqData)
+  numReps = numRepetitions(acqData)
   idx = Vector{Vector{Int64}}(undef,numContr)
 
   for i=1:numContr
@@ -294,7 +294,7 @@ function convert3dTo2d(acqData::AcquisitionData)
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
   numSl = numSlices(trajectory(acqData,1))
-  numReps = numRepititions(acqData)
+  numReps = numRepetitions(acqData)
   # check if all trajectories are cartesian
   for i=1:numContr
     if !isCartesian(trajectory(acqData,i))
@@ -350,7 +350,7 @@ hann(x) = 0.5*(1-cos(2*pi*(x-0.5)))
 function apodization!(acqData::AcquisitionData)
     numContr = numContrasts(acqData)
     numSl = numSlices(acqData)
-    numReps = numRepititions(acqData)
+    numReps = numRepetitions(acqData)
 
     for rep=1:numReps
       for slice=1:numSl
