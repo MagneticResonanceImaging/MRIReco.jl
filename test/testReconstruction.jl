@@ -135,7 +135,7 @@ function testCSSenseReco(N=32,redFac=1.1)
   # reco
   params[:reco] = "multiCoil"
   params[:reconSize] = (N,N)
-  params[:senseMaps] = sensMaps
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
   params[:sparseTrafo] = "Wavelet" # sparse trafo
   params[:regularization] = "L1"       # regularization
   params[:λ] = 1.e-3
@@ -211,7 +211,7 @@ function testSENSEReco(N = 64)
   params[:regularization] = "L2"
   params[:iterations] = 50
   params[:solver] = "cgnr"
-  params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
+  params[:senseMaps] = coilsens
 
   Ireco = reconstruction(acqData, params)
 
@@ -248,7 +248,7 @@ function testOffresonanceSENSEReco(N = 64)
   params[:regularization] = "L2"
   params[:iterations] = 3
   params[:solver] = "admm"
-  params[:senseMaps] = reshape(coilsens, N*N, numCoils, 1)
+  params[:senseMaps] = coilsens
   params[:correctionMap] = cmap
 
   Ireco = reconstruction(acqData, params)
