@@ -15,14 +15,14 @@ contrasts and slices
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_simple( acqData::AcquisitionData
-                              , reconSize::NTuple{2,Int64}
+                              , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
 
@@ -38,7 +38,7 @@ function reconstruction_simple( acqData::AcquisitionData
       if encodingOps!=nothing
         F = encodingOps[:,k]
       else
-        F = encodingOps2d_simple(acqData, reconSize, slice=k; encParams...)
+        F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
       end
       for j = 1:numContr
         W = WeightingOp(weights[j])
@@ -77,14 +77,14 @@ are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiEcho(acqData::AcquisitionData
-                              , reconSize::NTuple{2,Int64}
+                              , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
@@ -101,7 +101,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData
       if encodingOps != nothing
         F = encodingOps[i]
       else
-        F = encodingOp2d_multiEcho(acqData, reconSize, slice=i; encParams...)
+        F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
       end
       for j = 1:numChan
         kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
@@ -133,7 +133,7 @@ are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoil(acqData::AcquisitionData
-                              , reconSize::NTuple{2,Int64}
+                              , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
@@ -141,7 +141,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , senseMaps::Array{ComplexF64}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
@@ -156,7 +156,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
-        E = encodingOps2d_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
+        E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
       end
 
       for j = 1:numContr
@@ -195,7 +195,7 @@ Different slices are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
-                              , reconSize::NTuple{2,Int64}
+                              , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
                               , weights::Vector{Vector{ComplexF64}}
@@ -203,7 +203,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , senseMaps::Array{ComplexF64}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}())
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
@@ -219,7 +219,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
       if encodingOps != nothing
         E = encodingOps[i]
       else
-        E = encodingOp2d_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+        E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
       end
 
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
