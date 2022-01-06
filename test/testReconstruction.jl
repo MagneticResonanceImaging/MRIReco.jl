@@ -285,7 +285,7 @@ function testDirectRecoMultiEcho(N=32)
   @test relErrorEcho2 < 1e-3
 end
 
-function testCSReco3d(N=64)
+function testCSReco3d(N=128)
   sh = ComplexF64.(shepp_logan(N))
   I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
   I = permutedims(I,[3,1,2])
@@ -300,26 +300,26 @@ function testCSReco3d(N=64)
 
   acqData = simulation( real(I), params )
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData,1.5,"poisson",calsize=5)
+  acqData = MRIReco.sample_kspace(acqData,1.5,"poisson",calsize=15)
 
   # 3d reco
   params[:reco] = "standard"    # encoding model
   params[:reconSize] = (8,N,N)
-  params[:sparseTrafo] = "nothing" #sparse trafo
-  params[:regularization] = "TV"       # regularization
+  params[:sparseTrafo] = "Wavelet" #"nothing" #sparse trafo
+  params[:regularization] = "L1" #"TV"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-4
-  params[:relTol] = 1.e-3
+  params[:relTol] = 1.e-4
 
   Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
-function testCSSenseReco3d(N=64)
+function testCSSenseReco3d(N=128)
   sh = ComplexF64.(shepp_logan(N))
   I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
   I = permutedims(I,[3,1,2])
@@ -339,14 +339,14 @@ function testCSSenseReco3d(N=64)
 
   acqData = simulation( real(I), params )
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData,4.0,"poisson",calsize=5)
+  acqData = MRIReco.sample_kspace(acqData,4.0,"poisson",calsize=15)
 
   # 3d reco
   params[:reco] = "multiCoil"    # encoding model
   params[:reconSize] = (8,N,N)
   params[:senseMaps] = reshape(sensMaps,8,N,N,2)
-  params[:sparseTrafo] = "nothing" #sparse trafo
-  params[:regularization] = "TV"       # regularization
+  params[:sparseTrafo] = "Wavelet" #"nothing" #sparse trafo
+  params[:regularization] = "L1" #"TV"       # regularization
   params[:λ] = 1.e-3
   params[:solver] = "admm"    # solver
   params[:iterations] = 1000

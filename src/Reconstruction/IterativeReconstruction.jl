@@ -24,6 +24,11 @@ function reconstruction_simple( acqData::AcquisitionData
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
+  encDims = dims(trajectory(acqData))
+  if encDims!=length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
+
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
 
   encParams = getEncodingOperatorParams(;params...)
@@ -58,7 +63,14 @@ function reconstruction_simple( acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, reconSize..., numSl, numContr, numChan)
+  if encDims==2
+    # 2d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr, numChan)
+  else
+    # 3d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
+  end
+
   return makeAxisArray(Ireco, acqData)
 end
 
@@ -85,6 +97,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , normalize::Bool=false
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+
+  encDims = dims(trajectory(acqData))
+  if encDims!=length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
@@ -113,7 +130,15 @@ function reconstruction_multiEcho(acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, reconSize..., numContr, numChan, numSl)
+  if encDims==2
+    # 2d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl)
+    Ireco = permutedims(Ireco, [1,2,5,3,4])
+  else
+    # 3d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
+  end
+
   return makeAxisArray(permutedims(Ireco,[1,2,5,3,4]), acqData)
 end
 
@@ -142,6 +167,11 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , normalize::Bool=false
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+
+  encDims = dims(trajectory(acqData))
+  if encDims!=length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
@@ -175,7 +205,14 @@ function reconstruction_multiCoil(acqData::AcquisitionData
     end
   end
 
-  Ireco = reshape(Ireco, reconSize..., numSl, numContr, 1)
+  if encDims==2
+    # 2d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr,1)
+  else
+    # 3d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr,1)
+  end
+
   return makeAxisArray(Ireco, acqData)
 end
 
@@ -205,6 +242,11 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
 
+  encDims = dims(trajectory(acqData))
+  if encDims!=length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
+
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
@@ -213,7 +255,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
 
   W = WeightingOp( vcat(weights...), numChan )
 
-  Ireco = zeros(ComplexF64, prod(reconSize), numContr, numSl)
+  Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
       if encodingOps != nothing
@@ -225,9 +267,19 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
       kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
       solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
 
-      Ireco[:,:,i] = solve(solver, kdata; params...)
+      Ireco[:,i] = solve(solver, kdata; params...)
     end
   end
-  return reshape( permutedims(Ireco, [1,3,2]), reconSize..., numSl, numContr )
+
+  if encDims==2
+    # 2d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numSl, 1)
+    Ireco = permutedims(Ireco, [1,2,4,3,5])
+  else
+    # 3d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1)
+  end
+
+  return makeAxisArray(Ireco, acqData)
 end
 
