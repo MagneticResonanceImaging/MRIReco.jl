@@ -18,13 +18,12 @@ function regrid2d(acqData::AcquisitionData, kspaceSize::NTuple{2,Int64}; cgnr_it
 
   nx,ny = kspaceSize
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
-  Ireco = zeros(ComplexF64, prod(kspaceSize), numSl, numContr, numChan)
 
   kdata_cart = [zeros(ComplexF64,nx*ny,numChan) for j=1:numContr, k=1:numSl, rep=1:1]
   F = sqrt(prod(kspaceSize))*FFTOp(ComplexF64, kspaceSize)
   img = zeros(ComplexF64,nx*ny)
   for k = 1:numSl
-    E = encodingOps2d_simple(acqData, kspaceSize, slice=k, correctionMap=correctionMap)
+    E = encodingOps_simple(acqData, kspaceSize, slice=k, correctionMap=correctionMap)
     for j = 1:numContr
       W = WeightingOp(dcf[j])
       solver = RegularizedLeastSquares.CGNR(W*E[j], iterations=cgnr_iter)

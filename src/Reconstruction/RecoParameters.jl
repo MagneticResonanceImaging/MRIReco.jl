@@ -129,3 +129,7 @@ function getEncodingOperatorParams(; kargs...)
   encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol]
   return Dict([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
 end
+
+# convenience methods
+volumeSize(reconSize::NTuple{2,Int}, numSlice::Int) = (reconSize..., numSlice)
+volumeSize(reconSize::NTuple{3,Int}, numSlice::Int) = reconSize

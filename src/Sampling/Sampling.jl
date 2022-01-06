@@ -98,9 +98,7 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
                        patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
 
-  numContr, numSl = numContrasts(acqData), numSlices(acqData)
-
-  idx = Vector{Array{Int64}}(undef,numContr)
+  numContr, numSl, numRep = numContrasts(acqData), numSlices(acqData), numRepetitions(acqData)
 
   for echo = 1:numContr
     tr = trajectory(acqData,echo)
@@ -116,8 +114,8 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
       patOut = sample(samplingShape,redFac,patFunc; seed=seed, kargs...)
     end
     patOut = sort(patOut)
-    for slice=1:numSl
-      acqData.kdata[echo,slice] = acqData.kdata[echo,slice][patOut,:]
+    for slice=1:numSl, rep=1:numRep
+      acqData.kdata[echo,slice, rep] = acqData.kdata[echo,slice,rep][patOut,:]
     end
     acqData.subsampleIndices[echo] = patOut
     rand && (seed += 1)

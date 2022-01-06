@@ -117,7 +117,7 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 
   @sync for z = 1:nz
     Threads.@spawn begin
-      E = fourierEncodingOp2d((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
+      E = fourierEncodingOp((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
       for c = 1:nc
         kdata[1,z,1][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
         verbose && next!(p)
@@ -180,7 +180,7 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
     p = Progress(nc, 1, "Simulating data...")
   end
 
-  E = fourierEncodingOp3d((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
+  E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
   for c = 1:nc
     # kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
     kdata[1,1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
