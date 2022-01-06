@@ -1,4 +1,4 @@
-export CFLFile, data
+export CFLFile
 
 struct CFLFile
   filenameBase::String
@@ -8,7 +8,7 @@ end
 # Read in recon data stored in filenameBase.cfl (complex float)
 # based on dimensions stored in filenameBase.hdr.
 #
-function data(f::CFLFile)
+function FileIO.load(f::CFLFile)
 
     dims = readCFLHeader(f.filenameBase)
 
