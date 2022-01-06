@@ -63,13 +63,7 @@ function reconstruction_simple( acqData::AcquisitionData
     end
   end
 
-  if encDims==2
-    # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr, numChan)
-  else
-    # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
-  end
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan)
 
   return makeAxisArray(Ireco, acqData)
 end
@@ -205,13 +199,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData
     end
   end
 
-  if encDims==2
-    # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr,1)
-  else
-    # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr,1)
-  end
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1)
 
   return makeAxisArray(Ireco, acqData)
 end

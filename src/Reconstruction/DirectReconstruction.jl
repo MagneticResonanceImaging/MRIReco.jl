@@ -44,13 +44,14 @@ function reconstruction_direct(acqData::AcquisitionData
     end
   end
 
-  if D==2
-    # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr, numChan)
-  else
-    # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
-  end
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan)
+  # if D==2
+  #   # 2d reconstruction
+  #   Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr, numChan)
+  # else
+  #   # 3d reconstruction
+  #   Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
+  # end
 
   return makeAxisArray(Ireco, acqData)
 end
