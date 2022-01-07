@@ -356,7 +356,7 @@ function testCSSenseReco3d(N=128)
 
   Ireco = reconstruction(acqData, params)
 
-  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 5e-2
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
 function testRegridding(N=64)
