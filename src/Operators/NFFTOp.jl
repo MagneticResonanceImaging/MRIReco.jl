@@ -30,8 +30,8 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, 
                 oversamplingFactor=1.25, kernelSize=3, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  # plan = NFFTPlan(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
-  plan = plan_nfft(nodes, shape, kernelSize, oversamplingFactor, precompute=NFFT.FULL)
+  # plan = NFFTPlan(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
+  plan = plan_nfft(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
 
   return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
             , x->produ(plan,x)
@@ -128,7 +128,7 @@ function diagonalizeOp(p::NFFT.NFFTPlan, weights=nothing)
    firstCol = reshape(firstCol, shape)
 
   # calculate first rows of the leftmost Toeplitz blocks
-  p2 = plan_nfft([-1,1].*nodes, shape, 3, 1.25)
+  p2 = plan_nfft([-1,1].*nodes, shape, m=3, σ=1.25)
   firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
   firstRow = reshape(firstRow, shape)
 

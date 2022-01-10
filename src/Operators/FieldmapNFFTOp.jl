@@ -78,11 +78,11 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plans = Vector{NFFT.NFFTPlan{D,0,Float64}}(undef,K)
+  plans = Vector{NFFT.NFFTPlan{Float64,D,1}}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, 3, 1.25, precompute = NFFT.FULL)
+    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.FULL)
   end
 
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
@@ -125,7 +125,7 @@ function Base.copy(S::FieldmapNFFTOp)
             , ctmul, 0, 0, 0, plans, idx, S.circTraj, S.shape, cparam)
 end
 
-# function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
+# function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
                shutter::Bool, d) where T<:ComplexF64
@@ -172,7 +172,7 @@ function produ_inner(K, C, A, shape, d, s, sp, plan, idx, x_)
 end
 
 
-# function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{2,0,ComplexF64}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
+# function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
                  cparam::InhomogeneityData, shutter::Bool, d) where T<:ComplexF64
 
