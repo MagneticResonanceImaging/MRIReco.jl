@@ -27,7 +27,7 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 * (`nodes=nothing`)         - Array containg the trajectory nodes (redundant)
 * (`kargs`)                   - additional keyword arguments
 """
-function NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, toeplitz=false, 
+function NFFTOp(shape::Tuple, tr; nodes=nothing, toeplitz=false, 
                 oversamplingFactor=1.25, kernelSize=3, kargs...)
   nodes==nothing ? nodes=kspaceNodes(tr) : nothing
   # plan = NFFTPlan(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
@@ -74,6 +74,20 @@ function Base.copy(S::NFFTNormalOp)
   ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
   return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ, S.xL)
 end
+
+function Base.size(S::NFFTNormalOp)
+  return S.shape
+end
+
+function Base.size(S::NFFTNormalOp, dim)
+  return S.shape[dim]
+end
+
+function LinearAlgebra.mul!(x, S::NFFTNormalOp, b)
+  x .= S * b
+  return x
+end
+
 
 function NFFTNormalOp(S::NFFTOp, W)
   shape = S.plan.N
@@ -151,19 +165,19 @@ end
 #
 # calculate the matrix element A_{j,k} explicitely
 #
-#function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
+# function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
 #  elem=0.
-#  x = mod(k-1,shape[1])-mod(j-1,shape[1])
-#  y = div(k-1,shape[1])-div(j-1,shape[1])
+# x = k
+# y = j
 #  if weights != nothing
 #    for i=1:size(nodes,2)
 #      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )*weights[i]
 #    end
 #  else
 #    for i=1:size(nodes,2)
-#      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )
+#      elem += exp( -2*pi*1im*(nodes[1,i]*(x-shape[1]) + nodes[2,i]*(y-shape[2])) )
 #    end
 #  end
-#
+
 #  return elem
-#end
+# end
