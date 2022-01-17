@@ -205,14 +205,13 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   try
     BLAS.set_num_threads(1)
     @batch for n ∈ CartesianIndices(imsize)
-      mtx = @view kern2[n, :, :]
+      U,S,_ = svd!(kern2[n, :, :])
 
-      cdv = svd(mtx)
-      ph = transpose(exp.(-1im * angle.(cdv.U[1, :])))
+      @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
 
-      @views eigenVals[n, 1, :] .= real.(cdv.S[1:nmaps])
-      D = usv.V * (cdv.U .* ph)
-      @views eigenVecs[n, :, :] .= D[:,1:nmaps]
+      U = @view U[:,1:nmaps]
+      U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
+      @views mul!(eigenVecs[n, :, :], usv.V, U)
     end
   finally
     BLAS.set_num_threads(nblas)
