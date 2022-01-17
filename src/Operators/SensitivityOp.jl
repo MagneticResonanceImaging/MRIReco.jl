@@ -46,10 +46,10 @@ the coil sensitivities specified in `sensMaps`
 function SensitivityOp(sensMaps::Matrix{ComplexF64}, numContr::Int=1)
     numVox, numChan = size(sensMaps)
     sensMapsC = conj.(sensMaps)
-    return LinearOperator(numVox*numContr*numChan,numVox*numContr,false,false,
-                         x->prod_smap(sensMaps,x,numVox,numChan,numContr),
+    return LinearOperator{ComplexF64}(numVox*numContr*numChan, numVox*numContr, false, false,
+                         (res,x) -> (res .= prod_smap(sensMaps,x,numVox,numChan,numContr)),
                          nothing,
-                         x->ctprod_smap(sensMapsC,x,numVox,numChan,numContr))
+                         (res,x) -> (res .= ctprod_smap(sensMapsC,x,numVox,numChan,numContr)))
 end
 
 """
