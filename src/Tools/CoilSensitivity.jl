@@ -174,7 +174,8 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   ksize = kern_size[1:end-2]
   nc = kern_size[end-1]
   nv = kern_size[end]
-  flip_nc_nv = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
+  flip_nc_nv  = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
+  flip_nc_nv2 = [length(ksize) + 2; length(ksize) + 1; 1:length(ksize)]
 
   nmaps = min(nc, nv, nmaps)
 
@@ -190,11 +191,11 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
 
   kernel = kernel * usv.V
   kernel = reshape(kernel, ksize..., nv, nc)
-  kernel = permutedims(kernel, flip_nc_nv)
+  kernel = permutedims(kernel, flip_nc_nv2)
 
-  kern2 = zeros(T, imsize..., nc, nv)
+  kern2 = zeros(T, nc, nv, imsize...)
   kern2[CartesianIndices(kernel)] .= kernel
-  @views fft!(kern2, 1:length(ksize))
+  fft!(kern2, 3:length(ksize)+2)
   kern2 ./= sqrt(prod(ksize))
   kern2 .= conj.(kern2)
 
@@ -204,8 +205,8 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   nblas = BLAS.get_num_threads()
   try
     BLAS.set_num_threads(1)
-    @batch for n ∈ CartesianIndices(imsize)
-      U,S,_ = svd!(kern2[n, :, :])
+    Threads.@threads for n ∈ CartesianIndices(imsize)
+      U,S,_ = svd!(@view kern2[:, :, n])
 
       @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
 
