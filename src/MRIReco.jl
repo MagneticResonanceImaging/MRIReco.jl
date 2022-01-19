@@ -7,6 +7,7 @@ using ProgressMeter
 using NFFT
 using Distributions
 using LinearOperators
+using SparsityOperators
 @reexport using RegularizedLeastSquares
 using StatsBase
 using LinearAlgebra

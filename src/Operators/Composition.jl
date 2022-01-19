@@ -11,12 +11,17 @@ mutable struct CompositeOp{T} <: AbstractLinearOperator{T}
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
-  prod :: Function
-  tprod :: Function
-  ctprod :: Function
+  prod! :: Function
+  tprod! :: Function
+  ctprod! :: Function
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   isWeighting :: Bool
   A
   B
@@ -32,22 +37,24 @@ function CompositeOp(A,B;isWeighting=false)
   ncol=B.ncol
   S = eltype(A)
 
-  function produ(x::Vector{T}) where T<:Union{Real,Complex}
-    return A*(B*x)
+  function produ!(res, x::Vector{T}) where T<:Union{Real,Complex}
+    res .= A*(B*x)
   end
 
-  function tprodu(y::Vector{T}) where T<:Union{Real,Complex}
-    return transposed(B)*(transposed(A)*y)
+  function tprodu!(res, y::Vector{T}) where T<:Union{Real,Complex}
+    res .= transposed(B)*(transposed(A)*y)
   end
 
-  function ctprodu(y::Vector{T}) where T<:Union{Real,Complex}
-    return adjoint(B)*(adjoint(A)*y)
+  function ctprodu!(res, y::Vector{T}) where T<:Union{Real,Complex}
+    res .= adjoint(B)*(adjoint(A)*y)
   end
 
   Op = CompositeOp{S}( nrow, ncol, false, false,
-                     produ,
-                     tprodu,
-                     ctprodu, 0, 0, 0, isWeighting, A, B )
+                     produ!,
+                     tprodu!,
+                     ctprodu!, 
+                     0, 0, 0, false, false, false, S[], S[],
+                     isWeighting, A, B )
 
   return Op
 end

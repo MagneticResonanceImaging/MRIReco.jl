@@ -6,12 +6,17 @@ mutable struct NFFTOp{T} <: AbstractLinearOperator{T}
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
-  prod :: Function
-  tprod :: Nothing
-  ctprod :: Function
+  prod! :: Function
+  tprod! :: Nothing
+  ctprod! :: Function
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   plan 
   toeplitz :: Bool
 end
@@ -34,9 +39,11 @@ function NFFTOp(shape::Tuple, tr; nodes=nothing, toeplitz=false,
   plan = plan_nfft(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
 
   return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
-            , x->produ(plan,x)
+            , (res,x) -> (res .= produ(plan,x))
             , nothing
-            , y->ctprodu(plan,y), 0, 0, 0, plan, toeplitz)
+            , (res,y) -> (res .= ctprodu(plan,y))
+            , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , plan, toeplitz)
 end
 
 function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
@@ -53,9 +60,11 @@ end
 function Base.copy(S::NFFTOp)
   plan = copy(S.plan)
   return NFFTOp{ComplexF64}(size(plan.x,2), prod(plan.N), false, false
-         , x->produ(plan,x)
-         , nothing
-         , y->ctprodu(plan,y), 0, 0, 0, plan, S.toeplitz)
+              , (res,x) -> (res .= produ(plan,x))
+              , nothing
+              , (res,y) -> (res .= ctprodu(plan,y))
+              , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+              , plan, S.toeplitz)
 end
 
 ### Normal Matrix Code ###
@@ -146,7 +155,7 @@ function diagonalizeOp(p::NFFT.NFFTPlan, weights=nothing)
   firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
   firstRow = reshape(firstRow, shape)
 
-  # construct FT matrix of the eigentvalues
+  # construct FT matrix of the eigenvalues
   # here a row and column in the center is filled with zeros.
   # this is done to ensure that the FFT can operate
   # on arrays with even size in each dimension

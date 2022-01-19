@@ -76,12 +76,17 @@ mutable struct DiagOp{T} <: AbstractLinearOperator{T}
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
-  prod :: Function
-  tprod :: Function
-  ctprod :: Function
+  prod! :: Function
+  tprod! :: Function
+  ctprod! :: Function
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   ops
   equalOps :: Bool
   xIdx :: Vector{Int}
@@ -108,9 +113,10 @@ function diagOp(ops :: AbstractLinearOperator...)
   yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
 
   Op = DiagOp{S}( nrow, ncol, false, false,
-                     x->diagOpProd(x,nrow,xIdx,yIdx,ops...),
-                     y->diagOpTProd(y,ncol,yIdx,xIdx,ops...),
-                     y->diagOpCTProd(y,ncol,yIdx,xIdx,ops...), 0, 0, 0, 
+                     (res,x) -> (res .= diagOpProd(x,nrow,xIdx,yIdx,ops...)),
+                     (res,y) -> (res .= diagOpTProd(y,ncol,yIdx,xIdx,ops...)),
+                     (res,y) -> (res .= diagOpCTProd(y,ncol,yIdx,xIdx,ops...)), 
+                     0, 0, 0, false, false, false, S[], S[],
                      [ops...], false, xIdx, yIdx)
 
   return Op
@@ -126,9 +132,10 @@ function diagOp(op::AbstractLinearOperator, N=1)
   yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
 
   Op = DiagOp{S}( nrow, ncol, false, false,
-                     x->diagOpProd(x,nrow,xIdx,yIdx,ops...),
-                     y->diagOpTProd(y,ncol,yIdx,xIdx,ops...),
-                     y->diagOpCTProd(y,ncol,yIdx,xIdx,ops...), 0, 0, 0, 
+                    (res,x) -> (res .= diagOpProd(x,nrow,xIdx,yIdx,ops...)),
+                    (res,y) -> (res .= diagOpTProd(y,ncol,yIdx,xIdx,ops...)),
+                    (res,y) -> (res .= diagOpCTProd(y,ncol,yIdx,xIdx,ops...)), 
+                     0, 0, 0, false, false, false, S[], S[],
                      ops, true, xIdx, yIdx )
 
   return Op

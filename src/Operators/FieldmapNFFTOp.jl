@@ -15,12 +15,17 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{T}
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
-  prod :: Function
-  tprod :: F1
-  ctprod :: F2
+  prod! :: Function
+  tprod! :: F1
+  ctprod! :: F2
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   plans
   idx::Vector{Vector{Int64}}
   circTraj::Bool
@@ -89,17 +94,16 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   
   circTraj = isCircular(tr)
 
-  mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,nrow,ncol,shape,plans,idx,cparam,circTraj,d)
-  ctmul(y::Vector{T}) where T<:ComplexF64 =
-     ctprodu(y,shape,plans,idx,cparam,circTraj,d)
-  inverse(y::Vector{T}) where T<:ComplexF64 =
-     inv(y,shape,plans,idx,cparam,circTraj,p,y,d)
+  mul!(res, x::Vector{T}) where T<:ComplexF64 =
+     (res .= produ(x,nrow,ncol,shape,plans,idx,cparam,circTraj,d))
+  ctmul!(res, y::Vector{T}) where T<:ComplexF64 =
+     (res .= ctprodu(y,shape,plans,idx,cparam,circTraj,d))
 
   return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(nrow, ncol, false, false
-            , mul
+            , mul!
             , nothing
-            , ctmul, 0, 0, 0, plans, idx, circTraj, shape, cparam)
+            , ctmul!, 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , plans, idx, circTraj, shape, cparam)
 end
 
 function Base.copy(S::FieldmapNFFTOp)
@@ -111,18 +115,17 @@ function Base.copy(S::FieldmapNFFTOp)
 
   cparam = deepcopy(S.cparam)
 
-  mul(x::Vector{T}) where T<:ComplexF64 =
-     produ(x,S.nrow,S.ncol,S.shape,plans,idx,cparam,S.circTraj,d)
-  ctmul(y::Vector{T}) where T<:ComplexF64 =
-     ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d)
-  inverse(y::Vector{T}) where T<:ComplexF64 =
-     inv(y,S.shape,plans,idx,cparam,S.circTraj,p,y,d)
+  mul!(res, x::Vector{T}) where T<:ComplexF64 =
+     (res .= produ(x,S.nrow,S.ncol,S.shape,plans,idx,cparam,S.circTraj,d))
+  ctmul!(res, y::Vector{T}) where T<:ComplexF64 =
+     (res .= ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d))
 
   D = length(S.shape)
   return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(S.nrow, S.ncol, false, false
-            , mul
+            , mul!
             , nothing
-            , ctmul, 0, 0, 0, plans, idx, S.circTraj, S.shape, cparam)
+            , ctmul!, 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , plans, idx, S.circTraj, S.shape, cparam)
 end
 
 # function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)

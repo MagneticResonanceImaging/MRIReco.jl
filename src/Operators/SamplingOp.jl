@@ -26,9 +26,9 @@ end
 
 function SamplingOp(pattern::Array{Bool})
   return LinearOperator(length(pattern), length(pattern), false, false
-                  , x->vec(pattern).*x
+                  , (res,x) -> (res .= vec(pattern).*x)
                   , nothing
-                  , y->vec(pattern).*y )
+                  , (res,y) -> (res .= vec(pattern).*y) )
 end
 
 function zeropad(x::Array{T}, pattern::Matrix{Bool}) where T

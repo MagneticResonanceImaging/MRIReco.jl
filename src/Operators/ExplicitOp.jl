@@ -5,12 +5,17 @@ mutable struct ExplicitOp{T,F1,F2} <: AbstractLinearOperator{T}
   ncol :: Int
   symmetric :: Bool
   hermitian :: Bool
-  prod :: Function
-  tprod :: F1
-  ctprod :: F2
+  prod! :: Function
+  tprod! :: F1
+  ctprod! :: F2
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
 end
 
 """
@@ -42,9 +47,10 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array
   end
 
   return ExplicitOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
-            , x->produ(x, shape, nodes, times, echoOffset, correctionmap)
+            , (res,x)->(res .= produ(x, shape, nodes, times, echoOffset, correctionmap))
             , nothing
-            , y->ctprodu(y, shape, nodes, times, echoOffset, correctionmap),0,0,0)
+            , (res,y)->(res .= ctprodu(y, shape, nodes, times, echoOffset, correctionmap))
+            , 0,0,0, false, false, false, ComplexF64[], ComplexF64[])
 end
 
 function produ(x::Vector{T}, shape::NTuple{2,Int64},
@@ -148,5 +154,5 @@ end
 
 function adjoint(op::ExplicitOp{T}) where T
   return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-                        op.ctprod, nothing, op.prod)
+                        op.ctprod!, nothing, op.prod!)
 end
