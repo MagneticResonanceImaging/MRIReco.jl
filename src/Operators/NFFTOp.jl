@@ -73,16 +73,16 @@ end
 
 ### Normal Matrix Code ###
 
-struct NFFTNormalOp{T,S,D}
-  shape::S
-  weights::D
+struct NFFTNormalOp{T,D,W}
+  shape::NTuple{D,Int}
+  weights::W
   fftplan
   ifftplan
   λ::Array{T}
-  xL::Matrix{T}
+  xL::Array{T,D}
 end
 
-function Base.copy(A::NFFTNormalOp{T,S,D}) where {T,S,D}
+function Base.copy(A::NFFTNormalOp{T,D,W}) where {T,D,W}
   fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
   return NFFTNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL)
@@ -102,14 +102,20 @@ function LinearAlgebra.mul!(x, S::NFFTNormalOp, b)
 end
 
 
-function NFFTNormalOp(S::NFFTOp, W)
+function NFFTNormalOp(S::NFFTOp{T}, W) where {T}
   shape = S.plan.N
-  weights = W*ones(S.nrow)
+  weights = W * ones(T, S.nrow)
 
-  λ, ft, ift = diagonalizeOp(S.plan, weights)
-  xL = zeros(ComplexF64,2*shape[1], 2*shape[2])
 
-  return NFFTNormalOp(shape, W, ft, ift, λ, xL)
+  # plan the FFTs
+  fftplan  = plan_fft( zeros(T, 2 .* shape);flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(T, 2 .* shape);flags=FFTW.MEASURE)
+
+  λ = calculateToeplitzKernel(shape, S.plan.x; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
+
+  xL = zeros(T, 2 .* shape)
+
+  return NFFTNormalOp(shape, W, fftplan, ifftplan, λ, xL)
 end
 
 function SparsityOperators.normalOperator(S::NFFTOp, W=I)
@@ -124,73 +130,14 @@ end
 function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
   shape = S.shape
 
-  # xL = zeros(T,Tuple(2*collect(shape)))
-  # xL[1:shape[1],1:shape[2]] = x
-  # λ = reshape(S.λ,Tuple(2*collect(shape)))
-
-  # y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
-
   S.xL .= 0
-  S.xL[1:shape[1],1:shape[2]] .= reshape(x,shape)
+  x = reshape(x,shape)
+
+  S.xL[CartesianIndices(x)] .= x
+
   λ = reshape(S.λ,Tuple(2*collect(shape)))
 
-  y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[1:shape[1],1:shape[2]]
+  y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[CartesianIndices(x)]
 
   return vec(y)
 end
-
-
-function diagonalizeOp(p::NFFT.NFFTPlan, weights=nothing)
-  shape = p.N
-  nodes = p.x
-
-  # plan the FFTs
-  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
-
-  # calculate first column of block Toeplitz matrix
-   e1 = zeros(ComplexF64,shape)
-   e1[1] = 1.
-   firstCol = nfft_adjoint(p, nfft(p,e1)[:].*weights)
-   firstCol = reshape(firstCol, shape)
-
-  # calculate first rows of the leftmost Toeplitz blocks
-  p2 = plan_nfft([-1,1].*nodes, shape, m=3, σ=1.25)
-  firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
-  firstRow = reshape(firstRow, shape)
-
-  # construct FT matrix of the eigenvalues
-  # here a row and column in the center is filled with zeros.
-  # this is done to ensure that the FFT can operate
-  # on arrays with even size in each dimension
-  eigMat = zeros(ComplexF64, Tuple(2*collect(shape)))
-  eigMat[1:shape[1], 1:shape[2]] .= firstCol
-  eigMat[shape[1]+2:end, 1:shape[2]] .= firstRow[end:-1:2,:]
-  eigMat[1:shape[1], shape[2]+2:end] .= conj.(firstRow[:,end:-1:2])
-  eigMat[shape[1]+2:end, shape[2]+2:end] .=  conj.(firstCol[end:-1:2,end:-1:2])
-
-  return vec(fftplan*eigMat), fftplan, ifftplan
-end
-
-
-
-
-#
-# calculate the matrix element A_{j,k} explicitely
-#
-# function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
-#  elem=0.
-# x = k
-# y = j
-#  if weights != nothing
-#    for i=1:size(nodes,2)
-#      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )*weights[i]
-#    end
-#  else
-#    for i=1:size(nodes,2)
-#      elem += exp( -2*pi*1im*(nodes[1,i]*(x-shape[1]) + nodes[2,i]*(y-shape[2])) )
-#    end
-#  end
-
-#  return elem
-# end
