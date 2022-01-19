@@ -71,41 +71,24 @@ function Base.copy(S::NFFTOp)
               , plan, S.toeplitz)
 end
 
-### Normal Matrix Code ###
 
-struct NFFTNormalOp{T,D,W}
+
+#########################################################################
+### Toeplitz Operator ###
+#########################################################################
+struct Toeplitz_NormalOp{T,D,W}
   shape::NTuple{D,Int}
   weights::W
   fftplan
   ifftplan
   λ::Array{T}
-  xL::Array{T,D}
-end
-
-function Base.copy(A::NFFTNormalOp{T,D,W}) where {T,D,W}
-  fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
-  return NFFTNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL)
-end
-
-function Base.size(S::NFFTNormalOp)
-  return S.shape
-end
-
-function Base.size(S::NFFTNormalOp, dim)
-  return S.shape[dim]
-end
-
-function LinearAlgebra.mul!(x, S::NFFTNormalOp, b)
-  x .= S * b
-  return x
+  xL1::Array{T,D}
+  xL2::Array{T,D}
 end
 
 
-function NFFTNormalOp(S::NFFTOp{T}, W) where {T}
+function Toeplitz_NormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   shape = S.plan.N
-  weights = W * ones(T, S.nrow)
-
 
   # plan the FFTs
   fftplan  = plan_fft( zeros(T, 2 .* shape);flags=FFTW.MEASURE)
@@ -113,31 +96,49 @@ function NFFTNormalOp(S::NFFTOp{T}, W) where {T}
 
   λ = calculateToeplitzKernel(shape, S.plan.x; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
 
-  xL = zeros(T, 2 .* shape)
+  xL1 = Array{T}(undef, 2 .* shape)
+  xL2 = similar(xL1)
 
-  return NFFTNormalOp(shape, W, fftplan, ifftplan, λ, xL)
+  return Toeplitz_NormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
-function SparsityOperators.normalOperator(S::NFFTOp, W=I)
+function SparsityOperators.normalOperator(S::NFFTOp, W::UniformScaling=I)
   if S.toeplitz
-    return NFFTNormalOp(S,W)
+    return Toeplitz_NormalOp(S,W)
   else
     return NormalOp(S,W)
   end
 end
 
+function SparsityOperators.normalOperator(S::NFFTOp, W)
+  if S.toeplitz
+    @warn "Topelitz with non-Uniform scaling is currently not implemented. Using a non-Toeplitz implemenation instead."
+  end
+  return NormalOp(S,W)
+end
 
-function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
-  shape = S.shape
 
-  S.xL .= 0
-  x = reshape(x,shape)
+function LinearAlgebra.mul!(y, S::Toeplitz_NormalOp, b)
+  S.xL1 .= 0
+  b = reshape(b, S.shape)
 
-  S.xL[CartesianIndices(x)] .= x
+  S.xL1[CartesianIndices(b)] .= b
+  mul!(S.xL2, S.fftplan, S.xL1)
+  S.xL2 .*= S.λ
+  mul!(S.xL1, S.ifftplan, S.xL2)
 
-  λ = reshape(S.λ,Tuple(2*collect(shape)))
+  y .= vec(S.xL1[CartesianIndices(b)])
+  return y
+end
 
-  y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[CartesianIndices(x)]
 
-  return vec(y)
+Base.:*(S::Toeplitz_NormalOp, b::AbstractVector) = mul!(similar(b), S, b)
+Base.size(S::Toeplitz_NormalOp) = S.shape
+Base.size(S::Toeplitz_NormalOp, dim) = S.shape[dim]
+Base.eltype(::Type{Toeplitz_NormalOp{T,D,W}}) where {T,D,W} = T
+
+function Base.copy(A::Toeplitz_NormalOp{T,D,W}) where {T,D,W}
+  fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  return Toeplitz_NormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL1, A.xL2)
 end
