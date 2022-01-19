@@ -29,8 +29,8 @@ end
 =#
 
 function get_hdf5type_encoding()
-  off = i -> Cint(fieldoffset(EncodingCounters,i))
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(EncodingCounters) )
+  off = i -> Cint(fieldoffset(EncodingCountersImmutable,i))
+  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(EncodingCountersImmutable) )
   h5t_insert(datatype, "kspace_encode_step_1", off(1) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "kspace_encode_step_2", off(2) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "average", off(3), hdf5_type_id(UInt16))
@@ -81,6 +81,19 @@ end
 # This is a duplicate type since writing to HDF the way we do it requires
 # an immutable type while it is more convenient for the user to have 
 # AcquisitionHeader as mutable type.
+Base.@kwdef struct EncodingCountersImmutable
+  kspace_encode_step_1::Int16 = 0
+  kspace_encode_step_2::Int16 = 0
+  average::Int16 = 0
+  slice::Int16 = 0
+  contrast::Int16 = 0
+  phase::Int16 = 0
+  repetition::Int16 = 0
+  set::Int16 = 0
+  segment::Int16 = 0
+  user::NTuple{8,Int16} = ntuple(i->Int16(0),8)
+end
+
 Base.@kwdef struct AcquisitionHeaderImmutable
   version::Int16 = 0
   flags::Int64 = 0
@@ -103,19 +116,28 @@ Base.@kwdef struct AcquisitionHeaderImmutable
   phase_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
   slice_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
   patient_table_position::NTuple{3,Float32} = ntuple(i->Float32(0),3)
-  idx::EncodingCounters = EncodingCounters()
+  idx::EncodingCountersImmutable = EncodingCountersImmutable()
   user_int::NTuple{8,Int32} = ntuple(i->Int32(0),8)
   user_float::NTuple{8,Float32} = ntuple(i->Float32(0),8)
+end
+
+function Base.convert(::Type{EncodingCountersImmutable}, enc::EncodingCounters)
+  unsafe_load(reinterpret(Ptr{EncodingCountersImmutable}, (pointer_from_objref(enc))))
+end
+
+function Base.convert(::Type{AcquisitionHeaderImmutable}, acq::AcquisitionHeader)
+  params = Dict(key=>getfield(acq, key) for key ∈ propertynames(acq) )
+  return AcquisitionHeaderImmutable(;params...)
 end
 
 # convert a mutable AcquisitionHeader into an immutable one
 function AcquisitionHeaderImmutable(acq::AcquisitionHeader)
   ### Slow but probably safer version
-  #params = Dict(key=>getfield(acq, key) for key ∈ propertynames(acq) )
-  #return AcquisitionHeaderImmutable(;params...)
+  params = Dict(key=>getfield(acq, key) for key ∈ propertynames(acq) )
+  return AcquisitionHeaderImmutable(;params...)
  
   ### Fast but probably unsafer version
-  return unsafe_load(reinterpret(Ptr{AcquisitionHeaderImmutable}, (pointer_from_objref(acq))))
+  #return unsafe_load(reinterpret(Ptr{AcquisitionHeaderImmutable}, (pointer_from_objref(acq))))
 end
 
 function get_hdf5type_acquisitionheader()

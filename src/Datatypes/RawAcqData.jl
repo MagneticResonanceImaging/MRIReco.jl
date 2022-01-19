@@ -3,7 +3,7 @@ export RawAcquisitionData, EncodingCounters, AcquisitionHeader
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
 """
-Base.@kwdef struct EncodingCounters
+Base.@kwdef mutable struct EncodingCounters
   kspace_encode_step_1::Int16 = 0
   kspace_encode_step_2::Int16 = 0
   average::Int16 = 0
