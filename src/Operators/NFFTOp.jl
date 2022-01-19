@@ -17,33 +17,37 @@ mutable struct NFFTOp{T} <: AbstractLinearOperator{T}
   allocated5 :: Bool
   Mv5 :: Vector{T}
   Mtu5 :: Vector{T}
-  plan 
+  plan
   toeplitz :: Bool
 end
 
 """
-    NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
+    NFFTOp(shape::Tuple, tr::Trajectory; kargs...)
+    NFFTOp(shape::Tuple, tr::AbstractMatrix; kargs...)
 
 generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator using the NFFT.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`  - size of image to encode/reconstruct
-* `tr::Trajectory`          - Trajectory with the kspace nodes to sample
+* `tr`                      - Either a `Trajectory` object, or a `ND x Nsamples` matrix for an ND-dimenensional (e.g. 2D or 3D) NFFT with `Nsamples` k-space samples
 * (`nodes=nothing`)         - Array containg the trajectory nodes (redundant)
-* (`kargs`)                   - additional keyword arguments
+* (`kargs`)                 - additional keyword arguments
 """
-function NFFTOp(shape::Tuple, tr; nodes=nothing, toeplitz=false, 
-                oversamplingFactor=1.25, kernelSize=3, kargs...)
-  nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  # plan = NFFTPlan(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
-  plan = plan_nfft(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
+function NFFTOp(shape::Tuple, tr::AbstractMatrix{T}; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...) where {T}
 
-  return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
+  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
+
+  return NFFTOp{Complex{T}}(size(tr,2), prod(shape), false, false
             , (res,x) -> (res .= produ(plan,x))
             , nothing
             , (res,y) -> (res .= ctprodu(plan,y))
-            , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plan, toeplitz)
+end
+
+
+function NFFTOp(shape::Tuple, tr::Trajectory; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...)
+  return NFFTOp(shape, kspaceNodes(tr); toeplitz=toeplitz, oversamplingFactor=oversamplingFactor, kernelSize=kernelSize, kargs...)
 end
 
 function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
@@ -59,29 +63,29 @@ end
 
 function Base.copy(S::NFFTOp)
   plan = copy(S.plan)
-  return NFFTOp{ComplexF64}(size(plan.x,2), prod(plan.N), false, false
+  return NFFTOp{Complex{T}}(size(plan.x,2), prod(plan.N), false, false
               , (res,x) -> (res .= produ(plan,x))
               , nothing
               , (res,y) -> (res .= ctprodu(plan,y))
-              , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+              , 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
               , plan, S.toeplitz)
 end
 
 ### Normal Matrix Code ###
 
-struct NFFTNormalOp{S,D} 
+struct NFFTNormalOp{T,S,D}
   shape::S
   weights::D
   fftplan
   ifftplan
-  λ::Array{ComplexF64}
-  xL::Matrix{ComplexF64}
+  λ::Array{T}
+  xL::Matrix{T}
 end
 
-function Base.copy(S::NFFTNormalOp)
-  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
-  return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ, S.xL)
+function Base.copy(A::NFFTNormalOp{T,S,D}) where {T,S,D}
+  fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  return NFFTNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL)
 end
 
 function Base.size(S::NFFTNormalOp)
@@ -123,15 +127,15 @@ function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
   # xL = zeros(T,Tuple(2*collect(shape)))
   # xL[1:shape[1],1:shape[2]] = x
   # λ = reshape(S.λ,Tuple(2*collect(shape)))
-  
+
   # y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
 
   S.xL .= 0
   S.xL[1:shape[1],1:shape[2]] .= reshape(x,shape)
   λ = reshape(S.λ,Tuple(2*collect(shape)))
-  
+
   y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[1:shape[1],1:shape[2]]
-  
+
   return vec(y)
 end
 
