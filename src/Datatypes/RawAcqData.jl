@@ -19,7 +19,7 @@ end
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
 """
-Base.@kwdef struct AcquisitionHeader
+Base.@kwdef mutable struct AcquisitionHeader
   version::Int16 = 0
   flags::Int64 = 0
   measurement_uid::Int32 = 0

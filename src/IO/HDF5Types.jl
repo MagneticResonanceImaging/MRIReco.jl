@@ -78,9 +78,49 @@ struct AcquisitionHeader
 end
 =#
 
+# This is a duplicate type since writing to HDF the way we do it requires
+# an immutable type while it is more convenient for the user to have 
+# AcquisitionHeader as mutable type.
+Base.@kwdef struct AcquisitionHeaderImmutable
+  version::Int16 = 0
+  flags::Int64 = 0
+  measurement_uid::Int32 = 0
+  scan_counter::Int32 = 0
+  acquisition_time_stamp::Int32 = 0
+  physiology_time_stamp::NTuple{3,Int32} = ntuple(i->Int32(0),3)
+  number_of_samples::Int16 = 0
+  available_channels::Int16 = 0
+  active_channels::Int16 = 0
+  channel_mask::NTuple{16,Int64} = ntuple(i->Int64(0),16)
+  discard_pre::Int16 = 0
+  discard_post::Int16 = 0
+  center_sample::Int16 = 0
+  encoding_space_ref::Int16 = 0
+  trajectory_dimensions::Int16 = 0
+  sample_time_us::Float32 = 0.0
+  position::NTuple{3,Float32} = ntuple(i->Float32(0),3)
+  read_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
+  phase_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
+  slice_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
+  patient_table_position::NTuple{3,Float32} = ntuple(i->Float32(0),3)
+  idx::EncodingCounters = EncodingCounters()
+  user_int::NTuple{8,Int32} = ntuple(i->Int32(0),8)
+  user_float::NTuple{8,Float32} = ntuple(i->Float32(0),8)
+end
+
+# convert a mutable AcquisitionHeader into an immutable one
+function AcquisitionHeaderImmutable(acq::AcquisitionHeader)
+  ### Slow but probably safer version
+  #params = Dict(key=>getfield(acq, key) for key ∈ propertynames(acq) )
+  #return AcquisitionHeaderImmutable(;params...)
+ 
+  ### Fast but probably unsafer version
+  return unsafe_load(reinterpret(Ptr{AcquisitionHeaderImmutable}, (pointer_from_objref(acq))))
+end
+
 function get_hdf5type_acquisitionheader()
-  off = i -> Cint(fieldoffset(AcquisitionHeader,i))
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(AcquisitionHeader) )
+  off = i -> Cint(fieldoffset(AcquisitionHeaderImmutable,i))
+  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(AcquisitionHeaderImmutable) )
   h5t_insert(datatype, "version", off(1) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "flags", off(2) , hdf5_type_id(UInt64))
   h5t_insert(datatype, "measurement_uid", off(3), hdf5_type_id(UInt32))
@@ -150,7 +190,7 @@ struct HVL_T{T}
 end
 
 struct HDF5_Acquisition
-  head::AcquisitionHeader
+  head::AcquisitionHeaderImmutable
   traj::HVL_T{Float32}
   data::HVL_T{Float32} #for some reason this is stored as float
 end
@@ -186,7 +226,7 @@ function writeProfiles(file, dataset, profiles::Vector{Profile})
     #for some reason this is stored as float
     d = HVL_T(2*length(profiles[l].data), pointer(reinterpret(Float32,profiles[l].data)))
 
-    profiles_hdf5[l] = HDF5_Acquisition(profiles[l].head,t,d)
+    profiles_hdf5[l] = HDF5_Acquisition(AcquisitionHeaderImmutable(profiles[l].head),t,d)
   end
 
 

@@ -37,7 +37,8 @@ fCopy = ISMRMRDFile(filenameCopy)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(fCopy)
 
-@test acqCopy.profiles[1].head == acq.profiles[1].head
+@test all([ getfield(acq.profiles[1].head, key) == getfield(acqCopy.profiles[1].head, key) for
+           key ∈ propertynames(acq.profiles[1].head) ])
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
@@ -69,7 +70,8 @@ acq = RawAcquisitionData(f)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
-@test acqCopy.profiles[1].head == acq.profiles[1].head
+@test all([ getfield(acq.profiles[1].head, key) == getfield(acqCopy.profiles[1].head, key) for
+           key ∈ propertynames(acq.profiles[1].head) ])
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
