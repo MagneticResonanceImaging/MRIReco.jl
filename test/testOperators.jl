@@ -1,3 +1,5 @@
+using SparsityOperators
+
 # test FourierOperators
 function testFT(N=16)
   # random image
@@ -26,10 +28,36 @@ function testFT(N=16)
   y_exp = F_exp*vec(x)
   y_adj_exp = adjoint(F_exp) * vec(x)
 
-  @test (norm(y-y_nfft)/norm(y)) < 1e-2
-  @test (norm(y_adj-y_adj_nfft)/norm(y_adj)) < 1e-2
-  @test (norm(y-y_exp)/norm(y)) < 1e-2
-  @test (norm(y_adj-y_adj_exp)/norm(y_adj)) < 1e-2
+  @test y     ≈ y_nfft      rtol = 1e-2
+  @test y     ≈ y_exp       rtol = 1e-2
+  @test y_adj ≈ y_adj_nfft  rtol = 1e-2
+  @test y_adj ≈ y_adj_exp   rtol = 1e-2
+
+  # test AHA w/o Toeplitz
+  F_nfft.toeplitz = false
+  AHA = SparsityOperators.normalOperator(F_nfft)
+  y_AHA_nfft = AHA * vec(x)
+  y_AHA = F' * F * vec(x)
+  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
+
+  # test AHA with Toeplitz
+  F_nfft.toeplitz = true
+  AHA = SparsityOperators.normalOperator(F_nfft)
+  y_AHA_nfft = AHA * vec(x)
+  y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
+  y_AHA = F' * F * vec(x)
+  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
+
+  # test type stability;
+  # TODO: Ensure type stability for Trajectory objects and test here
+  nodes = Float32.(tr.nodes)
+  F_nfft = NFFTOp((N,N),nodes,symmetrize=false)
+
+  y_nfft = F_nfft * vec(ComplexF32.(x))
+  y_adj_nfft = adjoint(F_nfft) * vec(ComplexF32.(x))
+
+  @test Complex{eltype(nodes)} === eltype(y_nfft)
+  @test Complex{eltype(nodes)} === eltype(y_adj_nfft)
 end
 
 function testFT3d(N=12)
@@ -59,21 +87,28 @@ function testFT3d(N=12)
   y_exp = F_exp*vec(x)
   y_adj_exp = adjoint(F_exp) * vec(x)
 
-  relError = (norm(y-y_exp)/norm(y))
-  println("Relative error ExplicitOp: ", relError)
-  @test  relError< 1e-2
-  relError = (norm(y_adj-y_adj_exp)/norm(y_adj))
-  println("Relative error adj. ExplicitOp: ", relError)
-  @test  relError< 1e-2
-  relError = (norm(y-y_nfft)/norm(y))
-  println("Relative error NFFT: ", relError)
-  @test relError < 1e-2
-  relError = (norm(y_adj-y_adj_nfft)/norm(y_adj))
-  println("Relative error adj. NFFT: ", relError)
-  @test  relError< 1e-2
+  @test  y     ≈ y_exp      rtol = 1e-2
+  @test  y     ≈ y_nfft     rtol = 1e-2
+  @test  y_adj ≈ y_adj_exp  rtol = 1e-2
+  @test  y_adj ≈ y_adj_nfft rtol = 1e-2
+
+  # test AHA w/o Toeplitz
+  F_nfft.toeplitz = false
+  AHA = SparsityOperators.normalOperator(F_nfft)
+  y_AHA_nfft = AHA * vec(x)
+  y_AHA = F' * F * vec(x)
+  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
+
+  # test AHA with Toeplitz
+  F_nfft.toeplitz = true
+  AHA = SparsityOperators.normalOperator(F_nfft)
+  y_AHA_nfft = AHA * vec(x)
+  y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
+  y_AHA = F' * F * vec(x)
+  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 end
 
-# test FieldmapNFFTOp
+## test FieldmapNFFTOp
 function testFieldmapFT(N=16)
   # random image
   x = zeros(ComplexF64,N,N)

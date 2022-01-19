@@ -61,13 +61,13 @@ function ctprodu(plan::NFFT.NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
 end
 
 
-function Base.copy(S::NFFTOp)
+function Base.copy(S::NFFTOp{T}) where {T}
   plan = copy(S.plan)
-  return NFFTOp{Complex{T}}(size(plan.x,2), prod(plan.N), false, false
+  return NFFTOp{T}(size(plan.x,2), prod(plan.N), false, false
               , (res,x) -> (res .= produ(plan,x))
               , nothing
               , (res,y) -> (res .= ctprodu(plan,y))
-              , 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+              , 0, 0, 0, false, false, false, T[], T[]
               , plan, S.toeplitz)
 end
 
