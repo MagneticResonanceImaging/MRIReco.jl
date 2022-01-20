@@ -144,14 +144,13 @@ function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
 
   nc = size(data)[end]
 
-  tmp = im2row(data, ksize)
-  tsx, tsy, tsz = size(tmp)
-  A = reshape(tmp, tsx, tsy * tsz)
+  A = im2row(data, ksize)
+  A = reshape(A, size(A,1), :)
 
   nblas = BLAS.get_num_threads()
   usv = try
     BLAS.set_num_threads(Threads.nthreads())
-    svd(A)
+    svd!(A)
   finally
     BLAS.set_num_threads(nblas)
   end
@@ -185,11 +184,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   kernel = permutedims(kernel, flip_nc_nv)
   kernel = reshape(kernel, :, nc)
 
-  if size(kernel, 1) < size(kernel, 2)
-    usv = svd(kernel, full = true)
-  else
-    usv = svd(kernel)
-  end
+  usv = svd(kernel, full = (size(kernel, 1) < size(kernel, 2)))
 
   kernel = kernel * usv.V
   kernel = reshape(kernel, ksize..., nv, nc)
