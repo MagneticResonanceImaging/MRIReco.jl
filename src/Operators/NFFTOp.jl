@@ -17,33 +17,37 @@ mutable struct NFFTOp{T} <: AbstractLinearOperator{T}
   allocated5 :: Bool
   Mv5 :: Vector{T}
   Mtu5 :: Vector{T}
-  plan 
+  plan
   toeplitz :: Bool
 end
 
 """
-    NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
+    NFFTOp(shape::Tuple, tr::Trajectory; kargs...)
+    NFFTOp(shape::Tuple, tr::AbstractMatrix; kargs...)
 
 generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator using the NFFT.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`  - size of image to encode/reconstruct
-* `tr::Trajectory`          - Trajectory with the kspace nodes to sample
+* `tr`                      - Either a `Trajectory` object, or a `ND x Nsamples` matrix for an ND-dimenensional (e.g. 2D or 3D) NFFT with `Nsamples` k-space samples
 * (`nodes=nothing`)         - Array containg the trajectory nodes (redundant)
-* (`kargs`)                   - additional keyword arguments
+* (`kargs`)                 - additional keyword arguments
 """
-function NFFTOp(shape::Tuple, tr; nodes=nothing, toeplitz=false, 
-                oversamplingFactor=1.25, kernelSize=3, kargs...)
-  nodes==nothing ? nodes=kspaceNodes(tr) : nothing
-  # plan = NFFTPlan(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
-  plan = plan_nfft(nodes, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
+function NFFTOp(shape::Tuple, tr::AbstractMatrix{T}; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...) where {T}
 
-  return NFFTOp{ComplexF64}(size(nodes,2), prod(shape), false, false
+  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.FULL)
+
+  return NFFTOp{Complex{T}}(size(tr,2), prod(shape), false, false
             , (res,x) -> (res .= produ(plan,x))
             , nothing
             , (res,y) -> (res .= ctprodu(plan,y))
-            , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plan, toeplitz)
+end
+
+
+function NFFTOp(shape::Tuple, tr::Trajectory; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...)
+  return NFFTOp(shape, kspaceNodes(tr); toeplitz=toeplitz, oversamplingFactor=oversamplingFactor, kernelSize=kernelSize, kargs...)
 end
 
 function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
@@ -57,136 +61,84 @@ function ctprodu(plan::NFFT.NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
 end
 
 
-function Base.copy(S::NFFTOp)
+function Base.copy(S::NFFTOp{T}) where {T}
   plan = copy(S.plan)
-  return NFFTOp{ComplexF64}(size(plan.x,2), prod(plan.N), false, false
+  return NFFTOp{T}(size(plan.x,2), prod(plan.N), false, false
               , (res,x) -> (res .= produ(plan,x))
               , nothing
               , (res,y) -> (res .= ctprodu(plan,y))
-              , 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+              , 0, 0, 0, false, false, false, T[], T[]
               , plan, S.toeplitz)
 end
 
-### Normal Matrix Code ###
 
-struct NFFTNormalOp{S,D} 
-  shape::S
-  weights::D
+
+#########################################################################
+### Toeplitz Operator ###
+#########################################################################
+struct Toeplitz_NormalOp{T,D,W}
+  shape::NTuple{D,Int}
+  weights::W
   fftplan
   ifftplan
-  λ::Array{ComplexF64}
-  xL::Matrix{ComplexF64}
-end
-
-function Base.copy(S::NFFTNormalOp)
-  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(S.shape)));flags=FFTW.MEASURE)
-  return NFFTNormalOp(S.shape, S.weights, fftplan, ifftplan, S.λ, S.xL)
-end
-
-function Base.size(S::NFFTNormalOp)
-  return S.shape
-end
-
-function Base.size(S::NFFTNormalOp, dim)
-  return S.shape[dim]
-end
-
-function LinearAlgebra.mul!(x, S::NFFTNormalOp, b)
-  x .= S * b
-  return x
+  λ::Array{T}
+  xL1::Array{T,D}
+  xL2::Array{T,D}
 end
 
 
-function NFFTNormalOp(S::NFFTOp, W)
+function Toeplitz_NormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   shape = S.plan.N
-  weights = W*ones(S.nrow)
 
-  λ, ft, ift = diagonalizeOp(S.plan, weights)
-  xL = zeros(ComplexF64,2*shape[1], 2*shape[2])
+  # plan the FFTs
+  fftplan  = plan_fft( zeros(T, 2 .* shape);flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(T, 2 .* shape);flags=FFTW.MEASURE)
 
-  return NFFTNormalOp(shape, W, ft, ift, λ, xL)
+  λ = calculateToeplitzKernel(shape, S.plan.x; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
+
+  xL1 = Array{T}(undef, 2 .* shape)
+  xL2 = similar(xL1)
+
+  return Toeplitz_NormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
-function SparsityOperators.normalOperator(S::NFFTOp, W=I)
+function SparsityOperators.normalOperator(S::NFFTOp, W::UniformScaling=I)
   if S.toeplitz
-    return NFFTNormalOp(S,W)
+    return Toeplitz_NormalOp(S,W)
   else
     return NormalOp(S,W)
   end
 end
 
-
-function Base.:*(S::NFFTNormalOp, x::AbstractVector{T}) where T
-  shape = S.shape
-
-  # xL = zeros(T,Tuple(2*collect(shape)))
-  # xL[1:shape[1],1:shape[2]] = x
-  # λ = reshape(S.λ,Tuple(2*collect(shape)))
-  
-  # y = (S.ifftplan*( λ.*(S.fftplan*xL)))[1:shape[1],1:shape[2]]
-
-  S.xL .= 0
-  S.xL[1:shape[1],1:shape[2]] .= reshape(x,shape)
-  λ = reshape(S.λ,Tuple(2*collect(shape)))
-  
-  y = (S.ifftplan*( λ.*(S.fftplan*S.xL)))[1:shape[1],1:shape[2]]
-  
-  return vec(y)
+function SparsityOperators.normalOperator(S::NFFTOp, W)
+  if S.toeplitz
+    @warn "Topelitz with non-Uniform scaling is currently not implemented. Using a non-Toeplitz implemenation instead."
+  end
+  return NormalOp(S,W)
 end
 
 
-function diagonalizeOp(p::NFFT.NFFTPlan, weights=nothing)
-  shape = p.N
-  nodes = p.x
+function LinearAlgebra.mul!(y, S::Toeplitz_NormalOp, b)
+  S.xL1 .= 0
+  b = reshape(b, S.shape)
 
-  # plan the FFTs
-  fftplan = plan_fft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
-  ifftplan = plan_ifft(zeros(ComplexF64, Tuple(2*collect(shape)));flags=FFTW.MEASURE)
+  S.xL1[CartesianIndices(b)] .= b
+  mul!(S.xL2, S.fftplan, S.xL1)
+  S.xL2 .*= S.λ
+  mul!(S.xL1, S.ifftplan, S.xL2)
 
-  # calculate first column of block Toeplitz matrix
-   e1 = zeros(ComplexF64,shape)
-   e1[1] = 1.
-   firstCol = nfft_adjoint(p, nfft(p,e1)[:].*weights)
-   firstCol = reshape(firstCol, shape)
-
-  # calculate first rows of the leftmost Toeplitz blocks
-  p2 = plan_nfft([-1,1].*nodes, shape, m=3, σ=1.25)
-  firstRow = nfft_adjoint(p2, nfft(p2,e1)[:].*weights)
-  firstRow = reshape(firstRow, shape)
-
-  # construct FT matrix of the eigenvalues
-  # here a row and column in the center is filled with zeros.
-  # this is done to ensure that the FFT can operate
-  # on arrays with even size in each dimension
-  eigMat = zeros(ComplexF64, Tuple(2*collect(shape)))
-  eigMat[1:shape[1], 1:shape[2]] .= firstCol
-  eigMat[shape[1]+2:end, 1:shape[2]] .= firstRow[end:-1:2,:]
-  eigMat[1:shape[1], shape[2]+2:end] .= conj.(firstRow[:,end:-1:2])
-  eigMat[shape[1]+2:end, shape[2]+2:end] .=  conj.(firstCol[end:-1:2,end:-1:2])
-
-  return vec(fftplan*eigMat), fftplan, ifftplan
+  y .= vec(S.xL1[CartesianIndices(b)])
+  return y
 end
 
 
+Base.:*(S::Toeplitz_NormalOp, b::AbstractVector) = mul!(similar(b), S, b)
+Base.size(S::Toeplitz_NormalOp) = S.shape
+Base.size(S::Toeplitz_NormalOp, dim) = S.shape[dim]
+Base.eltype(::Type{Toeplitz_NormalOp{T,D,W}}) where {T,D,W} = T
 
-
-#
-# calculate the matrix element A_{j,k} explicitely
-#
-# function getMatrixElement(j::Int, k::Int, shape::Tuple, nodes::Matrix; weights=nothing)
-#  elem=0.
-# x = k
-# y = j
-#  if weights != nothing
-#    for i=1:size(nodes,2)
-#      elem += exp( -2*pi*1im*(nodes[1,i]*x + nodes[2,i]*y) )*weights[i]
-#    end
-#  else
-#    for i=1:size(nodes,2)
-#      elem += exp( -2*pi*1im*(nodes[1,i]*(x-shape[1]) + nodes[2,i]*(y-shape[2])) )
-#    end
-#  end
-
-#  return elem
-# end
+function Base.copy(A::Toeplitz_NormalOp{T,D,W}) where {T,D,W}
+  fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
+  return Toeplitz_NormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL1, A.xL2)
+end
