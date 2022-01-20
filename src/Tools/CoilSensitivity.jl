@@ -1,5 +1,5 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
-using Polyester
+
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
 
@@ -193,9 +193,19 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   kernel = reshape(kernel, ksize..., nv, nc)
   kernel = permutedims(kernel, flip_nc_nv2)
 
-  kern2 = zeros(T, nc, nv, imsize...)
-  kern2[CartesianIndices(kernel)] .= kernel
-  fft!(kern2, 3:length(ksize)+2)
+  kern2 = zeros(T, nc, nc, imsize...)
+  kernel_k = zeros(T, nc, imsize...)
+  kernel_i = similar(kernel_k)
+  fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE)
+
+  for iv ∈ axes(kernel, 2)
+    @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
+    mul!(kernel_i, fftplan, kernel_k)
+    for ix ∈ CartesianIndices(imsize)
+      @views mul!(kern2[:,:,ix], kernel_i[:,ix], kernel_i[:,ix]', 1, 1)
+    end
+  end
+
   kern2 ./= sqrt(prod(ksize))
   kern2 .= conj.(kern2)
 
@@ -206,7 +216,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   try
     BLAS.set_num_threads(1)
     Threads.@threads for n ∈ CartesianIndices(imsize)
-      U,S,_ = svd!(@view kern2[:, :, n])
+      S, U = eigen!(@view kern2[:, :, n]; sortby = (λ) -> -abs(λ))
 
       @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
 
