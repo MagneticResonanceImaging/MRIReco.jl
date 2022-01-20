@@ -76,7 +76,7 @@ end
 #########################################################################
 ### Toeplitz Operator ###
 #########################################################################
-struct Toeplitz_NormalOp{T,D,W}
+struct NFFTToeplitzNormalOp{T,D,W}
   shape::NTuple{D,Int}
   weights::W
   fftplan
@@ -87,7 +87,7 @@ struct Toeplitz_NormalOp{T,D,W}
 end
 
 
-function Toeplitz_NormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
+function NFFTToeplitzNormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   shape = S.plan.N
 
   # plan the FFTs
@@ -99,12 +99,12 @@ function Toeplitz_NormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   xL1 = Array{T}(undef, 2 .* shape)
   xL2 = similar(xL1)
 
-  return Toeplitz_NormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
+  return NFFTToeplitzNormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
 function SparsityOperators.normalOperator(S::NFFTOp, W::UniformScaling=I)
   if S.toeplitz
-    return Toeplitz_NormalOp(S,W)
+    return NFFTToeplitzNormalOp(S,W)
   else
     return NormalOp(S,W)
   end
@@ -118,7 +118,7 @@ function SparsityOperators.normalOperator(S::NFFTOp, W)
 end
 
 
-function LinearAlgebra.mul!(y, S::Toeplitz_NormalOp, b)
+function LinearAlgebra.mul!(y, S::NFFTToeplitzNormalOp, b)
   S.xL1 .= 0
   b = reshape(b, S.shape)
 
@@ -132,13 +132,13 @@ function LinearAlgebra.mul!(y, S::Toeplitz_NormalOp, b)
 end
 
 
-Base.:*(S::Toeplitz_NormalOp, b::AbstractVector) = mul!(similar(b), S, b)
-Base.size(S::Toeplitz_NormalOp) = S.shape
-Base.size(S::Toeplitz_NormalOp, dim) = S.shape[dim]
-Base.eltype(::Type{Toeplitz_NormalOp{T,D,W}}) where {T,D,W} = T
+Base.:*(S::NFFTToeplitzNormalOp, b::AbstractVector) = mul!(similar(b), S, b)
+Base.size(S::NFFTToeplitzNormalOp) = S.shape
+Base.size(S::NFFTToeplitzNormalOp, dim) = S.shape[dim]
+Base.eltype(::Type{NFFTToeplitzNormalOp{T,D,W}}) where {T,D,W} = T
 
-function Base.copy(A::Toeplitz_NormalOp{T,D,W}) where {T,D,W}
+function Base.copy(A::NFFTToeplitzNormalOp{T,D,W}) where {T,D,W}
   fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
-  return Toeplitz_NormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL1, A.xL2)
+  return NFFTToeplitzNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL1, A.xL2)
 end
