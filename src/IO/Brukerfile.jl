@@ -148,6 +148,8 @@ acqRepetitionTime(b::BrukerFile) = parse(Float64,b["ACQ_repetition_time"][1])
 
 Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
+pvmEncNReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncNReceivers"])
+pvmEncAvailReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncAvailReceivers"])
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
 pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
 pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
@@ -234,8 +236,11 @@ function RawAcquisitionDataFid(b::BrukerFile)
     filename = joinpath(b.path, "fid")
 
     N = acqSize(b)
-    # The data is padded in case it is not a multiple of 1024
-    profileLength = div((div(N[1]*sizeof(dtype),1024)+1)*1024,sizeof(dtype))
+    # The data is padded in case it is not a multiple of 1024 
+    # For multi-channel acquisition data at concatenate then padded to a multiple of 1024 bytes
+    numChannel = pvmEncNReceivers(b)
+    profileLength = Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype))
+    numAvailableChannel = pvmEncAvailReceivers(b)
     phaseFactor = acqPhaseFactor(b)
     numSlices = acqNumSlices(b)
     numEchos = acqNumEchos(b)
@@ -249,7 +254,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
                                      numSlices,
                                      div(N[2], phaseFactor),
                                      numEncSteps2,
-                                     numRep))[1:N[1],:,:,:,:,:,:]
+                                     numRep))[1:N[1]*numChannel,:,:,:,:,:,:]
     end
 
     encSteps1 = pvmEncSteps1(b)
@@ -300,10 +305,10 @@ function RawAcquisitionDataFid(b::BrukerFile)
                                            read_dir=read_dir, phase_dir=phase_dir,
                                            slice_dir=slice_dir, position=position,
                                            center_sample=div(N[1],2),
-                                           available_channels = 1, #TODO
-                                           active_channels = 1)
+                                           available_channels = numAvailableChannel, #TODO
+                                           active_channels = numChannel)
                   traj = Matrix{Float32}(undef,0,0)
-                  dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,1))
+                  dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,numChannel))
                   push!(profiles, Profile(head,traj,dat) )
               end
             end
@@ -323,7 +328,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
     params["encodedSize"] = N
     F = acqFov(b)
     params["encodedFOV"] = F
-    params["receiverChannels"] = 1
+    params["receiverChannels"] = numChannel
     params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
     params["studyID"] = b["VisuStudyId"]
     #params["studyDescription"] = b["ACQ_scan_name"]
