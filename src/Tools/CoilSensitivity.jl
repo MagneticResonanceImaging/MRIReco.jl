@@ -1,5 +1,6 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
 using Polyester
+
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
 
@@ -78,9 +79,10 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
   * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
   * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
+  * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
 function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1)
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true)
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -100,7 +102,7 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib:
 
     calib = crop(kdata, (ncalib, ncalib, numChan))
 
-    maps[:, :, slice, :, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2, nmaps = nmaps)
+    maps[:, :, slice, :, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2, nmaps = nmaps, use_poweriterations = use_poweriterations)
   end
 
   if nmaps == 1
@@ -111,7 +113,7 @@ end
 
 
 function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = ntuple(_ -> 6, N)
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1) where {T,N}
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1, use_poweriterations = true) where {T,N}
   nc = size(calibData)[end]
 
   # compute calibration matrix, perform SVD and convert right singular vectors
@@ -121,7 +123,7 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int
 
   # crop kernels and compute eigenvalue decomposition in images space
   # to get sensitivity maps
-  maps, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize, nmaps)
+  maps, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize, nmaps; use_poweriterations = use_poweriterations)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
   msk = falses(size(W))
@@ -142,14 +144,13 @@ function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
 
   nc = size(data)[end]
 
-  tmp = im2row(data, ksize)
-  tsx, tsy, tsz = size(tmp)
-  A = reshape(tmp, tsx, tsy * tsz)
+  A = im2row(data, ksize)
+  A = reshape(A, size(A,1), :)
 
   nblas = BLAS.get_num_threads()
   usv = try
     BLAS.set_num_threads(Threads.nthreads())
-    svd(A)
+    svd!(A)
   finally
     BLAS.set_num_threads(nblas)
   end
@@ -168,7 +169,7 @@ end
 # outputs :
 #         eigenvecs: images representing the eigenvectors (sx,sy,numChan,numChan)
 #         eigenvals: images representing the eigenvalues (sx,sy,numChan)
-function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
+function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations=true) where {T}
 
   kern_size = size(kernel)
   ksize = kern_size[1:end-2]
@@ -183,20 +184,27 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   kernel = permutedims(kernel, flip_nc_nv)
   kernel = reshape(kernel, :, nc)
 
-  if size(kernel, 1) < size(kernel, 2)
-    usv = svd(kernel, full = true)
-  else
-    usv = svd(kernel)
-  end
+  usv = svd(kernel, full = (size(kernel, 1) < size(kernel, 2)))
 
   kernel = kernel * usv.V
   kernel = reshape(kernel, ksize..., nv, nc)
   kernel = permutedims(kernel, flip_nc_nv2)
 
-  kern2 = zeros(T, nc, nv, imsize...)
-  kern2[CartesianIndices(kernel)] .= kernel
-  fft!(kern2, 3:length(ksize)+2)
-  kern2 ./= sqrt(prod(ksize))
+  kern2 = zeros(T, nc, nc, imsize...)
+  kernel_k = zeros(T, nc, imsize...)
+  kernel_i = similar(kernel_k)
+
+  fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE)
+
+  for iv ∈ axes(kernel, 2)
+    @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
+    mul!(kernel_i, fftplan, kernel_k)
+    @batch for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1), i ∈ axes(kernel_i,1)
+      kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
+    end
+  end
+
+  kern2 ./= prod(ksize)
   kern2 .= conj.(kern2)
 
   eigenVecs = Array{T}(undef, imsize..., nc, nmaps)
@@ -205,13 +213,21 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   nblas = BLAS.get_num_threads()
   try
     BLAS.set_num_threads(1)
-    Threads.@threads for n ∈ CartesianIndices(imsize)
-      U,S,_ = svd!(@view kern2[:, :, n])
+    b    = [randn(T, nc)  for _=1:Threads.nthreads()]
+    bᵒˡᵈ = [similar(b[1]) for _=1:Threads.nthreads()]
 
-      @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
+    @batch for n ∈ CartesianIndices(imsize)
+      if use_poweriterations && nmaps==1
+        S, U = power_iterations!(view(kern2,:, :, n), b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
+        U .*= transpose(exp.(-1im .* angle.(U[1])))
+        @views eigenVals[n, 1, :] .= real.(S)
+      else
+        S, U = eigen!(@view kern2[:, :, n]; sortby = (λ) -> -abs(λ))
+        U = @view U[:,1:nmaps]
+        U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
+        @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
+      end
 
-      U = @view U[:,1:nmaps]
-      U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
       @views mul!(eigenVecs[n, :, :], usv.V, U)
     end
   finally
@@ -219,6 +235,51 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1) where {T}
   end
 
   return eigenVecs, eigenVals
+end
+
+
+"""
+    power_iterations!(A;
+    b = randn(eltype(A), size(A,2)),
+    bᵒˡᵈ = similar(b),
+    rtol=1e-6, maxiter=1000, verbose=false)
+
+Power iterations to determine the maximum eigenvalue of a normal operator or square matrix.
+
+# Arguments
+* `A`                   - operator or matrix; has to be square
+
+# Keyword Arguments
+* `rtol=1e-6`           - relative tolerance; function terminates if the change of the max. eigenvalue is smaller than this values
+* `b = randn(eltype(A), size(A,2))` - pre-allocated random vector; will be modified
+* `bᵒˡᵈ = similar(b)`   - pre-allocated vector; will be modified
+* `maxiter=1000`        - maximum number of power iterations
+* `verbose=false`       - print maximum eigenvalue if `true`
+
+# Output
+maximum eigenvalue of the operator
+"""
+function power_iterations!(A;
+  b = randn(eltype(A), size(A,2)),
+  bᵒˡᵈ = similar(b),
+  rtol=1e-6, maxiter=1000, verbose=false)
+
+  b ./= norm(b)
+  λ = Inf
+
+  for i = 1:maxiter
+    copy!(bᵒˡᵈ, b)
+    mul!(b, A, bᵒˡᵈ)
+
+    λᵒˡᵈ = λ
+    λ = (bᵒˡᵈ' * b) / (bᵒˡᵈ' * bᵒˡᵈ)
+    b ./= norm(b)
+
+    verbose && println("iter = $i; λ = $λ")
+    abs(λ/λᵒˡᵈ - 1) < rtol && return λ, b
+  end
+
+  return λ, b
 end
 
 #
