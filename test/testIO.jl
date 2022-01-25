@@ -23,12 +23,12 @@ params[:m] = 4.0
 params[:K] = 28
 Ireco = reconstruction(acqData, params)
 
-saveImage("testReco.nii", Ireco, false)
-IrecoLoaded = loadImage("testReco.nii")
+saveImage( joinpath(tmpdir, "testReco.nii"), Ireco, false)
+IrecoLoaded = loadImage( joinpath(tmpdir, "testReco.nii") )
 @test (norm(vec(Ireco)-vec(IrecoLoaded))/norm(vec(Ireco))) < 1e-5
 
-saveImage("testRecoAbs.nii", Ireco, true)
-IrecoLoadedAbs = loadImage("testRecoAbs.nii")
+saveImage( joinpath(tmpdir, "testRecoAbs.nii"), Ireco, true)
+IrecoLoadedAbs = loadImage( joinpath(tmpdir, "testRecoAbs.nii"))
 @test (norm(vec(abs.(Ireco))-vec(IrecoLoadedAbs))/norm(vec(abs.(Ireco)))) < 1e-5
 
 end

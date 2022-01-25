@@ -4,15 +4,7 @@ using HTTP
 
 @testset "ISMRMRD" begin
 
-filename = "simple_gre.h5"
-
-if !isfile(filename)
-  HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/simple_gre.h5") do http
-    open(filename, "w") do file
-      write(file, http)
-    end
-  end
-end
+filename = joinpath(datadir, "simple_gre.h5")
 
 f = ISMRMRDFile(filename)
 acq = RawAcquisitionData(f)
@@ -29,9 +21,9 @@ params[:reco] = "direct"
 params[:reconSize] = (256,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(acq), params)
-exportImage("recogre.png", abs.(Ireco[:,:,1,1,1]))
+exportImage(joinpath(tmpdir,"recogre.png"), abs.(Ireco[:,:,1,1,1]))
 
-filenameCopy = "simple_gre_copy.h5"
+filenameCopy = joinpath(tmpdir, "simple_gre_copy.h5")
 fCopy = ISMRMRDFile(filenameCopy)
 # store data in another ISMRMRD file
 save(fCopy, acq)
@@ -45,14 +37,7 @@ IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
 @test IrecoCopy == Ireco
 
-filename = "simple_spiral.h5"
-if !isfile(filename)
-  HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/simple_spiral.h5") do http
-    open(filename, "w") do file
-      write(file, http)
-    end
-  end
-end
+filename = joinpath(datadir, "simple_spiral.h5")
 
 f = ISMRMRDFile(filename)
 
@@ -61,9 +46,9 @@ params[:reco] = "direct"
 params[:reconSize] = (128,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(f), params)
-exportImage("recospiral.png", abs.(Ireco[:,:,1,1,1]))
+exportImage(joinpath(tmpdir,"recospiral.png"), abs.(Ireco[:,:,1,1,1]))
 
-filenameCopy = "simple_spiral_copy.h5"
+filenameCopy = joinpath(tmpdir, "simple_spiral_copy.h5")
 fCopy = ISMRMRDFile(filenameCopy)
 # store data in another ISMRMRD file
 acq = RawAcquisitionData(f)

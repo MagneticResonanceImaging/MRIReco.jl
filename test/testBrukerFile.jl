@@ -1,15 +1,7 @@
 @testset "BrukerFile" begin
 
-if !isdir("brukerfileCart")
-  HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/brukerfileCart.zip") do http
-    open("brukerfileCart.zip", "w") do file
-        write(file, http)
-    end
-  end
-  run(`unzip brukerfileCart.zip`)
-end
 
-b = BrukerFile("brukerfileCart")
+b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
 
 acq = RawAcquisitionData(b)
 acqData = AcquisitionData(acq)
@@ -20,10 +12,10 @@ params[:reco] = "direct"
 params[:reconSize] = (N[1],N[2]) #this should be clear from context
 
 Ireco = reconstruction(acqData, params)
-exportImage("brukerCart.png", abs.(Ireco[:,:,1,1,1]))
+exportImage( joinpath(tmpdir, "brukerCart.png"), abs.(Ireco[:,:,1,1,1]))
 
 # Convert to ISMRMRD file
-fout = ISMRMRDFile("brukerfileCart.h5")
+fout = ISMRMRDFile(joinpath(tmpdir, "brukerfileCart.h5"))
 save(fout, acq)
 
 # Reco data stored in BrukerFile
