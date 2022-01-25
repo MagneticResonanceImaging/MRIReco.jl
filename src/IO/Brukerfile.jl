@@ -360,7 +360,7 @@ function recoData(f::BrukerFile)
   #end
 
   I = open(recoFilename,"r") do fd
-    read!(fd,Array{Int16,3}(undef,N...))
+    read!(fd,Array{Int16,length(N)}(undef,N...))
   end
   return map(Float32,I)
 end
