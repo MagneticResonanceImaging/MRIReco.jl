@@ -51,12 +51,12 @@ function NFFTOp(shape::Tuple, tr::Trajectory; toeplitz=false, oversamplingFactor
 end
 
 function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
-  y = nfft(plan,reshape(x[:],plan.N))
+  y = plan * reshape(x[:],plan.N)
   return vec(y)
 end
 
 function ctprodu(plan::NFFT.NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
-  x = nfft_adjoint(plan, y[:])
+  x = adjoint(plan) * y[:]
   return vec(x)
 end
 

@@ -14,9 +14,8 @@ const datadir = joinpath(artifact"MRIRecoTestData")
 const tmpdir  = @get_scratch!("tmp")
 @info "If you want to check the output of the tests, please head to $tmpdir."
 
-
-include("testTrajectories.jl")
 include("testIO.jl")
+include("testTrajectories.jl")
 include("testSimulation.jl")
 include("testOperators.jl")
 include("testReconstruction.jl")

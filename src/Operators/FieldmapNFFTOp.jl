@@ -160,7 +160,7 @@ function produ_inner(K, C, A, shape, d, s, sp, plan, idx, x_)
   @sync for κ=1:K
     Threads.@spawn begin
       p_ = C[κ,:] .* x_
-      NFFT.nfft!(plan[κ], reshape(p_, shape), d[κ])
+      mul!(d[κ], plan[κ], reshape(p_, shape))
     
       lock(sp)
       for k=1:length(idx[κ])
@@ -212,7 +212,7 @@ function ctprodu_inner(K, C, A, shape, d, y, sp, plan, idx, x_)
        end
        p_ = zeros(ComplexF64, shape) 
      
-       NFFT.nfft_adjoint!(plan[κ], d[κ], p_)
+       mul!(p_, adjoint(plan[κ]), d[κ])
      
        lock(sp)
        for k=1:length(p_)

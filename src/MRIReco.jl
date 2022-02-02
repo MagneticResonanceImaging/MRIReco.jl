@@ -4,7 +4,7 @@ using Reexport
 using FileIO
 using ProgressMeter
 @reexport using ImageUtils
-using NFFT
+using NFFT, NFFTTools
 using Distributions
 using LinearOperators
 using SparsityOperators
