@@ -1,12 +1,14 @@
-import HDF5: h5t_create, hdf5_type_id, h5t_insert, h5t_array_create, h5t_close,
+import HDF5.API: h5t_create, h5t_insert, h5t_array_create, h5t_close,
              h5t_vlen_create, hsize_t, h5s_create_simple, h5d_create, h5d_write,
              h5d_close, h5s_close, h5p_create, h5p_set_chunk, h5t_get_member_offset,
-             h5t_get_member_type, h5t_get_member_offset, h5t_get_member_type
+             h5t_get_member_type, h5t_get_member_offset, h5t_get_member_type,
+             H5T_COMPOUND, H5P_DEFAULT, H5P_DATASET_CREATE, H5S_ALL
 
+import HDF5: hdf5_type_id
 
 
 function get_hdf5type_complex(::Type{T}=Float32) where T
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND,2*sizeof(T))
+  datatype = h5t_create(H5T_COMPOUND,2*sizeof(T))
   h5t_insert(datatype, "real", 0 , hdf5_type_id(T))
   h5t_insert(datatype, "imag", sizeof(T) , hdf5_type_id(T))
   #HDF5.h5t_close(datatype)
@@ -30,7 +32,7 @@ end
 
 function get_hdf5type_encoding()
   off = i -> Cint(fieldoffset(EncodingCountersImmutable,i))
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(EncodingCountersImmutable) )
+  datatype = h5t_create(H5T_COMPOUND, sizeof(EncodingCountersImmutable) )
   h5t_insert(datatype, "kspace_encode_step_1", off(1) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "kspace_encode_step_2", off(2) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "average", off(3), hdf5_type_id(UInt16))
@@ -142,7 +144,7 @@ end
 
 function get_hdf5type_acquisitionheader()
   off = i -> Cint(fieldoffset(AcquisitionHeaderImmutable,i))
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(AcquisitionHeaderImmutable) )
+  datatype = h5t_create(H5T_COMPOUND, sizeof(AcquisitionHeaderImmutable) )
   h5t_insert(datatype, "version", off(1) , hdf5_type_id(UInt16))
   h5t_insert(datatype, "flags", off(2) , hdf5_type_id(UInt64))
   h5t_insert(datatype, "measurement_uid", off(3), hdf5_type_id(UInt32))
@@ -219,7 +221,7 @@ end
 
 function get_hdf5type_acquisition()
   off = i -> Cint(fieldoffset(HDF5_Acquisition,i))
-  datatype = HDF5.h5t_create(HDF5.H5T_COMPOUND, sizeof(HDF5_Acquisition) )
+  datatype = h5t_create(H5T_COMPOUND, sizeof(HDF5_Acquisition) )
   d1 = get_hdf5type_acquisitionheader()
   h5t_insert(datatype, "head", off(1), d1)
   h5t_close(d1)
@@ -259,14 +261,14 @@ function writeProfiles(file, dataset, profiles::Vector{Profile})
   chunkshape = hsize_t[1]#length(profiles)]
   space = h5s_create_simple(1, shape, maxshape)
 
-  props = h5p_create(HDF5.H5P_DATASET_CREATE)
+  props = h5p_create(H5P_DATASET_CREATE)
   # enable chunking so that the dataset is extensible
   h5status = h5p_set_chunk(props, 1, chunkshape)
 
   dset_compound = h5d_create(file, dataset, d_type_compound, space,
-                                  HDF5.H5P_DEFAULT, props, HDF5.H5P_DEFAULT)
+                                  H5P_DEFAULT, props, H5P_DEFAULT)
   h5s_close(space)
-  h5d_write(dset_compound, d_type_compound, HDF5.H5S_ALL, HDF5.H5S_ALL, HDF5.H5P_DEFAULT, profiles_hdf5)
+  h5d_write(dset_compound, d_type_compound, H5S_ALL, H5S_ALL, H5P_DEFAULT, profiles_hdf5)
   h5d_close(dset_compound)
   h5t_close(d_type_compound)
 end
