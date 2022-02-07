@@ -14,8 +14,8 @@ input:
 """
 function reconstruction_direct(acqData::AcquisitionData
                                   , reconSize::NTuple{D,Int64}
-                                  , weights::Vector{Vector{ComplexF64}}
-                                  , correctionMap::Array{ComplexF64}=ComplexF64[]) where D
+                                  , weights::Vector{Vector{T}}
+                                  , correctionMap::Array{T}=T[]) where {D,T <: Complex}
 
   encDims = dims(trajectory(acqData))
   if encDims!=D
@@ -23,7 +23,7 @@ function reconstruction_direct(acqData::AcquisitionData
   end
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
-  Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
+  Ireco = zeros(T, prod(reconSize), numSl, numContr, numChan)
 
   p = Progress(numSl*numChan*numContr, 1, "Direct Reconstruction...")
 

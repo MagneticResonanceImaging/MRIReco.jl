@@ -18,11 +18,11 @@ function reconstruction_simple( acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{ComplexF64}}
+                              , weights::Vector{Vector{T}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: Complex}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -36,8 +36,9 @@ function reconstruction_simple( acqData::AcquisitionData
   # set sparse trafo in reg
   reg[1].params[:sparseTrafo] = sparseTrafo
 
+  dType = typeof(acqData.kdata[1,1,1][1])
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, numChan)
+  Ireco = zeros(dType, prod(reconSize), numSl, numContr, numChan)
   @sync for k = 1:numSl
     Threads.@spawn begin
       if encodingOps!=nothing
@@ -51,7 +52,7 @@ function reconstruction_simple( acqData::AcquisitionData
           kdata = kData(acqData,j,i,k).* weights[j]
           solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
 
-          I = solve(solver, kdata, startVector=get(params,:startVector,ComplexF64[]),
+          I = solve(solver, kdata, startVector=get(params,:startVector,dType[]),
                                  solverInfo=get(params,:solverInfo,nothing))
 
           if isCircular( trajectory(acqData, j) )
@@ -86,11 +87,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{ComplexF64}}
+                              , weights::Vector{Vector{T}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: Complex}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -106,7 +107,8 @@ function reconstruction_multiEcho(acqData::AcquisitionData
   W = WeightingOp( vcat(weights...) )
 
   # reconstruction
-  Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numChan, numSl)
+  dType = typeof(acqData.kdata[1,1,1][1])
+  Ireco = zeros(dType, prod(reconSize)*numContr, numChan, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
       if encodingOps != nothing
@@ -155,12 +157,12 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{ComplexF64}}
+                              , weights::Vector{Vector{T}}
                               , solvername::String
-                              , senseMaps::Array{ComplexF64}
+                              , senseMaps::Array{T}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: Complex}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -174,7 +176,8 @@ function reconstruction_multiCoil(acqData::AcquisitionData
   reg[1].params[:sparseTrafo] = sparseTrafo
 
   # solve optimization problem
-  Ireco = zeros(ComplexF64, prod(reconSize), numSl, numContr, 1)
+  dType = typeof(acqData.kdata[1,1,1][1])
+  Ireco = zeros(dType, prod(reconSize), numSl, numContr, 1)
   @sync for k = 1:numSl
     Threads.@spawn begin
       if encodingOps != nothing
@@ -223,12 +226,12 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{ComplexF64}}
+                              , weights::Vector{Vector{T}}
                               , solvername::String
-                              , senseMaps::Array{ComplexF64}
+                              , senseMaps::Array{T}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where D
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: Complex}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -243,7 +246,8 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
 
   W = WeightingOp( vcat(weights...), numChan )
 
-  Ireco = zeros(ComplexF64, prod(reconSize)*numContr, numSl)
+  dType = typeof(acqData.kdata[1,1,1][1])
+  Ireco = zeros(dType, prod(reconSize)*numContr, numSl)
   @sync for i = 1:numSl
     Threads.@spawn begin
       if encodingOps != nothing

@@ -88,13 +88,15 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib:
     @error "espirit does not yet support non-cartesian sampling"
   end
 
+  dType = typeof(acqData.kdata[1,1,1][1])
+
   nx, ny = acqData.encodingSize[1:2]
   numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(ComplexF64, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
+  maps = zeros(dType, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
 
   for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(ComplexF64, nx * ny, numChan)
+    kdata = zeros(dType, nx * ny, numChan)
     for coil = 1:numChan
       kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, slice)
     end
@@ -320,18 +322,18 @@ end
 """
 return SVD-based coil compression matrix for `numVC` virtual coils
 """
-function geometricCCMat(kdata::Matrix{ComplexF64}, numVC::Int64 = size(kdata, 2))
+function geometricCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
   return svd(kdata).Vt[:, 1:numVC]
 end
 
 """
 perform SVD-based coil compression for the given `kdata` and `smaps`
 """
-function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64 = size(kdata, 2))
+function geometricCC(kdata::Matrix{T}, smaps::Array{T,4}, numVC::Int64 = size(kdata, 2)) where T <: Complex
   nx, ny, nz, nc = size(smaps)
   usv = svd(kdata)
   kdataCC = kdata * usv.Vt[:, 1:numVC]
-  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  smapsCC = zeros(T, nx, ny, nz, numVC)
   for j = 1:nz, i = 1:ny
     smapsCC[:, i, j, :] .= smaps[:, i, j, :] * usv.Vt[:, 1:numVC]
   end
@@ -342,10 +344,10 @@ end
 """
 perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, numVC::Int64 = size(smaps, 4))
+function geometricCC_2d(acqData::AcquisitionData, smaps::Array{T,4}, numVC::Int64 = size(smaps, 4)) where T <: Complex
   nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  smapsCC = zeros(T, nx, ny, nz, numVC)
   for sl = 1:numSlices(acqData)
     # use first echo and first repetition to determine compression matrix
     ccMat = geometricCCMat(acqData.kdata[1, sl, 1], numVC)

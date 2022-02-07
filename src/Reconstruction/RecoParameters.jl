@@ -19,7 +19,8 @@ function setupDirectReco(acqData::AcquisitionData, recoParams::Dict)
   reconSize = recoParams[:reconSize]
   weights = samplingDensity(acqData,recoParams[:reconSize])
   # field map
-  cmap = get(recoParams, :cmap, ComplexF64[])
+  dType = typeof(acqData.kdata[1,1,1][1])
+  cmap = get(recoParams, :cmap, dType[])
 
   return reconSize, weights, cmap
 end
@@ -71,6 +72,7 @@ builds relevant parameters and operators from the entries in `recoParams`
 """
 function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
 
+  dType = typeof(acqData.kdata[1,1,1][1])
   red3d = dims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
   if red3d  # acqData is 3d data converted to 2d
     reconSize = (recoParams[:reconSize][2], recoParams[:reconSize][3])
@@ -85,7 +87,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
     weights = samplingDensity(acqData,reconSize)
   else
     numContr = numContrasts(acqData)
-    weights = Array{Vector{ComplexF64}}(undef,numContr)
+    weights = Array{Vector{dType}}(undef,numContr)
     for contr=1:numContr
       numNodes = size(acqData.kdata[contr],1)
       weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
@@ -116,7 +118,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams, :solver, "fista")
 
   # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, ComplexF64[])
+  senseMaps = get(recoParams, :senseMaps, dType[])
   if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
