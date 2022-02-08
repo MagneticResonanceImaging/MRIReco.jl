@@ -9,7 +9,7 @@ contrasts and slices
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
@@ -18,11 +18,11 @@ function reconstruction_simple( acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{T}}
+                              , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: Complex}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: AbstractFloat}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -78,7 +78,7 @@ are reconstructed independently.
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
@@ -87,11 +87,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{T}}
+                              , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: Complex}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -147,9 +147,9 @@ are reconstructed independently.
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* `senseMaps::Array{Complex{AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -157,12 +157,12 @@ function reconstruction_multiCoil(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{T}}
+                              , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
-                              , senseMaps::Array{T}
+                              , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: Complex}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -216,9 +216,9 @@ Different slices are reconstructed independently.
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* `senseMaps::Array{Complex{AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -226,12 +226,12 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo::Trafo
-                              , weights::Vector{Vector{T}}
+                              , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
-                              , senseMaps::Array{T}
+                              , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: Complex}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: AbstractFloat}
 
   encDims = dims(trajectory(acqData))
   if encDims!=length(reconSize)

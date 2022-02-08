@@ -1,21 +1,21 @@
 export reconstruction_direct_2d, reconstruction_direct_3d
 
 """
-    reconstruction_direct(acqData::AcquisitionData, reconSize::NTuple{D,Int64}, weights::Vector{Vector{ComplexF64}}, correctionMap::Array{ComplexF64}=ComplexF64[])
+    reconstruction_direct(acqData::AcquisitionData, reconSize::NTuple{D,Int64}, weights::Vector{Vector{Complex{AbstractFloat}}}, correctionMap::Array{Complex{AbstractFloat}}=Complex{AbstractFloat}[])
 
 Performs a direct Fourier-based image reconstruction of AcquisitionData
 
 input:
   `acqData::AcquisitionData`            - AcquisitionData object
   `reconSize::NTuple{D,Int64}`              - size of image to reconstruct
-  `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
-  (`correctionMap::Array{ComplexF64}`)  - fieldmap for the correction of off-resonance effects
+  `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
+  (`correctionMap::Array{Complex{AbstractFloat}}`)  - fieldmap for the correction of off-resonance effects
 
 """
 function reconstruction_direct(acqData::AcquisitionData
                                   , reconSize::NTuple{D,Int64}
-                                  , weights::Vector{Vector{T}}
-                                  , correctionMap::Array{T}=T[]) where {D,T <: Complex}
+                                  , weights::Vector{Vector{Complex{T}}}
+                                  , correctionMap::Array{Complex{T}}=Complex{T}[]) where {D,T <: AbstractFloat}
 
   encDims = dims(trajectory(acqData))
   if encDims!=D
@@ -23,7 +23,8 @@ function reconstruction_direct(acqData::AcquisitionData
   end
 
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
-  Ireco = zeros(T, prod(reconSize), numSl, numContr, numChan)
+  dType = typeof(acqData.kdata[1,1,1][1])
+  Ireco = zeros(dType, prod(reconSize), numSl, numContr, numChan)
 
   p = Progress(numSl*numChan*numContr, 1, "Direct Reconstruction...")
 

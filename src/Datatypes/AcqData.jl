@@ -8,7 +8,7 @@ struct describing MRI acquisition data.
 # Fields
 * `sequenceInfo::Dict{Symbol,Any}`          - additional information on the pulse sequence
 * `traj::Vector{Trajectory}`                - trajectories for each echo/contrast
-* `kdata::Array{Matrix{ComplexF64},3}`      - each matrix contains data for one trajectory
+* `kdata::Array{Matrix{Complex{AbstractFloat}},3}`      - each matrix contains data for one trajectory
                                               (1. dim k-space nodes, 2. dim coils)
                                               the outer dims describe:
                                               1. dim echoes, 2. dim slices, 3. dim repetitions
@@ -16,10 +16,10 @@ struct describing MRI acquisition data.
 * `encodingSize::Vector{Int64}`             - size of the underlying image matrix
 * `fov::Vector{Float64}`                    - field of view in m
 """
-mutable struct AcquisitionData{D <: Complex}
+mutable struct AcquisitionData{D <: AbstractFloat}
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
-  kdata::Array{Matrix{D},3}
+  kdata::Array{Matrix{Complex{D}},3}
   subsampleIndices::Vector{Vector{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
@@ -54,7 +54,7 @@ returns the number of repetitions in acqData
 numRepetitions(acqData::AcquisitionData) = size(acqData.kdata,3)
 
 """
-    AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}; seqInfo=Dict{Symbol,Any}()
+    AcquisitionData(tr::T,kdata::Array{Matrix{Complex{AbstractFloat}},3}; seqInfo=Dict{Symbol,Any}()
                         , idx=nothing, encodingSize=Int64[0,0,0], fov=Float64[0,0,0]
                         , kargs...) where T <: Union{Trajectory,Vector{Trajectory}}
 
@@ -62,16 +62,16 @@ constructor for `AcquisitionData`
 
 # Arguments
 * `tr <: Union{Trajectory,Vector{Trajectory}}` - trajectories
-* `kdata::Array{Matrix{ComplexF64},3}`         - k-space data
+* `kdata::Array{Matrix{Complex{AbstractFloat}},3}`         - k-space data
 
 the other fields of `AcquisitionData` can be passed as keyword arguments.
 """
-function AcquisitionData(tr::T,kdata::Array{Matrix{D},3}
+function AcquisitionData(tr::T,kdata::Array{Matrix{Complex{D}},3}
                         ; seqInfo=Dict{Symbol,Any}()
                         , idx=nothing
                         , encodingSize=Int64[0,0,0]
                         , fov=Float64[0,0,0]
-                        , kargs...) where {T <: Union{Trajectory,Vector{Trajectory}}, D <: Complex}
+                        , kargs...) where {T <: Union{Trajectory,Vector{Trajectory}}, D <: AbstractFloat}
   tr_vec = vec(tr)
   if idx != nothing
     subsampleIndices = idx

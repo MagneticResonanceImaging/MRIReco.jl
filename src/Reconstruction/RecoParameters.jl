@@ -59,13 +59,13 @@ builds relevant parameters and operators from the entries in `recoParams`
 
 # relevant parameters
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `weights::Vector{Vector{ComplexF64}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `reg::Regularization`                 - Regularization to be used
 * `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
 * `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
-* `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
+* `senseMaps::Array{Complex{AbstractFloat}}`        - coil sensitivities
+* `correctionMap::Array{Complex{AbstractFloat}}`    - fieldmap for the correction of off-resonance effects
 * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
 
 `sparseTrafo` and `reg` can also be speficied using their names in form of a string.
