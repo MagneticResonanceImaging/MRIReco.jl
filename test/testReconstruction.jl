@@ -73,11 +73,15 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-1
 end
 
-function testCSRecoMultCoil(N=32)
+function testCSRecoMultCoil(N=32;type = ComplexF64)
   # image
   x = shepp_logan(N)
   smaps = birdcageSensitivity(32,2,3.0)
   smaps[:,:,:,1] = 10*smaps[:,:,:,1]
+
+  # convert to type
+  x = convert.(type,x)
+  smaps = convert.(type,smaps)
 
   # simulation
   params = Dict{Symbol, Any}()
@@ -88,6 +92,7 @@ function testCSRecoMultCoil(N=32)
   params[:senseMaps] = smaps
 
   acqData = simulation(x, params)
+  @test(typeof(acqData.kdata[1,1,1][1])==type)
 
   # reco
   params[:reco] = "standard"    # encoding model
@@ -102,6 +107,8 @@ function testCSRecoMultCoil(N=32)
   params[:relTol] = 1.e-4
 
   x_approx = reshape( reconstruction(acqData, params), 32,32,2)
+
+  @test(typeof(x_approx[1])==type)
 
   err1 = norm(vec(smaps[:,:,1,1]) .* vec(x)-vec(x_approx[:,:,1]) )/norm(vec(smaps[:,:,1,1]) .* vec(x))
   err2 = norm(vec(smaps[:,:,1,2]) .* vec(x)-vec(x_approx[:,:,2]) )/norm(vec(smaps[:,:,1,2]) .* vec(x))
@@ -410,7 +417,8 @@ function testReco(N=32)
     for samp in sampling
       testCSReco(sampling=samp)
     end
-    testCSRecoMultCoil()
+    testCSRecoMultCoil(type = ComplexF64)
+    testCSRecoMultCoil(type = ComplexF32)
     testCSSenseReco()
     testCSReco3d()
     testCSSenseReco3d()

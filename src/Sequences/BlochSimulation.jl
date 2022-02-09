@@ -38,18 +38,18 @@ function epgRotation(alpha::Float64, F::Vector{T}, Z::Vector{T}; statesConsidere
 end
 
 """
-    epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
+    epgRelaxation( R1::AbstractFloat, R2::AbstractFloat, t::AbstractFloat, F::Vector{T}, Z::Vector{T}) where T
 
 applies relaxation matrices to a set of EPG states.
 
 # Arguments
-* `R1::Float64`   - R1
-* `R2::Float64`   - R2
-* `t::Float64`    - length of time interval in s
+* `R1::AbstractFloat`   - R1
+* `R2::AbstractFloat`   - R2
+* `t::AbstractFloat`    - length of time interval in s
 * `F::Vector{T}`  - transverse dephasing stats
 * `Z::Vector{T}`  - longitudinal dephasing stats
 """
-function epgRelaxation( R1::Float64, R2::Float64, t::Float64, F::Vector{T}, Z::Vector{T}) where T
+function epgRelaxation( R1::Float64, R2::AbstractFloat, t::AbstractFloat, F::Vector{T}, Z::Vector{T}) where T
 
   relaxedF = exp(-R2*t).*F
   relaxedZ = fill!(copy(Z), 0)

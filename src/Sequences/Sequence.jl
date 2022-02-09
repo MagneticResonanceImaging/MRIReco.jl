@@ -3,7 +3,7 @@ export AbstractSequence, AbstractMultiEchoSequence, echoAmplitudes, numEchoes, e
 abstract type AbstractSequence end
 
 # define interface for a sequence
-@mustimplement echoAmplitudes(seq::AbstractSequence,R1::Float64,R2::Float64)
+@mustimplement echoAmplitudes(seq::AbstractSequence,R1::AbstractFloat,R2::AbstractFloat)
 @mustimplement numContrasts(seq::AbstractSequence)
 @mustimplement string(seq::AbstractSequence)
 
