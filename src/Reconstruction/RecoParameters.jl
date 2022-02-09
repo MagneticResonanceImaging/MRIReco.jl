@@ -15,12 +15,11 @@ function defaultRecoParams()
   return params
 end
 
-function setupDirectReco(acqData::AcquisitionData, recoParams::Dict)
+function setupDirectReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
   reconSize = recoParams[:reconSize]
   weights = samplingDensity(acqData,recoParams[:reconSize])
   # field map
-  dType = typeof(acqData.kdata[1,1,1][1])
-  cmap = get(recoParams, :cmap, dType[])
+  cmap = get(recoParams, :cmap, Complex{T}[])
 
   return reconSize, weights, cmap
 end
@@ -59,20 +58,19 @@ builds relevant parameters and operators from the entries in `recoParams`
 
 # relevant parameters
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `weights::Vector{Vector{Complex{AbstractFloat}}}` - sampling density of the trajectories in acqData
+* `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `reg::Regularization`                 - Regularization to be used
 * `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
 * `solvername::String`                  - name of the solver to use
-* `senseMaps::Array{Complex{AbstractFloat}}`        - coil sensitivities
-* `correctionMap::Array{Complex{AbstractFloat}}`    - fieldmap for the correction of off-resonance effects
+* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `correctionMap::Array{Complex{<:AbstractFloat}}`    - fieldmap for the correction of off-resonance effects
 * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
 
 `sparseTrafo` and `reg` can also be speficied using their names in form of a string.
 """
-function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
+function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
 
-  dType = typeof(acqData.kdata[1,1,1][1])
   red3d = dims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
   if red3d  # acqData is 3d data converted to 2d
     reconSize = (recoParams[:reconSize][2], recoParams[:reconSize][3])
@@ -87,7 +85,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
     weights = samplingDensity(acqData,reconSize)
   else
     numContr = numContrasts(acqData)
-    weights = Array{Vector{dType}}(undef,numContr)
+    weights = Array{Vector{Complex{T}}}(undef,numContr)
     for contr=1:numContr
       numNodes = size(acqData.kdata[contr],1)
       weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
@@ -118,7 +116,7 @@ function setupIterativeReco(acqData::AcquisitionData, recoParams::Dict)
   solvername = get(recoParams, :solver, "fista")
 
   # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, dType[])
+  senseMaps = get(recoParams, :senseMaps, Complex{T}[])
   if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end

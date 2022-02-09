@@ -81,22 +81,20 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true)
+function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
   end
 
-  dType = typeof(acqData.kdata[1,1,1][1])
-
   nx, ny = acqData.encodingSize[1:2]
   numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(dType, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
+  maps = zeros(Complex{T}, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
 
   for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(dType, nx * ny, numChan)
+    kdata = zeros(Complex{T}, nx * ny, numChan)
     for coil = 1:numChan
       kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, slice)
     end
