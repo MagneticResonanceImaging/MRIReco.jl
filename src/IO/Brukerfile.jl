@@ -204,7 +204,7 @@ end
 
 function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   # Have not a way to read out this. Not sure if its true
-  dtype = Complex{Int32}
+  T = Complex{Int32}
   
   filename = joinpath(b.path, "rawdata.job0")
 
@@ -217,7 +217,7 @@ function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   numChannels = acqNumCoils(b)
 
   I = open(filename,"r") do fd
-    read!(fd,Array{dtype,7}(undef, profileLength,
+    read!(fd,Array{T,7}(undef, profileLength,
                                    numChannels,
                                    numEchos,
                                    phaseFactor,
@@ -231,7 +231,7 @@ function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
 end
 
 function RawAcquisitionDataFid(b::BrukerFile)
-    dtype = Complex{acqDataType(b)}
+    T = Complex{acqDataType(b)}
 
     filename = joinpath(b.path, "fid")
 
@@ -239,7 +239,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
     # The data is padded in case it is not a multiple of 1024 
     # For multi-channel acquisition data at concatenate then padded to a multiple of 1024 bytes
     numChannel = pvmEncNReceivers(b)
-    profileLength = Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype))
+    profileLength = Int((ceil(N[1]*numChannel*sizeof(T)/1024))*1024/sizeof(T))
     numAvailableChannel = pvmEncAvailReceivers(b)
     phaseFactor = acqPhaseFactor(b)
     numSlices = acqNumSlices(b)
@@ -248,7 +248,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
     numRep = acqNumRepetitions(b)
 
     I = open(filename,"r") do fd
-      read!(fd,Array{dtype,7}(undef, profileLength,
+      read!(fd,Array{T,7}(undef, profileLength,
                                      numEchos,
                                      phaseFactor,
                                      numSlices,
@@ -308,7 +308,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
                                            available_channels = numAvailableChannel, #TODO
                                            active_channels = numChannel)
                   traj = Matrix{Float32}(undef,0,0)
-                  dat = map(ComplexF64, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,numChannel))
+                  dat = map(T, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,numChannel))
                   push!(profiles, Profile(head,traj,dat) )
               end
             end

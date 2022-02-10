@@ -7,13 +7,23 @@ include("LoydMaxAlg.jl")
 include("ExpApproximation.jl")
 
 """
-    simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,3}, simParams::Dict) where T<:AbstractFloat
 
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
 """
-function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF64,Float64}
-  haskey(simParams, :correctionMap) ? cmap = reshape(simParams[:correctionMap],size(image)) : cmap = zeros(ComplexF64,size(image))
+function simulation(image::Array{T,3}, simParams::Dict) where T<:AbstractFloat
+  return simulation(Complex.(image), simParams)
+end
+
+"""
+    simulation(image::Array{T,3}, simParams::Dict) where T<:Complex{<:AbstractFloat}
+
+Simulate MRI raw data from given `image` data. All simulation parameters
+are passed to the function in the form of a dictionary.
+"""
+function simulation(image::Array{T,3}, simParams::Dict) where T<:Complex{<:AbstractFloat}
+  haskey(simParams, :correctionMap) ? cmap = reshape(simParams[:correctionMap],size(image)) : cmap = zeros(T,size(image))
 
   seqName = get(simParams,:seqName,"ME")
   trajName = get(simParams,:trajName,"Cartesian")
@@ -26,17 +36,17 @@ function simulation(image::Array{T,3}, simParams::Dict) where T<:Union{ComplexF6
     error("simulation $(simParams[:simulation]) is not known...")
   end
 
-  return simulation(seq, tr, ComplexF64.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
+  return simulation(seq, tr, T.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
 end
 
 """
-    simulation(image::Array{T,3}, simParams::Dict, filename::String) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,3}, simParams::Dict, filename::String) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
 
 Performs the same simulation as `simulation(image, simParams)` and saves the result in
 a file with name `filename`
 """
 function simulation(image::Array{T,3}, simParams::Dict, filename::String;
-                        force=false) where T<:Union{ComplexF64,Float64}
+                        force=false) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
   if !force && isfile(filename)
     f = ISMRMRDFile(filename)
     return AcquisitionData(f)
@@ -49,12 +59,12 @@ function simulation(image::Array{T,3}, simParams::Dict, filename::String;
 end
 
 """
-    simulation(image::Array{T,2}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+    simulation(image::Array{T,2}, simParams::Dict) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
 
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
 """
-function simulation(image::Array{T,2}, simParams::Dict) where T<:Union{ComplexF64,Float64}
+function simulation(image::Array{T,2}, simParams::Dict) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
   nx,ny = size(image)
   return simulation(reshape(image,nx,ny,1),simParams)
 end
@@ -64,8 +74,8 @@ end
 #####################################################################
 
 """
-simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[]
-              ; opName="fast", senseMaps=[], verbose=true, kargs...)
+simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
+              ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
 Transforms a given image to k-space Domain for a 2d Acquisition.
 The Fourier integrals can be evaluated exactly or using NFFT
@@ -74,7 +84,7 @@ Returns the demodulated signal.
 ...
 # Arguments
 * `tr::Trajectory`             - two-dimensional Trajectory
-* `image::Array{ComplexF64,3}` - image to be transformed
+* `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
 * (`opName="fast")             - name of operator to use ("explicit" or "fast")
 * (`sensmaps=[]`)              - array of coil sensitivities
@@ -83,18 +93,18 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[]
-              ; opName="fast", senseMaps=[], verbose=true, kargs...) #where T<:Union{ComplexF64,Float64}
+function simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
+              ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
   nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(ComplexF64,nx,ny,nz)
+    disturbanceTerm = zeros(T,nx,ny,nz)
   else
     if size(correctionMap) != size(image)
       error("correctionMap and image should have the same size!")
     end
-    disturbanceTerm = ComplexF64.(correctionMap)
+    disturbanceTerm = T.(correctionMap)
   end
 
   if isempty(senseMaps)
@@ -109,8 +119,8 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   end
 
   nodes = kspaceNodes(tr)
-  # kdata = zeros(ComplexF64, size(nodes,2),nc,nz)
-  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
+  # kdata = zeros(T, size(nodes,2),nc,nz)
+  kdata = [zeros(T,size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
   if verbose==true
     p = Progress(nz*nc, 1, "Simulating data...")
   end
@@ -129,8 +139,8 @@ function simulation2d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 end
 
 """
-    simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[];
-              opName="fast", senseMaps=[], verbose=true, kargs...)
+    simulation3d(tr::Trajectory, image::Array{T,3}, correctionMap=[];
+              opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
 Transforms a given image to k-space Domain 3d Acquisition.
 The Fourier integrals can be evaluated exactly or using NFFT
@@ -139,7 +149,7 @@ Returns the demodulated signal.
 ...
 # Arguments
 * `tr::Trajectory`             - three-dimensional Trajectory
-* `image::Array{ComplexF64,3}` - image to be transformed
+* `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
 * (`opName="fast")             - name of operator to use ("explicit" or "fast")
 * (`sensmaps=[]`)              - array of coil sensitivities
@@ -148,18 +158,18 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=[];
-              opName="fast", senseMaps=[], verbose=true, kargs...) # where T<:Union{ComplexF64,Float64}
+function simulation3d(tr::Trajectory, image::Array{T,3}, correctionMap=[];
+              opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
   nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(ComplexF64,nx,ny,nz)
+    disturbanceTerm = zeros(T,nx,ny,nz)
   else
     if size(correctionMap) != size(image)
       error("correctionMap and image should have the same size!")
     end
-    disturbanceTerm = ComplexF64.(correctionMap)
+    disturbanceTerm = T.(correctionMap)
   end
 
   if isempty(senseMaps)
@@ -174,8 +184,8 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
   end
 
   nodes = kspaceNodes(tr)
-  # kdata = zeros(ComplexF64, size(nodes,2),nc)
-  kdata = [zeros(ComplexF64,size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
+  # kdata = zeros(T, size(nodes,2),nc)
+  kdata = [zeros(T,size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
   if verbose==true
     p = Progress(nc, 1, "Simulating data...")
   end
@@ -191,9 +201,9 @@ function simulation3d(tr::Trajectory, image::Array{ComplexF64,3}, correctionMap=
 end
 
 """
-    simulation(seq::AbstractSequence, tr::Vector{Trajectory}, image::Array{ComplexF64,3}
+    simulation(seq::AbstractSequence, tr::Vector{Trajectory}, image::Array{T,3}
                     ; opName="fast", r1map=[], r2map=[], fmap=[], senseMaps=[]
-                    , verbose=true, kargs...)
+                    , verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
 Simulate k-space data for all echoes of a pulse sequence.
 The echo intensities are simulated using the EPG formalism
@@ -203,7 +213,7 @@ The Fourier integrals can be evaluated exactly or using NFFT
 # Arguments
 * `seq::AbstractSequence`      - pulse sequence
 * `tr::Vector{Trajectory}`     - trajectories for all contrasts
-* `image::Array{ComplexF64,3}` - image to be transformed
+* `image::Array{T,3}` - image to be transformed
 * (`r1map=[]`)                 - R1 map of the object (real)
 * (`r2map=[]`)                 - R2 map of the object (real) / (R2* for GRE sequences)
 * (`fmap=[]`)                  - fieldmap (real)
@@ -215,32 +225,32 @@ The Fourier integrals can be evaluated exactly or using NFFT
 
 """
 function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
-                    , image::Array{ComplexF64,3}
+                    , image::Array{T,3}
                     ; opName="fast"
                     , r1map=[]
                     , r2map=[]
                     , fmap=[]
                     , senseMaps=[]
                     , verbose=true
-                    , kargs...)
+                    , kargs...) where T<:Complex{<:AbstractFloat}
   nx,ny,nz = size(image)
   ne = numContrasts(seq)
 
-  correctionMap = zeros(ComplexF64,nx,ny,nz)
+  correctionMap = zeros(T,nx,ny,nz)
   if isempty(r1map)
     r1map = zeros(nx,ny,nz)
   end
   if isempty(r2map)
     r2map = zeros(nx,ny,nz)
   else
-    correctionMap = zeros(nx,ny,nz) # ComplexF64.(r2map)
+    correctionMap = zeros(nx,ny,nz) # T.(r2map)
   end
   if !isempty(fmap)
     correctionMap = correctionMap .+ 1im*fmap
   end
 
   # compute echo amplitudes
-  ampl = zeros(ComplexF64, nx,ny,nz,ne )
+  ampl = zeros(T, nx,ny,nz,ne )
   if verbose
     p = Progress(nx*ny*nz,1,"Compute echo amplitudes ")
   end
@@ -254,7 +264,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
 
   # this assumes the same number of readout points per echo
   isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
-  out = Vector{Matrix{ComplexF64}}(undef,0)
+  out = Vector{Matrix{T}}(undef,0)
 
   if verbose
     p = Progress(numContrasts(seq), 1, "Simulating data...")
@@ -287,8 +297,8 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
 end
 
 """
-    simulation(tr::Trajectory, image::Array{ComplexF64}, correctionMap = []; opName="fast"
-              , senseMaps=[], verbose=true, kargs...)
+    simulation(tr::Trajectory, image::Array{T}, correctionMap = []; opName="fast"
+              , senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
 Transforms a given image to k-space Domain.
 Dispatches whether the trajectory is 2d or 3d
@@ -298,7 +308,7 @@ Returns the demodulated signal.
 ...
 # Arguments
 * `tr::Trajectory`             - three-dimensional Trajectory
-* `image::Array{ComplexF64,3}` - image to be transformed
+* `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
 * (`opName="fast")             - name of operator to use ("explicit" or "fast")
 * (`sensmaps=[]`)              - array of coil sensitivities
@@ -308,11 +318,11 @@ Returns the demodulated signal.
 
 """
 function simulation(tr::Trajectory
-                    , image::Array{ComplexF64}
+                    , image::Array{T}
                     , correctionMap = []
                     ; opName="fast"
                     , senseMaps=[]
-                    , kargs...)
+                    , kargs...) where T<:Complex{<:AbstractFloat}
 
   ndims(image) > 2 ? numSlices=size(image,3) : numSlices=1
   image = reshape(image,size(image)[1],size(image)[2],numSlices)
@@ -321,9 +331,9 @@ function simulation(tr::Trajectory
   end
 
   if dims(tr)==2
-    acqData = simulation2d(tr, ComplexF64.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation2d(tr, T.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
   else
-    acqData = simulation3d(tr, ComplexF64.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation3d(tr, T.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
   end
 
   return acqData

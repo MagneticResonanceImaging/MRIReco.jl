@@ -74,7 +74,7 @@ numEchoes(seq::MESequence) = length(seq.T_echo)
 string(seq::MESequence) = "ME"
 
 """
-    echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
+    echoAmplitudes(seq::MESequence, R1::AbstractFloat, R2::AbstractFloat, numStates=nothing)
 
 calculates echo amplitudes for a given `MESequence` and given relaxation Rates R1, R2.
 Calculations are performed using the extended phase graph method.
@@ -83,12 +83,12 @@ If `numStates=nothing` all dephasing states will be taken into account
 
 # Arguments
 * `seq::MESequence` - pulse sequence
-* `R1::Float64` - R1 value to use (1/T1)
-* `R2::Float64` - R2 value to use (1/T2)
+* `R1::AbstractFloat` - R1 value to use (1/T1)
+* `R2::AbstractFloat` - R2 value to use (1/T2)
 * `numStates=nothing` - number of dephasing states to consider
 
 """
-function echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
+function echoAmplitudes(seq::MESequence, R1::AbstractFloat, R2::AbstractFloat, numStates=nothing) 
   # calculate amplitudes of longitudinal and dephased states
   f, z = epgAmplitudes(seq, R1, R2)
 
@@ -100,7 +100,7 @@ function echoAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=not
 end
 
 """
-    epgAmplitudes(seq::MESequence, R1::Float64, R2::Float64, numStates=nothing)
+    epgAmplitudes(seq::MESequence, R1::AbstractFloat, R2::AbstractFloat, numStates=nothing)
 
 calculates EPG amplitudes after each pulse of a given `MESequence` with the given relaxation Rates R1, R2.
 Calculations are performed using the extended phase graph method.
@@ -109,12 +109,12 @@ If `numStates=nothing` all dephasing states will be taken into account
 
 # Arguments
 * `seq::MESequence` - pulse sequence
-* `R1::Float64` - R1 value to use (1/T1)
-* `R2::Float64` - R2 value to use (1/T2)
+* `R1::AbstractFloat` - R1 value to use (1/T1)
+* `R2::AbstractFloat` - R2 value to use (1/T2)
 * `numStates=nothing` - number of dephasing states to consider
 
 """
-function epgAmplitudes(seq::MESequence, R1::Real, R2::Real, numStates=nothing)
+function epgAmplitudes(seq::MESequence, R1::AbstractFloat, R2::AbstractFloat, numStates=nothing)
   # repetion time and number of pulses
   np=numContrasts(seq)
 

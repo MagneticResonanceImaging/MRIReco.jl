@@ -81,8 +81,8 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true)
+function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -90,11 +90,11 @@ function espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib:
 
   nx, ny = acqData.encodingSize[1:2]
   numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(ComplexF64, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
+  maps = zeros(Complex{T}, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
 
   for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(ComplexF64, nx * ny, numChan)
+    kdata = zeros(Complex{T}, nx * ny, numChan)
     for coil = 1:numChan
       kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, slice)
     end
@@ -320,18 +320,18 @@ end
 """
 return SVD-based coil compression matrix for `numVC` virtual coils
 """
-function geometricCCMat(kdata::Matrix{ComplexF64}, numVC::Int64 = size(kdata, 2))
+function geometricCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
   return svd(kdata).Vt[:, 1:numVC]
 end
 
 """
 perform SVD-based coil compression for the given `kdata` and `smaps`
 """
-function geometricCC(kdata::Matrix{ComplexF64}, smaps::Array{ComplexF64,4}, numVC::Int64 = size(kdata, 2))
+function geometricCC(kdata::Matrix{T}, smaps::Array{T,4}, numVC::Int64 = size(kdata, 2)) where T <: Complex
   nx, ny, nz, nc = size(smaps)
   usv = svd(kdata)
   kdataCC = kdata * usv.Vt[:, 1:numVC]
-  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  smapsCC = zeros(T, nx, ny, nz, numVC)
   for j = 1:nz, i = 1:ny
     smapsCC[:, i, j, :] .= smaps[:, i, j, :] * usv.Vt[:, 1:numVC]
   end
@@ -342,10 +342,10 @@ end
 """
 perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCC_2d(acqData::AcquisitionData, smaps::Array{ComplexF64,4}, numVC::Int64 = size(smaps, 4))
+function geometricCC_2d(acqData::AcquisitionData, smaps::Array{T,4}, numVC::Int64 = size(smaps, 4)) where T <: Complex
   nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(ComplexF64, nx, ny, nz, numVC)
+  smapsCC = zeros(T, nx, ny, nz, numVC)
   for sl = 1:numSlices(acqData)
     # use first echo and first repetition to determine compression matrix
     ccMat = geometricCCMat(acqData.kdata[1, sl, 1], numVC)

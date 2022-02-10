@@ -212,14 +212,14 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   # assume the same number of samples for all profiles
   numSampPerProfile, numChan = size(f.profiles[idx[1]].data)
   numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
-  kdata = zeros(ComplexF64, numSampPerProfile, numEncSt, numChan)
+  kdata = zeros(typeof(f.profiles[1].data[1, 1]), numSampPerProfile, numEncSt, numChan)
 
   # store one profile (kspace data) for each unique encoding status
   cnt = 1
   for l in idx[idx_unique] # TODO: set of profiles (with unique encoding status)
     i1 = f.profiles[l].head.discard_pre + 1
     i2 = i1+numSampPerProfile-1
-    kdata[:,cnt,:] .= ComplexF64.(f.profiles[l].data[i1:i2, :])
+    kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
     cnt += 1
   end
 

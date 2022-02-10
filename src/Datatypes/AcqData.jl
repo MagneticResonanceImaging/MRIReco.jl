@@ -8,7 +8,7 @@ struct describing MRI acquisition data.
 # Fields
 * `sequenceInfo::Dict{Symbol,Any}`          - additional information on the pulse sequence
 * `traj::Vector{Trajectory}`                - trajectories for each echo/contrast
-* `kdata::Array{Matrix{ComplexF64},3}`      - each matrix contains data for one trajectory
+* `kdata::Array{Matrix{Complex{<:AbstractFloat}},3}`      - each matrix contains data for one trajectory
                                               (1. dim k-space nodes, 2. dim coils)
                                               the outer dims describe:
                                               1. dim echoes, 2. dim slices, 3. dim repetitions
@@ -16,10 +16,10 @@ struct describing MRI acquisition data.
 * `encodingSize::Vector{Int64}`             - size of the underlying image matrix
 * `fov::Vector{Float64}`                    - field of view in m
 """
-mutable struct AcquisitionData
+mutable struct AcquisitionData{T <: AbstractFloat}
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
-  kdata::Array{Matrix{ComplexF64},3}
+  kdata::Array{Matrix{Complex{T}},3}
   subsampleIndices::Vector{Vector{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
@@ -54,24 +54,24 @@ returns the number of repetitions in acqData
 numRepetitions(acqData::AcquisitionData) = size(acqData.kdata,3)
 
 """
-    AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}; seqInfo=Dict{Symbol,Any}()
+    AcquisitionData(tr::K,kdata::Array{Matrix{Complex{T}},3}; seqInfo=Dict{Symbol,Any}()
                         , idx=nothing, encodingSize=Int64[0,0,0], fov=Float64[0,0,0]
-                        , kargs...) where T <: Union{Trajectory,Vector{Trajectory}}
+                        , kargs...) where {K <: Union{Trajectory,Vector{Trajectory}},T <: AbstractFloat}
 
 constructor for `AcquisitionData`
 
 # Arguments
 * `tr <: Union{Trajectory,Vector{Trajectory}}` - trajectories
-* `kdata::Array{Matrix{ComplexF64},3}`         - k-space data
+* `kdata::Array{Matrix{Complex{<:AbstractFloat}},3}` - k-space data
 
 the other fields of `AcquisitionData` can be passed as keyword arguments.
 """
-function AcquisitionData(tr::T,kdata::Array{Matrix{ComplexF64},3}
+function AcquisitionData(tr::K,kdata::Array{Matrix{Complex{T}},3}
                         ; seqInfo=Dict{Symbol,Any}()
                         , idx=nothing
                         , encodingSize=Int64[0,0,0]
                         , fov=Float64[0,0,0]
-                        , kargs...) where T <: Union{Trajectory,Vector{Trajectory}}
+                        , kargs...) where {K <: Union{Trajectory,Vector{Trajectory}}, T <: AbstractFloat}
   tr_vec = vec(tr)
   if idx != nothing
     subsampleIndices = idx
@@ -117,8 +117,8 @@ end
 
 returns the k-space contained in `acqData` for all echoes and given `coil`, `slice` and `rep`(etition).
 """
-function multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::Int64=1)
-  kdata = ComplexF64[]
+function multiEchoData(acqData::AcquisitionData{T}, coil::Int64, slice::Int64;rep::Int64=1) where T
+  kdata = T[]
   for echo=1:numContrasts(acqData)
     append!(kdata,acqData.kdata[echo,slice,rep][:,coil])
   end
@@ -139,8 +139,8 @@ end
 
 returns the k-space contained in `acqData` for all coils, echoes and given `slice` and `rep`(etition).
 """
-function multiCoilMultiEchoData(acqData::AcquisitionData,slice::Int64;rep=1)
-  kdata = ComplexF64[]
+function multiCoilMultiEchoData(acqData::AcquisitionData{T},slice::Int64;rep=1) where T
+  kdata = Complex{T}[]
   for coil=1:numChannels(acqData)
     for echo=1:numContrasts(acqData)
       append!(kdata, acqData.kdata[echo,slice,rep][:,coil])
@@ -209,9 +209,9 @@ end
 
 returns the sampling density for all trajectories contained in `acqData`.
 """
-function samplingDensity(acqData::AcquisitionData,shape::Tuple)
+function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
   numContr = numContrasts(acqData)
-  weights = Array{Vector{ComplexF64}}(undef,numContr)
+  weights = Array{Vector{Complex{T}}}(undef,numContr)
   for echo=1:numContr
     tr = trajectory(acqData,echo)
     if isCartesian(tr)
@@ -244,7 +244,7 @@ end
 
 does the same thing as `changeEncodingSize2D` but acts in-place on `acqData`.
 """
-function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+function changeEncodingSize2D!(acqData::AcquisitionData{T},newEncodingSize::Vector{Int64}) where T
   fac = acqData.encodingSize[1:2] ./ newEncodingSize[1:2]
   numContr = numContrasts(acqData)
   numSl = numSlices(acqData)
@@ -267,7 +267,7 @@ function changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{
   end
 
   # find relevant kspace data
-  kdata2 = Array{Matrix{ComplexF64}}(undef,numContr,numSl,numReps)
+  kdata2 = Array{Matrix{Complex{T}}}(undef,numContr,numSl,numReps)
   for rep=1:numReps
     for slice=1:numSl
       for echo=1:numContr
@@ -290,7 +290,7 @@ end
 
 convert the 3d encoded AcquisitionData `acqData` to the equivalent 2d AcquisitionData.
 """
-function convert3dTo2d(acqData::AcquisitionData)
+function convert3dTo2d(acqData::AcquisitionData{T}) where T
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
   numSl = numSlices(trajectory(acqData,1))
@@ -312,13 +312,13 @@ function convert3dTo2d(acqData::AcquisitionData)
 
   # convert k-space data and place it in the appropriate array structure
   numSamp = numSamplingPerProfile(trajectory(acqData,1)) # assume the same number of samples for all contrasts
-  kdata2d = Array{Matrix{ComplexF64}}(undef,numContr,numSamp, numReps)
+  kdata2d = Array{Matrix{Complex{T}}}(undef,numContr,numSamp, numReps)
   for i=1:numContr
     tr = trajectory(acqData,i)
     numProf = div( size(acqData.kdata[i,1,1],1), numSamp ) #numProfiles(tr)
-    kdata_i = zeros(ComplexF64, numSamp, numProf, numChan, numReps)
+    kdata_i = zeros(T, numSamp, numProf, numChan, numReps)
     #convert
-    F = 1/sqrt(numSamp)*FFTOp(ComplexF64, (numSamp,))
+    F = 1/sqrt(numSamp)*FFTOp(T, (numSamp,))
     for r=1:numReps
       for p=1:numProf # including slices
         for c=1:numChan
