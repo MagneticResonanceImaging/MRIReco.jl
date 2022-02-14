@@ -4,37 +4,37 @@ export RawAcquisitionData, EncodingCounters, AcquisitionHeader
 Encoding counters used in each Profile of a RawAcquisitionData object.
 """
 Base.@kwdef mutable struct EncodingCounters
-  kspace_encode_step_1::Int16 = 0
-  kspace_encode_step_2::Int16 = 0
-  average::Int16 = 0
-  slice::Int16 = 0
-  contrast::Int16 = 0
-  phase::Int16 = 0
-  repetition::Int16 = 0
-  set::Int16 = 0
-  segment::Int16 = 0
-  user::NTuple{8,Int16} = ntuple(i->Int16(0),8)
+  kspace_encode_step_1::UInt16 = 0
+  kspace_encode_step_2::UInt16 = 0
+  average::UInt16 = 0
+  slice::UInt16 = 0
+  contrast::UInt16 = 0
+  phase::UInt16 = 0
+  repetition::UInt16 = 0
+  set::UInt16 = 0
+  segment::UInt16 = 0
+  user::NTuple{8,UInt16} = ntuple(i->UInt16(0),8)
 end
 
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
 """
 Base.@kwdef mutable struct AcquisitionHeader
-  version::Int16 = 0
-  flags::Int64 = 0
-  measurement_uid::Int32 = 0
-  scan_counter::Int32 = 0
-  acquisition_time_stamp::Int32 = 0
-  physiology_time_stamp::NTuple{3,Int32} = ntuple(i->Int32(0),3)
-  number_of_samples::Int16 = 0
-  available_channels::Int16 = 0
-  active_channels::Int16 = 0
-  channel_mask::NTuple{16,Int64} = ntuple(i->Int64(0),16)
-  discard_pre::Int16 = 0
-  discard_post::Int16 = 0
-  center_sample::Int16 = 0
-  encoding_space_ref::Int16 = 0
-  trajectory_dimensions::Int16 = 0
+  version::UInt16 = 0
+  flags::UInt64 = 0
+  measurement_uid::UInt32 = 0
+  scan_counter::UInt32 = 0
+  acquisition_time_stamp::UInt32 = 0
+  physiology_time_stamp::NTuple{3,UInt32} = ntuple(i->UInt32(0),3)
+  number_of_samples::UInt16 = 0
+  available_channels::UInt16 = 0
+  active_channels::UInt16 = 0
+  channel_mask::NTuple{16,UInt64} = ntuple(i->UInt64(0),16)
+  discard_pre::UInt16 = 0
+  discard_post::UInt16 = 0
+  center_sample::UInt16 = 0
+  encoding_space_ref::UInt16 = 0
+  trajectory_dimensions::UInt16 = 0
   sample_time_us::Float32 = 0.0
   position::NTuple{3,Float32} = ntuple(i->Float32(0),3)
   read_dir::NTuple{3,Float32} = ntuple(i->Float32(0),3)
