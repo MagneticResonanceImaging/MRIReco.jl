@@ -120,7 +120,7 @@ function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
 
     traj_ = reshape(traj[:,:,:,:,1,1], D, :)
     # tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
-    tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true, times=vec(times[:,:,:,1,1]))
+    tr = Trajectory(traj_, size(traj,3), size(traj,2), circular=true, times=vec(times[:,:,:,1,1]))
   end
   return tr
 end
