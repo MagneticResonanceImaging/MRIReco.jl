@@ -154,8 +154,10 @@ struct DiagNormalOp{U,V,T}
   y::Vector{T}
 end
 
-function SparsityOperators.normalOperator(S::DiagOp, W=I, T::Type=ComplexF64)
+function SparsityOperators.normalOperator(S::DiagOp, W=I)
   weights = W*ones(S.nrow)
+
+  T = eltype(S)
 
   if S.equalOps
     # this opimization is only allowed if all ops are the same

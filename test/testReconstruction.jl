@@ -426,11 +426,11 @@ function testReco(N=32)
     for a in accelMethods
       !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
     end
-#    testSENSEReco(64, ComplexF32)
+    testSENSEReco(64, ComplexF32)
     testSENSEReco(64, ComplexF64)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
-    testRegridding()
+    testRegridding() 
   end
 end
 
