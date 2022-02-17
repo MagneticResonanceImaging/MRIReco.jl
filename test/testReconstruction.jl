@@ -206,7 +206,7 @@ function testSENSEReco(N = 64)
   params[:numSamplingPerProfile] = div(N*N,2)
   params[:windings] = div(N,4)
   params[:AQ] = 3.0e-2
-  params[:senseMaps] = ComplexF32.(coilsens)
+  params[:senseMaps] = coilsens
 
   # do simulation
   acqData = simulation(I, params)
