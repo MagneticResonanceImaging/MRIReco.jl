@@ -12,7 +12,7 @@ contrasts in an MRI acquisition (for a given slice).
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
 """
-function encodingOps_simple(acqData::AcquisitionData, shape::NTuple{D,Int64}; kargs...) where D
+function encodingOps_simple(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}; kargs...) where {T,D}
   numContr = numContrasts(acqData)
   tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
@@ -21,22 +21,22 @@ function encodingOps_simple(acqData::AcquisitionData, shape::NTuple{D,Int64}; ka
 end
 
 """
-    encodingOps_parallel(acqData::AcquisitionData, shape::NTuple{D,Int64}
-                              , senseMaps::Array{ComplexF64}
-                              ; kargs...) where D
+    encodingOps_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+                              , senseMaps::Array{Complex{T}}
+                              ; kargs...) where {T,D}
 
 generates an Array of LinearOperators which describe signal encoding of the individual
 contrasts in an MRI acquisition. The different coils are taken into account
 in terms of their sensitivities
 
 # Arguments
-* `acqData::AcquisitionData`            - AcquisitionData object
+* `acqData::AcquisitionData{T}`            - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
-function encodingOps_parallel(acqData::AcquisitionData, shape::NTuple{D,Int64}
-                                , senseMaps::Array{ComplexF64,4}
-                                ; slice=1, kargs...) where D
+function encodingOps_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+                                , senseMaps::Array{Complex{T},4}
+                                ; slice=1, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
 
@@ -67,22 +67,22 @@ function encodingOp_multiEcho(acqData::AcquisitionData, shape::NTuple{D,Int64}
 end
 
 """
-    encodingOp_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{D,Int64}
-                                          , senseMaps::Array{ComplexF64}
-                                          ; kargs...) where D
+    encodingOp_multiEcho_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+                                          , senseMaps::Array{Complex{T}}
+                                          ; kargs...) where {T,D}
 
 generates a LinearOperator which describe combined signal encoding of all
 the contrasts in an MRI acquisition (for a given slice). The different coils are taken into account
 in terms of their sensitivities
 
 # Arguments
-* `acqData::AcquisitionData`            - AcquisitionData object
+* `acqData::AcquisitionData{T}`            - AcquisitionData object
 * `shape::NTuple{2,Int64}`              - size of image to be encoded/reconstructed
-* `senseMaps::Array{ComplexF64}`        - coil sensitivities
+* `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
-function encodingOp_multiEcho_parallel(acqData::AcquisitionData, shape::NTuple{D,Int64}
-                                          , senseMaps::Array{ComplexF64}
-                                          ; slice::Int64=1, kargs...) where D
+function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+                                          , senseMaps::Array{Complex{T}}
+                                          ; slice::Int64=1, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
 
@@ -137,9 +137,9 @@ return Fourier encoding operator (either Explicit or NFFT)
   * `slice` : slice to which the operator will be applied
   echoImage : calculate signal evolution relative to the echo time
 """
-function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory, opName::String;
+function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
           subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap=[],
-          echoImage::Bool=true,  kargs...) where D
+          echoImage::Bool=true,  kargs...) where {T,D}
 
   # extract proper portion of correctionMap
   if !isempty(correctionMap)
@@ -151,11 +151,11 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory, opName::Strin
     ftOp = ExplicitOp(shape, tr, cmap, echoImage=echoImage)
   elseif opName=="fast"
     @debug "NFFT-based Op"
-    if !isempty(correctionMap) && correctionMap!=zeros(ComplexF64,size(correctionMap))
+    if !isempty(correctionMap) && correctionMap!=zeros(Complex{T},size(correctionMap))
       ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; kargs...)
     elseif isCartesian(tr)
       @debug "FFTOp"
-      ftOp = FFTOp(ComplexF64, shape; unitary=false)
+      ftOp = FFTOp(Complex{T}, shape; unitary=false)
     else
       ftOp = NFFTOp(shape, tr; kargs...)
     end

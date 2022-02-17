@@ -1,29 +1,29 @@
 export SpiralPerturbedTrajectory, spiralPerturbedTrajectoryNodes
 
-function SpiralPerturbedTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Real=0.0
-                  , AQ::Real=1.e-3
+function SpiralPerturbedTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
                   , windings::Real= 6.25
                   , alpha::Real=2.0
                   , kmax::Real=0.5
                   , angleOffset::String="equispaced"
-                  , kargs...)
-  nodes = spiralPerturbedTrajectoryNodes(numProfiles, numSamplingPerProfile;
+                  , kargs...) where T
+  nodes = spiralPerturbedTrajectoryNodes(T, numProfiles, numSamplingPerProfile;
             windings=windings, alpha=alpha, angleOffset=angleOffset, kmax=kmax)
-  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("SpiralPerturbed", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 # Constructing the amplitude limited case of the variable density spiral Trajectory
-function spiralPerturbedTrajectoryNodes(numProfiles::Int64
+function spiralPerturbedTrajectoryNodes(::Type{T}, numProfiles::Int64
                         , numSamplingPerProfile::Int64
                         ; windings=6.25
                         , alpha=2.0
                         , kmax::Real=0.5
                         , angleOffset= "equispaced"
-                        , kargs...)
+                        , kargs...) where T
 
-  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  nodes = zeros(T, 2, numSamplingPerProfile, numProfiles)
   angles = collect((0:numProfiles-1)/numProfiles) # Phase offset for multiple Profiles
 
   if angleOffset == "golden"

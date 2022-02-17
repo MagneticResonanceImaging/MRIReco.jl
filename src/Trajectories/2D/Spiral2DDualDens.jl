@@ -19,29 +19,29 @@ returns a 2d spiral trajectory.
 * (`windings::Real= 6.25`)        - number of windings of the spiral profiles
 * (`angleOffset= :equispaced`)    - spacing of profile angles (`:equispaced` sampling, `:golden` angle sampling or `:random` sampling)
 """
-function SpiralTrajectoryDualDens(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
+function SpiralTrajectoryDualDens(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
                   , windings::Real= 6.25
                   , kmax::Real=0.5
                   , angleOffset::String="equispaced"
                   , densityFactor::Float64=2.0
-                  , kargs...)
-  nodes = spiralNodesDualDens(numProfiles, numSamplingPerProfile; windings=windings,
+                  , kargs...) where T
+  nodes = spiralNodesDualDens(T, numProfiles, numSamplingPerProfile; windings=windings,
               angleOffset=angleOffset, densityFactor=densityFactor, kmax=kmax)
-  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+  times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("SpiralDualDens", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-function spiralNodesDualDens(numProfiles::Int64
+function spiralNodesDualDens(::Type{T}, numProfiles::Int64
                             , numSamplingPerProfile::Int64
                             ; windings::Real= 6.25
                             , kmax::Real=0.5
                             , angleOffset::String="equispaced"
                             , densityFactor::Float64
-                            , kargs...)
+                            , kargs...) where T
 
-  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  nodes = zeros(T, 2, numSamplingPerProfile, numProfiles)
   if angleOffset == "golden"
       angles = [i*(3-sqrt(5))/2  for i=0:numProfiles-1 ]
   elseif angleOffset == "random"

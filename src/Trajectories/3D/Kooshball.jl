@@ -14,17 +14,17 @@ returns a 3d kooshball trajectory.
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 """
-function KooshballTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
-                  , kargs...)
-  nodes = kooshballNodes(numProfiles, numSamplingPerProfile; numSlices=numSlices)
-  times = kooshballTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+function KooshballTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
+                  , kargs...) where T
+  nodes = kooshballNodes(T, numProfiles, numSamplingPerProfile; numSlices=numSlices)
+  times = kooshballTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("Kooshball", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-function kooshballNodes(numProfiles::Int64, numSamplingPerProfile::Int64; kargs...)
-  nodes = zeros(3,numSamplingPerProfile, numProfiles)
+function kooshballNodes(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64; kargs...) where T
+  nodes = zeros(T, 3, numSamplingPerProfile, numProfiles)
   pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
@@ -36,8 +36,8 @@ function kooshballNodes(numProfiles::Int64, numSamplingPerProfile::Int64; kargs.
   return reshape(nodes, 3, numSamplingPerProfile*numProfiles)
 end
 
-function kooshballTimes(numProfiles::Int64, numSamplingPerProfile::Int64; TE=0.0, AQ=1.e-3, kargs...)
-  times = zeros(numSamplingPerProfile, numProfiles)
+function kooshballTimes(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64; TE=0.0, AQ=1.e-3, kargs...) where T
+  times = zeros(T, numSamplingPerProfile, numProfiles)
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
       times[k,l] = (TE + AQ*(k-1)/numSamplingPerProfile )

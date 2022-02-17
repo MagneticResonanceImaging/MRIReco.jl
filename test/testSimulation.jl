@@ -3,7 +3,7 @@
 function test_kdata(N::Int64=32)
     @info "Testing simulating kdata with NFFT and exact evaluation"
     I = shepp_logan(N)
-    tr = RadialTrajectory(N,N)
+    tr = RadialTrajectory(Float64, N,N)
     println("Simulating kdata using NFFT")
     @time acqDataNFFT = simulation_fast(tr,I)
     @info "Simulating kdata rigorously"
@@ -18,7 +18,7 @@ function test_kdataMultipleSlices(N::Int64=32)
     @info "Testing simulating multiple 2d-slices with NFFT and exact evaluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.6*sh,0.3*sh,dims=3)
-    tr = CartesianTrajectory(N,N)
+    tr = CartesianTrajectory(Float64,N,N)
     println("Simulating kdata using NFFT")
     @time acqDataNFFT = simulation(tr,I,opName="fast")
     @info "Simulating kdata rigorously"
@@ -33,7 +33,7 @@ function test_kdata3d(N::Int64=16)
     @info "Testing simulating 3d-kdata with NFFT and exact evaluation"
     sh = ComplexF64.(shepp_logan(N))
     I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
-    tr = CartesianTrajectory3D(N,N,numSlices=8)
+    tr = CartesianTrajectory3D(Float64,N,N,numSlices=8)
     println("Simulating kdata using NFFT")
     @time acqDataNFFT = simulation(tr,I,opName="fast")
     @info "Simulating kdata rigorously"
@@ -51,7 +51,7 @@ function test_kdataWithCorrection(N::Int64=32)
     fmap = quadraticFieldmap(N,N,125*2pi)[:,:,1]
     rmap = relaxationMap(I,5.0,50.0)
     cmap = rmap + 1im*fmap
-    tr = SpiralTrajectory(N,2*N,TE=0.0,AQ=32e-3)
+    tr = SpiralTrajectory(Float64, N,2*N,TE=0.0,AQ=32e-3)
 
     println("Simulating kdata using NFFT to approx. correctionterm ...")
     @time acqDataNFFT = simulation_fast(tr,I,cmap;method="nfft")
@@ -104,7 +104,7 @@ end
 function test_noise(N::Int64=32, snr::Float64=25.0)
     @info "Testing simulating kdata with NFFT and exact evaluation"
     I = shepp_logan(N)
-    tr = RadialTrajectory(N,N)
+    tr = RadialTrajectory(Float64, N,N)
     @time acqData = simulation_explicit(tr,I)
     acqDataNoisy = MRIReco.addNoise(acqData,snr)
     relError =  norm(acqData.kdata[:]-acqDataNoisy.kdata[:]) / norm(acqData.kdata[:])
@@ -115,7 +115,7 @@ end
 function test_changeEncodingSize(N=32)
     @info "Testing reduction of encoding size"
     I = shepp_logan(2*N)
-    tr = CartesianTrajectory(2*N,2*N)
+    tr = CartesianTrajectory(Float64, 2*N,2*N)
     acqData = simulation_fast(tr,I)
     acqData.encodingSize = [2*N,2*N]
     acqData2 = MRIReco.changeEncodingSize2D(acqData, [N,N])

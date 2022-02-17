@@ -1,9 +1,9 @@
 export EPITrajectory, epiNodes, epiDensity
 
 """
-    EPITrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
+    EPITrajectory(T, numProfiles, numSamplingPerProfile
+                  ; TE::T=0.0
+                  , AQ::T=1.e-3
                   , EPI_factor::Int64=1
                   , profileOffset= :equispaced
                   , kargs...)
@@ -13,28 +13,28 @@ returns a 2d cartesian trajectory.
 # Arguments
 * `numProfiles::Int64`            - number of profiles
 * `numSamplingPerProfile::Int64`  - number of sampling points per profile
-* (`TE::Float64=0.0`)             - echo time in s
-* (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
+* (`TE::T=0.0`)             - echo time in s
+* (`AQ::T=1.e-3`)           - readout duration in s (per profile)
 * (`EPI_factor::Int64=1`)         - EPI factor, e.g. how many profiles to acquire per shot
 * (`profileOffset= :equispaced`)  - equispaced or random ordering of the shots
 """
-function EPITrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
+function EPITrajectory(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
                   , EPI_factor::Int64=1
                   , profileOffset= :equispaced
-                  , kargs...)
-  nodes = epiNodes(numProfiles, numSamplingPerProfile; EPI_factor=EPI_factor, profileOffset=profileOffset)
-  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+                  , kargs...) where T
+  nodes = epiNodes(T, numProfiles, numSamplingPerProfile; EPI_factor=EPI_factor, profileOffset=profileOffset)
+  times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return Trajectory("EPI", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
-function epiNodes(numProfiles::Int64
+function epiNodes(::Type{T}, numProfiles::Int64
                     , numSamplingPerProfile::Int64
                     ; EPI_factor::Int64=1
                     , profileOffset= :equispaced
-                    , kargs...)
-  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+                    , kargs...) where T
+  nodes = zeros(T, 2, numSamplingPerProfile, numProfiles)
 
   if profileOffset == :equispaced
       samplesperline = numSamplingPerProfile/EPI_factor -1
@@ -70,6 +70,6 @@ function epiNodes(numProfiles::Int64
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function epiDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
+function epiDensity(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64) where T
   @error "not implement yet"
 end

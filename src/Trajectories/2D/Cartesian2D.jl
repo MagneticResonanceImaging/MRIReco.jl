@@ -2,9 +2,9 @@ export CartesianTrajectory, cartesianTrajectory2dNodes, cartesian2dDensity
 
 
 """
-    CartesianTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
+    CartesianTrajectory(T, numProfiles, numSamplingPerProfile
+                  ; TE::T=0.0
+                  , AQ::T=1.e-3
                   , kmin=(-0.5,-0.5)
                   , kmax=(0.5,0.5)
                   , kargs...)
@@ -19,23 +19,23 @@ returns a 2d cartesian trajectory.
 * (`kmin=(-0.5,-0.5)`)            - minimum values of the covered k-space (for partial Fourier imaging)
 * (`kmax=(-0.5,-0.5)`)            - maximum values of the covered k-space (for partial Fourier imaging)
 """
-function CartesianTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
+function CartesianTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
                   , kmin=(-0.5,-0.5)
                   , kmax=(0.5,0.5)
-                  , kargs...)
-  nodes = cartesian2dNodes(numProfiles, numSamplingPerProfile; kmin=kmin,kmax=kmax)
-  times = readoutTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+                  , kargs...) where T
+  nodes = cartesian2dNodes(T, numProfiles, numSamplingPerProfile; kmin=kmin,kmax=kmax)
+  times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("Cartesian", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
-function cartesian2dNodes(numProfiles, numSamplingPerProfile
+function cartesian2dNodes(::Type{T}, numProfiles, numSamplingPerProfile
                   ; kmin=(-0.5,-0.5)
                   , kmax=(0.5,0.5)
-                  , kargs...)
+                  , kargs...) where T
 
-  nodes = zeros(2,numSamplingPerProfile, numProfiles)
+  nodes = zeros(T, 2, numSamplingPerProfile, numProfiles)
   posX = collect( -ceil(Int64, (numSamplingPerProfile-1)/2.):floor(Int64, (numSamplingPerProfile-1)/2.) ) / numSamplingPerProfile
   posY = collect( -ceil(Int64, (numProfiles-1)/2.):floor(Int64, (numProfiles-1)/2.) ) / numProfiles
 
@@ -56,8 +56,8 @@ function cartesian2dNodes(numProfiles, numSamplingPerProfile
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
-function cartesian2dDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
-  density = zeros(numSamplingPerProfile, numProfiles)
+function cartesian2dDensity(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64) where T
+  density = zeros(T,numSamplingPerProfile, numProfiles) 
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
       density[k,l] = 1

@@ -78,11 +78,11 @@ function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   if lowercase(name) == "cartesian"
     dim = ( maximum(encSteps2(f))==1 ? 2 : 3)
     if dim==3
-      tr = trajectory("Cartesian3D", f.params["encodedSize"][2],
+      tr = trajectory(Float32, "Cartesian3D", f.params["encodedSize"][2],
                                      f.params["encodedSize"][1],
                                      numSlices=f.params["encodedSize"][3])
     else
-      tr = trajectory("Cartesian", f.params["encodedSize"][2],
+      tr = trajectory(Float32, "Cartesian", f.params["encodedSize"][2],
                                    f.params["encodedSize"][1])
     end
   else

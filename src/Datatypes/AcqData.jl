@@ -18,7 +18,7 @@ struct describing MRI acquisition data.
 """
 mutable struct AcquisitionData{T <: AbstractFloat}
   sequenceInfo::Dict{Symbol,Any}
-  traj::Vector{Trajectory}
+  traj::Vector{Trajectory{T}}
   kdata::Array{Matrix{Complex{T}},3}
   subsampleIndices::Vector{Vector{Int64}}
   encodingSize::Vector{Int64}
@@ -66,12 +66,12 @@ constructor for `AcquisitionData`
 
 the other fields of `AcquisitionData` can be passed as keyword arguments.
 """
-function AcquisitionData(tr::K,kdata::Array{Matrix{Complex{T}},3}
+function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
                         ; seqInfo=Dict{Symbol,Any}()
                         , idx=nothing
                         , encodingSize=Int64[0,0,0]
                         , fov=Float64[0,0,0]
-                        , kargs...) where {K <: Union{Trajectory,Vector{Trajectory}}, T <: AbstractFloat}
+                        , kargs...) where {T <: AbstractFloat, K <: Union{Trajectory,Vector{Trajectory{T}}}}
   tr_vec = vec(tr)
   if idx != nothing
     subsampleIndices = idx

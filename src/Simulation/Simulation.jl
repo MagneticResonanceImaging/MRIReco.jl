@@ -22,21 +22,21 @@ end
 Simulate MRI raw data from given `image` data. All simulation parameters
 are passed to the function in the form of a dictionary.
 """
-function simulation(image::Array{T,3}, simParams::Dict) where T<:Complex{<:AbstractFloat}
+function simulation(image::Array{Complex{T},3}, simParams::Dict) where T<:AbstractFloat
   haskey(simParams, :correctionMap) ? cmap = reshape(simParams[:correctionMap],size(image)) : cmap = zeros(T,size(image))
 
   seqName = get(simParams,:seqName,"ME")
   trajName = get(simParams,:trajName,"Cartesian")
   seq = sequence(seqName, simParams[:numProfiles], simParams[:numSamplingPerProfile]; simParams...)
   numSamp, numProf = get(simParams, :numSamplingPerProfile,1), get(simParams, :numProfiles,1)
-  tr = [trajectory(trajName, numProf,numSamp; simParams...) for i=1:numContrasts(seq)]
+  tr = [trajectory(T, trajName, numProf,numSamp; simParams...) for i=1:numContrasts(seq)]
 
   opName = get(simParams,:simulation,"fast")
   if opName!="fast" && opName!="explicit"
     error("simulation $(simParams[:simulation]) is not known...")
   end
 
-  return simulation(seq, tr, T.(image); opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
+  return simulation(seq, tr, image; opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
 end
 
 """
@@ -93,18 +93,18 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
-              ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
+function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap=[]
+              ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:AbstractFloat
 
   nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(T,nx,ny,nz)
+    disturbanceTerm = zeros(Complex{T},nx,ny,nz)
   else
     if size(correctionMap) != size(image)
       error("correctionMap and image should have the same size!")
     end
-    disturbanceTerm = T.(correctionMap)
+    disturbanceTerm = Complex{T}.(correctionMap)
   end
 
   if isempty(senseMaps)
@@ -119,8 +119,8 @@ function simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
   end
 
   nodes = kspaceNodes(tr)
-  # kdata = zeros(T, size(nodes,2),nc,nz)
-  kdata = [zeros(T,size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
+  # kdata = zeros(Complex{T}, size(nodes,2),nc,nz)
+  kdata = [zeros(Complex{T},size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
   if verbose==true
     p = Progress(nz*nc, 1, "Simulating data...")
   end
@@ -158,18 +158,18 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation3d(tr::Trajectory, image::Array{T,3}, correctionMap=[];
-              opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
+function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap=[];
+              opName="fast", senseMaps=[], verbose=true, kargs...) where T<:AbstractFloat
 
   nx,ny,nz = size(image)
 
   if isempty(correctionMap)
-    disturbanceTerm = zeros(T,nx,ny,nz)
+    disturbanceTerm = zeros(Complex{T},nx,ny,nz)
   else
     if size(correctionMap) != size(image)
       error("correctionMap and image should have the same size!")
     end
-    disturbanceTerm = T.(correctionMap)
+    disturbanceTerm = Complex{T}.(correctionMap)
   end
 
   if isempty(senseMaps)
@@ -184,8 +184,8 @@ function simulation3d(tr::Trajectory, image::Array{T,3}, correctionMap=[];
   end
 
   nodes = kspaceNodes(tr)
-  # kdata = zeros(T, size(nodes,2),nc)
-  kdata = [zeros(T,size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
+  # kdata = zeros(Complex{T}, size(nodes,2),nc)
+  kdata = [zeros(Complex{T},size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
   if verbose==true
     p = Progress(nc, 1, "Simulating data...")
   end
@@ -224,33 +224,33 @@ The Fourier integrals can be evaluated exactly or using NFFT
 ...
 
 """
-function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
-                    , image::Array{T,3}
+function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
+                    , image::Array{Complex{T},3}
                     ; opName="fast"
                     , r1map=[]
                     , r2map=[]
                     , fmap=[]
                     , senseMaps=[]
                     , verbose=true
-                    , kargs...) where T<:Complex{<:AbstractFloat}
+                    , kargs...) where T<:AbstractFloat
   nx,ny,nz = size(image)
   ne = numContrasts(seq)
 
-  correctionMap = zeros(T,nx,ny,nz)
+  correctionMap = zeros(Complex{T},nx,ny,nz)
   if isempty(r1map)
     r1map = zeros(nx,ny,nz)
   end
   if isempty(r2map)
     r2map = zeros(nx,ny,nz)
   else
-    correctionMap = zeros(nx,ny,nz) # T.(r2map)
+    correctionMap = zeros(Complex{T}, nx,ny,nz) # T.(r2map)
   end
   if !isempty(fmap)
     correctionMap = correctionMap .+ 1im*fmap
   end
 
   # compute echo amplitudes
-  ampl = zeros(T, nx,ny,nz,ne )
+  ampl = zeros(Complex{T}, nx,ny,nz,ne )
   if verbose
     p = Progress(nx*ny*nz,1,"Compute echo amplitudes ")
   end
@@ -264,7 +264,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory}
 
   # this assumes the same number of readout points per echo
   isempty(senseMaps) ? nc=1 : nc=size(senseMaps,4)
-  out = Vector{Matrix{T}}(undef,0)
+  out = Vector{Matrix{Complex{T}}}(undef,0)
 
   if verbose
     p = Progress(numContrasts(seq), 1, "Simulating data...")
@@ -317,12 +317,12 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation(tr::Trajectory
-                    , image::Array{T}
+function simulation(tr::Trajectory{T}
+                    , image::Array{Complex{T}}
                     , correctionMap = []
                     ; opName="fast"
                     , senseMaps=[]
-                    , kargs...) where T<:Complex{<:AbstractFloat}
+                    , kargs...) where T<:AbstractFloat
 
   ndims(image) > 2 ? numSlices=size(image,3) : numSlices=1
   image = reshape(image,size(image)[1],size(image)[2],numSlices)
@@ -331,9 +331,9 @@ function simulation(tr::Trajectory
   end
 
   if dims(tr)==2
-    acqData = simulation2d(tr, T.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation2d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
   else
-    acqData = simulation3d(tr, T.(image), correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation3d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
   end
 
   return acqData
@@ -382,7 +382,7 @@ end
 ...
 
 """
-function simulation_fast(tr::Trajectory
+function simulation_fast(tr::Trajectory{T}
                         , image::Matrix
                         , correctionMap = []
                         ; alpha::Float64 = 1.75
@@ -390,13 +390,13 @@ function simulation_fast(tr::Trajectory
                         , K::Int64=16
                         , method="nfft"
                         , senseMaps = []
-                        , kargs...)
+                        , kargs...) where T
   image = reshape(image,size(image)[1],size(image)[2],1)
   if !isempty(correctionMap)
     correctionMap = reshape(correctionMap,size(image))
   end
 
-  return simulation(tr, ComplexF64.(image), correctionMap;opName="fast", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
+  return simulation(tr, Complex{T}.(image), correctionMap;opName="fast", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
 end
 
 """
@@ -416,7 +416,7 @@ end
 ...
 
 """
-function simulation_explicit(tr::Trajectory
+function simulation_explicit(tr::Trajectory{T}
                         , image::Matrix
                         , correctionMap = []
                         ; alpha::Float64 = 1.75
@@ -424,13 +424,14 @@ function simulation_explicit(tr::Trajectory
                         , K::Int64=16
                         , method="nfft"
                         , senseMaps = []
-                        , kargs...)
+                        , kargs...) where T
+
   image = reshape(image,size(image)[1],size(image)[2],1)
   if !isempty(correctionMap)
     correctionMap = reshape(correctionMap,size(image))
   end
 
-  return simulation(tr, ComplexF64.(image), correctionMap;opName="explicit", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
+  return simulation(tr, Complex{T}.(image), correctionMap;opName="explicit", alpha=alpha,m=m,K=K,method=method,senseMaps=senseMaps,kargs...)
 end
 
 """

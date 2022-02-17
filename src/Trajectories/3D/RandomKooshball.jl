@@ -14,17 +14,17 @@ returns a 3d kooshball trajectory with randomized order of the profiles
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 """
-function RandomKooshballTrajectory(numProfiles, numSamplingPerProfile
-                  ; TE::Float64=0.0
-                  , AQ::Float64=1.e-3
-                  , kargs...)
-  nodes = randomKooshballNodes(numProfiles, numSamplingPerProfile; numSlices=1)
-  times = kooshballTimes(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
+function RandomKooshballTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
+                  ; TE=0.0
+                  , AQ=1.e-3
+                  , kargs...) where T
+  nodes = randomKooshballNodes(T, numProfiles, numSamplingPerProfile; numSlices=1)
+  times = kooshballTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
   return  Trajectory("RandomKooshball", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
-function randomKooshballNodes(numProfiles, numSamplingPerProfile; kargs...)
-  nodes = zeros(3,numSamplingPerProfile, numProfiles)
+function randomKooshballNodes(::Type{T}, numProfiles, numSamplingPerProfile; kargs...) where T
+  nodes = zeros(T, 3, numSamplingPerProfile, numProfiles)
   pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
   profileList = shuffle_vector([i for i=1:numProfiles])
 
@@ -38,8 +38,8 @@ function randomKooshballNodes(numProfiles, numSamplingPerProfile; kargs...)
   return reshape(nodes, 3, numSamplingPerProfile*numProfiles)
 end
 
-function randomKooshballDensity(numProfiles::Int64, numSamplingPerProfile::Int64)
-  density = zeros(numSamplingPerProfile, numProfiles)
+function randomKooshballDensity(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64) where T
+  density = zeros(T, numSamplingPerProfile, numProfiles)
   pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile

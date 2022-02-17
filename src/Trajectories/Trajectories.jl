@@ -21,12 +21,12 @@ struct describing a trajectory
 * `cartesian::Bool`               - true if sampling points lie on a cartesian grid
 * `circular::Bool`                - true if kspace is covered in a circular domain
 """
-mutable struct Trajectory
+mutable struct Trajectory{T}
   name::String
-  nodes::Matrix{Float64}
-  times::Vector{Float64}
-  TE::Float64
-  AQ::Float64
+  nodes::Matrix{T}
+  times::Vector{T}
+  TE::T
+  AQ::T
   numProfiles::Int64
   numSamplingPerProfile::Int64
   numSlices::Int64
@@ -35,15 +35,19 @@ mutable struct Trajectory
 end
 
 function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile;
-                    times=nothing, TE::Float64=0.0, AQ::Float64=1.e-3, numSlices::Int64=1,
+                    times=nothing, TE=0.0, AQ=1.e-3, numSlices::Int64=1,
                     cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
+
+  TE_ = T(TE)
+  AQ_ = T(AQ)
+
   if times != nothing
     ttimes = times
   else
-    ttimes = readoutTimes(numProfiles,numSamplingPerProfile; TE=TE, AQ=AQ)
+    ttimes = readoutTimes(numProfiles,numSamplingPerProfile; TE=TE_, AQ=AQ_)
   end
 
-  return Trajectory("Custom", Float64.(nodes), ttimes, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, cartesian, circular)
+  return Trajectory("Custom", nodes, ttimes, TE_, AQ_, numProfiles, numSamplingPerProfile, numSlices, cartesian, circular)
 end
 
 Base.vec(tr::Trajectory) = [tr]
@@ -87,29 +91,34 @@ is a factory method to construct a trajectory from its `name`
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 * `kargs...`                      - addional keyword arguments
 """
-function trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, TE::Float64=0.0, AQ::Float64=1.e-3, kargs...)
+function trajectory(::Type{T}, trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, 
+         TE::AbstractFloat=0.0, AQ::AbstractFloat=1.e-3, kargs...) where T
+
+  TE_ = T(TE)
+  AQ_ = T(AQ)
+
   if trajName == "Spiral"
-    tr = SpiralTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = SpiralTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "Radial"
-    tr = RadialTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = RadialTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "Cartesian"
-    tr = CartesianTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = CartesianTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "EPI"
-    tr = EPITrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = EPITrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "OneLine"
-    tr = OneLine2dTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = OneLine2dTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "SpiralVarDens"
-    tr = SpiralTrajectoryVarDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = SpiralTrajectoryVarDens(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
 elseif trajName == "SpiralPerturbed"
-    tr = SpiralPerturbedTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = SpiralPerturbedTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "SpiralDualDens"
-    tr = SpiralTrajectoryDualDens(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = SpiralTrajectoryDualDens(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   elseif trajName == "Cartesian3D"
-    tr = CartesianTrajectory3D(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, numSlices=numSlices, kargs...)
+    tr = CartesianTrajectory3D(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, numSlices=numSlices, kargs...)
   elseif trajName == "StackOfStars"
-    tr = StackOfStarsTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, numSlices=numSlices, kargs...)
+    tr = StackOfStarsTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, numSlices=numSlices, kargs...)
   elseif trajName == "Kooshball"
-    tr = KooshballTrajectory(numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ, kargs...)
+    tr = KooshballTrajectory(T, numProfiles, numSamplingPerProfile; TE=TE_, AQ=AQ_, kargs...)
   else
     @error "The trajectory $trajName is not yet supported!"
   end
@@ -160,8 +169,8 @@ function profileNodes(tr::Trajectory,prof::Int,slice::Int)
   return nodes[:,:,prof,slice]
 end
 
-function readoutTimes(numProfiles, numSamplingPerProfile, numSlices=1; TE=0.0, AQ=1.e-3)
-  times = zeros(numSamplingPerProfile, numProfiles, numSlices)
+function readoutTimes(::Type{T}, numProfiles, numSamplingPerProfile, numSlices=1; TE=0.0, AQ=1.e-3) where T
+  times = zeros(T, numSamplingPerProfile, numProfiles, numSlices)
   for j = 1:numSlices
     for l = 1:numProfiles
       for k = 1:numSamplingPerProfile

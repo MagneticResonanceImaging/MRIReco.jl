@@ -35,5 +35,5 @@ function regrid2d(acqData::AcquisitionData{T}, kspaceSize::NTuple{2,Int64}; cgnr
     end
   end
 
-  return AcquisitionData(CartesianTrajectory(ny,nx), kdata_cart, encodingSize=[nx,ny,1], fov=acqData.fov)
+  return AcquisitionData(CartesianTrajectory(T,ny,nx), kdata_cart, encodingSize=[nx,ny,1], fov=acqData.fov)
 end

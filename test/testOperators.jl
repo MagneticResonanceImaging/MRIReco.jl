@@ -14,7 +14,7 @@ function testFT(N=16)
   F_adj = F'
 
   # Operators
-  tr = CartesianTrajectory(N,N)
+  tr = CartesianTrajectory(Float64,N,N)
   F_nfft = NFFTOp((N,N),tr,symmetrize=false)
   F_exp = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N),symmetrize=false)
 
@@ -73,7 +73,7 @@ function testFT3d(N=12)
   F_adj = F'
 
   # Operators
-  tr = CartesianTrajectory3D(N,N,numSlices=N)
+  tr = CartesianTrajectory3D(Float64,N,N,numSlices=N)
   F_nfft = NFFTOp((N,N,N),tr,symmetrize=false)
   F_exp = ExplicitOp((N,N,N),tr,zeros(ComplexF64,N,N,N),symmetrize=false)
 
@@ -116,7 +116,7 @@ function testFieldmapFT(N=16)
     x[i,j] = rand()
   end
 
-  tr = CartesianTrajectory(N,N;TE=0.0,AQ=0.01)
+  tr = CartesianTrajectory(Float64,N,N;TE=0.0,AQ=0.01)
   times = readoutTimes(tr)
   nodes = kspaceNodes(tr)
   cmap = im*quadraticFieldmap(N,N)[:,:,1]

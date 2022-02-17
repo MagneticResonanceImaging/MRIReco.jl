@@ -1,4 +1,4 @@
-function prod_smap!(y::Vector{ComplexF64}, smaps::Matrix{ComplexF64}, x::Vector{ComplexF64}, numVox::Int64, numChan::Int64, numContr::Int=1)
+function prod_smap!(y::Vector{T}, smaps::Matrix{T}, x::Vector{T}, numVox::Int64, numChan::Int64, numContr::Int=1) where T
     x = reshape(x,numVox,numContr)
     y = reshape(y,numVox,numContr,numChan)
     @inbounds for j=1:numChan
@@ -9,7 +9,7 @@ function prod_smap!(y::Vector{ComplexF64}, smaps::Matrix{ComplexF64}, x::Vector{
     end
 end
 
-function ctprod_smap!(y::Vector{ComplexF64}, smapsC::Matrix{ComplexF64}, x::Vector{ComplexF64}, numVox::Int64, numChan::Int64, numContr::Int=1)
+function ctprod_smap!(y::Vector{T}, smapsC::Matrix{T}, x::Vector{T}, numVox::Int64, numChan::Int64, numContr::Int=1) where T
     x = reshape(x,numVox,numContr,numChan)
     y = reshape(y,numVox,numContr)
     y .= 0
@@ -21,14 +21,14 @@ function ctprod_smap!(y::Vector{ComplexF64}, smapsC::Matrix{ComplexF64}, x::Vect
     end
 end
 
-function prod_smap(smaps::Matrix{ComplexF64}, x::Vector{ComplexF64}, numVox::Int64, numChan::Int64, numContr::Int=1)
-    y = zeros(ComplexF64,numVox*numContr*numChan)
+function prod_smap(smaps::Matrix{T}, x::Vector{T}, numVox::Int64, numChan::Int64, numContr::Int=1) where T
+    y = zeros(T,numVox*numContr*numChan)
     prod_smap!(y,smaps,x,numVox,numChan,numContr)
     return y
 end
 
-function ctprod_smap(smapsC::Matrix{ComplexF64}, x::Vector{ComplexF64}, numVox::Int64, numChan::Int64, numContr::Int=1)
-    y = zeros(ComplexF64,numVox*numContr)
+function ctprod_smap(smapsC::Matrix{T}, x::Vector{T}, numVox::Int64, numChan::Int64, numContr::Int=1) where T
+    y = zeros(T,numVox*numContr)
     ctprod_smap!(y,smapsC,x,numVox,numChan,numContr)
     return y
 end
@@ -43,10 +43,10 @@ the coil sensitivities specified in `sensMaps`
 * `sensMaps::Matrix{ComplexF64}`  - sensitivity maps ( 1. dim -> voxels, 2. dim-> coils)
 * `numEchoes`                     - number of contrasts to which the opetaor will be applied
 """
-function SensitivityOp(sensMaps::Matrix{ComplexF64}, numContr::Int=1)
+function SensitivityOp(sensMaps::Matrix{T}, numContr::Int=1) where T
     numVox, numChan = size(sensMaps)
     sensMapsC = conj.(sensMaps)
-    return LinearOperator{ComplexF64}(numVox*numContr*numChan, numVox*numContr, false, false,
+    return LinearOperator{T}(numVox*numContr*numChan, numVox*numContr, false, false,
                          (res,x) -> (res .= prod_smap(sensMaps,x,numVox,numChan,numContr)),
                          nothing,
                          (res,x) -> (res .= ctprod_smap(sensMapsC,x,numVox,numChan,numContr)))

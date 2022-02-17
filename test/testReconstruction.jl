@@ -191,12 +191,12 @@ function testOffresonanceReco(N = 128; accelMethod="nfft")
 end
 
 
-function testSENSEReco(N = 64)
+function testSENSEReco(N = 64, T = ComplexF64)
   numCoils = 8
-  I = shepp_logan(N)
+  I = T.(shepp_logan(N))
   I = circularShutterFreq!(I,1)
 
-  coilsens = birdcageSensitivity(N, 8, 1.5)
+  coilsens = T.(birdcageSensitivity(N, 8, 1.5))
 
   # simulation parameters
   params = Dict{Symbol, Any}()
@@ -426,7 +426,8 @@ function testReco(N=32)
     for a in accelMethods
       !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
     end
-    testSENSEReco()
+#    testSENSEReco(64, ComplexF32)
+    testSENSEReco(64, ComplexF64)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
     testRegridding()
