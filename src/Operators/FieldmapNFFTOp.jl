@@ -10,7 +10,7 @@ mutable struct InhomogeneityData{T}
   method::String
 end
 
-mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{T}
+mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -24,13 +24,13 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{T}
   args5 :: Bool
   use_prod5! :: Bool
   allocated5 :: Bool
-  Mv5 :: Vector{T}
-  Mtu5 :: Vector{T}
+  Mv5 :: Vector{Complex{T}}
+  Mtu5 :: Vector{Complex{T}}
   plans
   idx::Vector{Vector{Int64}}
   circTraj::Bool
   shape::NTuple{D,Int64}
-  cparam::InhomogeneityData
+  cparam::InhomogeneityData{T}
 end
 
 """
@@ -99,14 +99,14 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ctmul!(res, y::Vector{T}) where T =
      (res .= ctprodu(y,shape,plans,idx,cparam,circTraj,d))
 
-  return FieldmapNFFTOp{Complex{T},Nothing,Function,D}(nrow, ncol, false, false
+  return FieldmapNFFTOp{T,Nothing,Function,D}(nrow, ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
             , plans, idx, circTraj, shape, cparam)
 end
 
-function Base.copy(S::FieldmapNFFTOp{Complex{T},Nothing,Function,D}) where {T,D}
+function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   K=length(S.plans)
   plans = [copy(S.plans[i]) for i=1:K]
   idx = deepcopy(S.idx)
@@ -121,7 +121,7 @@ function Base.copy(S::FieldmapNFFTOp{Complex{T},Nothing,Function,D}) where {T,D}
      (res .= ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d))
 
   D_ = length(S.shape)
-  return FieldmapNFFTOp{Complex{T},Nothing,Function,D_}(S.nrow, S.ncol, false, false
+  return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
@@ -176,10 +176,10 @@ end
 
 
 # function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData, shutter::Bool, d) where T
+function ctprodu(x::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
+                 cparam::InhomogeneityData{T}, shutter::Bool, d) where T
 
-  y = zeros(T,prod(shape))
+  y = zeros(Complex{T},prod(shape))
   K = size(cparam.A_k,2)
 
   x_ = copy(x)
