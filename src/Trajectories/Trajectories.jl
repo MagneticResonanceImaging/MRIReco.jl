@@ -44,7 +44,7 @@ function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPer
   if times != nothing
     ttimes = times
   else
-    ttimes = readoutTimes(numProfiles,numSamplingPerProfile; TE=TE_, AQ=AQ_)
+    ttimes = readoutTimes(T,numProfiles,numSamplingPerProfile, numSlices; TE=TE_, AQ=AQ_)
   end
 
   return Trajectory("Custom", nodes, ttimes, TE_, AQ_, numProfiles, numSamplingPerProfile, numSlices, cartesian, circular)

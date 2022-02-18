@@ -5,33 +5,33 @@
 """
 function get_AC_coefficients(K::Int64
                             , times::Vector
-                            , z_p::Vector
+                            , z_p::Vector{Complex{T}}
                             , alpha::Float64
                             , m::Float64
-                            ; method = "nfft")
+                            ; method = "nfft") where T
 
   if method == "leastsquare"
-    A,C = get_AC_oefficients_lsqr(K,times,z_p)
+    A,C = get_AC_coefficients_lsqr(K,times,z_p)
   elseif method == "nfft"
     A,C = get_AC_coefficients_nfft(K,times,z_p,alpha,m)
   elseif method == "hist"
     A,C = get_AC_coefficients_hist_lsqr(K,times,z_p)
   else
-    A = zeros(ComplexF64,length(times),K)
-    C = zeros(ComplexF64,K,length(z_p))
+    A = zeros(Complex{T},length(times),K)
+    C = zeros(Complex{T},K,length(z_p))
     error("Not implemented yet")
   end
   return A,C
 end
 
 
-function _precompute_coffs_nfft(K::Int64
+function _precompute_coeffs_nfft(K::Int64
                                 , times::Vector     # readout times
-                                , z_p::Vector       # Correction map
-                                , alpha::Float64    # oversampling factor of NFFT
-                                , m::Float64        # kernel size of NFFT
+                                , z_p::Vector{Complex{T}}      # Correction map
+                                , alpha::Float64   # oversampling factor of NFFT
+                                , m::Float64       # kernel size of NFFT
                                 ; adaptK::Bool=true
-                                , centering::Bool=true)
+                                , centering::Bool=true) where T
 
   # Centering time and correctionterm to lower computational effort
   t_hat = (times[1] + times[end])/2
@@ -46,7 +46,7 @@ function _precompute_coffs_nfft(K::Int64
   z_p = z_p .- z_hat
 
   # Calculating timescaling factor so it satisfies: t_j / T in [0.5,0.5)
-  T = maximum(abs.(times)) / (0.5-1e-7)
+  t_scale = maximum(abs.(times)) / (0.5-1e-7)
 
   # determining N and K,
   # K can be choosen freely with tradeoff comp. complexity vs precision
@@ -58,24 +58,24 @@ function _precompute_coffs_nfft(K::Int64
 
   win, win_hat = NFFT.getWindow(:kaiser_bessel)
 
-  return win, win_hat, K, N, T, times, z_p
+  return win, win_hat, K, N, t_scale, times, z_p
 end
 
 function get_A_coefficients_nfft(K::Int64
                                 , times::Vector     # readout times
-                                , z_p::Vector       # Correction map
+                                , z_p::Vector{Complex{T}}       # Correction map
                                 , alpha::Float64    # oversampling factor(NFFT)
                                 , m::Float64        # kernel size(NFFT)
                                 ; adaptK::Bool=true
-                                , centering::Bool=true)
+                                , centering::Bool=true) where T
 
-  win, win_hat, K, N, T, times, z_p = _precompute_coffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK,centering=centering)
+  win, win_hat, K, N, t_scale, times, z_p = _precompute_coeffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK,centering=centering)
 
-  A = zeros(ComplexF64, length(times), K)
+  A = zeros(Complex{T}, length(times), K)
 
   for kappa=1:K
     for j=1:length(times)
-        argument = times[j]/T - (kappa - K/2)/(K - 2*m)
+        argument = times[j]/t_scale - (kappa - K/2)/(K - 2*m)
         A[j,kappa] = win(argument,N*alpha,m,alpha)
     end
   end
@@ -84,20 +84,20 @@ end
 
 function get_C_coefficients_nfft(K::Int64
                                 , times::Vector     # readout times
-                                , z_p::Vector       # Correction map
+                                , z_p::Vector{Complex{T}}       # Correction map
                                 , alpha::Float64    # oversampling factor(NFFT)
-                                , m::Float64        # kernel size(NFFT)
+                                , m::Float64       # kernel size(NFFT)
                                 ; adaptK::Bool=true
-                                , centering::Bool=true)
+                                , centering::Bool=true) where T
 
-  win, win_hat, K, N, T, times, z_p = _precompute_coffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK,centering=centering)
+  win, win_hat, K, N, t_scale, times, z_p = _precompute_coeffs_nfft(K, times, z_p, alpha, m; adaptK=adaptK,centering=centering)
 
-  C = zeros(ComplexF64, K, length(z_p))
+  C = zeros(Complex{T}, K, length(z_p))
 
   for p=1:length(z_p)
     for kappa=1:K
-        fourierarg = 1im * z_p[p]*T/(2pi)
-        exparg = -z_p[p]*T * ( (kappa - K/2)/(K-2*m) )
+        fourierarg = 1im * z_p[p]*t_scale/(2pi)
+        exparg = -z_p[p]*t_scale * ( (kappa - K/2)/(K-2*m) )
         C[kappa,p] = (1/ ( (K-2*m)* 1/(N*alpha)*win_hat(fourierarg,N*alpha,m,alpha))) * exp(exparg)
     end
   end
@@ -113,11 +113,11 @@ end
 """
 function get_AC_coefficients_nfft(K::Int64
                                 , times::Vector     # readout times
-                                , z_p::Vector       # Correction map
-                                , alpha::Float64    # oversampling factor(NFFT)
+                                , z_p::Vector{Complex{T}}       # Correction map
+                                , alpha::Float64   # oversampling factor(NFFT)
                                 , m::Float64        # kernel size(NFFT)
                                 ; adaptK::Bool=true
-                                , centering::Bool=true)
+                                , centering::Bool=true) where T
 
   A = get_A_coefficients_nfft(K, times, z_p, alpha, m; adaptK=adaptK, centering=centering)
   C = get_C_coefficients_nfft(K, times, z_p, alpha, m; adaptK=adaptK, centering=centering)
@@ -131,10 +131,10 @@ end
 
   Using the least squares method and time-segmentation
 """
-function get_AC_coefficients_lsqr(K::Int64, times::Vector, z_p::Vector)
-  A = zeros(ComplexF64,length(times),K)
-  C = zeros(ComplexF64,K,length(z_p))
-  G = zeros(ComplexF64,length(z_p),K)
+function get_AC_coefficients_lsqr(K::Int64, times::Vector{T}, z_p::Vector{Complex{T}}) where T
+  A = zeros(Complex{T},length(times),K)
+  C = zeros(Complex{T},K,length(z_p))
+  G = zeros(Complex{T},length(z_p),K)
 
   t_hat = zeros(K)
   t_hat = collect(range(times[1], stop=times[length(times)], length=K))
@@ -161,7 +161,7 @@ end
 
   Using the least squares method with histogramms and time-segmentation
 """
-function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
+function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector{Complex{T}}) where T
 
   numBins = 10*K
   if real.(z_p)== zeros(length(z_p))
@@ -196,8 +196,8 @@ function get_A_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
     numBins = nbins^2
   end
 
-  A = zeros(ComplexF64,length(times),K)
-  G = zeros(ComplexF64,numBins,K)
+  A = zeros(Complex{T},length(times),K)
+  G = zeros(Complex{T},numBins,K)
 
   t_hat = zeros(K)
   t_hat = collect(range(times[1], stop=times[end], length=K))
@@ -224,9 +224,9 @@ end
 
   Using the least squares method with histogramms
 """
-function get_C_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector)
+function get_C_coefficients_hist_lsqr(K::Int64, times::Vector, z_p::Vector{Complex{T}}) where T
 
-  C = zeros(ComplexF64,K,length(z_p))
+  C = zeros(Complex{T},K,length(z_p))
   t_hat = collect(range(times[1],stop=times[end],length=K))
   # z_p = vec(z_p)
   for p=1:length(z_p)
@@ -245,14 +245,14 @@ end
 
   Using the least squares method and frequency-segmentation
 """
-function get_AC_coefficients_lsqr_fs(K::Int64, times::Vector, z_p::Vector)
+function get_AC_coefficients_lsqr_fs(K::Int64, times::Vector, z_p::Vector{Complex{T}}) where T
 
   ω = imag.(z_p) # field map
   # ω_hat = collect(range(minimum(ω), stop=maximum(ω),length=K)) # translate frequencies
   ω_hat = loydMax(vec(ω),K, iterations=1000)
 
-  A = zeros(ComplexF64,length(times),K)
-  G = zeros(ComplexF64,length(times),K)
+  A = zeros(Complex{T},length(times),K)
+  G = zeros(Complex{T},length(times),K)
   
   for kappa=1:K
     for j=1:length(times)
@@ -274,12 +274,12 @@ end
 
   Using the least squares method with histogramms and frequency-segmentation
 """
-function get_A_coefficients_hist_lsqr_fs(K::Int64, times::Vector, z_p::Vector)
+function get_A_coefficients_hist_lsqr_fs(K::Int64, times::Vector, z_p::Vector{Complex{T}}) where T
   ω = imag.(z_p) # field map
   # ω_hat = collect(range(minimum(ω), stop=maximum(ω),length=K)) # translate frequencies
   ω_hat = loydMax(vec(ω),K, iterations=1000)
 
-  A = zeros(ComplexF64,length(times),K)
+  A = zeros(Complex{T},length(times),K)
   for kappa=1:K
     for j=1:length(times)
       A[j,kappa] = exp(-1im*times[j]*ω_hat[kappa])
@@ -289,7 +289,7 @@ function get_A_coefficients_hist_lsqr_fs(K::Int64, times::Vector, z_p::Vector)
   return A
 end
 
-function get_A_coefficients_svd(K::Int64, times::Vector, z_p::Vector; numBins=10*K, K_tol::Float64=1.e-4)
+function get_A_coefficients_svd(K::Int64, times::Vector, z_p::Vector{Complex{T}}; numBins=10*K, K_tol::T=1.e-4) where T
   ω = imag.(z_p)
 
   # create histrogram of field map
@@ -302,7 +302,7 @@ function get_A_coefficients_svd(K::Int64, times::Vector, z_p::Vector; numBins=10
   z_weights = h.weights
 
   # from reduced exponential matrix
-  A = zeros(ComplexF64, length(times), numBins)
+  A = zeros(Complex{T}, length(times), numBins)
   for j=1:numBins, i=1:length(times)
     A[i,j] = sqrt(z_weights[j])*exp(-z_center[j]*times[i])
   end
@@ -324,7 +324,7 @@ end
 
   Uses the LSQR-method for a given set of a_j,k-coefficients
 """
-function get_C_coefficients_lsqr(times::Vector, z_p::Vector, A::Matrix{ComplexF64}, numSamp::Int64, step=10)
+function get_C_coefficients_lsqr(times::Vector, z_p::Vector{Complex{T}}, A::Matrix{Complex{T}}, numSamp::Int64, step=10) where T
 
   systemMat = adjoint(A[1:step:numSamp,:])* A[1:step:numSamp,:]
   b = [exp(-times[j]*z_p[i]) for j=1:step:numSamp, i=1:length(z_p)]
