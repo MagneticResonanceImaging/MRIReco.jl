@@ -138,7 +138,7 @@ return Fourier encoding operator (either Explicit or NFFT)
   echoImage : calculate signal evolution relative to the echo time
 """
 function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
-          subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap=[],
+          subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap::Array{Complex{T}}=Complex{T}[],
           echoImage::Bool=true,  kargs...) where {T,D}
 
   # extract proper portion of correctionMap

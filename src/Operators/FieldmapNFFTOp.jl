@@ -1,12 +1,12 @@
 export FieldmapNFFTOp, InhomogeneityData, createInhomogeneityData_
 
-mutable struct InhomogeneityData
-  A_k::Matrix{ComplexF64}
-  C_k::Matrix{ComplexF64}
-  times::Vector{Float64}
-  Cmap::Matrix{ComplexF64}
-  t_hat::Float64
-  z_hat::ComplexF64
+mutable struct InhomogeneityData{T}
+  A_k::Matrix{Complex{T}}
+  C_k::Matrix{Complex{T}}
+  times::Vector{T}
+  Cmap::Matrix{Complex{T}}
+  t_hat::T
+  z_hat::Complex{T}
   method::String
 end
 
@@ -60,7 +60,7 @@ including B0-inhomogeneities using time-segmented NFFTs.
 * (`kargs`)                            - additional keyword arguments
 """
 function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
-                        correctionmap::Array{ComplexF64,D};
+                        correctionmap::Array{Complex{T},D};
                         method::String="nfft",
                         echoImage::Bool=true,
                         alpha::Float64=1.25,
@@ -68,7 +68,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         K=20,
                         K_tol::Float64=1.e-3,
                         step::Int64=10,
-                        kargs...) where D
+                        kargs...) where {T,D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
@@ -83,7 +83,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plans = Vector{NFFT.NFFTPlan{Float64,D,1}}(undef,K)
+  plans = Vector{NFFT.NFFTPlan{T,D,1}}(undef,K)
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
@@ -94,46 +94,46 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   
   circTraj = isCircular(tr)
 
-  mul!(res, x::Vector{T}) where T<:ComplexF64 =
+  mul!(res, x::Vector{T}) where T =
      (res .= produ(x,nrow,ncol,shape,plans,idx,cparam,circTraj,d))
-  ctmul!(res, y::Vector{T}) where T<:ComplexF64 =
+  ctmul!(res, y::Vector{T}) where T =
      (res .= ctprodu(y,shape,plans,idx,cparam,circTraj,d))
 
-  return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(nrow, ncol, false, false
+  return FieldmapNFFTOp{Complex{T},Nothing,Function,D}(nrow, ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
             , plans, idx, circTraj, shape, cparam)
 end
 
-function Base.copy(S::FieldmapNFFTOp)
+function Base.copy(S::FieldmapNFFTOp{Complex{T},Nothing,Function,D}) where {T,D}
   K=length(S.plans)
   plans = [copy(S.plans[i]) for i=1:K]
   idx = deepcopy(S.idx)
 
-  d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
+  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
 
   cparam = deepcopy(S.cparam)
 
-  mul!(res, x::Vector{T}) where T<:ComplexF64 =
+  mul!(res, x::Vector{T}) where T =
      (res .= produ(x,S.nrow,S.ncol,S.shape,plans,idx,cparam,S.circTraj,d))
-  ctmul!(res, y::Vector{T}) where T<:ComplexF64 =
+  ctmul!(res, y::Vector{T}) where T =
      (res .= ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d))
 
-  D = length(S.shape)
-  return FieldmapNFFTOp{ComplexF64,Nothing,Function,D}(S.nrow, S.ncol, false, false
+  D_ = length(S.shape)
+  return FieldmapNFFTOp{Complex{T},Nothing,Function,D_}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
-            , ctmul!, 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
+            , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plans, idx, S.circTraj, S.shape, cparam)
 end
 
-# function produ{T<:ComplexF64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
+# function produ{T<:Float64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-               shutter::Bool, d) where T<:ComplexF64
+               shutter::Bool, d) where T
   K = size(cparam.A_k,2)
-  s = zeros(ComplexF64,numOfNodes)
+  s = zeros(T,numOfNodes)
 
   if shutter
     circularShutter!(reshape(x, shape), 1.0)
@@ -177,9 +177,9 @@ end
 
 # function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
 function ctprodu(x::Vector{T}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData, shutter::Bool, d) where T<:ComplexF64
+                 cparam::InhomogeneityData, shutter::Bool, d) where T
 
-  y = zeros(ComplexF64,prod(shape))
+  y = zeros(T,prod(shape))
   K = size(cparam.A_k,2)
 
   x_ = copy(x)
@@ -226,15 +226,15 @@ function ctprodu_inner(K, C, A, shape, d, y, sp, plan, idx, x_)
 end
 
 
-function createInhomogeneityData_(times::Vector,
-                                  correctionmap::Array{ComplexF64,D};
+function createInhomogeneityData_(times::Vector{T},
+                                  correctionmap::Array{Complex{T},D};
                                   K::Int64=20,
                                   K_tol::Float64=1.e-3,
                                   alpha::Float64=1.75,
                                   m::Float64 = 4.0,
                                   method="nfft",
                                   numSamp::Int64=length(times),
-                                  step::Int64=10) where D
+                                  step::Int64=10) where {T,D}
 
     if method == "nfft"
       A,C = get_AC_coefficients_nfft(K,vec(times),vec(correctionmap), alpha, m)
@@ -265,7 +265,7 @@ function createInhomogeneityData_(times::Vector,
     t_hat = (times[1] + times[end])/2
     z_hat = minimum(real(correctionmap)) + maximum(real(correctionmap))
     z_hat += 1im*(minimum(imag(correctionmap)) + maximum(imag(correctionmap)))
-    z_hat *= 0.5
+    z_hat *= T(0.5)
 
     return InhomogeneityData(A,C,vec(times),correctionmap,t_hat,z_hat,method)
 end

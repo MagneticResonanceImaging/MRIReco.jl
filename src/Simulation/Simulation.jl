@@ -93,7 +93,7 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap=[]
+function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap::Array{Complex{T}}=Complex{T}[]
               ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:AbstractFloat
 
   nx,ny,nz = size(image)
@@ -158,7 +158,7 @@ Returns the demodulated signal.
 ...
 
 """
-function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap=[];
+function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionMap::Array{Complex{T}}=Complex{T}[];
               opName="fast", senseMaps=[], verbose=true, kargs...) where T<:AbstractFloat
 
   nx,ny,nz = size(image)
@@ -319,7 +319,7 @@ Returns the demodulated signal.
 """
 function simulation(tr::Trajectory{T}
                     , image::Array{Complex{T}}
-                    , correctionMap = []
+                    , correctionMap::Array{Complex{T}} = Complex{T}[]
                     ; opName="fast"
                     , senseMaps=[]
                     , kargs...) where T<:AbstractFloat
@@ -384,7 +384,7 @@ end
 """
 function simulation_fast(tr::Trajectory{T}
                         , image::Matrix
-                        , correctionMap = []
+                        , correctionMap::Array{Complex{T}} = Complex{T}[]
                         ; alpha::Float64 = 1.75
                         , m::Float64=4.0
                         , K::Int64=16
@@ -418,7 +418,7 @@ end
 """
 function simulation_explicit(tr::Trajectory{T}
                         , image::Matrix
-                        , correctionMap = []
+                        , correctionMap::Array{Complex{T}} = Complex{T}[]
                         ; alpha::Float64 = 1.75
                         , m::Float64=4.0
                         , K::Int64=16
