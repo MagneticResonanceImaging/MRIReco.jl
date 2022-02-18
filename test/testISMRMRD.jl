@@ -35,7 +35,7 @@ acqCopy = RawAcquisitionData(fCopy)
 
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
-#@test IrecoCopy == Ireco
+@test IrecoCopy == Ireco
 
 filename = joinpath(datadir, "simple_spiral.h5")
 
