@@ -291,7 +291,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
     # end
   end
 
-  dims(tr[1])==2 ? numSl=nz : numSl=1
+  ndims(tr[1])==2 ? numSl=nz : numSl=1
   
   return AcquisitionData(tr, reshape(out,ne,numSl,1), encodingSize=[nx,ny,nz])
 end
@@ -330,7 +330,7 @@ function simulation(tr::Trajectory{T}
     correctionMap = reshape(correctionMap,size(image))
   end
 
-  if dims(tr)==2
+  if ndims(tr)==2
     acqData = simulation2d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
   else
     acqData = simulation3d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)

@@ -71,7 +71,7 @@ builds relevant parameters and operators from the entries in `recoParams`
 """
 function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
 
-  red3d = dims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
+  red3d = ndims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
   if red3d  # acqData is 3d data converted to 2d
     reconSize = (recoParams[:reconSize][2], recoParams[:reconSize][3])
     recoParams[:reconSize] = reconSize

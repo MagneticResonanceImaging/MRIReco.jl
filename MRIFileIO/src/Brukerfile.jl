@@ -190,7 +190,7 @@ function acqDataType(b::BrukerFile)
   return Int8
 end
 
-function RawAcquisitionData(b::BrukerFile)
+function MRIBase.RawAcquisitionData(b::BrukerFile)
   if isfile(joinpath(b.path, "fid"))
     return RawAcquisitionDataFid(b)
   else

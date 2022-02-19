@@ -1,4 +1,4 @@
-export RawAcquisitionData, EncodingCounters, AcquisitionHeader
+export RawAcquisitionData, EncodingCounters, AcquisitionHeader, Profile
 
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
@@ -73,7 +73,7 @@ end
 
 returns the `Trajectory` for given `slice` and `contrast` of a `RawAcquisitionData` object.
 """
-function trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+function MRIBase.trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
   name = get(f.params, "trajectory","cartesian")
   if lowercase(name) == "cartesian"
     dim = ( maximum(encSteps2(f))==1 ? 2 : 3)

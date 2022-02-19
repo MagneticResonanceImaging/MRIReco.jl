@@ -1,7 +1,9 @@
 module MRIReco
 
 using Reexport
-using FileIO
+
+@reexport using MRIBase
+@reexport using MRIFileIO
 using ProgressMeter
 @reexport using ImageUtils
 using NFFT, NFFTTools
@@ -16,8 +18,6 @@ using Random
 using Distributed
 using Graphics: @mustimplement
 using Wavelets
-using HDF5
-using LightXML
 using NIfTI
 using ThreadPools
 @reexport using Unitful
@@ -25,14 +25,10 @@ import LowRankApprox.psvd
 
 const Trafo = Union{AbstractMatrix, AbstractLinearOperator, Nothing}
 
-include("Trajectories/Trajectories.jl")
-include("Sequences/Sequence.jl")
-include("Datatypes/Datatypes.jl")
 include("Tools/Tools.jl")
 include("Operators/Operators.jl")
 include("Simulation/Simulation.jl")
 include("Reconstruction/Reconstruction.jl")
-include("IO/IO.jl")
 include("Sampling/Sampling.jl")
 
 function __init__()

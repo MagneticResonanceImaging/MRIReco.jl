@@ -1,3 +1,5 @@
+include("ImageData.jl")
+include("Nifti.jl")
 include("Shutter.jl")
 include("ErrorMeasures.jl")
 include("CoilSensitivity.jl")
