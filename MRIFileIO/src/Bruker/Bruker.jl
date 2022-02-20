@@ -1,6 +1,6 @@
-include("Jcampdx.jl")
-
 export BrukerFile, recoData
+
+include("Jcampdx.jl")
 
 
 function latin1toutf8(str::AbstractString)

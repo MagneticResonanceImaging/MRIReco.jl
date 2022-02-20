@@ -12,14 +12,16 @@ using LightXML
 using NIfTI
 
 
-# With the current design, the following type is not necessary, to be discussed
 abstract type MRIFile end
+@mustimplement MRIBase.RawAcquisitionData(::MRIFile)
 
-include("Parameters.jl")
-include("ISMRMRD.jl")
-include("DFFile.jl")
-include("CFLFile.jl")
+include("ISMRMRD/ISMRMRD.jl")
+include("Bruker/Bruker.jl")
+include("Siemens/Siemens.jl")
+include("Philips/Philips.jl")
+include("GE/GE.jl")
+include("Others/Others.jl")
+
 #include("Nifti.jl")
-include("Brukerfile.jl")
 
 end # module

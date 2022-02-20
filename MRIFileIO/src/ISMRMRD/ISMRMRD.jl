@@ -1,8 +1,9 @@
 export ISMRMRDFile, AcquisitionHeaderImmutable, EncodingCountersImmutable
 
 include("HDF5Types.jl")
+include("Parameters.jl")
 
-struct ISMRMRDFile
+struct ISMRMRDFile <: MRIFile
   filename::String
 end
 
