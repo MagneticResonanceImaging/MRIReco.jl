@@ -1,7 +1,7 @@
 module MRIBase
 
 using Graphics: @mustimplement
-using NFFT, NFFTTools # for density compensation weights in trajectory
+using NFFTTools # for density compensation weights in trajectory
 
 include("Trajectories/Trajectories.jl")
 include("Sequences/Sequence.jl")
