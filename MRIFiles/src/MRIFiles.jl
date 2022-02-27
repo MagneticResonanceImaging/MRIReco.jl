@@ -1,4 +1,4 @@
-module MRIFileIO
+module MRIFiles
 
 using Graphics: @mustimplement
 using Reexport

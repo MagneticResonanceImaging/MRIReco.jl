@@ -1,4 +1,4 @@
-name = "MRIFileIO"
+name = "MRIFiles"
 uuid = "5a6f062f-bf45-497d-b654-ad17aae2a530"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.1"

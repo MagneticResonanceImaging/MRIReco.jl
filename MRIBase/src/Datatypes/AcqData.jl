@@ -351,6 +351,8 @@ end
 
 hann(x) = 0.5*(1-cos(2*pi*(x-0.5)))
 
+#= Is this still in use? And why pre-weight the k-space data?
+
 function NFFT.apodization!(acqData::AcquisitionData)
     numContr = numContrasts(acqData)
     numSl = numSlices(acqData)
@@ -370,4 +372,4 @@ function NFFT.apodization!(acqData::AcquisitionData)
     end
 
     return acqData
-end
+end=#

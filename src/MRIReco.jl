@@ -3,7 +3,7 @@ module MRIReco
 using Reexport
 
 @reexport using MRIBase
-@reexport using MRIFileIO
+@reexport using MRIFiles
 using ProgressMeter
 @reexport using ImageUtils
 using NFFT, NFFTTools
