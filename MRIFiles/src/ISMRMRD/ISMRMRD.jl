@@ -1,8 +1,9 @@
-export ISMRMRDFile, saveasISMRMRDFile
+export ISMRMRDFile, AcquisitionHeaderImmutable, EncodingCountersImmutable
 
 include("HDF5Types.jl")
+include("Parameters.jl")
 
-struct ISMRMRDFile
+struct ISMRMRDFile <: MRIFile
   filename::String
 end
 
@@ -11,7 +12,7 @@ end
 
 reads the `ISMRMRDFile` f and stores the result in a `RawAcquisitionDataObject`
 """
-function RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
+function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
 
   h5open(f.filename) do h
     headerStr = read(h["/$(dataset)/xml"])
@@ -45,7 +46,7 @@ end
 
 reads the `ISMRMRDFile` f and stores the result in an `AcquisitionDataObject`
 """
-function AcquisitionData(f::ISMRMRDFile, dataset="dataset")
+function MRIBase.AcquisitionData(f::ISMRMRDFile, dataset="dataset")
   return AcquisitionData(RawAcquisitionData(f,dataset))
 end
 
@@ -75,10 +76,11 @@ function read_header(h)
   return head
 end
 
+
 function FileIO.save(f::ISMRMRDFile, acq::RawAcquisitionData, dataset="dataset")
   h5open(f.filename, "w") do file
     headerStr = GeneralParametersToXML(acq.params)
     write(file, "/$(dataset)/xml", [headerStr]) # [] ensures that we store as var string
     writeProfiles(file, "/$(dataset)/data", acq.profiles)
   end
-end
+end 

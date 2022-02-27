@@ -17,7 +17,7 @@ function reconstruction_direct(acqData::AcquisitionData{T}
                                   , weights::Vector{Vector{Complex{T}}}
                                   , correctionMap::Array{Complex{T}}=Complex{T}[]) where {D,T}
 
-  encDims = dims(trajectory(acqData))
+  encDims = ndims(trajectory(acqData))
   if encDims!=D
     error("reco-dimensionality $D and encoding-dimensionality $(encDims) do not match")
   end

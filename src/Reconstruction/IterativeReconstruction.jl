@@ -24,7 +24,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: AbstractFloat}
 
-  encDims = dims(trajectory(acqData))
+  encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
@@ -92,7 +92,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
 
-  encDims = dims(trajectory(acqData))
+  encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
@@ -162,7 +162,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T}
 
-  encDims = dims(trajectory(acqData))
+  encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
@@ -230,7 +230,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , encodingOps=nothing
                               , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T}
 
-  encDims = dims(trajectory(acqData))
+  encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end

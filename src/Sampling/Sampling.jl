@@ -102,7 +102,7 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
 
   for echo = 1:numContr
     tr = trajectory(acqData,echo)
-    if dims(tr)==2
+    if ndims(tr)==2
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr) )
     else
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )

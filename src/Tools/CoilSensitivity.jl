@@ -342,7 +342,7 @@ end
 """
 perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCC_2d(acqData::AcquisitionData, smaps::Array{T,4}, numVC::Int64 = size(smaps, 4)) where T <: Complex
+function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T 
   nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
   smapsCC = zeros(T, nx, ny, nz, numVC)

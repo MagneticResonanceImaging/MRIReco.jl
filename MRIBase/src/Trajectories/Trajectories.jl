@@ -1,7 +1,7 @@
-export Trajectory,trajectory,
+export Trajectory, trajectory,
        kspaceNodes, echoTime, acqTimePerProfile, readoutTimes,
-       numSamplingPerProfile, numProfiles, numSlices, findCenters, samplingFreq,
-       scale
+       numSamplingPerProfile, numProfiles, numSlices, samplingFreq,
+       scale, isCartesian, isCircular
 
 import Base: string
 
@@ -155,7 +155,7 @@ isCartesian(tr::Trajectory) = tr.cartesian
 
 # 2d or 3d encoding
 """ `dims(tr::Trajectory)` returns the number of dimensions of a trajectory """
-dims(tr::Trajectory) = size(tr.nodes,1)
+Base.ndims(tr::Trajectory) = size(tr.nodes,1)
 
 """ `kspaceNodes(tr::Trajectory)` returns the kspace sampling points of a trajectory """
 kspaceNodes(tr::Trajectory) = tr.nodes
@@ -194,114 +194,6 @@ function yax(n::Int64,N::Int64)
   return sin(sqrt(N*pi)*asin(zax(n,N)))*sqrt(1.0-zax(n,N)^2.)
 end
 
-# function findCenters(tr::Abstract2DTrajectory)
-#   knodes = kspaceNodes(tr)
-#   temp = find(x->x==0,knodes[1,:])
-#
-#   zeroInd=Int64[]
-#
-#   for i in temp
-#
-#     if knodes[2,i] == 0
-#       push!(zeroInd,i)
-#     end
-#
-#   end
-#
-#   return zeroInd
-#
-# end
-#
-# function findCenters(tr::Trajectory)
-#   knodes = kspaceNodes(tr)
-#   temp = find(x->x==0,knodes[1,:])
-#
-#   zeroIndY=Int64[]
-#   zeroInd = Int64[]
-#
-#   for i in temp
-#     if knodes[2,i] == 0
-#       push!(zeroIndY,i)
-#     end
-#   end
-#
-#   for i in zeroIndY
-#     if knodes[3,i] == 0
-#       push!(zeroInd,i)
-#     end
-#   end
-#
-#   return zeroInd
-#
-# end
-#
-# function findCenters(tr::StackOfStarsTrajectory)
-#   knodes = kspaceNodes(tr)
-#   temp = find(x->x==0,knodes[1,:])
-#
-#   zeroInd = Int64[]
-#
-#   for i in temp
-#     if knodes[2,i] == 0
-#       push!(zeroInd,i)
-#     end
-#   end
-#
-#   return zeroInd
-#
-# end
-#
-# function findCenterNeighbours(tr::CartesianTrajectory,range::Int64)
-#   knodes = kspaceNodes(tr)
-#   pRange = minimum(knodes[1,find(x->x>0,knodes[1,:])])
-#   mRange = maximum(knodes[1,find(x->x<0,knodes[1,:])])
-#
-#   idx=Int64[]
-#
-#   zeroInd = findCenters(tr)
-#
-#   push!(idx,zeroInd[1])
-#
-#
-#   for j=1:range
-#
-#     temp = find(x->x==0,knodes[1,:])
-#
-#     for i in temp
-#       for k=range*mRange:pRange:range*pRange
-#         if k!=0
-#           if knodes[2,i] == k
-#             push!(idx,i)
-#           end
-#         end
-#       end
-#     end
-#
-#     temp = find(x->x==j*pRange,knodes[1,:])
-#
-#     for i in temp
-#       for k=range*mRange:pRange:range*pRange
-#         if knodes[2,i] == k
-#           push!(idx,i)
-#         end
-#       end
-#     end
-#
-#     temp = find(x->x==j*mRange,knodes[1,:])
-#
-#     for i in temp
-#       for k=range*mRange:pRange:range*pRange
-#         if knodes[2,i] == k
-#           push!(idx,i)
-#         end
-#       end
-#     end
-#
-#   end
-#
-#   return idx
-#
-# end
 
 function improvedTrajPlot(tr::Trajectory)
   numProfiles = numProfiles(tr)

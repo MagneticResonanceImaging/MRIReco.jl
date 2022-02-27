@@ -1,6 +1,7 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
-       numContrasts, numChannels, numSlices, numRepetitions, apodization!
+       numContrasts, numChannels, numSlices, numRepetitions, 
+       encodingSize, fieldOfView, multiCoilData
 
 """
 struct describing MRI acquisition data.
@@ -24,6 +25,9 @@ mutable struct AcquisitionData{T <: AbstractFloat}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
 end
+
+fieldOfView(acq::AcquisitionData) = acq.fov
+encodingSize(acq::AcquisitionData) = acq.encodingSize
 
 """
     numChannels(acqData::AcquisitionData)
@@ -88,10 +92,10 @@ function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
   return AcquisitionData(seqInfo,tr_vec,kdata,subsampleIndices,encodingSize,fov)
 end
 
-function Images.pixelspacing(acqData::AcquisitionData)
-  return [1.0,1.0,1.0]*Unitful.mm
-  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
-end
+#function Images.pixelspacing(acqData::AcquisitionData)
+#  return [1.0,1.0,1.0]*Unitful.mm
+#  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
+#end
 
 """
     trajectory(acqData::AcquisitionData,i::Int64=1)
@@ -347,7 +351,9 @@ end
 
 hann(x) = 0.5*(1-cos(2*pi*(x-0.5)))
 
-function apodization!(acqData::AcquisitionData)
+#= Is this still in use? And why pre-weight the k-space data?
+
+function NFFT.apodization!(acqData::AcquisitionData)
     numContr = numContrasts(acqData)
     numSl = numSlices(acqData)
     numReps = numRepetitions(acqData)
@@ -366,4 +372,4 @@ function apodization!(acqData::AcquisitionData)
     end
 
     return acqData
-end
+end=#

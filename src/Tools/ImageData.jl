@@ -9,7 +9,7 @@ x, y, z, acqData.numEchoes, acqData.numCoils
 function ImageUtils.makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
   offset = [0.0, 0.0, 0.0]*Unitful.mm
-  spacing = pixelspacing(acqData)
+  spacing = fieldOfView(acqData)./encodingSize(acqData)*Unitful.mm
 
   im = AxisArray(I,
 		   Axis{:x}(range(offset[1], step=spacing[1], length=size(I,1))),

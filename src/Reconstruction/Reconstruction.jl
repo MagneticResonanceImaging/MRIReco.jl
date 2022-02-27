@@ -21,7 +21,7 @@ Valid reconstruction names are:
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   # check dimensionality of encoding
-  encodingDims = dims(trajectory(acqData))
+  encodingDims = ndims(trajectory(acqData))
   if encodingDims==3 && numSlices(acqData)>1
     @error "reconstruction of multiple 3d-encoded volumina is not yet supported"
   end

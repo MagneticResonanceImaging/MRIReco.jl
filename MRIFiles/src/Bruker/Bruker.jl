@@ -1,6 +1,6 @@
-include("Jcampdx.jl")
-
 export BrukerFile, recoData
+
+include("Jcampdx.jl")
 
 
 function latin1toutf8(str::AbstractString)
@@ -190,7 +190,7 @@ function acqDataType(b::BrukerFile)
   return Int8
 end
 
-function RawAcquisitionData(b::BrukerFile)
+function MRIBase.RawAcquisitionData(b::BrukerFile)
   if isfile(joinpath(b.path, "fid"))
     return RawAcquisitionDataFid(b)
   else
