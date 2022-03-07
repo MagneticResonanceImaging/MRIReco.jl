@@ -1,14 +1,17 @@
 name = "MRIBase"
 uuid = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1"
+version = "0.1.1"
 
 [deps]
+AbstractNFFTs = "7f219486-4aa7-41d6-80a7-e08ef20ceed7"
 Graphics = "a2bd30eb-e257-5431-a919-1863eab51364"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NFFTTools = "7424e34d-94f7-41d6-98a0-85abaf1b6c91"
 
 [compat]
 julia = "1.6"
+AbstractNFFTs = "0.7"
 Graphics = "1.0"
 NFFTTools = "0.2"
+
