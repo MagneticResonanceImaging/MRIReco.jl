@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Compressed Sensing · Julia MRI Package</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="Julia MRI Package logo"/></a><div class="docs-package-name"><span class="docs-autofit">Julia MRI Package</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../gettingStarted/">Getting Started</a></li><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../acquisitionData/">Acquisition Data</a></li><li><a class="tocitem" href="../filehandling/">File Handling</a></li><li><a class="tocitem" href="../image/">Images</a></li><li><a class="tocitem" href="../trajectories/">Trajectory</a></li><li><a class="tocitem" href="../operators/">Imaging Operators</a></li><li><a class="tocitem" href="../offresonance/">Offresonance</a></li><li><a class="tocitem" href="../SENSE/">Parallel Imaging</a></li><li class="is-active"><a class="tocitem" href>Compressed Sensing</a></li><li><a class="tocitem" href="../custom/">Customize</a></li><li><a class="tocitem" href="../API/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Compressed Sensing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Compressed Sensing</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/docs/src/compressedSensing.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Compressed-Sensing"><a class="docs-heading-anchor" href="#Compressed-Sensing">Compressed Sensing</a><a id="Compressed-Sensing-1"></a><a class="docs-heading-anchor-permalink" href="#Compressed-Sensing" title="Permalink"></a></h1><p>We next consider a compressed sensing reconstruction using one slice of a knee dataset obtained from <a href="http://mridata.org">mridata.org</a>. The example can be run by entering</p><pre><code class="language-julia">include(joinpath(dirname(pathof(MRIReco)),&quot;../docs/src/examples/exampleCS.jl&quot;))</code></pre><p>into the Julia REPL.</p><p>We first perform a baseline reconstruction with fully sampled data:</p><pre><code class="language-julia"># load fully sampled data
+f = ISMRMRDFile(&quot;data/knee_3dFSE_slice170.h5&quot;)
+acqData = AcquisitionData(f);
+
+# reconstruct
+params = Dict{Symbol, Any}()
+params[:reco] = &quot;direct&quot;
+params[:reconSize] = (320,320) # this size is also contained in acqData.encodingSize
+
+img = reconstruction(acqData, params)
+img = sqrt.(sum(img.^2,dims=5))</code></pre><p>The result looks like this:</p><p><img src="../assets/kneeOrig.png" alt="Knee Original"/></p><p>To simulate an undersampled reconstruction, we retrospectively undersample the data using a Poisson disk pattern.</p><pre><code class="language-julia">redFac = 4.0
+acqDataSub = sample_kspace(acqData,redFac,&quot;poisson&quot;,calsize=30,profiles=false);</code></pre><p>The sampling pattern looks like this:</p><p><img src="../assets/mask.png" alt="Mask"/></p><p>Then, we estimate the coil sensitivities using ESPIRiT</p><pre><code class="language-julia">smaps = espirit(acqData,(6,6),30,eigThresh_1=0.035,eigThresh_2=0.98)</code></pre><p>and perform a simple SENSE reconstruction. We expect a degradation in image quality due to the subsampling:</p><pre><code class="language-julia">params = Dict{Symbol, Any}()
+params[:reco] = &quot;multiCoil&quot;
+params[:reconSize] = (320,320)
+params[:senseMaps] = smaps
+
+params[:solver] = &quot;cgnr&quot;
+params[:regularization] = &quot;L2&quot;
+params[:λ] = 1.e-4
+params[:iterations] = 5
+params[:normalizeReg] = true
+
+img_cg = reconstruction(acqDataSub, params)</code></pre><p>Using TV regularization recquires us to change some parameters:</p><pre><code class="language-julia">params = Dict{Symbol, Any}()
+params[:reco] = &quot;multiCoil&quot;
+params[:reconSize] = (320,320)
+params[:senseMaps] = smaps
+
+params[:solver] = &quot;admm&quot;
+params[:regularization] = &quot;TV&quot;
+params[:λ] = 1.e-1 # 5.e-2
+params[:iterations] = 50
+params[:ρ] = 0.1
+params[:absTol] = 1.e-4
+params[:relTol] = 1.e-2
+params[:tolInner] = 1.e-2
+params[:normalizeReg] = true
+
+img_tv = reconstruction(acqDataSub, params)</code></pre><p>Lets compare the results, left the regular SENSE reconstruction and right the TV reglarized solution:</p><p><img src="../assets/kneeCG.png" alt="SENSE"/> <img src="../assets/kneeTV.png" alt="TV"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../SENSE/">« Parallel Imaging</a><a class="docs-footer-nextpage" href="../custom/">Customize »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 7 March 2022 16:32">Monday 7 March 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
