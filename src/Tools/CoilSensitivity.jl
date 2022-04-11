@@ -345,7 +345,7 @@ perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps
 function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T 
   nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(T, nx, ny, nz, numVC)
+  smapsCC = zeros(Complex{T}, nx, ny, nz, numVC)
   for sl = 1:numSlices(acqData)
     # use first echo and first repetition to determine compression matrix
     ccMat = geometricCCMat(acqData.kdata[1, sl, 1], numVC)
