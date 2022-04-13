@@ -1,6 +1,7 @@
 export BrukerFile, recoData
 
 include("Jcampdx.jl")
+include("BrukerSequence.jl")
 
 
 function latin1toutf8(str::AbstractString)

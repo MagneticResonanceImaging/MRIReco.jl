@@ -223,8 +223,8 @@ function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
     else
       nodes = kspaceNodes(tr)
     end
-    plan = plan_nfft(nodes, shape, m=4, σ=1.25)
-    weights[echo] = sqrt.(sdc(plan, iters=3))
+    plan = plan_nfft(nodes, shape, m=2, σ=2)
+    weights[echo] = sqrt.(sdc(plan, iters=10))
   end
   return weights
 end

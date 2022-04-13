@@ -125,6 +125,54 @@ function MRIBase.trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1
   return tr
 end
 
+"""
+  trajectoryCustom(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+
+returns the `Trajectory` for given `slice` and `contrast` of a `RawAcquisitionData`.
+"""
+function trajectoryCustom(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
+  name  = f.params["trajectory"]
+  sl = slices(f)
+  rep = repetitions(f)
+  contr = contrasts(f)
+
+  numSl = length(unique(sl))
+  numRep = length(unique(rep))
+  numContr = length(unique(contr))
+
+  numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
+
+  # assume constant number of samplings per profile
+  numSampPerProfile = size(f.profiles[1].data,1)
+  numChan = size(f.profiles[1].data,2)
+  D = Int(f.profiles[1].head.trajectory_dimensions)
+
+  # remove data that should be discarded
+  i1 = f.profiles[1].head.discard_pre + 1
+  i2 = numSampPerProfile - f.profiles[1].head.discard_post
+
+  traj = zeros(Float32, D, length(i1:i2), numProf, 1, numSl, numRep)
+  times = zeros(Float32, length(i1:i2), numProf, 1, numSl, numRep)
+
+  counter = zeros(Int,numSl,numRep) #counter for sl and rep
+  for l=1:length(f.profiles)
+    if f.profiles[l].head.idx.slice+1 != slice || f.profiles[l].head.idx.contrast+1 != contrast
+      continue
+    end
+    counter[sl[l]-minimum(sl)+1,rep[l]-minimum(rep)+1] = counter[sl[l]-minimum(sl)+1,rep[l]-minimum(rep)+1] + 1
+    idx_tmp = counter[sl[l]-minimum(sl)+1,rep[l]-minimum(rep)+1]
+
+    traj[:, :, idx_tmp, 1, sl[l]-minimum(sl)+1, rep[l]-minimum(rep)+1] .= f.profiles[l].traj[:,i1:i2]
+    dt = f.profiles[l].head.sample_time_us*1e-6
+    times[:, idx_tmp, 1, sl[l]-minimum(sl)+1, rep[l]-minimum(rep)+1] .= 0:dt:(length(i1:i2)-1)*dt
+  end
+
+  traj_ = reshape(traj[:,:,:,:,1,1], D, :)
+  # tr = Trajectory(traj_, size(traj_,3), size(traj_,2), circular=true)
+  tr = Trajectory(traj_, size(traj,3), size(traj,2), circular=true, times=vec(times[:,:,:,1,1]))
+
+  return tr
+end
 
 function sequence(f::RawAcquisitionData)
   # TODO
@@ -226,6 +274,46 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   return reshape(kdata, :, numChan)
 end
 
+"""
+    rawdataCustom(f::RawAcquisitionData)
+
+returns the rawdata contained `RawAcquisitionData` object for custom trajectory
+The output is an `Array{Matrix{ComplexF64},3}`, which can be stored in a `AcquisitionData` object.
+"""
+function rawdataCustom(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetition::Int=1)
+
+  sl = slices(f)
+  rep = repetitions(f)
+  contr = contrasts(f)
+  idx_sl = findall(x->x==slice,sl)
+  idx_contr = findall(x->x==contrast,contr)
+  idx_rep = findall(x->x==repetition,rep)
+  idx = intersect(idx_sl,idx_contr,idx_rep)
+
+  numSl = length(unique(sl))
+  numRep = length(unique(rep))
+  numContr = length(unique(contr))
+  numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
+
+    # allocate space for k-space data
+  # assume the same number of samples for all profiles
+  numSampPerProfile, numChan = size(f.profiles[idx[1]].data)
+  numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
+  kdata = zeros(typeof(f.profiles[1].data[1, 1]), numSampPerProfile, numProf, numChan)
+
+  cnt = 1
+  for l=1:length(f.profiles)
+    if f.profiles[l].head.idx.slice+1 != slice || f.profiles[l].head.idx.contrast+1 != contrast || f.profiles[l].head.idx.repetition+1 != repetition
+      continue
+    end
+    i1 = f.profiles[l].head.discard_pre + 1
+    i2 = i1+numSampPerProfile-1
+    kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
+    cnt += 1
+  end
+
+  return reshape(kdata, :, numChan)
+end
 
 """
     AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
@@ -242,10 +330,16 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   # tr = [trajectory(f,contrast=contr) for contr=1:numContr]
   # subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
   # kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
-  tr = [trajectory(f,contrast=contr) for contr=contrs]
-  subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
-  kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
 
+  if (f.params["trajectory"] == "custom")
+      tr = [trajectoryCustom(f,contrast=contr) for contr=contrs]
+      subsampleIdx = nothing
+      kdata = [rawdataCustom(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
+  else
+      tr = [trajectory(f,contrast=contr) for contr=contrs]
+      subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
+      kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
+  end
   return AcquisitionData(tr, kdata,
                           idx=subsampleIdx,
                           encodingSize=collect(f.params["encodedSize"]),
