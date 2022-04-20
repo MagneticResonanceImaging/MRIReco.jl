@@ -163,7 +163,7 @@ function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::I
   numSamp, numSl = numSamplingPerProfile(tr), numSlices(tr)
   numChan = numChannels(acqData)
   numProf = div(length(acqData.subsampleIndices[echo]),numSamp) #numProfiles(tr)
-  if dims(tr)==2 || numSl==1
+  if ndims(tr)==2 || numSl==1
     kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProf,numChan)
     prof_data = kdata[:,prof_tr,:]
   else
