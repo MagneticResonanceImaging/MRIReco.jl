@@ -1,4 +1,4 @@
-export RawAcquisitionData, EncodingCounters, AcquisitionHeader, Profile
+export RawAcquisitionData, EncodingCounters, AcquisitionHeader, Profile, minimalHeader, profileIdx
 
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
@@ -275,7 +275,7 @@ function RawAcquisitionData(acqData::AcquisitionData)
             for slice_tr = 1:numSlices(tr)
               head = AcquisitionHeader(acqData,rep,slice,slice_tr,contr,profIdx[prof_tr],counter)
               nodes = profileNodes(tr,prof_tr,slice_tr)
-              if dims(tr)==2
+              if ndims(tr)==2
                 data = profileData(acqData,contr,slice,rep,prof_tr)
               else
                 data = profileData(acqData,contr,slice_tr,rep,prof_tr)
@@ -300,7 +300,7 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
   tr = trajectory(acqData,contr)
   numSamples = numSamplingPerProfile(tr)
   isCartesian(tr) ? center_sample=div(numSamples,2) : center_sample=0 # needs to be fixed for partial Fourier,etc
-  tr_dims = dims(tr)
+  tr_dims = ndims(tr)
   sample_time_us = acqTimePerProfile(tr)/numSamples*1.e6
 
   idx = EncodingCounters( Int16(prof_tr-1)
@@ -340,4 +340,22 @@ function uniqueidx(x::Matrix{T}) where T
       end
   end
   idxs
+end
+
+function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};f_res::Integer=1,tr_name::AbstractString="cartesian",numChannels::Int=1)
+  params = Dict{String,Any}()
+  params["H1resonanceFrequency_Hz"] = f_res
+  params["encodedSize"] = collect(encodingSize)
+  params["encodedFOV"] = collect(fov)
+  params["trajectory"] = tr_name
+  params["receiverChannels"] = numChannels
+
+  return params
+end
+
+function profileIdx(acqData::AcquisitionData,contr::Int)
+  tr = trajectory(acqData,contr)
+  numSamp = numSamplingPerProfile(tr)
+  numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
+  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1],numSamp)+1 for prof=1:numProf]
 end

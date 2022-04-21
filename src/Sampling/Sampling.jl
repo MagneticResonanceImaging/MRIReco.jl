@@ -1,4 +1,4 @@
-export profileIdx, sample, sample_kspace
+export sample, sample_kspace
 
 include("Regular.jl")
 include("Random.jl")
@@ -120,11 +120,4 @@ function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
     acqData.subsampleIndices[echo] = patOut
     rand && (seed += 1)
   end
-end
-
-function profileIdx(acqData::AcquisitionData,contr::Int)
-  tr = trajectory(acqData,contr)
-  numSamp = numSamplingPerProfile(tr)
-  numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
-  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1],numSamp)+1 for prof=1:numProf]
 end
