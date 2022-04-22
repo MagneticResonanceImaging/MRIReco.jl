@@ -29,12 +29,11 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 
 [compat]
-
-LinearOperators = "= 2.2.3"
 Distributions = "0.21, 0.23, 0.25"
 FFTW = "0.2, 1.0"
 Graphics = "0.4, 1.0"
 ImageUtils = "0.2.5"
+LinearOperators = "= 2.2.3, 2"
 LowRankApprox = "0.4.2,0.5"
 MRIBase = "0.1"
 MRIFiles = "0.1"
