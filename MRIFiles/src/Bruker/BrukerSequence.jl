@@ -89,39 +89,8 @@ function RawAcquisitionData_3DUTE(b::BrukerFile)
       end
     end
 
-    params = Dict{String,Any}()
+    params = brukerParams(b)
     params["trajectory"] = "custom"
-    N = MRIFiles.acqSize(b)
-    if length(N) < 3
-      N_ = ones(Int,3)
-      N_[1:length(N)] .= N
-      N = N_
-    end
     params["encodedSize"] = pvmMatrix(b)
-    F = acqFov(b)
-    params["encodedFOV"] = F
-    params["receiverChannels"] = numChannel
-    params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
-    params["studyID"] = b["VisuStudyId"]
-    #params["studyDescription"] = b["ACQ_scan_name"]
-    #params["studyInstanceUID"] =
-    params["referringPhysicianName"] = latin1toutf8(b["ACQ_operator"])
-
-    params["patientName"] = b["VisuSubjectName"]
-
-    params["measurementID"] = parse(Int64,b["VisuExperimentNumber"])
-    params["seriesDescription"] = b["ACQ_scan_name"]
-
-    params["institutionName"] = latin1toutf8(b["ACQ_institution"])
-    params["stationName"] = b["ACQ_station"]
-    params["systemVendor"] = "Bruker"
-
-    params["TR"] = acqRepetitionTime(b)
-    params["TE"] = acqEchoTime(b)
-    #params["TI"] = ???
-    params["flipAngle_deg"] = acqFlipAngle(b)
-    params["sequence_type"] = acqProtocolName(b)
-    params["echo_spacing"] = acqInterEchoTime(b)
-
     return RawAcquisitionData(params, profiles)
 end

@@ -178,6 +178,47 @@ pvmTrajResultSize(b::BrukerFile) = parse(Int,b["PVM_TrajResultSize"])
 pvmTrajKx(b::BrukerFile) = parse.(Float32,b["PVM_TrajKx"])
 pvmTrajKy(b::BrukerFile) = parse.(Float32,b["PVM_TrajKy"])
 
+
+"""
+brukerParams(b::BrukerFile)
+
+Generate a standard parameter dictionary from Bruker acquistion 
+Some fields needs to be filled outside lik
+
+"""
+function brukerParams(b::BrukerFile)
+  params = Dict{String,Any}()
+  params["trajectory"] = "cartesian"
+
+  params["encodedSize"] = pvmMatrix(b)
+  F = acqFov(b)
+  params["encodedFOV"] = F
+  params["receiverChannels"] = pvmEncNReceivers(b)
+  params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
+  params["studyID"] = b["VisuStudyId"]
+  #params["studyDescription"] = b["ACQ_scan_name"]
+  #params["studyInstanceUID"] =
+  params["referringPhysicianName"] = latin1toutf8(b["ACQ_operator"])
+
+  params["patientName"] = b["VisuSubjectName"]
+
+  params["measurementID"] = parse(Int64,b["VisuExperimentNumber"])
+  params["seriesDescription"] = b["ACQ_scan_name"]
+
+  params["institutionName"] = latin1toutf8(b["ACQ_institution"])
+  params["stationName"] = b["ACQ_station"]
+  params["systemVendor"] = "Bruker"
+
+  params["TR"] = acqRepetitionTime(b)
+  params["TE"] = acqEchoTime(b)
+  #params["TI"] = ???
+  params["flipAngle_deg"] = acqFlipAngle(b)
+  params["sequence_type"] = acqProtocolName(b)
+  params["echo_spacing"] = acqInterEchoTime(b)
+
+  return params
+end
+
 function acqDataType(b::BrukerFile)
   format = b["GO_raw_data_format"]
   if format == "GO_32BIT_SGN_INT"
@@ -193,12 +234,12 @@ end
 
 function MRIBase.RawAcquisitionData(b::BrukerFile)
   if isfile(joinpath(b.path, "fid"))
-    return RawAcquisitionDataFid(b)
-  else
-    if contains(MRIReco.pvmSpiralMode(b), "SPIRAL")
+    if acqProtocolName(b) == "UTE3D"
+      return RawAcquisitionData_3DUTE(b)
+    elseif acqProtocolName(b) == "SPIRAL"
       return RawAcquisitionDataRawDataSpiral(b)
     else
-      error("Not implemented yet!")
+      return RawAcquisitionDataFid(b) #standard cartesian cases
     end
   end
 end
@@ -318,7 +359,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
       end
     end
 
-    params = Dict{String,Any}()
+    params = brukerParams(b)
     params["trajectory"] = "cartesian"
     N = acqSize(b)
     if length(N) < 3
@@ -327,30 +368,6 @@ function RawAcquisitionDataFid(b::BrukerFile)
       N = N_
     end
     params["encodedSize"] = N
-    F = acqFov(b)
-    params["encodedFOV"] = F
-    params["receiverChannels"] = numChannel
-    params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
-    params["studyID"] = b["VisuStudyId"]
-    #params["studyDescription"] = b["ACQ_scan_name"]
-    #params["studyInstanceUID"] =
-    params["referringPhysicianName"] = latin1toutf8(b["ACQ_operator"])
-
-    params["patientName"] = b["VisuSubjectName"]
-
-    params["measurementID"] = parse(Int64,b["VisuExperimentNumber"])
-    params["seriesDescription"] = b["ACQ_scan_name"]
-
-    params["institutionName"] = latin1toutf8(b["ACQ_institution"])
-    params["stationName"] = b["ACQ_station"]
-    params["systemVendor"] = "Bruker"
-
-    params["TR"] = acqRepetitionTime(b)
-    params["TE"] = acqEchoTime(b)
-    #params["TI"] = ???
-    params["flipAngle_deg"] = acqFlipAngle(b)
-    params["sequence_type"] = acqProtocolName(b)
-    params["echo_spacing"] = acqInterEchoTime(b)
 
     return RawAcquisitionData(params, profiles)
 end
