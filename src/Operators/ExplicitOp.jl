@@ -18,6 +18,8 @@ mutable struct ExplicitOp{T,F1,F2} <: AbstractLinearOperator{T}
   Mtu5 :: Vector{T}
 end
 
+LinearOperators.storage_type(op::ExplicitOp) = typeof(op.Mv5)
+
 """
     ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
             ; echoImage::Bool=false, kargs...) where D

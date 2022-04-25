@@ -89,8 +89,8 @@ function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T}, shape::NTupl
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
-  return diagOp(ft, numChan) ∘ S
+  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData)) 
+  return diagOp(repeat(ft, outer=numChan)...) ∘ S
 end
 
 ###################################

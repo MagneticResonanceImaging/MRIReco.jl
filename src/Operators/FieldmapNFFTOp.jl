@@ -33,6 +33,8 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
   cparam::InhomogeneityData{T}
 end
 
+LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
+
 """
     FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{ComplexF64,D};

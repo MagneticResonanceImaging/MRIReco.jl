@@ -59,6 +59,8 @@ function CompositeOp(A,B;isWeighting=false)
   return Op
 end
 
+LinearOperators.storage_type(op::CompositeOp) = typeof(op.Mv5)
+
 """
 ∘(A::T1, B::T2; isWeighting::Bool=false) where {T1<:AbstractLinearOperator, T2<:AbstractLinearOperator}
 

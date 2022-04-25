@@ -21,6 +21,8 @@ mutable struct NFFTOp{T} <: AbstractLinearOperator{T}
   toeplitz :: Bool
 end
 
+LinearOperators.storage_type(op::NFFTOp) = typeof(op.Mv5)
+
 """
     NFFTOp(shape::Tuple, tr::Trajectory; kargs...)
     NFFTOp(shape::Tuple, tr::AbstractMatrix; kargs...)
