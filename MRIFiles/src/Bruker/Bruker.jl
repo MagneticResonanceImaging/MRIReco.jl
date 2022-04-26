@@ -1,7 +1,6 @@
 export BrukerFile, recoData
 
 include("Jcampdx.jl")
-include("BrukerSequence.jl")
 
 
 function latin1toutf8(str::AbstractString)
@@ -234,6 +233,8 @@ end
 
 function MRIBase.RawAcquisitionData(b::BrukerFile)
   if isfile(joinpath(b.path, "fid"))
+    protocolName = acqProtocolName(b)
+    @info "Bruker protocol name : $protocolName"
     if acqProtocolName(b) == "UTE3D"
       return RawAcquisitionData_3DUTE(b)
     elseif acqProtocolName(b) == "SPIRAL"
@@ -243,6 +244,8 @@ function MRIBase.RawAcquisitionData(b::BrukerFile)
     end
   end
 end
+
+include("BrukerSequence.jl")
 
 function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   # Have not a way to read out this. Not sure if its true
