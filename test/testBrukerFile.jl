@@ -51,7 +51,7 @@ end
 
 # Reconstruction of 3DUTE
 @info "Reconstruction of 3DUTE"
-b = BrukerFile( joinpath(datadir, "BrukerFile", "UTE3D_NR2") )
+b = BrukerFile( joinpath(datadir, "BrukerFile", "3D_UTE_NR2") )
 
 raw = RawAcquisitionData(b);
 acq = AcquisitionData(raw);  # TODO vérification des modifications qui ont étaient effectuée
