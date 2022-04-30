@@ -20,6 +20,7 @@ using Graphics: @mustimplement
 using Wavelets
 using NIfTI
 using ThreadPools
+using FLoops
 @reexport using Unitful
 import LowRankApprox.psvd
 

@@ -1,5 +1,4 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
-using Polyester
 
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
@@ -199,7 +198,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   for iv ∈ axes(kernel, 2)
     @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
     mul!(kernel_i, fftplan, kernel_k)
-    @batch for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1), i ∈ axes(kernel_i,1)
+    @floop for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1), i ∈ axes(kernel_i,1)
       kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
     end
   end
@@ -216,7 +215,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     b    = [randn(T, nc)  for _=1:Threads.nthreads()]
     bᵒˡᵈ = [similar(b[1]) for _=1:Threads.nthreads()]
 
-    @batch for n ∈ CartesianIndices(imsize)
+    @floop for n ∈ CartesianIndices(imsize)
       if use_poweriterations && nmaps==1
         S, U = power_iterations!(view(kern2,:, :, n), b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
         U .*= transpose(exp.(-1im .* angle.(U[1])))

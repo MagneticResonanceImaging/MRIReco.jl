@@ -231,7 +231,6 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   numSl = length(unique(sl))
   numRep = length(unique(rep))
   numContr = length(unique(contr))
-  numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
 
   # number of unique combination of encoding statuses
   encSt1 = encSteps1(f)[idx]
@@ -246,6 +245,7 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
   
   if f.params["trajectory"] == "custom"
+    numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
     kdata = zeros(typeof(f.profiles[1].data[1, 1]), numSampPerProfile, numProf, numChan)
     posIdx = 1:length(f.profiles)
   else # cartesian case
