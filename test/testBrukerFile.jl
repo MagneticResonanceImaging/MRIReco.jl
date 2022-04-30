@@ -48,4 +48,33 @@ for i = 1:length(listBrukFiles)
 
     @test norm(vec(I2dseq)-vec(Isos))/norm(vec(I2dseq)) < listNormValues[i]
 end
+
+# Reconstruction of 3DUTE
+@info "Reconstruction of 3DUTE"
+b = BrukerFile( joinpath(datadir, "BrukerFile", "3D_UTE_NR2") )
+
+raw = RawAcquisitionData(b);
+acq = AcquisitionData(raw);  # TODO vérification des modifications qui ont étaient effectuée
+
+params = Dict{Symbol, Any}()
+params[:reco] = "direct"
+if (acq.encodingSize[3]>1)
+    params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2],acq.encodingSize[3]);
+else
+    params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2]);
+end
+
+Ireco = reconstruction(acq, params);
+
+Isos = sqrt.(sum(abs.(Ireco).^2,dims=5));
+Isos = Isos ./ maximum(Isos);
+I2dseq = recoData(b)
+I2dseq = I2dseq ./ maximum(I2dseq);
+# reorient
+I2dseq = permutedims(I2dseq,(2,1,3,4))
+I2dseq = circshift(I2dseq,(0,0,1,0))
+
+@test MRIReco.norm(vec(I2dseq)-vec(Isos))/MRIReco.norm(vec(I2dseq)) < 0.1
+
+
 end

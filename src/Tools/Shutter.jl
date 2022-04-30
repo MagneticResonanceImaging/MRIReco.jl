@@ -18,6 +18,22 @@ function circularShutter!(I::Matrix, radiusFactor::Number=1.0)
     end
 end
 
+function circularShutter!(I::Array{Complex{T}, 3}, radiusFactor::Float64=1.0) where T <: AbstractFloat
+    imgSize = size(I)
+    center = (imgSize[1]/2.0, imgSize[2]/2.0, imgSize[3]/2.0)
+    radius = maximum(center) * radiusFactor
+    # Applying filtering
+    for k=1:imgSize[3]
+        for j=1:imgSize[2]
+            for i=1:imgSize[1]
+                if sqrt((i-center[1])^2 + (j-center[2])^2 + (k-center[3])^2) > radius
+                    I[i,j,k] = 0
+                end
+            end
+        end
+    end
+end
+
 function getCircularMask(shape::Tuple, radiusFactor::Number=1.0)
   A = ones(Float64,shape)
   circularShutter!(A,radiusFactor)
