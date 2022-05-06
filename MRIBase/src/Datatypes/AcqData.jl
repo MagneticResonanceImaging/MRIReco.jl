@@ -307,11 +307,11 @@ function convert3dTo2d(acqData::AcquisitionData{T}) where T
   end
 
   # create 2d trajectories along phase encoding directions
-  tr2d = Vector{Trajectory}(undef,numContr)
+  tr2d = Array{Trajectory{T},1}(undef,numContr)
   for i=1:numContr
     tr3d = trajectory(acqData,i)
     # 1. arg (numProfiles=>y), 2. arg (numSamp=>x)
-    tr2d[i] = CartesianTrajectory(numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
+    tr2d[i] = CartesianTrajectory(T,numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
   end
 
   # convert k-space data and place it in the appropriate array structure
@@ -320,9 +320,9 @@ function convert3dTo2d(acqData::AcquisitionData{T}) where T
   for i=1:numContr
     tr = trajectory(acqData,i)
     numProf = div( size(acqData.kdata[i,1,1],1), numSamp ) #numProfiles(tr)
-    kdata_i = zeros(T, numSamp, numProf, numChan, numReps)
+    kdata_i = zeros(Complex{T}, numSamp, numProf, numChan, numReps)
     #convert
-    F = 1/sqrt(numSamp)*FFTOp(T, (numSamp,))
+    F = 1/sqrt(numSamp)*FFTOp(Complex{T}, (numSamp,))
     for r=1:numReps
       for p=1:numProf # including slices
         for c=1:numChan
@@ -345,8 +345,7 @@ function convert3dTo2d(acqData::AcquisitionData{T}) where T
     idx = div.( acqData.subsampleIndices[i] .- 1, numSamp) .+ 1
     subsampleIndices2d[i] = sort(unique(idx))
   end
-
-  return AcquisitionData(acqData.sequenceInfo, tr2d, kdata2d, subsampleIndices2d, acqData.encodingSize, acqData.fov)
+  return AcquisitionData( tr2d, kdata2d; idx = subsampleIndices2d, seqInfo = acqData.sequenceInfo ,encodingSize = acqData.encodingSize, fov = acqData.fov)
 end
 
 hann(x) = 0.5*(1-cos(2*pi*(x-0.5)))
