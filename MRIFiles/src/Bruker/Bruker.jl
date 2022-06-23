@@ -43,11 +43,6 @@ function getindex(b::BrukerFile, parameter)#::String
     acqppath = joinpath(b.path, "acqp")
     read(b.params, acqppath, maxEntries=b.maxEntriesAcqp)
     b.acqpRead = true
-  elseif !b.methodRead && length(parameter) >= 3 &&
-         (parameter[1:3] == "PVM" || parameter[1:3] == "MPI")
-    methodpath = joinpath(b.path, "method")
-    read(b.params, methodpath)
-    b.methodRead = true
   elseif !b.visupars_globalRead && length(parameter) >= 4 &&
          parameter[1:4] == "Visu"
     visupath = joinpath(b.path, "visu_pars")
@@ -63,6 +58,10 @@ function getindex(b::BrukerFile, parameter)#::String
       read(b.params, mpiParPath)
       b.mpiParRead = true
     end
+  else !b.methodRead 
+      methodpath = joinpath(b.path, "method")
+      read(b.params, methodpath)
+      b.methodRead = true
   end
 
   if haskey(b.params, parameter)

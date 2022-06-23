@@ -1,6 +1,11 @@
 @testset "BrukerFile" begin
 
+@testset "BrukerFile read" begin
+    b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
+    @test b["ExcPulse1"] == "(1.3125, 3200, 90, Yes, 3, 4200, 0.236151639875348, 0.200434548747244, 0, 50, 0.317196887605166, <\$ExcPulse1Shape>)"
+end
 
+@testset "BrukerFile Reco" begin
 b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
 
 acq = RawAcquisitionData(b)
@@ -75,6 +80,7 @@ I2dseq = permutedims(I2dseq,(2,1,3,4))
 I2dseq = circshift(I2dseq,(0,0,1,0))
 
 @test MRIReco.norm(vec(I2dseq)-vec(Isos))/MRIReco.norm(vec(I2dseq)) < 0.1
+end
 
 
 end
