@@ -3,6 +3,12 @@
 @testset "BrukerFile read" begin
     b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
     @test b["ExcPulse1"] == "(1.3125, 3200, 90, Yes, 3, 4200, 0.236151639875348, 0.200434548747244, 0, 50, 0.317196887605166, <\$ExcPulse1Shape>)"
+    @test b["PVM_Fov"] == ["27","27"]
+    @test b["PVM_FreqDriftYN"] == "Yes"
+
+    @test b["VisuCoreWordType"] == "_16BIT_SGN_INT"
+    @test b["VisuFGOrderDesc"][1] == Any[15.0, " <FG_SLICE>", " <>", 0.0, 2.0]
+    @test b["VisuCoreDataOffs"] == repeat(["0","0","0"],5)
 end
 
 @testset "BrukerFile Reco" begin
