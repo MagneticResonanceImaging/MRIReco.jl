@@ -375,18 +375,38 @@ end
 
 
 ##### Reco
-function recoData(f::BrukerFile)
-  recoFilename = joinpath(f.path,"pdata", "1", "2dseq")
-  N = recoSize(f)
+function recoData(f::BrukerFile,procno::Int=1)
+  recoFilename = joinpath(f.path,"pdata", string(procno), "2dseq")
+  if !isfile(recoFilename) @error "file : $recoFilename does not exist" end
+
+  nFrame = parse.(Int64,f["VisuCoreFrameCount"])
+  N = parse.(Int64,f["VisuCoreSize"])
 
   #if f["RECO_wordtype",1] != "_16BIT_SGN_INT"
   #  @error "Not yet implemented!"
   #end
+  if(f["VisuCoreWordType"] == "_16BIT_SGN_INT")
+    T = Int16
+  elseif (f["VisuCoreWordType"] == "_32BIT_SGN_INT")
+    T = Int32
+  elseif (f["VisuCoreWordType"] == "_32BIT_FLOAT")
+    T = Float32
+  elseif (f["VisuCoreWordType"] == "_8BIT_UNSGN_INT")
+    @error "UInt8 read, not yet implemented!"
+  end
+
+  if(f["VisuCoreFrameType"] == "COMPLEX_IMAGE") 
+    T = complex{T} 
+    T2 = complex{Float32}
+  else
+    T2 = Float32
+  end
 
   I = open(recoFilename,"r") do fd
-    read!(fd,Array{Int16,length(N)}(undef,N...))
+    read!(fd,Array{T,length(N)+1}(undef,N...,nFrame))
   end
-  return map(Float32,I)
+
+  return map(T2,I)
 end
 
 recoFov(f::BrukerFile) = push!(parse.(Float64,f["RECO_fov",1])./100,

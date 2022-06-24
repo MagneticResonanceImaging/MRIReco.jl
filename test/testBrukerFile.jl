@@ -85,7 +85,7 @@ I2dseq = I2dseq ./ maximum(I2dseq);
 I2dseq = permutedims(I2dseq,(2,1,3,4))
 I2dseq = circshift(I2dseq,(0,0,1,0))
 
-@test MRIReco.norm(vec(I2dseq)-vec(Isos))/MRIReco.norm(vec(I2dseq)) < 0.1
+@test MRIReco.norm(vec(I2dseq[:,:,:,1])-vec(Isos))/MRIReco.norm(vec(I2dseq[:,:,:,1])) < 0.1
 end
 
 
