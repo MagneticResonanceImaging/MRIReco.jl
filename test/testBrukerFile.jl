@@ -1,6 +1,6 @@
 @testset "BrukerFile" begin
 
-@testset "BrukerFile read" begin
+@testset "BrukerFile read parameters" begin
     b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
     @test b["ExcPulse1"] == "(1.3125, 3200, 90, Yes, 3, 4200, 0.236151639875348, 0.200434548747244, 0, 50, 0.317196887605166, <\$ExcPulse1Shape>)"
     @test b["PVM_Fov"] == ["27","27"]
@@ -9,6 +9,32 @@
     @test b["VisuCoreWordType"] == "_16BIT_SGN_INT"
     @test b["VisuFGOrderDesc"][1] == Any[15.0, " <FG_SLICE>", " <>", 0.0, 2.0]
     @test b["VisuCoreDataOffs"] == repeat(["0","0","0"],5)
+end
+
+@testset "BrukerFile read 2dseq" begin
+    b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_FLASH") )
+
+    ## standard reco : Int16 + Magnitude
+    ima1 = recoData(b,1)
+    ima1 = ima1 ./ maximum(ima1);
+
+    ## Float32 + Magnitude
+    ima4 = recoData(b,4)
+    ima4 = ima4 ./ maximum(ima4);
+    @test MRIReco.norm(vec(ima1)-vec(ima4))/MRIReco.norm(vec(ima1)) < 0.02
+
+    ## complex + Int16 + shuffle Reco
+    ima6 = recoData(b,6)
+    ima6 = complex.(ima6[:,:,1:4],ima6[:,:,5:end])
+    ima6 = sqrt.(sum(abs.(ima6).^2,dims=3));
+    ima6 = ima6 ./ maximum(ima6);
+    @test MRIReco.norm(vec(ima1)-vec(ima6))/MRIReco.norm(vec(ima1)) < 0.02
+
+    ## UInt8 Magnitude
+    ima7 = recoData(b,7)
+    ima7 = ima7 ./ maximum(ima7);
+    @test MRIReco.norm(vec(ima1)-vec(ima7))/MRIReco.norm(vec(ima1)) < 0.12
+
 end
 
 @testset "BrukerFile Reco" begin
