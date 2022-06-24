@@ -1,7 +1,7 @@
 [MRIRecoTestData]
-git-tree-sha1 = "5de334b5838bed89c6b2f1bb13876931810cd64e"
+git-tree-sha1 = "c56f47ff503a42e8c51bd90a0a63be20b461c362"
 lazy = true
 
     [[MRIRecoTestData.download]]
-    sha256 = "52df57e8182445d65633447856b6d7222f3d8ca8c58eb1b08246d88c1462c937"
+    sha256 = "3ed1e5c03455460b01a67a51b9d5fb74cd4a1c9f3caf6595f901b81a250e0f1c"
     url = "http://media.tuhh.de/ibi/mrireco/MRIRecoTestData.tar.gz"
