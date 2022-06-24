@@ -81,11 +81,11 @@ function getindex(b::BrukerFile, parameter, procno::Int64)#::String
     methrecopath = joinpath(b.path, "pdata", string(procno), "methreco")
     read(b.paramsProc, methrecopath)
     b.methrecoRead = true
-  elseif !b.visuparsRead && parameter[1:4] == "Visu"
+  elseif b.visuparsRead != procno && parameter[1:4] == "Visu"
     visuparspath = joinpath(b.path, "pdata", string(procno), "visu_pars")
     if isfile(visuparspath)
       read(b.paramsProc, visuparspath)
-      b.visuparsRead = true
+      b.visuparsRead = procno
     end
   end
 
@@ -377,36 +377,30 @@ end
 ##### Reco
 function recoData(f::BrukerFile,procno::Int=1)
   recoFilename = joinpath(f.path,"pdata", string(procno), "2dseq")
-  if !isfile(recoFilename) @error "file : $recoFilename does not exist" end
+  if !isfile(recoFilename) @error "file : $recoFilename does not exist"; return end
 
-  nFrame = parse.(Int64,f["VisuCoreFrameCount"])
-  N = parse.(Int64,f["VisuCoreSize"])
+  nFrame = parse.(Int64,f["VisuCoreFrameCount",procno])
+  N = parse.(Int64,f["VisuCoreSize",procno])
 
-  #if f["RECO_wordtype",1] != "_16BIT_SGN_INT"
-  #  @error "Not yet implemented!"
-  #end
-  if(f["VisuCoreWordType"] == "_16BIT_SGN_INT")
+  if(f["VisuCoreWordType",procno] == "_16BIT_SGN_INT")
     T = Int16
-  elseif (f["VisuCoreWordType"] == "_32BIT_SGN_INT")
+  elseif (f["VisuCoreWordType",procno] == "_32BIT_SGN_INT")
     T = Int32
-  elseif (f["VisuCoreWordType"] == "_32BIT_FLOAT")
+  elseif (f["VisuCoreWordType",procno] == "_32BIT_FLOAT")
     T = Float32
-  elseif (f["VisuCoreWordType"] == "_8BIT_UNSGN_INT")
-    @error "UInt8 read, not yet implemented!"
-  end
-
-  if(f["VisuCoreFrameType"] == "COMPLEX_IMAGE") 
-    T = complex{T} 
-    T2 = complex{Float32}
-  else
-    T2 = Float32
+  elseif (f["VisuCoreWordType",procno] == "_8BIT_UNSGN_INT")
+    T = UInt8
   end
 
   I = open(recoFilename,"r") do fd
     read!(fd,Array{T,length(N)+1}(undef,N...,nFrame))
   end
 
-  return map(T2,I)
+  if(f["VisuCoreFrameType",procno] == ["REAL_IMAGE", "IMAGINARY_IMAGE"]) 
+    @warn "1st half of image are the REAL part and 2nd half is the imaginary"
+  end
+
+  return map(Float32,I)
 end
 
 recoFov(f::BrukerFile) = push!(parse.(Float64,f["RECO_fov",1])./100,
