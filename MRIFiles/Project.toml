@@ -1,7 +1,7 @@
 name = "MRIFiles"
 uuid = "5a6f062f-bf45-497d-b654-ad17aae2a530"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 Graphics = "a2bd30eb-e257-5431-a919-1863eab51364"
@@ -17,7 +17,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 [compat]
 julia = "1.6"
 Graphics = "1.0"
-MRIBase = "0.1"
+MRIBase = "0.1.2"
 FileIO = "1.2"
 HDF5 = "0.16"
 LightXML = "0.9"
