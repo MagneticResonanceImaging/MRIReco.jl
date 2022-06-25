@@ -61,6 +61,13 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           else
             if val[2] != ' '
               file.dict[key] = val
+              if val[end] == ')' 
+                file.dict[key] = val
+              else
+                remainingString = line[i+1:end]
+                finishedReading = false
+                currentKey = key
+              end
             else
               j = findfirst_(val, ')')
               currentSizes = [parse(Int64,s) for s in split(val[2:j-1],",")]
@@ -128,7 +135,15 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
                remainingString = part
              end
            end
-
+         elseif remainingString !== nothing
+          if line[end]==')'
+            file.dict[currentKey] = remainingString*line[1:end]
+            remainingString = nothing
+            finishedReading = true
+            currentKey = nothing
+          else
+            remainingString *= line
+          end
 
 
 
