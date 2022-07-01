@@ -274,7 +274,7 @@ end
 
 converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 """
-function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
+function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false, OffsetBruker=false)
   contrs = sort(unique(contrasts(f)))
   sls = sort(unique(slices(f)))
   reps = sort(unique(repetitions(f)))
@@ -289,6 +289,21 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   tr = [trajectory(f,contrast=contr) for contr=contrs]
   subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
   kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
+
+  if OffsetBruker
+    @info "Offset correction is performed"
+    for i = 1:length(tr) #vector of trajectory for contrasts
+      for k in reps
+        ROT = [[f.profiles[1].head.read_dir...] [f.profiles[1].head.phase_dir...] [f.profiles[1].head.slice_dir...]]
+        shift = inv(ROT) * [f.profiles[1].head.position...]./f.params["encodedFOV"]
+        shift = shift .*[0 1 -1]'; @info "read offset not performed (only phase + slice)";
+        shift = shift .* f.params["encodedSize"]/2
+        phase_nodes = exp.(-2π * im * tr[i].nodes' * shift)
+        
+        [kdata[i,j,k] = kdata[i,j,k] .* phase_nodes for i=contrs, j=sls]
+      end
+    end
+  end
 
   return AcquisitionData(tr, kdata,
                           idx=subsampleIdx,
