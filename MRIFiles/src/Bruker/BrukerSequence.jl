@@ -40,8 +40,7 @@ function RawAcquisitionData_3DUTE(b::BrukerFile)
 
     offset1 = acqReadOffset(b)
     offset2 = acqPhase1Offset(b)
-    #offset3 = ndims(b) == 2 ? MRIFiles.acqSliceOffset(b) : MRIFiles.acqPhase2Offset(b)
-    offset3 =  MRIFiles.acqSliceOffset(b)
+    offset3 = ndims(b) == 2 ? acqSliceOffset(b) : pvmEffPhase2Offset(b)
 
     profiles = Profile[]
     for nR = 1:numRep

@@ -146,6 +146,7 @@ acqRepetitionTime(b::BrukerFile) = parse(Float64,b["ACQ_repetition_time"][1])
 
 Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
+pvmEffPhase2Offset(b::BrukerFile) =parse.(Float32,b["PVM_EffPhase2Offset"])/1000.0
 pvmEncNReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncNReceivers"])
 pvmEncAvailReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncAvailReceivers"])
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
@@ -313,9 +314,8 @@ function RawAcquisitionDataFid(b::BrukerFile)
 
     offset1 = acqReadOffset(b)
     offset2 = acqPhase1Offset(b)
-    #offset3 = ndims(b) == 2 ? MRIFiles.acqSliceOffset(b) : MRIFiles.acqPhase2Offset(b)
-    offset3 =  MRIFiles.acqSliceOffset(b)
-
+    offset3 = ndims(b) == 2 ? acqSliceOffset(b) : pvmEffPhase2Offset(b)
+    
     profiles = Profile[]
     for nR = 1:numRep
       for nEnc2 = 1:numEncSteps2
