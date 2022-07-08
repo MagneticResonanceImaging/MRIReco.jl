@@ -270,11 +270,12 @@ end
 
 
 """
-    AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
+    AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false, OffsetBruker=false)
 
-converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
+converts `RawAcquisitionData` into the equivalent `AcquisitionData` object. 
+If OffsetBruker=true, add a phase offset to correct position only along Y/Z direction
 """
-function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false)
+function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false, OffsetBruker=false)
   contrs = sort(unique(contrasts(f)))
   sls = sort(unique(slices(f)))
   reps = sort(unique(repetitions(f)))
@@ -290,10 +291,19 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
   kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
 
-  return AcquisitionData(tr, kdata,
+  acq = AcquisitionData(tr, kdata,
                           idx=subsampleIdx,
                           encodingSize=collect(f.params["encodedSize"]),
                           fov = collect(f.params["encodedFOV"]) )
+
+  if OffsetBruker
+    ROT = [[f.profiles[1].head.read_dir...] [f.profiles[1].head.phase_dir...] [f.profiles[1].head.slice_dir...]]
+    offset = inv(ROT) * [f.profiles[1].head.position...]
+    offset = offset .*[0 1 1]'; @info "read offset not performed (only phase + slice)";
+    acq = correctOffset(acq,offset)
+  end
+
+  return acq
 end
 
 """

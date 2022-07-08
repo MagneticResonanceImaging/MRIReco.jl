@@ -43,17 +43,11 @@ function getindex(b::BrukerFile, parameter)#::String
     acqppath = joinpath(b.path, "acqp")
     read(b.params, acqppath, maxEntries=b.maxEntriesAcqp)
     b.acqpRead = true
-  elseif !b.methodRead && length(parameter) >= 3 &&
-         (parameter[1:3] == "PVM" || parameter[1:3] == "MPI")
-    methodpath = joinpath(b.path, "method")
-    read(b.params, methodpath)
-    b.methodRead = true
   elseif !b.visupars_globalRead && length(parameter) >= 4 &&
          parameter[1:4] == "Visu"
     visupath = joinpath(b.path, "visu_pars")
     if isfile(visupath)
-      keylist = ["VisuStudyId","VisuStudyNumber","VisuExperimentNumber","VisuSubjectName"]
-      read(b.params, visupath,keylist)
+      read(b.params, visupath)
       b.visupars_globalRead = true
     end
   elseif !b.mpiParRead && length(parameter) >= 6 &&
@@ -63,6 +57,10 @@ function getindex(b::BrukerFile, parameter)#::String
       read(b.params, mpiParPath)
       b.mpiParRead = true
     end
+  else !b.methodRead 
+      methodpath = joinpath(b.path, "method")
+      read(b.params, methodpath)
+      b.methodRead = true
   end
 
   if haskey(b.params, parameter)
@@ -83,11 +81,11 @@ function getindex(b::BrukerFile, parameter, procno::Int64)#::String
     methrecopath = joinpath(b.path, "pdata", string(procno), "methreco")
     read(b.paramsProc, methrecopath)
     b.methrecoRead = true
-  elseif !b.visuparsRead && parameter[1:4] == "Visu"
+  elseif b.visuparsRead != procno && parameter[1:4] == "Visu"
     visuparspath = joinpath(b.path, "pdata", string(procno), "visu_pars")
     if isfile(visuparspath)
       read(b.paramsProc, visuparspath)
-      b.visuparsRead = true
+      b.visuparsRead = procno
     end
   end
 
@@ -135,11 +133,11 @@ acqRareFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
 acqSpatialSize1(b::BrukerFile) = parse(Int,b["ACQ_spatial_size_1"])
 acqNumRepetitions(b::BrukerFile) = parse(Int,b["NR"])
 acqObjOrder(b::BrukerFile) = parse.(Int,b["ACQ_obj_order"])
-acqReadOffset(b::BrukerFile) = parse.(Float64,b["ACQ_read_offset"])
-acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"])
-acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"])
+acqReadOffset(b::BrukerFile) = parse.(Float64,b["ACQ_read_offset"])/1000.0
+acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"])/1000.0
+acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"])/1000.0
 acqGradMatrix(b::BrukerFile) = parse.(Float64,b["ACQ_grad_matrix"])
-acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"])
+acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"])/1000.0
 acqFlipAngle(b::BrukerFile) = parse(Float64,b["ACQ_flip_angle"])
 acqProtocolName(b::BrukerFile) = b["ACQ_protocol_name"]
 acqInterEchoTime(b::BrukerFile) = parse(Float64,b["ACQ_inter_echo_time"][1])
@@ -148,6 +146,7 @@ acqRepetitionTime(b::BrukerFile) = parse(Float64,b["ACQ_repetition_time"][1])
 
 Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
+pvmEffPhase2Offset(b::BrukerFile) =parse.(Float32,b["PVM_EffPhase2Offset"])/1000.0
 pvmEncNReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncNReceivers"])
 pvmEncAvailReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncAvailReceivers"])
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
@@ -315,8 +314,8 @@ function RawAcquisitionDataFid(b::BrukerFile)
 
     offset1 = acqReadOffset(b)
     offset2 = acqPhase1Offset(b)
-    offset3 = ndims(b) == 2 ? acqSliceOffset(b) : acqPhase2Offset(b)
-
+    offset3 = ndims(b) == 2 ? acqSliceOffset(b) : pvmEffPhase2Offset(b)
+    
     profiles = Profile[]
     for nR = 1:numRep
       for nEnc2 = 1:numEncSteps2
@@ -377,17 +376,31 @@ end
 
 
 ##### Reco
-function recoData(f::BrukerFile)
-  recoFilename = joinpath(f.path,"pdata", "1", "2dseq")
-  N = recoSize(f)
+function recoData(f::BrukerFile,procno::Int=1)
+  recoFilename = joinpath(f.path,"pdata", string(procno), "2dseq")
+  if !isfile(recoFilename) @error "file : $recoFilename does not exist"; return end
 
-  #if f["RECO_wordtype",1] != "_16BIT_SGN_INT"
-  #  @error "Not yet implemented!"
-  #end
+  nFrame = parse.(Int64,f["VisuCoreFrameCount",procno])
+  N = parse.(Int64,f["VisuCoreSize",procno])
+
+  if(f["VisuCoreWordType",procno] == "_16BIT_SGN_INT")
+    T = Int16
+  elseif (f["VisuCoreWordType",procno] == "_32BIT_SGN_INT")
+    T = Int32
+  elseif (f["VisuCoreWordType",procno] == "_32BIT_FLOAT")
+    T = Float32
+  elseif (f["VisuCoreWordType",procno] == "_8BIT_UNSGN_INT")
+    T = UInt8
+  end
 
   I = open(recoFilename,"r") do fd
-    read!(fd,Array{Int16,length(N)}(undef,N...))
+    read!(fd,Array{T,length(N)+1}(undef,N...,nFrame))
   end
+
+  if(f["VisuCoreFrameType",procno] == ["REAL_IMAGE", "IMAGINARY_IMAGE"]) 
+    @warn "1st half of image are the REAL part and 2nd half is the imaginary"
+  end
+
   return map(Float32,I)
 end
 
