@@ -220,11 +220,13 @@ function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
     tr = trajectory(acqData,echo)
     if isCartesian(tr)
       nodes = kspaceNodes(tr)[:,acqData.subsampleIndices[echo]]
+      weights[echo] = [1.0/sqrt(prod(shape)) for node=1:size(nodes,2)]
     else
       nodes = kspaceNodes(tr)
+      plan = plan_nfft(nodes, shape, m=2, σ=2)
+      weights[echo] = sqrt.(sdc(plan, iters=10))
     end
-    plan = plan_nfft(nodes, shape, m=2, σ=2)
-    weights[echo] = sqrt.(sdc(plan, iters=10))
+    
   end
   return weights
 end
