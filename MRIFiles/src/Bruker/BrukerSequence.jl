@@ -17,6 +17,7 @@ function RawAcquisitionData_3DUTE(b::BrukerFile)
     numEchos = acqNumEchos(b)
     numEncSteps2 = length(N) == 3 ? N[3] : 1
     numRep = acqNumRepetitions(b)
+    sample_time = parse(Float64,b["PVM_DigDw"])/1000 #us
 
     I = open(filename,"r") do fd
       read!(fd,Array{T,7}(undef, profileLength,
@@ -78,7 +79,7 @@ function RawAcquisitionData_3DUTE(b::BrukerFile)
                                           available_channels = numAvailableChannel, #TODO
                                           active_channels = numChannel,
                                           trajectory_dimensions = 3,
-                                          sample_time_us = parse(Float64,b["PVM_DigDw"])/1000)
+                                          sample_time_us = sample_time)
                   
                   dat = map(T, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,numChannel))
                   push!(profiles, Profile(head,convert.(Float32,traj[:,:,nPhase2]),dat) )
