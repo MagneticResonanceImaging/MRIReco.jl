@@ -65,7 +65,7 @@ end
 
 function Base.copy(S::NFFTOp{T}) where {T}
   plan = copy(S.plan)
-  return NFFTOp{T}(size(plan.x,2), prod(plan.N), false, false
+  return NFFTOp{T}(size(k,2), prod(plan.N), false, false
               , (res,x) -> (res .= produ(plan,x))
               , nothing
               , (res,y) -> (res .= ctprodu(plan,y))
@@ -96,7 +96,7 @@ function NFFTToeplitzNormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   fftplan  = plan_fft( zeros(T, 2 .* shape);flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(T, 2 .* shape);flags=FFTW.MEASURE)
 
-  λ = calculateToeplitzKernel(shape, S.plan.x; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
+  λ = calculateToeplitzKernel(shape, S.k; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
 
   xL1 = Array{T}(undef, 2 .* shape)
   xL2 = similar(xL1)
