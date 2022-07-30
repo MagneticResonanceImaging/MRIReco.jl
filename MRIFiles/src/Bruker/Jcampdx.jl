@@ -79,7 +79,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           end
         end
       else
-         if line[1] == '<'
+         if line[1] == '<' && isnothing(remainingString)
            j = findfirst_(line, '>')
            file.dict[currentKey] = line[2:j-1]
            finishedReading = true
