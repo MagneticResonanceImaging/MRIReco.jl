@@ -65,7 +65,7 @@ end
 
 function Base.copy(S::NFFTOp{T}) where {T}
   plan = copy(S.plan)
-  return NFFTOp{T}(size(k,2), prod(plan.N), false, false
+  return NFFTOp{T}(size(plan.k,2), prod(plan.N), false, false
               , (res,x) -> (res .= produ(plan,x))
               , nothing
               , (res,y) -> (res .= ctprodu(plan,y))
