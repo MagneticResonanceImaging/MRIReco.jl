@@ -57,7 +57,7 @@ function getindex(b::BrukerFile, parameter)#::String
       read(b.params, mpiParPath)
       b.mpiParRead = true
     end
-  else !b.methodRead 
+  elseif !b.methodRead
       methodpath = joinpath(b.path, "method")
       read(b.params, methodpath)
       b.methodRead = true
@@ -180,7 +180,7 @@ pvmTrajKy(b::BrukerFile) = parse.(Float32,b["PVM_TrajKy"])
 """
 brukerParams(b::BrukerFile)
 
-Generate a standard parameter dictionary from Bruker acquistion 
+Generate a standard parameter dictionary from Bruker acquistion
 Some fields needs to be filled outside lik
 
 """
@@ -249,7 +249,7 @@ include("BrukerSequence.jl")
 function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   # Have not a way to read out this. Not sure if its true
   T = Complex{Int32}
-  
+
   filename = joinpath(b.path, "rawdata.job0")
 
   profileLength = pvmTrajSamples(b)
@@ -280,7 +280,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
     filename = joinpath(b.path, "fid")
 
     N = acqSize(b)
-    # The data is padded in case it is not a multiple of 1024 
+    # The data is padded in case it is not a multiple of 1024
     # For multi-channel acquisition data at concatenate then padded to a multiple of 1024 bytes
     numChannel = pvmEncNReceivers(b)
     profileLength = Int((ceil(N[1]*numChannel*sizeof(T)/1024))*1024/sizeof(T))
@@ -315,7 +315,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
     offset1 = acqReadOffset(b)
     offset2 = acqPhase1Offset(b)
     offset3 = ndims(b) == 2 ? acqSliceOffset(b) : pvmEffPhase2Offset(b)
-    
+
     profiles = Profile[]
     for nR = 1:numRep
       for nEnc2 = 1:numEncSteps2
@@ -397,7 +397,7 @@ function recoData(f::BrukerFile,procno::Int=1)
     read!(fd,Array{T,length(N)+1}(undef,N...,nFrame))
   end
 
-  if(f["VisuCoreFrameType",procno] == ["REAL_IMAGE", "IMAGINARY_IMAGE"]) 
+  if(f["VisuCoreFrameType",procno] == ["REAL_IMAGE", "IMAGINARY_IMAGE"])
     @warn "1st half of image are the REAL part and 2nd half is the imaginary"
   end
 
