@@ -2,6 +2,8 @@
 
 @testset "BrukerFile read parameters" begin
     b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
+    t1 = @elapsed b["ExcPulse1"]
+
     @test b["ExcPulse1"] == "(1.3125, 3200, 90, Yes, 3, 4200, 0.236151639875348, 0.200434548747244, 0, 50, 0.317196887605166, <\$ExcPulse1Shape>)"
     @test b["PVM_Fov"] == ["27","27"]
     @test b["PVM_FreqDriftYN"] == "Yes"
@@ -9,6 +11,10 @@
     @test b["VisuCoreWordType"] == "_16BIT_SGN_INT"
     @test b["VisuFGOrderDesc"][1] == Any[15.0, " <FG_SLICE>", " <>", 0.0, 2.0]
     @test b["VisuCoreDataOffs"] == repeat(["0","0","0"],5)
+
+    t2 = @elapsed b["ExcPulse1"]
+    @info "Read parameters timing" t1 t2
+    @test t2 < 0.0001
 end
 
 @testset "BrukerFile read 2dseq" begin
