@@ -56,7 +56,12 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1'
-      - run: julia --project=docs -e 'using Pkg; Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase")); Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))'
+      - name: Install subpackages
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase", rev="master"))
+          Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles", rev="master"))
       - run: |
           julia --project=docs -e '
             using Pkg
