@@ -41,7 +41,12 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - run: julia --project -e 'using Pkg; Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase")); Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))'
+      - name: Install subpackages
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase", rev="master"))
+          Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles", rev="master"))
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
