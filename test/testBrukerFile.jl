@@ -66,7 +66,7 @@ Iloaded = recoData(b)
 @test size(Iloaded) == (128, 128, 15)
 
 ## Test reconstruction for multi-coil datasets (2D and 3D FLASH)
-listBrukFiles = ["2D_FLASH","3D_FLASH"]
+listBrukFiles = ["2D_FLASH", "3D_FLASH"]
 listNormValues = [0.02, 0.15]
 
 for i = 1:length(listBrukFiles)
@@ -92,6 +92,7 @@ for i = 1:length(listBrukFiles)
     @test norm(vec(I2dseq)-vec(Isos))/norm(vec(I2dseq)) < listNormValues[i]
 end
 
+if !Sys.iswindows()
 # Reconstruction of 3DUTE
 @info "Reconstruction of 3DUTE"
 b = BrukerFile( joinpath(datadir, "BrukerFile", "3D_UTE_NR2") )
@@ -120,5 +121,6 @@ I2dseq = circshift(I2dseq,(0,0,1,0))
 @test MRIReco.norm(vec(I2dseq[:,:,:,1])-vec(Isos))/MRIReco.norm(vec(I2dseq[:,:,:,1])) < 0.1
 end
 
+end
 
 end
