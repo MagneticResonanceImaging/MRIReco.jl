@@ -12,30 +12,44 @@ end
 
 reads the `ISMRMRDFile` f and stores the result in a `RawAcquisitionDataObject`
 """
-function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
+function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset"; 
+                                    slice=nothing, repetition=nothing, contrast=nothing)
 
   h5open(f.filename) do h
     headerStr = read(h["/$(dataset)/xml"])
     params = GeneralParameters(headerStr[1])
 
-    d = read(h["/$(dataset)/data"])
-    M = length(d)
+    M = size(h["/$(dataset)/data"]) # for some reason this is a matrix 
+
+    # In the next lines we only read the headers of the profiles such that
+    # we can later filter on them
+    dTypeHeader = get_hdf5type_acquisition_header_only()
+    headerData = Array{HDF5_AcquisitionHeaderOnly}(undef, M)
+    HDF5.API.h5d_read(h["/$(dataset)/data"], dTypeHeader, H5S_ALL, H5S_ALL, H5P_DEFAULT, headerData)
+
     profiles = Profile[]
 
-    for m=1:M
-      head = read_header(d[m].head)
-      D = Int(head.trajectory_dimensions)
-      chan = Int(head.active_channels)
+    for m in CartesianIndices(M)
 
-      traj = isempty(d[m].traj) ? Matrix{Float32}(undef,0,0) : reshape(d[m].traj, D, :)
+      if (repetition == nothing || headerData[m].head.idx.repetition in repetition) &&
+         (slice == nothing || headerData[m].head.idx.slice in slice) &&
+         (contrast == nothing || headerData[m].head.idx.contrast in contrast)
 
-      if !isempty(d[m].data)
-        dat = reshape(reinterpret(ComplexF32,d[m].data), :, chan)
-      else
-        dat = Matrix{ComplexF32}(undef,0,0)
+        d = h["/$(dataset)/data"][m] # Here we read the header again. This could/should be avoided
+        head = read_header(d.head)
+        D = Int(head.trajectory_dimensions)
+        chan = Int(head.active_channels)
+
+        traj = isempty(d.traj) ? Matrix{Float32}(undef,0,0) : reshape(d.traj, D, :)
+
+        if !isempty(d.data)
+          dat = reshape(reinterpret(ComplexF32,d.data), :, chan)
+        else
+          dat = Matrix{ComplexF32}(undef,0,0)
+        end
+
+        push!(profiles, Profile(head,traj,dat) )
       end
-
-      push!(profiles, Profile(head,traj,dat) )
     end
     return RawAcquisitionData(params, profiles)
   end

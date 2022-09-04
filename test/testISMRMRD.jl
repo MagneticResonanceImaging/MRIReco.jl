@@ -1,6 +1,5 @@
 using MRIReco
 using Test
-using HTTP
 
 @testset "ISMRMRD" begin
 
@@ -36,6 +35,14 @@ acqCopy = RawAcquisitionData(fCopy)
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
 @test IrecoCopy == Ireco
+
+### test partial read
+
+acqPartial = RawAcquisitionData(f, slice=1) # slice 1 is not contained in the file
+
+@test length(acqPartial.profiles) == 0
+
+### test spiral data
 
 filename = joinpath(datadir, "simple_spiral.h5")
 
