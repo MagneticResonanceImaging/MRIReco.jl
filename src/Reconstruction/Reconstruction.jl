@@ -30,23 +30,23 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   recoParams = merge(defaultRecoParams(), recoParams)
 
   # iterative reco
-  reconSize, weights, sparseTrafo, reg, normalize, encOps, solvername, senseMaps = setupIterativeReco(acqData, recoParams)
-  if recoParams[:reco] == "standard"
-    return reconstruction_simple(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
-  elseif recoParams[:reco] == "multiEcho"
-    return reconstruction_multiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
-  elseif recoParams[:reco] == "multiCoil"
-    return reconstruction_multiCoil(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
-  elseif recoParams[:reco] == "multiCoilMultiEcho"
-    return reconstruction_multiCoilMultiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
+  if recoParams[:reco] == "direct"
+    reconSize, weights, cmap = setupDirectReco(acqData, recoParams)
+    return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap)
+  else
+    reconSize, weights, sparseTrafo, reg, normalize, encOps, solvername, senseMaps = setupIterativeReco(acqData, recoParams)
+    if recoParams[:reco] == "standard"
+        return reconstruction_simple(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
+    elseif recoParams[:reco] == "multiEcho"
+        return reconstruction_multiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
+    elseif recoParams[:reco] == "multiCoil"
+        return reconstruction_multiCoil(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
+    elseif recoParams[:reco] == "multiCoilMultiEcho"
+        return reconstruction_multiCoilMultiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
+    else
+        @error "reco modell $(recoParams[:reco]) not found"
+    end
   end
-
-  # direct reco
-  if recoParams[:reco] != "direct"
-    @error "reco modell $(recoParams[:reco]) not found"
-  end
-  reconSize, weights, cmap = setupDirectReco(acqData, recoParams)
-  return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap)
 end
 
 """
