@@ -86,7 +86,9 @@ struct CompositeNormalOp{S,U}
 end
 
 function SparsityOperators.normalOperator(S::CompositeOp, W=I)
-  if S.isWeighting && W==I
+  if S.isWeighting && W==opEye()
+    # In this case we are converting the left argument into a 
+    # weighting matrix, that is passed to normalOperator
     normalOperator(S.B, S.A)
   else
     return CompositeNormalOp(S.B, normalOperator(S.A, W) )

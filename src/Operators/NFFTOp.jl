@@ -37,8 +37,7 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 """
 function NFFTOp(shape::Tuple, tr::AbstractMatrix{T}; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...) where {T}
 
-  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.TENSOR)
-
+  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.POLYNOMIAL)
   return NFFTOp{Complex{T}}(size(tr,2), prod(shape), false, false
             , (res,x) -> (res .= produ(plan,x))
             , nothing
@@ -89,14 +88,21 @@ struct NFFTToeplitzNormalOp{T,D,W}
 end
 
 
-function NFFTToeplitzNormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
+function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye()) where {T}
   shape = S.plan.N
 
   # plan the FFTs
   fftplan  = plan_fft( zeros(T, 2 .* shape);flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(T, 2 .* shape);flags=FFTW.MEASURE)
 
-  λ = calculateToeplitzKernel(shape, S.plan.k; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
+  # TODO extend the following function by weights
+  # λ = calculateToeplitzKernel(shape, S.plan.k; m = S.plan.params.m, σ = S.plan.params.σ, window = S.plan.params.window, LUTSize = S.plan.params.LUTSize, fftplan = fftplan)
+
+  shape_os = 2 .* shape
+  p = plan_nfft(typeof(S.plan.k), S.plan.k, shape_os; m = S.plan.params.m, σ = S.plan.params.σ,
+		precompute=NFFT.POLYNOMIAL)
+  eigMat = adjoint(p) * ( W  * ones(T, size(S.plan.k,2)))
+  λ = fftplan * fftshift(eigMat)
 
   xL1 = Array{T}(undef, 2 .* shape)
   xL2 = similar(xL1)
@@ -104,21 +110,13 @@ function NFFTToeplitzNormalOp(S::NFFTOp{T}, W::UniformScaling=I) where {T}
   return NFFTToeplitzNormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
-function SparsityOperators.normalOperator(S::NFFTOp, W::UniformScaling=I)
+function SparsityOperators.normalOperator(S::NFFTOp, W=opEye())
   if S.toeplitz
     return NFFTToeplitzNormalOp(S,W)
   else
     return NormalOp(S,W)
   end
 end
-
-function SparsityOperators.normalOperator(S::NFFTOp, W)
-  if S.toeplitz
-    @warn "Topelitz with non-Uniform scaling is currently not implemented. Using a non-Toeplitz implemenation instead."
-  end
-  return NormalOp(S,W)
-end
-
 
 function LinearAlgebra.mul!(y, S::NFFTToeplitzNormalOp, b)
   S.xL1 .= 0
