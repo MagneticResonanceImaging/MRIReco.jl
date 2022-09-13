@@ -41,7 +41,7 @@ function diagOpProd(x::Vector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOp
   y = Vector{T}(undef, nrow)
   @sync for i=1:length(ops)
     Threads.@spawn begin
-      y[yIdx[i]:yIdx[i+1]-1] = ops[i]*x[xIdx[i]:xIdx[i+1]-1]
+      mul!(view(y,yIdx[i]:yIdx[i+1]-1), ops[i], view(x,xIdx[i]:xIdx[i+1]-1))
     end
   end
   return y
@@ -51,7 +51,7 @@ function diagOpTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearO
   y = Vector{T}(undef, ncol)
   @sync for i=1:length(ops)
     Threads.@spawn begin  
-      y[yIdx[i]:yIdx[i+1]-1] = transpose(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
+      mul!(view(y,yIdx[i]:yIdx[i+1]-1), transpose(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
     end
   end
   return y
@@ -61,7 +61,7 @@ function diagOpCTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinear
   y = Vector{T}(undef, ncol)
   @sync for i=1:length(ops)
     Threads.@spawn begin    
-      y[yIdx[i]:yIdx[i+1]-1] = adjoint(ops[i])*x[xIdx[i]:xIdx[i+1]-1]
+      mul!(view(y,yIdx[i]:yIdx[i+1]-1), adjoint(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
     end
   end
   return y
