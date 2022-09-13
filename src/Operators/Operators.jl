@@ -37,8 +37,7 @@ function vcat(A::AbstractLinearOperator, n::Int)
   return op
 end
 
-function diagOpProd(x::Vector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  y = Vector{T}(undef, nrow)
+function diagOpProd(y::AbstractVector{T}, x::AbstractVector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   @sync for i=1:length(ops)
     Threads.@spawn begin
       mul!(view(y,yIdx[i]:yIdx[i+1]-1), ops[i], view(x,xIdx[i]:xIdx[i+1]-1))
@@ -47,8 +46,7 @@ function diagOpProd(x::Vector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOp
   return y
 end
 
-function diagOpTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  y = Vector{T}(undef, ncol)
+function diagOpTProd(y::AbstractVector{T}, x::AbstractVector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   @sync for i=1:length(ops)
     Threads.@spawn begin  
       mul!(view(y,yIdx[i]:yIdx[i+1]-1), transpose(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
@@ -57,8 +55,7 @@ function diagOpTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearO
   return y
 end
 
-function diagOpCTProd(x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  y = Vector{T}(undef, ncol)
+function diagOpCTProd(y::AbstractVector{T}, x::AbstractVector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
   @sync for i=1:length(ops)
     Threads.@spawn begin    
       mul!(view(y,yIdx[i]:yIdx[i+1]-1), adjoint(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
@@ -113,9 +110,9 @@ function diagOp(ops :: AbstractLinearOperator...)
   yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
 
   Op = DiagOp{S}( nrow, ncol, false, false,
-                     (res,x) -> (res .= diagOpProd(x,nrow,xIdx,yIdx,ops...)),
-                     (res,y) -> (res .= diagOpTProd(y,ncol,yIdx,xIdx,ops...)),
-                     (res,y) -> (res .= diagOpCTProd(y,ncol,yIdx,xIdx,ops...)), 
+                     (res,x) -> (diagOpProd(res,x,nrow,xIdx,yIdx,ops...)),
+                     (res,y) -> (diagOpTProd(res,y,ncol,yIdx,xIdx,ops...)),
+                     (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)), 
                      0, 0, 0, false, false, false, S[], S[],
                      [ops...], false, xIdx, yIdx)
 
@@ -132,9 +129,9 @@ function diagOp(op::AbstractLinearOperator, N=1)
   yIdx = cumsum(vcat(1,[ops[i].nrow for i=1:length(ops)]))
 
   Op = DiagOp{S}( nrow, ncol, false, false,
-                    (res,x) -> (res .= diagOpProd(x,nrow,xIdx,yIdx,ops...)),
-                    (res,y) -> (res .= diagOpTProd(y,ncol,yIdx,xIdx,ops...)),
-                    (res,y) -> (res .= diagOpCTProd(y,ncol,yIdx,xIdx,ops...)), 
+                    (res,x) -> (diagOpProd(res,x,nrow,xIdx,yIdx,ops...)),
+                    (res,y) -> (diagOpTProd(res,y,ncol,yIdx,xIdx,ops...)),
+                    (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)), 
                      0, 0, 0, false, false, false, S[], S[],
                      ops, true, xIdx, yIdx )
 
@@ -186,7 +183,6 @@ function _produ_diagnormalop(ops, idx, x, y)
   @sync for i=1:length(ops)
     Threads.@spawn begin
        mul!(view(y,idx[i]:idx[i+1]-1), ops[i], view(x,idx[i]:idx[i+1]-1))
-       #y[idx[i]:idx[i+1]-1] = ops[i]*x[idx[i]:idx[i+1]-1]
     end
   end
   return

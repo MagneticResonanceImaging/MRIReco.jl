@@ -3,7 +3,7 @@ function sample_lines(shape::Tuple{Int64},redFac;sampleFunc="random",kargs...)
 end
 
 """
-    sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+    sample_lines(shape::Tuple{Int64,Int64}, redFac; sampleFunc="random",kargs...)
 
 generates a pattern to sample complete lines of an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -14,7 +14,7 @@ generates a pattern to sample complete lines of an Array of size `shape` with a 
                             ("random, "regular", "lines", "poisson" or "vdPoisson")
 * `kargs...`               - addional keyword arguments
 """
-function sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+function sample_lines(shape::Tuple{Int64,Int64}, redFac; sampleFunc="random",kargs...)
   M,N=shape
   A = zeros(Int64,shape)
   yInd = sample((N,),redFac,sampleFunc;kargs...)
@@ -24,12 +24,12 @@ function sample_lines(shape::Tuple{Int64,Int64},redFac::Float64;sampleFunc="rand
 end
 
 """
-    sample_lines(shape::Tuple{Int64,Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+    sample_lines(shape::Tuple{Int64,Int64,Int64}, redFac; sampleFunc="random",kargs...)
 
 generates a pattern to sample complete lines of an Array of size `shape` with a subsampling factor `redFac`.
 The arguments are the same as in the 2d case with the exception that shape is of type `NTuple{3,Int64}`
 """
-function sample_lines(shape::Tuple{Int64,Int64,Int64},redFac::Float64;sampleFunc="random",kargs...)
+function sample_lines(shape::Tuple{Int64,Int64,Int64}, redFac; sampleFunc="random",kargs...)
   M,N,Z=shape
   A2D = zeros(Int64,N,Z)
   A3D = zeros(Int64,shape)

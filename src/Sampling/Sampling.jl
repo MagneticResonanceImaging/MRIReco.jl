@@ -10,7 +10,7 @@ include("PointSpreadFunction.jl")
 include("Incoherence.jl")
 
 """
-    sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs...)
+    sample(shape::NTuple{N,Int64}, redFac, patFunc::String; kargs...)
 
 generates a `Vector{Int64}` of indices to sample an Array of of size `shape` with
 a reduction factor `redFac`.
@@ -21,7 +21,7 @@ a reduction factor `redFac`.
 * `patFunc::String`        - name of the sampling function
                             ("random, "regular", "lines", "poisson" or "vdPoisson")
 """
-function sample(shape::NTuple{N,Int64}, redFac::Float64, patFunc::String; kargs...) where N
+function sample(shape::NTuple{N,Int64}, redFac, patFunc::String; kargs...) where N
   if redFac < 1
     error("Reduction factor redFac must be >= 1")
   end
@@ -54,7 +54,7 @@ and returns both the subsampled Array (as a vector) and the sampled indices (as 
                             ("random, "regular", "lines", "poisson" or "vdPoisson")
 * `kargs...`               - addional keyword arguments
 """
-function sample_kspace(data::AbstractArray,redFac::Float64,patFunc::AbstractString;kargs...)
+function sample_kspace(data::AbstractArray, redFac, patFunc::AbstractString;kargs...)
   patOut = sample(size(data),redFac,patFunc;kargs...)
   patOut = sort(patOut)
   return data[patOut],patOut
@@ -78,7 +78,7 @@ and returns a new `AcquisitionData` object.
 * (`seed=1234`)               - seed for the random number generator
 * `kargs...`                  - addional keyword arguments
 """
-function sample_kspace(acqData::AcquisitionData,redFac::Float64,
+function sample_kspace(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
   acqData2 = deepcopy(acqData)
@@ -94,7 +94,7 @@ end
 subsamples the data in acqData object with reduction factor `redFac`. Performs the same
 subsampling as `sample_kspace` but operates in-place on acqData.
 """
-function sample_kspace!(acqData::AcquisitionData,redFac::Float64,
+function sample_kspace!(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
                        seed = 1234, kargs...)
 
