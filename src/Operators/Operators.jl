@@ -154,7 +154,7 @@ struct DiagNormalOp{U,V,T}
   y::Vector{T}
 end
 
-function SparsityOperators.normalOperator(S::DiagOp, W=I)
+function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1)))
   weights = W*ones(S.nrow)
 
   T = eltype(S)

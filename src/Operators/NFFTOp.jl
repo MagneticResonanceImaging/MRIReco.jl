@@ -110,11 +110,12 @@ function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye(Complex{T},size(S,1))) where
   return NFFTToeplitzNormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
-function SparsityOperators.normalOperator(S::NFFTOp, W=opEye(Complex{T},size(S,1)))
+function SparsityOperators.normalOperator(S::NFFTOp{T}, W=opEye(T,size(S,1))) where T
   if S.toeplitz
     return NFFTToeplitzNormalOp(S,W)
   else
-    return NormalOp(S,W)
+    tmp = Vector{T}(undef, size(S, 1))
+    return NormalOp(S,W,tmp)
   end
 end
 
