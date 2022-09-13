@@ -39,9 +39,9 @@ function NFFTOp(shape::Tuple, tr::AbstractMatrix{T}; toeplitz=false, oversamplin
 
   plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.POLYNOMIAL)
   return NFFTOp{Complex{T}}(size(tr,2), prod(shape), false, false
-            , (res,x) -> (res .= produ(plan,x))
+            , (res,x) -> produ!(res,plan,x)
             , nothing
-            , (res,y) -> (res .= ctprodu(plan,y))
+            , (res,y) -> ctprodu!(res,plan,y)
             , 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plan, toeplitz)
 end
@@ -51,23 +51,21 @@ function NFFTOp(shape::Tuple, tr::Trajectory; toeplitz=false, oversamplingFactor
   return NFFTOp(shape, kspaceNodes(tr); toeplitz=toeplitz, oversamplingFactor=oversamplingFactor, kernelSize=kernelSize, kargs...)
 end
 
-function produ(plan::NFFT.NFFTPlan, x::Vector{T}) where T<:Union{Real,Complex}
-  y = plan * reshape(x[:],plan.N)
-  return vec(y)
+function produ!(y::T, plan::NFFT.NFFTPlan, x::T) where T<:AbstractVector
+  mul!(y, plan, reshape(x,plan.N))
 end
 
-function ctprodu(plan::NFFT.NFFTPlan, y::Vector{T}) where T<:Union{Real,Complex}
-  x = adjoint(plan) * y[:]
-  return vec(x)
+function ctprodu!(x::T, plan::NFFT.NFFTPlan, y::T) where T<:AbstractVector
+  mul!(reshape(x, plan.N), adjoint(plan), y)
 end
 
 
 function Base.copy(S::NFFTOp{T}) where {T}
   plan = copy(S.plan)
   return NFFTOp{T}(size(plan.k,2), prod(plan.N), false, false
-              , (res,x) -> (res .= produ(plan,x))
+              , (res,x) -> produ!(res,plan,x)
               , nothing
-              , (res,y) -> (res .= ctprodu(plan,y))
+              , (res,y) -> ctprodu!(res,plan,y)
               , 0, 0, 0, false, false, false, T[], T[]
               , plan, S.toeplitz)
 end
