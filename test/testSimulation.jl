@@ -65,7 +65,7 @@ function test_kdataWithCorrection(N::Int64=32)
     @test relErrorLeastSquare < 1e-3
 
     relErrorNFFT = norm(acqDataExplicit.kdata[:] - acqDataNFFT.kdata[:]) / norm(acqDataExplicit.kdata[:])
-    println("Relative Error of leastsquare method: ", relErrorNFFT)
+    println("Relative Error of NFFT method: ", relErrorNFFT)
     @test relErrorNFFT < 1e-3
 
 end

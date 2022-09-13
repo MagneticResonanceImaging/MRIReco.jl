@@ -80,7 +80,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ncol = prod(shape)
 
  # create and truncate low-rank expansion
-  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
+  cparam = MRIReco.createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
 
   @debug "K = $K"
@@ -89,17 +89,18 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.FULL)
+    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL)
   end
 
   d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
+  p = [zeros(Complex{T}, shape) for κ=1:K]
+  x_tmp = zeros(Complex{T}, ncol)
+  y_tmp = zeros(Complex{T}, nrow)
   
   circTraj = isCircular(tr)
 
-  mul!(res, x::Vector{T}) where T =
-     (res .= produ(x,nrow,ncol,shape,plans,idx,cparam,circTraj,d))
-  ctmul!(res, y::Vector{T}) where T =
-     (res .= ctprodu(y,shape,plans,idx,cparam,circTraj,d))
+  mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
+  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p)
 
   return FieldmapNFFTOp{T,Nothing,Function,D}(nrow, ncol, false, false
             , mul!
@@ -114,13 +115,14 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   idx = deepcopy(S.idx)
 
   d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
+  p = [zeros(Complex{T}, S.shape) for κ=1:K]
+  x_tmp = zeros(Complex{T}, S.ncol)
+  y_tmp = zeros(Complex{T}, S.nrow)
 
   cparam = deepcopy(S.cparam)
 
-  mul!(res, x::Vector{T}) where T =
-     (res .= produ(x,S.nrow,S.ncol,S.shape,plans,idx,cparam,S.circTraj,d))
-  ctmul!(res, y::Vector{T}) where T =
-     (res .= ctprodu(y,S.shape,plans,idx,cparam,S.circTraj,d))
+  mul! = (res,x) -> produ!(res,x,x_tmp,S.shape,plans,idx,cparam,S.circTraj,d,p)
+  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,S.shape,plans,idx,cparam,S.circTraj,d,p)
 
   D_ = length(S.shape)
   return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
@@ -130,39 +132,37 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
             , plans, idx, S.circTraj, S.shape, cparam)
 end
 
-# function produ{T<:Float64}(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function produ(x::Vector{T}, numOfNodes::Int, numOfPixel::Int, shape::Tuple, plan,
+function produ!(s::Vector{T}, x::Vector{T}, x_tmp::Vector{T},shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-               shutter::Bool, d) where T
+               shutter::Bool, d::Vector{Vector{T}}, p::Vector{Array{T,D}}) where {T,D}
+
+  s .= zero(T)
   K = size(cparam.A_k,2)
-  s = zeros(T,numOfNodes)
 
   if shutter
     circularShutter!(reshape(x, shape), 1.0)
   end
 
   # Preprocessing step when time and correctionMap are centered
+  x_tmp .= x
   if cparam.method == "nfft"
-    x_ = x .* exp.(-vec(cparam.Cmap) * cparam.t_hat )
-  else
-    x_ = copy(x)
+    x_tmp .*= exp.(-vec(cparam.Cmap) * cparam.t_hat )
   end
 
   sp = Threads.SpinLock()
-  produ_inner(K,cparam.C_k, cparam.A_k, shape, d, s, sp, plan, idx, x_)
+  produ_inner!(K,cparam.C_k, cparam.A_k, shape, d, s, sp, plan, idx, x_tmp, p)
 
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
       s .*= exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat) )
   end
-  return s
 end
 
-function produ_inner(K, C, A, shape, d, s, sp, plan, idx, x_)
+function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
   @sync for κ=1:K
     Threads.@spawn begin
-      p_ = C[κ,:] .* x_
-      mul!(d[κ], plan[κ], reshape(p_, shape))
+      p[κ][:] .= C[κ,:] .* x_
+      mul!(d[κ], plan[κ], p[κ])
     
       lock(sp)
       for k=1:length(idx[κ])
@@ -177,22 +177,21 @@ function produ_inner(K, C, A, shape, d, s, sp, plan, idx, x_)
 end
 
 
-# function ctprodu{T<:ComplexF64}(x::Vector{T}, shape::Tuple, plan::Vector{NFFTPlan{Float64,2,1}, cparam::InhomogeneityData, density::Vector{Float64}, symmetrize::Bool)
-function ctprodu(x::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData{T}, shutter::Bool, d) where T
+function ctprodu!(y::Vector{Complex{T}}, x::Vector{Complex{T}}, x_tmp::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
+                 cparam::InhomogeneityData{T}, shutter::Bool, d::Vector{Vector{Complex{T}}}, p::Vector{Array{Complex{T},D}}) where {T,D}
 
-  y = zeros(Complex{T},prod(shape))
+  y .= zero(Complex{T})
   K = size(cparam.A_k,2)
 
-  x_ = copy(x)
+  x_tmp .= x
 
   # Preprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
-      x_ .*= conj.(exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat)))
+      x_tmp .*= conj.(exp.(-cparam.z_hat*(cparam.times .- cparam.t_hat)))
   end
 
   sp = Threads.SpinLock()
-  ctprodu_inner(K,cparam.C_k, cparam.A_k, shape, d, y, sp, plan, idx, x_)
+  ctprodu_inner!(K,cparam.C_k, cparam.A_k, shape, d, y, sp, plan, idx, x_tmp, p)
 
   if cparam.method == "nfft"
     y .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
@@ -202,23 +201,21 @@ function ctprodu(x::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{I
     circularShutter!(reshape(y, shape), 1.0)
   end
 
-  return y
 end
 
-function ctprodu_inner(K, C, A, shape, d, y, sp, plan, idx, x_)
+function ctprodu_inner!(K, C, A, shape, d, y, sp, plan, idx, x_, p)
 
   @sync for κ=1:K
     Threads.@spawn begin
        for k=1:length(idx[κ])
          d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
        end
-       p_ = zeros(ComplexF64, shape) 
      
-       mul!(p_, adjoint(plan[κ]), d[κ])
+       mul!(p[κ], adjoint(plan[κ]), d[κ])
      
        lock(sp)
-       for k=1:length(p_)
-         y[k] += conj(C[κ,k]) * p_[k]
+       for k=1:length(p[κ])
+         y[k] += conj(C[κ,k]) * p[κ][k]
        end
        unlock(sp)
     end   
