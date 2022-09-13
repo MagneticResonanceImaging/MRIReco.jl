@@ -171,6 +171,12 @@ function SparsityOperators.normalOperator(S::DiagOp, W=I)
   return op
 end
 
+function LinearAlgebra.mul!(y, S::DiagNormalOp, x)
+  _produ_diagnormalop(S.normalOps, S.idx, x, y) 
+  return y 
+end
+
+
 function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
   _produ_diagnormalop(S.normalOps, S.idx, x, S.y) 
   return S.y

@@ -88,7 +88,7 @@ struct NFFTToeplitzNormalOp{T,D,W}
 end
 
 
-function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye()) where {T}
+function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye(Complex{T},size(S,1))) where {T}
   shape = S.plan.N
 
   # plan the FFTs
@@ -110,7 +110,7 @@ function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye()) where {T}
   return NFFTToeplitzNormalOp(shape, W, fftplan, ifftplan, λ, xL1, xL2)
 end
 
-function SparsityOperators.normalOperator(S::NFFTOp, W=opEye())
+function SparsityOperators.normalOperator(S::NFFTOp, W=opEye(Complex{T},size(S,1)))
   if S.toeplitz
     return NFFTToeplitzNormalOp(S,W)
   else

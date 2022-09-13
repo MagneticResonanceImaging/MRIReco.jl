@@ -80,19 +80,27 @@ end
 ### Normal Matrix Code ###
 # Left matrix can be build into a normal operator
 
-struct CompositeNormalOp{S,U} 
+struct CompositeNormalOp{S,U,V} 
   opOuter::S
   normalOpInner::U
+  tmp::V
 end
 
-function SparsityOperators.normalOperator(S::CompositeOp, W=I)
-  if S.isWeighting && W==opEye()
+function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
+  if S.isWeighting && typeof(W) <: opEye
     # In this case we are converting the left argument into a 
     # weighting matrix, that is passed to normalOperator
     normalOperator(S.B, S.A)
   else
-    return CompositeNormalOp(S.B, normalOperator(S.A, W) )
+    tmp = Vector{eltype(S.B)}(undef, size(S.A, 2))
+    return CompositeNormalOp(S.B, normalOperator(S.A, W), tmp)
   end
+end
+
+function LinearAlgebra.mul!(y, S::CompositeNormalOp, x)
+  mul!(S.tmp, S.opOuter, x)
+  mul!(S.tmp, S.normalOpInner, S.tmp) # This can be dangerous. We might need to create two tmp vectors
+  return mul!(y, adjoint(S.opOuter), S.tmp)
 end
 
 function Base.:*(S::CompositeNormalOp, x::AbstractVector)

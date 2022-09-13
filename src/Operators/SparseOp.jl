@@ -20,10 +20,10 @@ function SparseOp(name::AbstractString, shape::NTuple{N,Int64}; kargs...) where 
     # end
     return WaveletOp(ComplexF64,shape)
   elseif name=="nothing"
-    return opEye(prod(shape))
+    return opEye(ComplexF64,prod(shape))
   else
     error("SparseOp $name is not yet defined.")
   end
 
-  return opEye(prod(shape))
+  return opEye(ComplexF64, prod(shape))
 end
