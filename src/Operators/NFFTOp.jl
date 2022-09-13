@@ -37,7 +37,9 @@ generates a `NFFTOp` which evaluates the MRI Fourier signal encoding operator us
 """
 function NFFTOp(shape::Tuple, tr::AbstractMatrix{T}; toeplitz=false, oversamplingFactor=1.25, kernelSize=3, kargs...) where {T}
 
-  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.POLYNOMIAL)
+  plan = plan_nfft(tr, shape, m=kernelSize, σ=oversamplingFactor, precompute=NFFT.POLYNOMIAL,
+		                          fftflags=FFTW.ESTIMATE, blocking=true)
+
   return NFFTOp{Complex{T}}(size(tr,2), prod(shape), false, false
             , (res,x) -> produ!(res,plan,x)
             , nothing
@@ -51,11 +53,11 @@ function NFFTOp(shape::Tuple, tr::Trajectory; toeplitz=false, oversamplingFactor
   return NFFTOp(shape, kspaceNodes(tr); toeplitz=toeplitz, oversamplingFactor=oversamplingFactor, kernelSize=kernelSize, kargs...)
 end
 
-function produ!(y::T, plan::NFFT.NFFTPlan, x::T) where T<:AbstractVector
+function produ!(y::AbstractVector, plan::NFFT.NFFTPlan, x::AbstractVector) 
   mul!(y, plan, reshape(x,plan.N))
 end
 
-function ctprodu!(x::T, plan::NFFT.NFFTPlan, y::T) where T<:AbstractVector
+function ctprodu!(x::AbstractVector, plan::NFFT.NFFTPlan, y::AbstractVector)
   mul!(reshape(x, plan.N), adjoint(plan), y)
 end
 
@@ -98,7 +100,7 @@ function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye()) where {T}
 
   shape_os = 2 .* shape
   p = plan_nfft(typeof(S.plan.k), S.plan.k, shape_os; m = S.plan.params.m, σ = S.plan.params.σ,
-		precompute=NFFT.POLYNOMIAL)
+		precompute=NFFT.POLYNOMIAL, fftflags=FFTW.ESTIMATE, blocking=true)
   eigMat = adjoint(p) * ( W  * ones(T, size(S.plan.k,2)))
   λ = fftplan * fftshift(eigMat)
 

@@ -179,7 +179,8 @@ end
 function _produ_diagnormalop(ops, idx, x, y)
   @sync for i=1:length(ops)
     Threads.@spawn begin
-       y[idx[i]:idx[i+1]-1] = ops[i]*x[idx[i]:idx[i+1]-1]
+       mul!(view(y,idx[i]:idx[i+1]-1), ops[i], view(x,idx[i]:idx[i+1]-1))
+       #y[idx[i]:idx[i+1]-1] = ops[i]*x[idx[i]:idx[i+1]-1]
     end
   end
   return
