@@ -36,7 +36,7 @@ composition/product of two Operators. Differs with * since it can handle normal 
 function CompositeOp(A,B;isWeighting=false)
   nrow = A.nrow
   ncol = B.ncol
-  S = eltype(A)
+  S = promote_type(eltype(A), eltype(B))
   tmp_ = Vector{S}(undef, B.nrow)
 
   function produ!(res, x::AbstractVector{T}, tmp) where T<:Union{Real,Complex}
