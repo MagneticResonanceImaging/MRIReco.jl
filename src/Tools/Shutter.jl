@@ -4,7 +4,7 @@ preserveType(orig::Array{T}, data::Array{U}) where {T<:Real, U<:Complex} = real(
 
 preserveType(orig::Array{T}, data::Array{U}) where {T, U} = data
 
-function circularShutter!(I::Matrix, radiusFactor::Number=1.0)
+function circularShutter!(I::AbstractMatrix, radiusFactor::Number=1.0)
     imgSize = size(I)
     center = (imgSize[1]/2.0, imgSize[2]/2.0)
     radius = (center[1]>center[2] ? center[1] : center[2]) * radiusFactor
@@ -18,7 +18,7 @@ function circularShutter!(I::Matrix, radiusFactor::Number=1.0)
     end
 end
 
-function circularShutter!(I::Array{Complex{T}, 3}, radiusFactor::Float64=1.0) where T <: AbstractFloat
+function circularShutter!(I::AbstractArray{Complex{T}, 3}, radiusFactor::Float64=1.0) where T <: AbstractFloat
     imgSize = size(I)
     center = (imgSize[1]/2.0, imgSize[2]/2.0, imgSize[3]/2.0)
     radius = maximum(center) * radiusFactor

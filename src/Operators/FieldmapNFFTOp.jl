@@ -132,7 +132,7 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
             , plans, idx, S.circTraj, S.shape, cparam)
 end
 
-function produ!(s::Vector{T}, x::Vector{T}, x_tmp::Vector{T},shape::Tuple, plan,
+function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::Vector{T},shape::Tuple, plan,
                idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
                shutter::Bool, d::Vector{Vector{T}}, p::Vector{Array{T,D}}) where {T,D}
 
@@ -177,7 +177,7 @@ function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
 end
 
 
-function ctprodu!(y::Vector{Complex{T}}, x::Vector{Complex{T}}, x_tmp::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
+function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
                  cparam::InhomogeneityData{T}, shutter::Bool, d::Vector{Vector{Complex{T}}}, p::Vector{Array{Complex{T},D}}) where {T,D}
 
   y .= zero(Complex{T})
