@@ -6,7 +6,7 @@
   that the latter can be made copyable. This is particularly relevant for
   multi-threaded code
 """
-mutable struct CompositeOp{T} <: AbstractLinearOperator{T}
+mutable struct CompositeOp{T,U,V} <: AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -23,8 +23,9 @@ mutable struct CompositeOp{T} <: AbstractLinearOperator{T}
   Mv5 :: Vector{T}
   Mtu5 :: Vector{T}
   isWeighting :: Bool
-  A
-  B
+  A::U
+  B::V
+  tmp::Vector{T}
 end
 
 """
@@ -33,28 +34,32 @@ end
 composition/product of two Operators. Differs with * since it can handle normal operator
 """
 function CompositeOp(A,B;isWeighting=false)
-  nrow=A.nrow
-  ncol=B.ncol
+  nrow = A.nrow
+  ncol = B.ncol
   S = eltype(A)
+  tmp_ = Vector{S}(undef, B.nrow)
 
-  function produ!(res, x::Vector{T}) where T<:Union{Real,Complex}
-    res .= A*(B*x)
+  function produ!(res, x::AbstractVector{T}, tmp) where T<:Union{Real,Complex}
+    mul!(tmp, B, x)
+    return mul!(res, A, tmp)
   end
 
-  function tprodu!(res, y::Vector{T}) where T<:Union{Real,Complex}
-    res .= transposed(B)*(transposed(A)*y)
+  function tprodu!(res, y::AbstractVector{T}, tmp) where T<:Union{Real,Complex}
+    mul!(tmp, transpose(A), y)
+    return mul!(res, transpose(B), tmp)
   end
 
-  function ctprodu!(res, y::Vector{T}) where T<:Union{Real,Complex}
-    res .= adjoint(B)*(adjoint(A)*y)
+  function ctprodu!(res, y::AbstractVector{T}, tmp) where T<:Union{Real,Complex}
+    mul!(tmp, adjoint(A), y)
+    return mul!(res, adjoint(B), tmp)
   end
 
-  Op = CompositeOp{S}( nrow, ncol, false, false,
-                     produ!,
-                     tprodu!,
-                     ctprodu!, 
+  Op = CompositeOp( nrow, ncol, false, false,
+                     (res,x) -> produ!(res,x,tmp_),
+                     (res,y) -> tprodu!(res,y,tmp_),
+                     (res,y) -> ctprodu!(res,y,tmp_), 
                      0, 0, 0, false, false, false, S[], S[],
-                     isWeighting, A, B )
+                     isWeighting, A, B, tmp_)
 
   return Op
 end
