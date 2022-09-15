@@ -21,7 +21,7 @@ params[:reco] = "direct"
 params[:reconSize] = (256,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(acq), params)
-exportImage(joinpath(tmpdir,"recogre.png"), abs.(Ireco[:,:,1,1,1]))
+exportImage(joinpath(tmpdir,"recogre.png"), abs.(Ireco[:,:,1,1,1,1]))
 
 filenameCopy = joinpath(tmpdir, "simple_gre_copy.h5")
 fCopy = ISMRMRDFile(filenameCopy)
@@ -29,8 +29,8 @@ fCopy = ISMRMRDFile(filenameCopy)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(fCopy)
 
-@test convert(AcquisitionHeaderImmutable, acq.profiles[1].head) == 
-       convert(AcquisitionHeaderImmutable, acqCopy.profiles[1].head) 
+@test convert(AcquisitionHeaderImmutable, acq.profiles[1].head) ==
+       convert(AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
@@ -46,7 +46,7 @@ params[:reco] = "direct"
 params[:reconSize] = (128,128) #this should be clear from context
 
 Ireco = reconstruction(AcquisitionData(f), params)
-exportImage(joinpath(tmpdir,"recospiral.png"), abs.(Ireco[:,:,1,1,1]))
+exportImage(joinpath(tmpdir,"recospiral.png"), abs.(Ireco[:,:,1,1,1,1]))
 
 filenameCopy = joinpath(tmpdir, "simple_spiral_copy.h5")
 fCopy = ISMRMRDFile(filenameCopy)
@@ -55,8 +55,8 @@ acq = RawAcquisitionData(f)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
-@test convert(MRIReco.AcquisitionHeaderImmutable, acq.profiles[1].head) == 
-       convert(MRIReco.AcquisitionHeaderImmutable, acqCopy.profiles[1].head) 
+@test convert(MRIReco.AcquisitionHeaderImmutable, acq.profiles[1].head) ==
+       convert(MRIReco.AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
