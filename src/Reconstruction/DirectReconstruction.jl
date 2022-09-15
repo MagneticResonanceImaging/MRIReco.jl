@@ -22,29 +22,31 @@ function reconstruction_direct(acqData::AcquisitionData{T}
     error("reco-dimensionality $D and encoding-dimensionality $(encDims) do not match")
   end
 
-  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
-  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan)
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
+  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
 
-  p = Progress(numSl*numChan*numContr, 1, "Direct Reconstruction...")
+  p = Progress(numSl*numChan*numContr*numRep, 1, "Direct Reconstruction...")
 
   for i = 1:numSl
     F = encodingOps_simple(acqData, reconSize, slice=i, correctionMap=correctionMap)
     for k = 1:numContr
       for j = 1:numChan
-        kdata = kData(acqData,k,j,i) .* (weights[k].^2)
-        I = adjoint(F[k]) * kdata
+        for l = 1:numRep
+            kdata = kData(acqData,k,j,i,rep=l) .* (weights[k].^2)
+            I = adjoint(F[k]) * kdata
 
-        if isCircular( trajectory(acqData, k) )
-          circularShutter!(reshape(I, reconSize), 1.0)
+            if isCircular( trajectory(acqData, k) )
+            circularShutter!(reshape(I, reconSize), 1.0)
+            end
+            Ireco[:,i,k,j,l] = I
+
+            next!(p)
         end
-        Ireco[:,i,k,j] = I
-
-        next!(p)
       end
     end
   end
 
-  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan)
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan,numRep)
   # if D==2
   #   # 2d reconstruction
   #   Ireco = reshape(Ireco, reconSize[1], reconSize[2], numSl, numContr, numChan)

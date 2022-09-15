@@ -29,7 +29,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
 
-  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
 
   encParams = getEncodingOperatorParams(;params...)
 
@@ -37,33 +37,34 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   reg[1].params[:sparseTrafo] = sparseTrafo
 
   # reconstruction
-  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan)
-  @sync for k = 1:numSl
-    Threads.@spawn begin
-      if encodingOps!=nothing
-        F = encodingOps[:,k]
-      else
-        F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
-      end
-      for j = 1:numContr
-        W = WeightingOp(weights[j])
-        for i = 1:numChan
-          kdata = kData(acqData,j,i,k).* weights[j]
-          solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
+  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
+  @sync for l = 1:numRep
+    for k = 1:numSl
+      Threads.@spawn begin
+        if encodingOps!=nothing
+          F = encodingOps[:,k]
+        else
+          F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
+        end
+        for j = 1:numContr
+          W = WeightingOp(weights[j])
+          for i = 1:numChan
+            kdata = kData(acqData,j,i,k,rep=l).* weights[j]
+            solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
 
-          I = solve(solver, kdata, startVector=get(params,:startVector,Complex{T}[]),
-                                 solverInfo=get(params,:solverInfo,nothing))
+            I = solve(solver, kdata, startVector=get(params,:startVector,Complex{T}[]),
+                                  solverInfo=get(params,:solverInfo,nothing))
 
-          if isCircular( trajectory(acqData, j) )
-            circularShutter!(reshape(I, reconSize), 1.0)
+            if isCircular( trajectory(acqData, j) )
+              circularShutter!(reshape(I, reconSize), 1.0)
+            end
+            Ireco[:,k,j,i,l] = I
           end
-          Ireco[:,k,j,i] = I
         end
       end
     end
   end
-
-  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan)
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan, numRep)
 
   return makeAxisArray(Ireco, acqData)
 end
@@ -97,7 +98,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
 
-  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
@@ -106,34 +107,36 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
   W = WeightingOp( vcat(weights...) )
 
   # reconstruction
-  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl)
-  @sync for i = 1:numSl
-    Threads.@spawn begin
-      if encodingOps != nothing
-        F = encodingOps[i]
-      else
-        F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
-      end
-      for j = 1:numChan
-        kdata = multiEchoData(acqData, j, i) .* vcat(weights...)
-        solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
+  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl,numRep)
+  @sync for l = 1:numRep
+    for i = 1:numSl
+      Threads.@spawn begin
+        if encodingOps != nothing
+          F = encodingOps[i]
+        else
+          F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
+        end
+        for j = 1:numChan
+          kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
+          solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
 
-        Ireco[:,j,i] = solve(solver,kdata; params...)
-        # TODO circular shutter
+          Ireco[:,j,i,l] = solve(solver,kdata; params...)
+          # TODO circular shutter
+        end
       end
     end
   end
 
   if encDims==2
     # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl)
-    Ireco = permutedims(Ireco, [1,2,5,3,4])
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl,numRep)
+    Ireco = permutedims(Ireco, [1,2,5,3,4,6])
   else
     # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan)
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan,numRep)
   end
 
-  return makeAxisArray(permutedims(Ireco,[1,2,5,3,4]), acqData)
+  return makeAxisArray(permutedims(Ireco,[1,2,5,3,4,6]), acqData)
 end
 
 """
@@ -167,7 +170,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
 
-  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
@@ -175,34 +178,37 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, 1)
-  @sync for k = 1:numSl
-    Threads.@spawn begin
-      if encodingOps != nothing
-        E = encodingOps[:,k]
-      else
-        E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
-      end
-
-      for j = 1:numContr
-        W = WeightingOp(weights[j],numChan)
-        kdata = multiCoilData(acqData, j, k) .* repeat(weights[j], numChan)
-
-        EFull = ∘(W, E[j], isWeighting=true)
-        solver = createLinearSolver(solvername, EFull; reg=reg, params...)
-        I = solve(solver, kdata; params...)
-
-        if isCircular( trajectory(acqData, j) )
-          circularShutter!(reshape(I, reconSize), 1.0)
+  @sync for l = 1:numRep
+    for k = 1:numSl
+      Threads.@spawn begin
+        if encodingOps != nothing
+          E = encodingOps[:,k]
+        else
+          E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
         end
-        Ireco[:,k,j] = I
+
+        for j = 1:numContr
+          W = WeightingOp(weights[j],numChan)
+          kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
+
+          EFull = ∘(W, E[j], isWeighting=true)
+          solver = createLinearSolver(solvername, EFull; reg=reg, params...)
+          I = solve(solver, kdata; params...)
+
+          if isCircular( trajectory(acqData, j) )
+            circularShutter!(reshape(I, reconSize), 1.0)
+          end
+          Ireco[:,k,j,l] = I
+        end
       end
     end
   end
 
-  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1)
+  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
 
   return makeAxisArray(Ireco, acqData)
 end
+
 
 """
 Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly.
@@ -235,7 +241,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
 
-  numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
@@ -243,31 +249,33 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
   W = WeightingOp( vcat(weights...), numChan )
 
-  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl)
-  @sync for i = 1:numSl
-    Threads.@spawn begin
-      if encodingOps != nothing
-        E = encodingOps[i]
-      else
-        E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl,numRep)
+  @sync for l = 1:numRep
+    for i = 1:numSl
+      Threads.@spawn begin
+        if encodingOps != nothing
+          E = encodingOps[i]
+        else
+          E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+        end
+
+        kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+        solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
+
+        Ireco[:,i] = solve(solver, kdata; params...)
       end
-
-      kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
-      solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
-
-      Ireco[:,i] = solve(solver, kdata; params...)
     end
   end
 
+
   if encDims==2
     # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numSl, 1)
-    Ireco = permutedims(Ireco, [1,2,4,3,5])
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numSl, 1, numRep)
+    Ireco = permutedims(Ireco, [1,2,4,3,5,6])
   else
     # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1)
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1, numRep)
   end
 
   return makeAxisArray(Ireco, acqData)
 end
-
