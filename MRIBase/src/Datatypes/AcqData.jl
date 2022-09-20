@@ -1,6 +1,6 @@
 export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
-       numContrasts, numChannels, numSlices, numRepetitions, 
+       numContrasts, numChannels, numSlices, numRepetitions,
        encodingSize, fieldOfView, multiCoilData
 
 """
@@ -117,6 +117,37 @@ function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::In
 end
 
 """
+    kDataCart(acqData::AcquisitionData)
+
+Returns the cartesian k-space contained in `acqData` for all `echo`, `coil`, `slice` and `rep`(etition)
+with dimension :
+[x,y,z*slices,channels,echoes,repetitions]
+"""
+function kDataCart(acqData::AcquisitionData)
+nx, ny, nz = acqData.encodingSize[1:3]
+numChan, numSl = MRIFiles.numChannels(acqData), MRIFiles.numSlices(acqData)
+
+if nz > 1 && numSl > 1
+    @warn "Multi slab 3D acquisitions are concatenate along the 3rd dimension"
+end
+
+numEcho = length(acqData.traj)
+numRep = MRIFiles.numRepetitions(acqData)
+kdata = zeros(ComplexF64, nx * ny * nz,numSl,numChan, numEcho,numRep)
+for rep = 1:numRep
+    for sl =1:numSl
+        for echo = 1:numEcho
+            for coil = 1:numChan
+                kdata[acqData.subsampleIndices[numEcho],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
+            end
+        end
+    end
+end
+kdata = reshape(kdata, nx, ny, nz*numSl, numChan,numEcho,numRep)
+return kdata
+end
+
+"""
     multiEchoData(acqData::AcquisitionData, coil::Int64, slice::Int64;rep::Int64=1)
 
 returns the k-space contained in `acqData` for all echoes and given `coil`, `slice` and `rep`(etition).
@@ -226,7 +257,7 @@ function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
       plan = plan_nfft(nodes, shape, m=2, σ=2)
       weights[echo] = sqrt.(sdc(plan, iters=10))
     end
-    
+
   end
   return weights
 end

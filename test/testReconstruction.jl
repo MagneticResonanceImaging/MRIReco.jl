@@ -18,6 +18,12 @@ function testGriddingReco(N=32)
 
   x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
+
+  kspace = kDataCart(acqData)
+  im = ifftshift(ifft(ifftshift(kspace)))
+  diff = abs.(im[:,:,1,1,1,1]) .- abs.(x)
+  diff .< 1e-10
+  @test (norm(vec(x)-vec(abs.(im[:,:,1,1,1,1])))/norm(vec(x))) < 1e-10
 end
 
 function testGriddingReco3d(N=32)
@@ -430,7 +436,7 @@ function testReco(N=32)
     testSENSEReco(64, ComplexF64)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
-    testRegridding() 
+    testRegridding()
   end
 end
 
