@@ -125,14 +125,14 @@ with dimension :
 """
 function kDataCart(acqData::AcquisitionData)
 nx, ny, nz = acqData.encodingSize[1:3]
-numChan, numSl = MRIFiles.numChannels(acqData), MRIFiles.numSlices(acqData)
+numChan, numSl = numChannels(acqData), numSlices(acqData)
 
 if nz > 1 && numSl > 1
     @warn "Multi slab 3D acquisitions are concatenate along the 3rd dimension"
 end
 
 numEcho = length(acqData.traj)
-numRep = MRIFiles.numRepetitions(acqData)
+numRep = numRepetitions(acqData)
 kdata = zeros(ComplexF64, nx * ny * nz,numSl,numChan, numEcho,numRep)
 for rep = 1:numRep
     for sl =1:numSl
