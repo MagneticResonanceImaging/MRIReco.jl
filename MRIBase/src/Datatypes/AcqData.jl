@@ -1,4 +1,4 @@
-export AcquisitionData, kData, kDataCart, kdataSingleSlice, convertUndersampledData,
+export AcquisitionData, kData, kDataCart,AcqDataFromKspace, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
        numContrasts, numChannels, numSlices, numRepetitions,
        encodingSize, fieldOfView, multiCoilData
@@ -145,6 +145,37 @@ for rep = 1:numRep
 end
 kdata = reshape(kdata, nx, ny, nz*numSl, numChan,numEcho,numRep)
 return kdata
+end
+
+
+"""
+    AcqDataFromKspace(kdata::Array{T,6})
+
+Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
+    [x,y,z,channels,echoes,repetitions]
+
+Different undersampling patterns can be handle **only** along the echo dimension.
+"""
+function AcqDataFromKspace(kspace::Array{Complex{T},6}) where T
+    sx,sy,sz,nCh,nEchos,nReps = size(kspace)
+    tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+
+    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+    acq = AcquisitionData(tr,kdata)
+
+    acq.encodingSize = [sx,sy,sz]
+
+
+    for echo in 1:nEchos
+        I = findall(x->x!=0,abs.(kspace[:,:,:,:,echo,1]))
+        subsampleInd = LinearIndices((sx,sy,sz))[I]
+
+        acq.subsampleIndices[echo]=subsampleInd
+        for rep in 1:nReps
+            acq.kdata[echo,1,rep] = acq.kdata[echo,1,rep][subsampleInd,:]
+        end
+    end
+    return acq
 end
 
 """
