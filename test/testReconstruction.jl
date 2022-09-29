@@ -54,7 +54,7 @@ function testConvertKspace(N=32)
     kspace_cs = copy(kspace)
     kspace_cs = kspace_cs .* mask
 
-    acqCS = AcqDataFromKspace(kspace_cs)
+    acqCS = AcquisitionData(kspace_cs)
     params[:reco] = "direct"
     params[:reconSize] = (N,N,1)
 

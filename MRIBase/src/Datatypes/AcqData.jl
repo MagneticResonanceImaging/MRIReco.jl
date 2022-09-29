@@ -92,6 +92,39 @@ function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
   return AcquisitionData(seqInfo,tr_vec,kdata,subsampleIndices,encodingSize,fov)
 end
 
+"""
+    AcquistionData(kdata::Array{T,6})
+
+Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
+    [x,y,z,channels,echoes,repetitions]
+
+Different undersampling patterns can be handled **only** along the echo dimension.
+
+This methods assumes the data to correspond to a single volume
+encoded with a 3d Cartesian sequence.
+"""
+function AcquisitionData(kspace::Array{Complex{T},6}) where T
+    sx,sy,sz,nCh,nEchos,nReps = size(kspace)
+    tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+
+    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+    acq = AcquisitionData(tr,kdata)
+
+    acq.encodingSize = [sx,sy,sz]
+
+
+    for echo in 1:nEchos
+        I = findall(x->x!=0,abs.(kspace[:,:,:,:,echo,1]))
+        subsampleInd = LinearIndices((sx,sy,sz))[I]
+
+        acq.subsampleIndices[echo]=subsampleInd
+        for rep in 1:nReps
+            acq.kdata[echo,1,rep] = acq.kdata[echo,1,rep][subsampleInd,:]
+        end
+    end
+    return acq
+end
+
 #function Images.pixelspacing(acqData::AcquisitionData)
 #  return [1.0,1.0,1.0]*Unitful.mm
 #  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
@@ -145,37 +178,6 @@ for rep = 1:numRep
 end
 kdata = reshape(kdata, nx, ny, nz*numSl, numChan,numEcho,numRep)
 return kdata
-end
-
-
-"""
-    AcqDataFromKspace(kdata::Array{T,6})
-
-Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
-    [x,y,z,channels,echoes,repetitions]
-
-Different undersampling patterns can be handle **only** along the echo dimension.
-"""
-function AcqDataFromKspace(kspace::Array{Complex{T},6}) where T
-    sx,sy,sz,nCh,nEchos,nReps = size(kspace)
-    tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
-
-    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
-    acq = AcquisitionData(tr,kdata)
-
-    acq.encodingSize = [sx,sy,sz]
-
-
-    for echo in 1:nEchos
-        I = findall(x->x!=0,abs.(kspace[:,:,:,:,echo,1]))
-        subsampleInd = LinearIndices((sx,sy,sz))[I]
-
-        acq.subsampleIndices[echo]=subsampleInd
-        for rep in 1:nReps
-            acq.kdata[echo,1,rep] = acq.kdata[echo,1,rep][subsampleInd,:]
-        end
-    end
-    return acq
 end
 
 """
