@@ -26,7 +26,7 @@ function StackOfStarsTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = cartesian3dNodes(T, numProfiles, numSamplingPerProfile; numSlices=numSlices, angleOffset = :equispaced)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile, numSlices; TE=TE, AQ=AQ)
-  return  Trajectory("StackOfStars", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, false, true)
+  return  Trajectory("StackOfStars", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, numSlices, false, true)
 end
 
 function stackOfStarsNodes(::Type{T}, numProfiles, numSamplingPerProfile

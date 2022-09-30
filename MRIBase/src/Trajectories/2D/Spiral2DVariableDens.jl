@@ -31,7 +31,7 @@ function SpiralTrajectoryVarDens(::Type{T}, numProfiles, numSamplingPerProfile
   nodes = spiralVarDensNodes(T, numProfiles, numSamplingPerProfile; windings=windings,
                              alpha=alpha, angleOffset=angleOffset, kmax=kmax)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("SpiralVarDens", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("SpiralVarDens", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 # Constructing the amplitude limited case of the variable density spiral Trajectory

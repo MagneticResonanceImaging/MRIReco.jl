@@ -23,7 +23,7 @@ function RadialTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = radialNodes(T, numProfiles, numSamplingPerProfile; angleOffset=angleOffset)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("Radial", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("Radial", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 function radialNodes(::Type{T}, numProfiles::Int64

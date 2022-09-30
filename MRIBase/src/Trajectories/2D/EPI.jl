@@ -26,7 +26,7 @@ function EPITrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = epiNodes(T, numProfiles, numSamplingPerProfile; EPI_factor=EPI_factor, profileOffset=profileOffset)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return Trajectory("EPI", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
+  return Trajectory("EPI", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
 function epiNodes(::Type{T}, numProfiles::Int64

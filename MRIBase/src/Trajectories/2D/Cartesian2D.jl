@@ -27,7 +27,7 @@ function CartesianTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = cartesian2dNodes(T, numProfiles, numSamplingPerProfile; kmin=kmin,kmax=kmax)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("Cartesian", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
+  return  Trajectory("Cartesian", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
 function cartesian2dNodes(::Type{T}, numProfiles, numSamplingPerProfile

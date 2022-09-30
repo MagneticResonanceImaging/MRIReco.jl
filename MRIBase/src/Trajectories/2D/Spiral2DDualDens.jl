@@ -30,7 +30,7 @@ function SpiralTrajectoryDualDens(::Type{T}, numProfiles, numSamplingPerProfile
   nodes = spiralNodesDualDens(T, numProfiles, numSamplingPerProfile; windings=windings,
               angleOffset=angleOffset, densityFactor=densityFactor, kmax=kmax)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("SpiralDualDens", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("SpiralDualDens", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 function spiralNodesDualDens(::Type{T}, numProfiles::Int64
