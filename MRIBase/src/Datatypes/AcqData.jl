@@ -1,6 +1,6 @@
-export AcquisitionData, kData, kdataSingleSlice, convertUndersampledData,
+export AcquisitionData, kData, kDataCart, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
-       numContrasts, numChannels, numSlices, numRepetitions, 
+       numContrasts, numChannels, numSlices, numRepetitions,
        encodingSize, fieldOfView, multiCoilData
 
 """
@@ -92,6 +92,44 @@ function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
   return AcquisitionData(seqInfo,tr_vec,kdata,subsampleIndices,encodingSize,fov)
 end
 
+"""
+    AcquistionData(kdata::Array{T,6})
+
+Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
+    [x,y,z,channels,echoes,repetitions]
+
+Different undersampling patterns can be handled **only** along the echo dimension.
+
+This methods assumes the data to correspond to a single volume
+encoded with a 3d Cartesian sequence.
+"""
+function AcquisitionData(kspace::Array{Complex{T},6}) where T
+    sx,sy,sz,nCh,nEchos,nReps = size(kspace)
+
+    if sz == 1
+        tr = MRIBase.CartesianTrajectory(T,sx,sy,TE=T(0),AQ=T(0))
+    else
+        tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+    end
+
+    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+    acq = AcquisitionData(tr,kdata)
+
+    acq.encodingSize = [sx,sy,sz]
+
+
+    for echo in 1:nEchos
+        I = findall(x->x!=0,abs.(kspace[:,:,:,:,echo,1]))
+        subsampleInd = LinearIndices((sx,sy,sz))[I]
+
+        acq.subsampleIndices[echo]=subsampleInd
+        for rep in 1:nReps
+            acq.kdata[echo,1,rep] = acq.kdata[echo,1,rep][subsampleInd,:]
+        end
+    end
+    return acq
+end
+
 #function Images.pixelspacing(acqData::AcquisitionData)
 #  return [1.0,1.0,1.0]*Unitful.mm
 #  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
@@ -114,6 +152,37 @@ returns the k-space contained in `acqData` for given `echo`, `coil`, `slice` and
 """
 function kData(acqData::AcquisitionData, echo::Int64=1, coil::Int64=1, slice::Int64=1;rep::Int64=1)
   return acqData.kdata[echo,slice,rep][:,coil]
+end
+
+"""
+    kDataCart(acqData::AcquisitionData)
+
+Returns the cartesian k-space contained in `acqData` for all `echo`, `coil`, `slice` and `rep`(etition)
+with dimension :
+[x,y,z*slices,channels,echoes,repetitions]
+"""
+function kDataCart(acqData::AcquisitionData)
+nx, ny, nz = acqData.encodingSize[1:3]
+numChan, numSl = numChannels(acqData), numSlices(acqData)
+
+if nz > 1 && numSl > 1
+    @warn "Multi slab 3D acquisitions are concatenate along the 3rd dimension"
+end
+
+numEcho = length(acqData.traj)
+numRep = numRepetitions(acqData)
+kdata = zeros(ComplexF64, nx * ny * nz,numSl,numChan, numEcho,numRep)
+for rep = 1:numRep
+    for sl =1:numSl
+        for echo = 1:numEcho
+            for coil = 1:numChan
+                kdata[acqData.subsampleIndices[numEcho],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
+            end
+        end
+    end
+end
+kdata = reshape(kdata, nx, ny, nz*numSl, numChan,numEcho,numRep)
+return kdata
 end
 
 """
@@ -226,7 +295,7 @@ function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
       plan = plan_nfft(nodes, shape, m=2, σ=2)
       weights[echo] = sqrt.(sdc(plan, iters=10))
     end
-    
+
   end
   return weights
 end
