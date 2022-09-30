@@ -104,7 +104,7 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
 
   # bare regularization (without sparsifying transform)
   regName = get(recoParams, :regularization, "L1")
-  λ = get(recoParams,:λ,0.0)
+  λ = T(get(recoParams,:λ,0.0))
   reg = Regularization(regName, λ; shape=reconSize, recoParams...)
 
   # normalize regularizer ?
