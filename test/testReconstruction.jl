@@ -56,13 +56,59 @@ function testConvertKspace(N=32)
 
     acqCS = AcquisitionData(kspace_cs)
     params[:reco] = "direct"
-    params[:reconSize] = (N,N,1)
+    params[:reconSize] = (N,N)
 
     x_cs = reconstruction(acqCS, params)
     x_cs2 = ifftshift(ifft(ifftshift(kspace_cs)))
 
     @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,1,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
-  end
+end
+
+function testConvertKspace3D(N=32)
+    # image
+    x = shepp_logan(N)
+    x = repeat(x,1,1,N)
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian3D"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+    params[:numSlices] = N
+
+    acqData = simulation(x, params)
+
+    #reco
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N,N)
+
+    x_approx = reconstruction(acqData, params)
+    kspace = kDataCart(acqData)
+    x_approx2 = ifftshift(ifft(ifftshift(kspace)))
+    diff = abs.(x_approx2[:,:,:,1,1,1]) .- abs.(x)
+    any(diff .< 1e-10)
+    @test (norm(vec(x)-vec(abs.(x_approx2[:,:,:,1,1,1])))/norm(vec(x))) < 1e-10
+
+    ## undersample kspace
+    T = eltype(kspace)
+    mask_idx = MRIReco.sample_vdpoisson((N,N),2.0)
+    mask = zeros(T,N,N)
+    mask[mask_idx] .= 1
+    mask = repeat(mask,1,1,N,1,1,1)
+
+    kspace_cs = copy(kspace)
+    kspace_cs = kspace_cs .* mask
+
+    acqCS = AcquisitionData(kspace_cs)
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N,N)
+
+    x_cs = reconstruction(acqCS, params)
+    x_cs2 = ifftshift(ifft(ifftshift(kspace_cs)))
+
+    @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,:,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
+end
 
 function testGriddingReco3d(N=32)
   sh = ComplexF64.(shepp_logan(N))
@@ -457,6 +503,7 @@ function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
     testConvertKspace()
+    testConvertKspace3D()
     testGriddingReco3d()
     sampling = ["random", "poisson", "vdPoisson"] # "lines"
     for samp in sampling

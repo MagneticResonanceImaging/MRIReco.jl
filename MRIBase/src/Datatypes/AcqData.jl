@@ -105,7 +105,12 @@ encoded with a 3d Cartesian sequence.
 """
 function AcquisitionData(kspace::Array{Complex{T},6}) where T
     sx,sy,sz,nCh,nEchos,nReps = size(kspace)
-    tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+
+    if sz == 1
+        tr = MRIBase.CartesianTrajectory(T,sx,sy,TE=T(0),AQ=T(0))
+    else
+        tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+    end
 
     kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
     acq = AcquisitionData(tr,kdata)
