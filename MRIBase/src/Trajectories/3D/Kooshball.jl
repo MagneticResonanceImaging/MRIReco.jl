@@ -20,7 +20,7 @@ function KooshballTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = kooshballNodes(T, numProfiles, numSamplingPerProfile; numSlices=numSlices)
   times = kooshballTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("Kooshball", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("Kooshball", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 function kooshballNodes(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64; kargs...) where T

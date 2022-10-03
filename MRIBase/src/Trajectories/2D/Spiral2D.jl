@@ -28,7 +28,7 @@ function SpiralTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
   nodes = spiralNodes(T, numProfiles, numSamplingPerProfile; windings=windings,
                       angleOffset=angleOffset, kmax=kmax)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("Spiral", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("Spiral", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 function spiralNodes(::Type{T}, numProfiles::Int64

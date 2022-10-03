@@ -6,7 +6,7 @@ function loadImage(filename::String)
   return makeAxisArray(ni.raw, pixelspacing)
 end
 
-function saveImage(filename::String, im::AbstractArray{T,5}, makeAbs::Bool=false) where T
+function saveImage(filename::String, im::AbstractArray{T,6}, makeAbs::Bool=false) where T
   voxel_size = ustrip.(uconvert.(u"m", pixelspacing(im)[1:3]))
 
   orientation = zeros(Float32, 3, 4)

@@ -1,5 +1,5 @@
 import Base: hcat, vcat, \
-export hcat, vcat, \, diagOp, A_mul_B
+export hcat, vcat, \, diagOp
 
 include("Composition.jl")
 include("NFFTOp.jl")
@@ -148,14 +148,17 @@ end
 function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1)))
   weights = W*ones(S.nrow)
 
-  T = eltype(S)
+  T = promote_type(eltype(S), eltype(W))
 
   if S.equalOps
-    # this opimization is only allowed if all ops are the same
-    opInner = normalOperator(S.ops[1], WeightingOp(weights[S.yIdx[1]:S.yIdx[2]-1].^2))
+    # this optimization is only allowed if all ops are the same
+
+    # we promote the weights to be of the same type as T, which will be required
+    # when creating the temporary vector in normalOperator in a later stage
+    opInner = normalOperator(S.ops[1], WeightingOp(T.(weights[S.yIdx[1]:S.yIdx[2]-1].^2)))
     op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
   else
-    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)) 
+    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(T.(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)))
                      for i in 1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
   end
 

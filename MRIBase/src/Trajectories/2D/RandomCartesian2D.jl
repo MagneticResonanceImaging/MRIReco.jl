@@ -26,7 +26,7 @@ function RandomCartesianTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = randomCartesianNodes(T, numProfiles, numSamplingPerProfile; redFac=redFac,patFunc=patFunc)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("RandomCartesian", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, true, false)
+  return  Trajectory("RandomCartesian", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, true, false)
 end
 
 function randomCartesianNodes(::Type{T}, numProfiles, numSamplingPerProfile;

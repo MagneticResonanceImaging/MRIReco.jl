@@ -20,6 +20,96 @@ function testGriddingReco(N=32)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
+# test gridding reco
+function testConvertKspace(N=32)
+    # image
+    x = shepp_logan(N)
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+
+    acqData = simulation(x, params)
+
+    #reco
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N)
+
+    x_approx = reconstruction(acqData, params)
+    kspace = kDataCart(acqData)
+    x_approx2 = ifftshift(ifft(ifftshift(kspace)))
+    diff = abs.(x_approx2[:,:,1,1,1,1]) .- abs.(x)
+    any(diff .< 1e-10)
+    @test (norm(vec(x)-vec(abs.(x_approx2[:,:,1,1,1,1])))/norm(vec(x))) < 1e-10
+
+    ## undersample kspace
+    T = eltype(kspace)
+    mask_idx = MRIReco.sample_vdpoisson((N,N),2.0)
+    mask = zeros(T,N,N,1,1,1,1)
+    mask[mask_idx] .= 1
+
+    kspace_cs = copy(kspace)
+    kspace_cs = kspace_cs .* mask
+
+    acqCS = AcquisitionData(kspace_cs)
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N)
+
+    x_cs = reconstruction(acqCS, params)
+    x_cs2 = ifftshift(ifft(ifftshift(kspace_cs)))
+
+    @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,1,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
+end
+
+function testConvertKspace3D(N=32)
+    # image
+    x = shepp_logan(N)
+    x = repeat(x,1,1,N)
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian3D"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+    params[:numSlices] = N
+
+    acqData = simulation(x, params)
+
+    #reco
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N,N)
+
+    x_approx = reconstruction(acqData, params)
+    kspace = kDataCart(acqData)
+    x_approx2 = ifftshift(ifft(ifftshift(kspace)))
+    diff = abs.(x_approx2[:,:,:,1,1,1]) .- abs.(x)
+    any(diff .< 1e-10)
+    @test (norm(vec(x)-vec(abs.(x_approx2[:,:,:,1,1,1])))/norm(vec(x))) < 1e-10
+
+    ## undersample kspace
+    T = eltype(kspace)
+    mask_idx = MRIReco.sample_vdpoisson((N,N),2.0)
+    mask = zeros(T,N,N)
+    mask[mask_idx] .= 1
+    mask = repeat(mask,1,1,N,1,1,1)
+
+    kspace_cs = copy(kspace)
+    kspace_cs = kspace_cs .* mask
+
+    acqCS = AcquisitionData(kspace_cs)
+    params[:reco] = "direct"
+    params[:reconSize] = (N,N,N)
+
+    x_cs = reconstruction(acqCS, params)
+    x_cs2 = ifftshift(ifft(ifftshift(kspace_cs)))
+
+    @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,:,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
+end
+
 function testGriddingReco3d(N=32)
   sh = ComplexF64.(shepp_logan(N))
   x = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
@@ -154,6 +244,48 @@ function testCSSenseReco(N=32,redFac=1.1)
 
   x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
+end
+
+function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
+  x = shepp_logan(N)
+
+  # coil sensitivites
+  sensMaps = zeros(ComplexF64,N*N,2,1)
+  sensMaps[1:floor(Int64, N*N/2),1,1] .= 1.0
+  sensMaps[floor(Int64, N*N/2)+1:end,2,1] .= 1.0
+
+  # convert to type
+  x = convert.(type,x)
+  sensMaps = convert.(type,sensMaps)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
+  params[:numSamplingPerProfile] = N
+
+  acqData = simulation(x,params)
+  Random.seed!(1234)
+  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+
+  # reco
+  params[:reco] = "multiCoil"
+  params[:reconSize] = (N,N)
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
+  params[:regularization] = "L2"       # regularization
+  params[:λ] = 1.e-3
+  params[:solver] = "cgnr"
+  params[:iterations] = 1
+  params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-5
+  params[:relTol] = 1.e-4
+
+  x_approx = vec(reconstruction(acqData,params))
+  # This test is expected to have a higher error since CGNR with CS will not work
+  # We still keep this test since it revealed the issue #110
+  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1 
 end
 
 function testOffresonanceReco(N = 128; accelMethod="nfft")
@@ -412,6 +544,8 @@ end
 function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
+    testConvertKspace()
+    testConvertKspace3D()
     testGriddingReco3d()
     sampling = ["random", "poisson", "vdPoisson"] # "lines"
     for samp in sampling
@@ -428,9 +562,11 @@ function testReco(N=32)
     end
     testSENSEReco(64, ComplexF32)
     testSENSEReco(64, ComplexF64)
+    testCSRecoMultiCoilCGNR(type = ComplexF64)
+    testCSRecoMultiCoilCGNR(type = ComplexF32)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
-    testRegridding() 
+    testRegridding()
   end
 end
 

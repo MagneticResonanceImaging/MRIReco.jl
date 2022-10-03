@@ -23,7 +23,7 @@ function OneLine2dTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = oneLine2dNodes(T, numProfiles, numSamplingPerProfile; angle=angle)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile; TE=TE, AQ=AQ)
-  return  Trajectory("OneLine", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, 1, false, true)
+  return  Trajectory("OneLine", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, 1, false, true)
 end
 
 function oneLine2dNodes(::Type{T}, numProfiles, numSamplingPerProfile; angle::Float64=0.0, kargs...) where T

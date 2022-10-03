@@ -92,12 +92,13 @@ struct CompositeNormalOp{S,U,V}
 end
 
 function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
+  T = promote_type(eltype(S.A), eltype(S.B), eltype(W))
   if S.isWeighting #&& typeof(W) <: opEye
     # In this case we are converting the left argument into a 
     # weighting matrix, that is passed to normalOperator
     normalOperator(S.B, S.A)
   else
-    tmp = Vector{eltype(S.B)}(undef, size(S.A, 2))
+    tmp = Vector{T}(undef, size(S.A, 2))
     return CompositeNormalOp(S.B, normalOperator(S.A, W), tmp)
   end
 end
@@ -112,12 +113,9 @@ function Base.:*(S::CompositeNormalOp, x::AbstractVector)
   return adjoint(S.opOuter)*(S.normalOpInner*(S.opOuter*x))
 end
 
-
-# implement A_mul_B for the product
-A_mul_B(A::AbstractLinearOperator, x::Vector) = A*x
-
 function Base.copy(S::CompositeNormalOp{T,U}) where {T,U}
   opOuter = copy(S.opOuter)
   opInner = copy(S.normalOpInner)
-  return CompositeNormalOp(opOuter, opInner)
+  tmp = copy(S.tmp)
+  return CompositeNormalOp(opOuter, opInner, tmp)
 end

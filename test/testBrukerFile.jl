@@ -81,7 +81,7 @@ for i = 1:length(listBrukFiles)
         params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2]);
     end
     Ireco = reconstruction(acq, params);
-    @test size(Ireco) == (raw.params["encodedSize"][1], raw.params["encodedSize"][2], raw.params["encodedSize"][3], 1, raw.params["receiverChannels"])
+    @test size(Ireco) == (raw.params["encodedSize"][1], raw.params["encodedSize"][2], raw.params["encodedSize"][3], numContrasts(acq), raw.params["receiverChannels"], numRepetitions(acq))
 
     Isos = sqrt.(sum(abs.(Ireco).^2,dims=5));
     Isos = Isos ./ maximum(Isos);
@@ -118,7 +118,10 @@ I2dseq = I2dseq ./ maximum(I2dseq);
 I2dseq = permutedims(I2dseq,(2,1,3,4))
 I2dseq = circshift(I2dseq,(0,0,1,0))
 
-@test MRIReco.norm(vec(I2dseq[:,:,:,1])-vec(Isos))/MRIReco.norm(vec(I2dseq[:,:,:,1])) < 0.1
+#test reconstruction of repetitions
+@test size(Isos,6)==2
+@test MRIReco.norm(vec(I2dseq)-vec(Isos[:,:,:,1,1,:]))/MRIReco.norm(vec(I2dseq)) < 0.1
+
 end
 
 end
