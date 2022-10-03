@@ -112,12 +112,9 @@ function Base.:*(S::CompositeNormalOp, x::AbstractVector)
   return adjoint(S.opOuter)*(S.normalOpInner*(S.opOuter*x))
 end
 
-
-# implement A_mul_B for the product
-A_mul_B(A::AbstractLinearOperator, x::Vector) = A*x
-
 function Base.copy(S::CompositeNormalOp{T,U}) where {T,U}
   opOuter = copy(S.opOuter)
   opInner = copy(S.normalOpInner)
-  return CompositeNormalOp(opOuter, opInner)
+  tmp = copy(S.tmp)
+  return CompositeNormalOp(opOuter, opInner, tmp)
 end

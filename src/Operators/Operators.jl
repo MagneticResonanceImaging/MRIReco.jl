@@ -1,5 +1,5 @@
 import Base: hcat, vcat, \
-export hcat, vcat, \, diagOp, A_mul_B
+export hcat, vcat, \, diagOp
 
 include("Composition.jl")
 include("NFFTOp.jl")
