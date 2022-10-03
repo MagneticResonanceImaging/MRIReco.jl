@@ -246,6 +246,48 @@ function testCSSenseReco(N=32,redFac=1.1)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
+function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
+  x = shepp_logan(N)
+
+  # coil sensitivites
+  sensMaps = zeros(ComplexF64,N*N,2,1)
+  sensMaps[1:floor(Int64, N*N/2),1,1] .= 1.0
+  sensMaps[floor(Int64, N*N/2)+1:end,2,1] .= 1.0
+
+  # convert to type
+  x = convert.(type,x)
+  sensMaps = convert.(type,sensMaps)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
+  params[:numSamplingPerProfile] = N
+
+  acqData = simulation(x,params)
+  Random.seed!(1234)
+  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+
+  # reco
+  params[:reco] = "multiCoil"
+  params[:reconSize] = (N,N)
+  params[:senseMaps] = reshape(sensMaps,N,N,1,2)
+  params[:regularization] = "L2"       # regularization
+  params[:λ] = 1.e-3
+  params[:solver] = "cgnr"
+  params[:iterations] = 1
+  params[:ρ] = 1.0e-1
+  params[:absTol] = 1.e-5
+  params[:relTol] = 1.e-4
+
+  x_approx = vec(reconstruction(acqData,params))
+  # This test is expected to have a higher error since CGNR with CS will not work
+  # We still keep this test since it revealed the issue #110
+  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1 
+end
+
 function testOffresonanceReco(N = 128; accelMethod="nfft")
 
   I = shepp_logan(N)
@@ -520,6 +562,8 @@ function testReco(N=32)
     end
     testSENSEReco(64, ComplexF32)
     testSENSEReco(64, ComplexF64)
+    testCSRecoMultiCoilCGNR(type = ComplexF64)
+    testCSRecoMultiCoilCGNR(type = ComplexF32)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
     testRegridding()

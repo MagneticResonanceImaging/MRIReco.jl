@@ -92,12 +92,13 @@ struct CompositeNormalOp{S,U,V}
 end
 
 function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
+  T = promote_type(eltype(S.A), eltype(S.B), eltype(W))
   if S.isWeighting #&& typeof(W) <: opEye
     # In this case we are converting the left argument into a 
     # weighting matrix, that is passed to normalOperator
     normalOperator(S.B, S.A)
   else
-    tmp = Vector{eltype(S.B)}(undef, size(S.A, 2))
+    tmp = Vector{T}(undef, size(S.A, 2))
     return CompositeNormalOp(S.B, normalOperator(S.A, W), tmp)
   end
 end
