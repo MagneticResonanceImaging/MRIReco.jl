@@ -193,13 +193,15 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   kernel_k = zeros(T, nc, imsize...)
   kernel_i = similar(kernel_k)
 
-  fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE)
+  fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE, num_threads=Threads.nthreads())
 
   for iv ∈ axes(kernel, 2)
     @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
     mul!(kernel_i, fftplan, kernel_k)
-    @floop for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1), i ∈ axes(kernel_i,1)
-      kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
+    @floop for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1)
+      @inbounds @simd for i ∈ axes(kernel_i,1)
+        kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
+      end
     end
   end
 
@@ -221,7 +223,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
         U .*= transpose(exp.(-1im .* angle.(U[1])))
         @views eigenVals[n, 1, :] .= real.(S)
       else
-        S, U = eigen!(@view kern2[:, :, n]; sortby = (λ) -> -abs(λ))
+        S, U = eigen!(view(kern2, :, :, n); sortby = (λ) -> -abs(λ))
         U = @view U[:,1:nmaps]
         U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
         @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
