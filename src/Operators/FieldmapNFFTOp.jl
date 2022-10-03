@@ -159,18 +159,16 @@ function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::Vector{T},sha
 end
 
 function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
-  @sync for κ=1:K
-    Threads.@spawn begin
-      p[κ][:] .= C[κ,:] .* x_
-      mul!(d[κ], plan[κ], p[κ])
+  @floop for κ=1:K
+    p[κ][:] .= C[κ,:] .* x_
+    mul!(d[κ], plan[κ], p[κ])
     
-      lock(sp)
-      for k=1:length(idx[κ])
-        l=idx[κ][k]
-        s[l] += d[κ][k]*A[l,κ]
-      end
-      unlock(sp)
+    lock(sp)
+    for k=1:length(idx[κ])
+      l=idx[κ][k]
+      s[l] += d[κ][k]*A[l,κ]
     end
+    unlock(sp)
   end
   
   return
@@ -205,20 +203,18 @@ end
 
 function ctprodu_inner!(K, C, A, shape, d, y, sp, plan, idx, x_, p)
 
-  @sync for κ=1:K
-    Threads.@spawn begin
-       for k=1:length(idx[κ])
-         d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
-       end
+  @floop for κ=1:K
+     for k=1:length(idx[κ])
+       d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
+     end
      
-       mul!(p[κ], adjoint(plan[κ]), d[κ])
+     mul!(p[κ], adjoint(plan[κ]), d[κ])
      
-       lock(sp)
-       for k=1:length(p[κ])
-         y[k] += conj(C[κ,k]) * p[κ][k]
-       end
-       unlock(sp)
-    end   
+     lock(sp)
+     for k=1:length(p[κ])
+       y[k] += conj(C[κ,k]) * p[κ][k]
+     end
+     unlock(sp)
   end
     
   return

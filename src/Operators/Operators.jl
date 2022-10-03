@@ -38,28 +38,22 @@ function vcat(A::AbstractLinearOperator, n::Int)
 end
 
 function diagOpProd(y::AbstractVector{T}, x::AbstractVector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @sync for i=1:length(ops)
-    Threads.@spawn begin
-      mul!(view(y,yIdx[i]:yIdx[i+1]-1), ops[i], view(x,xIdx[i]:xIdx[i+1]-1))
-    end
+  @floop for i=1:length(ops)
+    mul!(view(y,yIdx[i]:yIdx[i+1]-1), ops[i], view(x,xIdx[i]:xIdx[i+1]-1))
   end
   return y
 end
 
 function diagOpTProd(y::AbstractVector{T}, x::AbstractVector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @sync for i=1:length(ops)
-    Threads.@spawn begin  
-      mul!(view(y,yIdx[i]:yIdx[i+1]-1), transpose(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
-    end
+  @floop for i=1:length(ops)
+    mul!(view(y,yIdx[i]:yIdx[i+1]-1), transpose(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
   end
   return y
 end
 
 function diagOpCTProd(y::AbstractVector{T}, x::AbstractVector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @sync for i=1:length(ops)
-    Threads.@spawn begin    
-      mul!(view(y,yIdx[i]:yIdx[i+1]-1), adjoint(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
-    end
+  @floop for i=1:length(ops)
+    mul!(view(y,yIdx[i]:yIdx[i+1]-1), adjoint(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
   end
   return y
 end
@@ -180,10 +174,8 @@ function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
 end
 
 function _produ_diagnormalop(ops, idx, x, y)
-  @sync for i=1:length(ops)
-    Threads.@spawn begin
-       mul!(view(y,idx[i]:idx[i+1]-1), ops[i], view(x,idx[i]:idx[i+1]-1))
-    end
+  @floop for i=1:length(ops)
+     mul!(view(y,idx[i]:idx[i+1]-1), ops[i], view(x,idx[i]:idx[i+1]-1))
   end
   return
 end
