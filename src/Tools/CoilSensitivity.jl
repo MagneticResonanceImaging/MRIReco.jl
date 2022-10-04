@@ -125,12 +125,12 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int
   maps, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize, nmaps; use_poweriterations = use_poweriterations)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
-  msk = falses(size(W))
+  msk = zeros(Bool,size(W))
   msk[findall(x -> x > eigThresh_2, abs.(W))] .= true
   maps .*= msk
-  maps = fftshift(maps, 1:length(imsize))
+  maps_ = fftshift(maps, 1:length(imsize))
 
-  return maps
+  return maps_
 end
 
 #
@@ -241,36 +241,8 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     BLAS.set_num_threads(nblas)
   end
 
-  #eigenVecsPadded = zeros(T, imsize..., nc, nmaps)
-  #eigenValsPadded = zeros(T, imsize..., 1, nmaps)
-  #for n = 1:nmaps
-  #  for l = 1:nc
-  #    eigenVecsPadded[CartesianIndices(imsize),l,n] = imresize(eigenVecs[CartesianIndices(sizePadded),l,n], imsize)
-  #  end
-  #  eigenValsPadded[CartesianIndices(imsize),1,n] = imresize(eigenVals[CartesianIndices(sizePadded),1,n], imsize)
-  #end
-
-  #eigenValsPadded = imresize(eigenVals, (imsize..., 1, nmaps))
-
-  #eigenVecsFT = ifft(eigenVecs, 1:length(imsize))
-  #eigenVecsFTPadded = zeros(T, imsize..., nc, nmaps)
-  #eigenVecsFTPadded[CartesianIndices(sizePadded),:,:] .= eigenVecsFT[CartesianIndices(sizePadded),:,:]
-  #eigenVecsPadded = fft(eigenVecsFTPadded, 1:length(imsize))
-
-  #eigenValsFT = ifft(eigenVals, 1:length(imsize))
-  #eigenValsFTPadded = zeros(T, imsize..., 1, nmaps)
-  #eigenValsFTPadded[CartesianIndices(sizePadded),:,:] .= eigenValsFT[CartesianIndices(sizePadded),:,:]
-  #eigenValsPadded = fft(eigenValsFTPadded, 1:length(imsize))
-
-  #return eigenVecsPadded, eigenValsPadded
   return eigenVecs, eigenVals
 end
-
-#kern2SmallFT = ifft(kern2Small, 3:(3+length(ksize)-1))
-#kern2FT = zeros(T, nc, nc, imsize...)
-#kern2FT[:,:,CartesianIndices(ksizePadded)] .= kern2SmallFT[:,:,CartesianIndices(ksizePadded)]
-#kern2 = fft(kern2FT, 3:(3+length(ksize)-1))
-
 
 """
     power_iterations!(A;
