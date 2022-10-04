@@ -328,17 +328,25 @@ function changeEncodingSize2D!(acqData::AcquisitionData{T},newEncodingSize::Vect
 
   for i=1:numContr
     tr = trajectory(acqData,i)
+
     nodes = fac .* kspaceNodes(tr)
 
     # filter out nodes with magnitude > 0.5
     idxX = findall(x->(x>=-0.5)&&(x<0.5), nodes[1,:])
     idxY = findall(x->(x>=-0.5)&&(x<0.5), nodes[2,:])
+
     idx[i] = intersect(idxX,idxY, acqData.subsampleIndices[i])
 
     tr.nodes = nodes[:,idx[i]]
     times = readoutTimes(tr)
     tr.times = times[idx[i]]
-    acqData.subsampleIndices[i] = acqData.subsampleIndices[i][idx[i]]
+
+    # adjust subsampleIndices if the trajectory is cartesian (this matters for espirit)
+    if tr.cartesian
+      acqData.subsampleIndices[i] = findIndices(newEncodingSize,acqData.encodingSize)[idx[i]]
+    else
+      acqData.subsampleIndices[i] = acqData.subsampleIndices[i][idx[i]]
+    end
   end
 
   # find relevant kspace data
@@ -352,10 +360,13 @@ function changeEncodingSize2D!(acqData::AcquisitionData{T},newEncodingSize::Vect
   end
   acqData.kdata = kdata2
 
-  # adjust subsample Indices
-  for echo=1:numContr
-    acqData.subsampleIndices[echo] = collect(1:length(idx[echo]))
-  end
+  # # adjust subsample Indices
+  # for echo=1:numContr
+  #   acqData.subsampleIndices[echo] = collect(1:length(idx[echo]))
+  # end
+
+  # formally change the encoding size in the acqData 
+  acqData.encodingSize = newEncodingSize
 
   return acqData
 end
@@ -444,3 +455,27 @@ function NFFT.apodization!(acqData::AcquisitionData)
 
     return acqData
 end=#
+
+"""
+    findIndices()
+
+puts the subsamplingIndices in the right range after converting encoding size for Cartesian trajectories if the encoding size increases. Leaves non-cartesian alone...
+"""
+function findIndices(newEnc::Vector{Int64},oldEnc::Vector{Int64})
+
+    shiftX = floor((newEnc[1]-oldEnc[1])÷2)
+    shiftY = floor((newEnc[2]-oldEnc[2])÷2)
+
+    oldCart = CartesianIndices(((shiftX+1):(shiftX+oldEnc[1]),(shiftY+1):(shiftY+oldEnc[2])))
+    newCart = CartesianIndices((1:newEnc[1],1:newEnc[2]))
+  
+  if newEnc[1] > oldEnc[1] || newEnc[2] > oldEnc[2]
+    
+    return LinearIndices(newCart)[oldCart][:]
+
+  else
+
+    return LinearIndices(oldCart)[:]
+  end
+
+end
