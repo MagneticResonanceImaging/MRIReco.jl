@@ -176,7 +176,6 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   nc = kern_size[end-1]
   nv = kern_size[end]
   flip_nc_nv  = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
-  flip_nc_nv2 = [length(ksize) + 2; length(ksize) + 1; 1:length(ksize)]
 
   nmaps = min(nc, nv, nmaps)
 
@@ -188,21 +187,20 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 
   kernel = kernel * usv.V
   kernel = reshape(kernel, ksize..., nv, nc)
-  kernel = permutedims(kernel, flip_nc_nv2)
 
   kern2_ = zeros(T, nc, nc, sizePadded...)
-  kernel_k = zeros(T, nc, sizePadded...)
+  kernel_k = zeros(T, sizePadded..., nc)
   kernel_i = similar(kernel_k)
 
-  fftplan = plan_fft(kernel_i, 2:ndims(kernel_i); flags=FFTW.MEASURE, num_threads=Threads.nthreads())
+  fftplan = plan_fft(kernel_i, 1:ndims(kernel_i)-1; flags=FFTW.MEASURE, num_threads=Threads.nthreads())
 
-  for iv ∈ axes(kernel, 2)
-    @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
+  for iv ∈ axes(kernel, length(kern_size)-1)
+    @views kernel_k[CartesianIndices(ksize),:] .= kernel[CartesianIndices(ksize),iv,:]
     mul!(kernel_i, fftplan, kernel_k)
 
-    @floop for ix ∈ CartesianIndices(sizePadded), j ∈ axes(kernel_i,1)
-      @inbounds @simd for i ∈ axes(kernel_i,1)
-        kern2_[i,j,ix] += conj(kernel_i[i,ix]) * kernel_i[j,ix]
+    @floop for j ∈ axes(kernel_i,ndims(kernel_i)), ix ∈ CartesianIndices(sizePadded)
+      @inbounds @simd for i ∈ axes(kernel_i,ndims(kernel_i))
+        kern2_[i,j,ix] += conj(kernel_i[ix,i]) * kernel_i[ix,j]
       end
     end
   end
