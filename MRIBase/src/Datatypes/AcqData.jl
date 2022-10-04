@@ -176,7 +176,7 @@ for rep = 1:numRep
     for sl =1:numSl
         for echo = 1:numEcho
             for coil = 1:numChan
-                kdata[acqData.subsampleIndices[numEcho],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
+                kdata[acqData.subsampleIndices[echo],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
             end
         end
     end
