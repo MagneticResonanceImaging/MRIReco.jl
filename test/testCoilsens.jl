@@ -31,7 +31,7 @@
   eigThresh_1 = 0.02  # threshold for picking singular vectors of calibration matrix
   eigThresh_2 = 0.95  # threshold for eigen vector decomposition in image space
 
-  smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
+  @time smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
   # evaluate error only on the supprt of smaps
   for i=1:8
@@ -42,6 +42,6 @@
   phs2 = mean(angle.(smaps2))
   smaps2 = exp(1im*(phs-phs2)) .* smaps2
 
-  err = norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
+  err = nrmsd(smaps, smaps2) #norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
 end

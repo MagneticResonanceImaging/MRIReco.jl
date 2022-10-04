@@ -125,12 +125,12 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int
   maps, W = kernelEig(k[CartesianIndices((ksize..., nc)), 1:idx], imsize, nmaps; use_poweriterations = use_poweriterations)
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
-  msk = falses(size(W))
+  msk = zeros(Bool,size(W))
   msk[findall(x -> x > eigThresh_2, abs.(W))] .= true
   maps .*= msk
-  maps = fftshift(maps, 1:length(imsize))
+  maps_ = fftshift(maps, 1:length(imsize))
 
-  return maps
+  return maps_
 end
 
 #
@@ -172,10 +172,10 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 
   kern_size = size(kernel)
   ksize = kern_size[1:end-2]
+  sizePadded = 2 .* ksize
   nc = kern_size[end-1]
   nv = kern_size[end]
   flip_nc_nv  = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
-  flip_nc_nv2 = [length(ksize) + 2; length(ksize) + 1; 1:length(ksize)]
 
   nmaps = min(nc, nv, nmaps)
 
@@ -187,26 +187,32 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 
   kernel = kernel * usv.V
   kernel = reshape(kernel, ksize..., nv, nc)
-  kernel = permutedims(kernel, flip_nc_nv2)
 
-  kern2 = zeros(T, nc, nc, imsize...)
-  kernel_k = zeros(T, nc, imsize...)
+  kern2_ = zeros(T, nc, nc, sizePadded...)
+  kernel_k = zeros(T, sizePadded..., nc)
   kernel_i = similar(kernel_k)
 
-  fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE, num_threads=Threads.nthreads())
+  fftplan = plan_fft(kernel_i, 1:ndims(kernel_i)-1; flags=FFTW.MEASURE, num_threads=Threads.nthreads())
 
-  for iv ∈ axes(kernel, 2)
-    @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
+  for iv ∈ axes(kernel, length(kern_size)-1)
+    @views kernel_k[CartesianIndices(ksize),:] .= kernel[CartesianIndices(ksize),iv,:]
     mul!(kernel_i, fftplan, kernel_k)
-    @floop for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1)
-      @inbounds @simd for i ∈ axes(kernel_i,1)
-        kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
+
+    @floop for j ∈ axes(kernel_i,ndims(kernel_i)), ix ∈ CartesianIndices(sizePadded)
+      @inbounds @simd for i ∈ axes(kernel_i,ndims(kernel_i))
+        kern2_[i,j,ix] += conj(kernel_i[ix,i]) * kernel_i[ix,j]
       end
     end
   end
+  fft!(kern2_, 3:ndims(kern2_))
 
-  kern2 ./= prod(ksize)
-  kern2 .= conj.(kern2)
+  kern2 = zeros(T, nc, nc, imsize...)
+  idx_center = CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2)
+  @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
+
+  ifft!(kern2, 3:ndims(kern2))
+  kern2 .*= prod(imsize) / prod(sizePadded) / prod(ksize)
+
 
   eigenVecs = Array{T}(undef, imsize..., nc, nmaps)
   eigenVals = Array{T}(undef, imsize...,  1, nmaps)
@@ -237,7 +243,6 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 
   return eigenVecs, eigenVals
 end
-
 
 """
     power_iterations!(A;
@@ -273,11 +278,11 @@ function power_iterations!(A;
     mul!(b, A, bᵒˡᵈ)
 
     λᵒˡᵈ = λ
-    λ = (bᵒˡᵈ' * b) / (bᵒˡᵈ' * bᵒˡᵈ)
+    λ = dot(bᵒˡᵈ, b) / dot(bᵒˡᵈ, bᵒˡᵈ)
     b ./= norm(b)
 
-    verbose && println("iter = $i; λ = $λ")
-    abs(λ/λᵒˡᵈ - 1) < rtol && return λ, b
+    #verbose && println("iter = $i; λ = $λ")
+    abs(λ/λᵒˡᵈ - 1) < rtol && break
   end
 
   return λ, b
@@ -343,7 +348,7 @@ end
 """
 perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
 """
-function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T 
+function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T
   nx, ny, nz, nc = size(smaps)
   acqDataCC = deepcopy(acqData)
   smapsCC = zeros(Complex{T}, nx, ny, nz, numVC)
