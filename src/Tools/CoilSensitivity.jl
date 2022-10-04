@@ -128,7 +128,7 @@ function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int
   msk = falses(size(W))
   msk[findall(x -> x > eigThresh_2, abs.(W))] .= true
   maps .*= msk
-  maps = fftshift(maps, 1:length(imsize))
+  #maps = fftshift(maps, 1:length(imsize))
 
   return maps
 end
@@ -172,6 +172,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 
   kern_size = size(kernel)
   ksize = kern_size[1:end-2]
+  sizePadded = 2 .* ksize
   nc = kern_size[end-1]
   nv = kern_size[end]
   flip_nc_nv  = [1:length(ksize); length(ksize) + 2; length(ksize) + 1]
@@ -189,24 +190,38 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   kernel = reshape(kernel, ksize..., nv, nc)
   kernel = permutedims(kernel, flip_nc_nv2)
 
-  kern2 = zeros(T, nc, nc, imsize...)
-  kernel_k = zeros(T, nc, imsize...)
+  kern2_ = zeros(T, nc, nc, sizePadded...)
+  kernel_k = zeros(T, nc, sizePadded...)
+  kernel_k_shifted = zeros(T, nc, sizePadded...)
   kernel_i = similar(kernel_k)
 
   fftplan = plan_fft(kernel_i, 2:length(ksize)+1; flags=FFTW.MEASURE, num_threads=Threads.nthreads())
 
   for iv ∈ axes(kernel, 2)
-    @views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
-    mul!(kernel_i, fftplan, kernel_k)
-    @floop for ix ∈ CartesianIndices(imsize), j ∈ axes(kernel_i,1)
+    #@views kernel_k[:,CartesianIndices(ksize)] .= kernel[:,iv,CartesianIndices(ksize)]
+    for ix ∈ CartesianIndices(ksize)
+      kernel_k[:,ix + CartesianIndex(sizePadded .÷ 2) - CartesianIndex(ksize .÷ 2) ] =  kernel[:,iv,ix]
+    end
+    fftshift!(kernel_k_shifted, kernel_k, 2:length(ksize)+1)
+
+    mul!(kernel_i, fftplan, kernel_k_shifted)
+    @floop for ix ∈ CartesianIndices(sizePadded), j ∈ axes(kernel_i,1)
       @inbounds @simd for i ∈ axes(kernel_i,1)
-        kern2[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
+        kern2_[i,j,ix] += kernel_i[i,ix] * conj(kernel_i[j,ix])
       end
     end
   end
 
-  kern2 ./= prod(ksize)
-  kern2 .= conj.(kern2)
+  @inbounds @simd for l = 1:length(kern2_)
+    kern2_[l] = conj(kern2_[l]) / prod(ksize)
+  end
+
+  kern2 = zeros(T, nc, nc, imsize...)
+  for n = 1:nc
+    for l = 1:nc
+      kern2[l,n,CartesianIndices(imsize)] = imresize(fftshift(kern2_[l,n,CartesianIndices(sizePadded)]), imsize)
+    end
+  end  
 
   eigenVecs = Array{T}(undef, imsize..., nc, nmaps)
   eigenVals = Array{T}(undef, imsize...,  1, nmaps)
@@ -235,8 +250,35 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     BLAS.set_num_threads(nblas)
   end
 
+  #eigenVecsPadded = zeros(T, imsize..., nc, nmaps)
+  #eigenValsPadded = zeros(T, imsize..., 1, nmaps)
+  #for n = 1:nmaps
+  #  for l = 1:nc
+  #    eigenVecsPadded[CartesianIndices(imsize),l,n] = imresize(eigenVecs[CartesianIndices(sizePadded),l,n], imsize)
+  #  end
+  #  eigenValsPadded[CartesianIndices(imsize),1,n] = imresize(eigenVals[CartesianIndices(sizePadded),1,n], imsize)
+  #end
+  
+  #eigenValsPadded = imresize(eigenVals, (imsize..., 1, nmaps))
+
+  #eigenVecsFT = ifft(eigenVecs, 1:length(imsize))
+  #eigenVecsFTPadded = zeros(T, imsize..., nc, nmaps)
+  #eigenVecsFTPadded[CartesianIndices(sizePadded),:,:] .= eigenVecsFT[CartesianIndices(sizePadded),:,:]
+  #eigenVecsPadded = fft(eigenVecsFTPadded, 1:length(imsize))
+
+  #eigenValsFT = ifft(eigenVals, 1:length(imsize))
+  #eigenValsFTPadded = zeros(T, imsize..., 1, nmaps)
+  #eigenValsFTPadded[CartesianIndices(sizePadded),:,:] .= eigenValsFT[CartesianIndices(sizePadded),:,:]
+  #eigenValsPadded = fft(eigenValsFTPadded, 1:length(imsize))
+
+  #return eigenVecsPadded, eigenValsPadded
   return eigenVecs, eigenVals
 end
+
+#kern2SmallFT = ifft(kern2Small, 3:(3+length(ksize)-1))
+#kern2FT = zeros(T, nc, nc, imsize...)
+#kern2FT[:,:,CartesianIndices(ksizePadded)] .= kern2SmallFT[:,:,CartesianIndices(ksizePadded)]
+#kern2 = fft(kern2FT, 3:(3+length(ksize)-1))
 
 
 """
@@ -273,11 +315,11 @@ function power_iterations!(A;
     mul!(b, A, bᵒˡᵈ)
 
     λᵒˡᵈ = λ
-    λ = (bᵒˡᵈ' * b) / (bᵒˡᵈ' * bᵒˡᵈ)
+    λ = dot(bᵒˡᵈ, b) / dot(bᵒˡᵈ, bᵒˡᵈ)
     b ./= norm(b)
 
-    verbose && println("iter = $i; λ = $λ")
-    abs(λ/λᵒˡᵈ - 1) < rtol && return λ, b
+    #verbose && println("iter = $i; λ = $λ")
+    abs(λ/λᵒˡᵈ - 1) < rtol && break 
   end
 
   return λ, b
