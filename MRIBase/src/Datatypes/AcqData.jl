@@ -310,6 +310,12 @@ changes the encoding size of 2d encoded `acqData` to `newEncodingSize`.
 Returns a new `AcquisitionData` object.
 """
 function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+
+  if !isCartesian(trajectory(acqData, 1))
+    @error "changing the encoding size does not yet support non-cartesian sampling. Argument unchanged."
+    return acqData
+  end
+
   dest = deepcopy(acqData)
   changeEncodingSize2D!(dest,newEncodingSize)
 end
