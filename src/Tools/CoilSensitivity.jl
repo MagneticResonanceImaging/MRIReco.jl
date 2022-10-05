@@ -30,7 +30,7 @@ end
 Merge the channels of a multi-coil reconstruction.
 Returns a 4D array.
 """
-mergeChannels(I::AbstractArray{T,5}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
+mergeChannels(I::AbstractArray{T,6}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
 
 
 """
