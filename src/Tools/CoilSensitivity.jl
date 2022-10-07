@@ -1,13 +1,13 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
 
 """
-    `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
+    `s = estimateCoilSensitivities(I::AbstractArray{T,6})`
 
 Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually.
 Returns a 5D array.
 """
-function estimateCoilSensitivities(I::AbstractArray{T,5}, thresh = 1.e-2) where {T}
+function estimateCoilSensitivities(I::AbstractArray{T,6}, thresh = 1.e-2) where {T}
   nx, ny, nz, ne, numChan = size(I)
 
   I_sum = sqrt.(sum(abs.(I) .^ 2, dims = 5)) .+ eps()
@@ -25,12 +25,12 @@ end
 
 
 """
-    `I4 = mergeChannels(I::AbstractArray{T,5})`
+    `I4 = mergeChannels(I::AbstractArray{T,6})`
 
 Merge the channels of a multi-coil reconstruction.
-Returns a 4D array.
+Returns a 6D array.
 """
-mergeChannels(I::AbstractArray{T,5}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
+mergeChannels(I::AbstractArray{T,6}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
 
 
 """

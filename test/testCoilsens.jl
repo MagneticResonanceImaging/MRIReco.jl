@@ -44,4 +44,18 @@
 
   err = nrmsd(smaps, smaps2) #norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
+
+
+  ## estimateCoilSensitivities
+  acqData = simulation(img, params)
+  params[:reco] = "direct"
+  params[:reconSize] = (N,N)
+  Ireco = reconstruction(acqData,params)
+
+  smaps3 = estimateCoilSensitivities(Ireco)
+
+  msk = abs.(smaps3[:,:,1,1,1,1]).>0
+
+  err = nrmsd(smaps .* msk, msk .* smaps3[:,:,:,1,:,1])
+  @test err < 1e-15
 end
