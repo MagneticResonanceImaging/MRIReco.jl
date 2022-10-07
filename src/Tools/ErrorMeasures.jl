@@ -13,7 +13,7 @@ function nrmsd(I,Ireco)
   # and therefore "calibrate" them away
   alpha = (dot(vec(I),vec(Ireco))+dot(vec(Ireco),vec(I))) /
           (2*dot(vec(Ireco),vec(Ireco)))
-  Ireco[:] .*= alpha
+  Ireco_ = Ireco * alpha
 
   RMS =  1.0/sqrt(N)*norm(vec(I)-vec(Ireco))
   NRMS = RMS/(maximum(abs.(I))-minimum(abs.(I)) )

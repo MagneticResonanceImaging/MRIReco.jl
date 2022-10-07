@@ -82,8 +82,8 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24, imsize::NTuple{2,Int} = (128,128)
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true, match_acq_size::Bool = true) where T
+function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24, imsize::NTuple{2,Int} = Tuple(acqData.encodingSize[1:2]),
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -91,10 +91,10 @@ function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncal
 
   nxAcq, nyAcq = acqData.encodingSize[1:2]
   nx, ny = imsize
+  match_acq_size = all(imsize .== acqData.encodingSize[1:2])
 
-  # match acquisitionData encodingSize if desired. Force maps to be at least same size as acqData.encodingSize.
-  if match_acq_size || (nxAcq >= nx || nyAcq >= ny)
-    match_acq_size = true
+  #  Force maps to be at least same size as acqData.encodingSize.
+  if (nxAcq >= nx || nyAcq >= ny)
     nx, ny = acqData.encodingSize[1:2]
   end  
 

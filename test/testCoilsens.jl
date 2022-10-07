@@ -31,7 +31,7 @@ function testESPIRiT(N=128)
   eigThresh_1 = 0.02  # threshold for picking singular vectors of calibration matrix
   eigThresh_2 = 0.95  # threshold for eigen vector decomposition in image space
 
-  @time smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
+  smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
   # evaluate error only on the supprt of smaps
   for i=1:8
@@ -42,7 +42,7 @@ function testESPIRiT(N=128)
   phs2 = mean(angle.(smaps2))
   smaps2 = exp(1im*(phs-phs2)) .* smaps2
 
-  err = nrmsd(smaps, smaps2) #norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
+  err = norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
 
 end
@@ -90,9 +90,8 @@ function testESPIRiT_newSize(imsize = 256)
   ncalib = 15 # number of calibration lines
   eigThresh_1 = 0.02  # threshold for picking singular vectors of calibration matrix
   eigThresh_2 = 0.95  # threshold for eigen vector decomposition in image space
-  match_acq_size = false # use specified image size for the size of the output map
 
-  @time emaps = espirit(acqData,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2,match_acq_size = match_acq_size)
+  emaps = espirit(acqData,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
   # simulation for larger image size
   params = Dict{Symbol, Any}()
@@ -104,20 +103,16 @@ function testESPIRiT_newSize(imsize = 256)
 
   acqData2 = simulation(img2, params)
   acqData2 = MRIReco.sample_kspace(acqData2, 2.0, "poisson", calsize=15)
+  emaps2 = espirit(acqData2,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
-  match_acq_size = true # use nominal image size for size of output map
-
-  @time emaps2 = espirit(acqData2,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2,match_acq_size = match_acq_size)
-
-  # evaluate error only on the supprt of smaps
+  # evaluate error only on the support of smaps
   for i=1:8
     emaps2[:,:,1,i] = msk2 .* emaps2[:,:,1,i]
     emaps[:,:,1,i] = msk2 .* emaps[:,:,1,i]
   end
 
-  err = nrmsd(emaps, emaps2) #norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
+  err = norm(vec(emaps2)-vec(emaps))/norm(vec(emaps))
   @test err < 3.e-2
-
 end
 
 @testset "ESPIRiT" begin
