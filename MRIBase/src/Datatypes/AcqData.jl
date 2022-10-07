@@ -119,7 +119,7 @@ function AcquisitionData(kspace::Array{Complex{T},6}) where T
 
 
     for echo in 1:nEchos
-        I = findall(x->x!=0,abs.(kspace[:,:,:,:,echo,1]))
+        I = findall(x->x!=0,abs.(kspace[:,:,:,1,echo,1]))
         subsampleInd = LinearIndices((sx,sy,sz))[I]
 
         acq.subsampleIndices[echo]=subsampleInd
