@@ -20,7 +20,7 @@ function correctOffset(acq::AcquisitionData,offsetCor=[0,0,0])
     reps = size(acq.kdata,3)
 
     shift = offsetCor ./ acq.fov
-    shift = shift .* float.(acq.encodingSize)
+    shift = (shift .* float.(acq.encodingSize))[1:ndims(acq.traj[1])]
     # nodes -> -0.5 to 0.5
     for i = 1:contrs
         phase_nodes = exp.(-2π * im * acq.traj[i].nodes[:,acq.subsampleIndices[i]]' * shift)
