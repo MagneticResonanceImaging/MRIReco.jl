@@ -161,7 +161,7 @@ Returns the cartesian k-space contained in `acqData` for all `echo`, `coil`, `sl
 with dimension :
 [x,y,z*slices,channels,echoes,repetitions]
 """
-function kDataCart(acqData::AcquisitionData)
+function kDataCart(acqData::AcquisitionData{T}) where T
 nx, ny, nz = acqData.encodingSize[1:3]
 numChan, numSl = numChannels(acqData), numSlices(acqData)
 
@@ -171,7 +171,7 @@ end
 
 numEcho = length(acqData.traj)
 numRep = numRepetitions(acqData)
-kdata = zeros(ComplexF64, nx * ny * nz,numSl,numChan, numEcho,numRep)
+kdata = zeros(Complex{T}, nx * ny * nz,numSl,numChan, numEcho,numRep)
 for rep = 1:numRep
     for sl =1:numSl
         for echo = 1:numEcho
