@@ -1,4 +1,4 @@
-export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
+export estimateCoilSensitivities, mergeChannels, crop, espirit, espirit3D, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
 
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,6})`
@@ -87,7 +87,13 @@ function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncal
     @error "espirit does not yet support non-cartesian sampling"
   end
 
+  if trajectory(acqData).name == "Cartesian3D"
+    @error "For 3D datasets call espirit3D() instead"
+  end
+
+
   nx, ny = acqData.encodingSize[1:2]
+
   numChan, numSl = numChannels(acqData), numSlices(acqData)
   maps = zeros(Complex{T}, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
 
@@ -109,6 +115,39 @@ function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncal
   end
   return maps
 end
+
+function espirit3D(acqData::AcquisitionData{T}, ksize::NTuple{3,Int} = (6,6,6), ncalib::Int = 24
+    ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
+
+    if !isCartesian(trajectory(acqData, 1))
+      @error "espirit does not yet support non-cartesian sampling"
+    end
+
+    nx, ny, nz = acqData.encodingSize[1:3]
+
+    numChan, numSl = numChannels(acqData), numSlices(acqData)
+    if numSl > 1
+        @error "Multi slab 3D volume is not supported"
+    end
+
+    maps = zeros(Complex{T}, nx, ny, nz, numChan, nmaps)
+
+      # form zeropadded array with kspace data
+      kdata = zeros(Complex{T}, nx * ny * nz, numChan)
+      for coil = 1:numChan
+        kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, 1)
+      end
+      kdata = reshape(kdata, nx, ny, nz, numChan)
+
+      calib = crop(kdata, (ncalib, ncalib, ncalib))
+
+      maps .= espirit(calib, (nx, ny, nz), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2, nmaps = nmaps, use_poweriterations = use_poweriterations)
+
+    if nmaps == 1
+      maps = maps[:,:,:,:,1]
+    end
+    return maps
+  end
 
 
 function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = ntuple(_ -> 6, N)
@@ -320,6 +359,21 @@ function crop(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
   return A[idx_x, idx_y, idx_z]
 end
 
+function crop(A::Array{T,4}, s::NTuple{3,Int64}) where {T}
+    nx, ny, nz = size(A)
+    idx_x = div(nx, 2)-div(s[1], 2)+1:div(nx, 2)-div(s[1], 2)+s[1]
+    idx_y = div(ny, 2)-div(s[2], 2)+1:div(ny, 2)-div(s[2], 2)+s[2]
+    idx_z = div(nz, 2)-div(s[3], 2)+1:div(nz, 2)-div(s[3], 2)+s[3]
+    return A[idx_x, idx_y, idx_z,:]
+end
+
+function crop(A::Array{T,6}, s::NTuple{3,Int64}) where {T}
+    nx, ny, nz = size(A)
+    idx_x = div(nx, 2)-div(s[1], 2)+1:div(nx, 2)-div(s[1], 2)+s[1]
+    idx_y = div(ny, 2)-div(s[2], 2)+1:div(ny, 2)-div(s[2], 2)+s[2]
+    idx_z = div(nz, 2)-div(s[3], 2)+1:div(nz, 2)-div(s[3], 2)+s[3]
+    return A[idx_x, idx_y, idx_z,:,:,:]
+end
 
 
 

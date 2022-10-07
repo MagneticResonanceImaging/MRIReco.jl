@@ -45,7 +45,6 @@
   err = nrmsd(smaps, smaps2) #norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
 
-
   ## estimateCoilSensitivities
   acqData = simulation(img, params)
   params[:reco] = "direct"
@@ -58,4 +57,47 @@
 
   err = nrmsd(smaps .* msk, msk .* smaps3[:,:,:,1,:,1])
   @test err < 1e-15
+
+  ## 3D espirit
+  N = 128
+  NSl = 128
+  type = ComplexF32
+  sh = shepp_logan(N)
+  x = repeat(sh,1,1,NSl)
+  msk = zeros(type,N,N,NSl)
+  msk[findall(x->x!=0,x)] .= 1
+
+  # coil sensitivites
+  smaps = birdcageSensitivity(N, 8, 1.5)
+  smaps = repeat(smaps,1,1,NSl,1)
+  snorm = sqrt.(sum(abs.(smaps).^2,dims=4))
+  for i=1:8
+      smaps[:,:,:,i] .= msk .* smaps[:,:,:,i] ./ snorm[:,:,:,1]
+  end
+
+  # convert to type
+  x = convert.(type,x)
+  smaps = convert.(type,smaps)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian3D"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:numSlices] = NSl
+  params[:senseMaps] = smaps
+
+  acqData = simulation( x, params )
+  smaps2 = espirit3D(acqData)
+
+  # evaluate error only on the supprt of smaps
+  smaps2 = msk .* smaps2
+
+  # allow for a constant phase offset
+  phs = mean(angle.(smaps))
+  phs2 = mean(angle.(smaps2))
+  smaps2 = exp(1im*(phs-phs2)) .* smaps2
+
+  @test err = nrmsd(smaps, smaps2) < 1e-2
 end
