@@ -34,86 +34,70 @@ mergeChannels(I::AbstractArray{T,6}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 
 
 
 """
-    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
-               ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95, nmaps = 1)
+    espirit(acqData::AcquisitionData, ksize::NTuple{D,Int} = (6,6[,6]), ncalib::Int = 24, 
+               imsize::NTuple{D,Int}=Tuple(acqData.encodingSize[1:D])
+               ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95, nmaps = 1) where D
 
-    espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = (6,6[,6])
-               ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1)
+    espirit(calibData::Array{T}, imsize::NTuple{D,Int}, ksize::NTuple{S,Int} = (6,6[,6])
+               ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1) where D
 
-Obtains coil sensitivities from a calibration area using ESPIRiT. The code is adapted from the MATLAB code by Uecker et al. (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code can be found at: [http://people.eecs.berkeley.edu/~mlustig/Software.html]
+Obtains coil sensitivities from a calibration area using ESPIRiT. Works with 2D and 3D data.
 
-# Method 1
-  The first method of this function works with 2D/multi-slice data in the MRIReco.jl data format:
-
-    espirit(acqData::AcquisitionData, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
-              ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95)
-
-## Required Arguments
-* `acqData::AcquisitionData`  - AcquisitionData
-
-## Optional Arguments
-* `ksize::NTuple{2,Int64}`    - size of the k-space kernel; `default = (6,6)`
-* `ncalib::Int64`             - number of calibration points in each dimension; `default = 30`
-* `imsize::NTuple{2,Int}` - size of the output sensitivity maps, cannot be smaller than acqData.encodingSize (enforced); `default = (128,128)`
-
-## Keyword Arguments
-  * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
-  * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
-  * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
-  * `match_acq_size = true` - flag to determine if the output sensitivity maps must match the encoding size of the input AcquisitionData
-
-# Method 2
-  The second method of this function works with single slice 2D or 3D data; the first argument is the calibration data, i.e. the cropped center of k-space:
-
-    espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = (6,6[,6])
-              ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1)
-
+The code is adapted from the MATLAB code by Uecker et al. (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: 
+Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code can be found at: 
+[http://people.eecs.berkeley.edu/~mlustig/Software.html]
 
 # Required Arguments
+  * `acqData::AcquisitionData`  - AcquisitionData
+  or
   * `calibData::Array{T}`       - Center of k-space in the format `kx × ky [× kz] × coils`, where the kz dimension is optional. The type `T` of the input data determines the type of the calculated maps. Reasonable choises are in the range of `Nx = Ny [= Nz] = 24`.
-  * `imsize::NTuple{N,Int}`     - matrix size of the final maps
+  * `imsize::NTuple{D,Int}`     - matrix size of the final maps (optional when passing acqData)
 
 # Optional Arguments
-  * `ksize::NTuple{N,Int}`      - number of calibration points in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
+  * `ksize::NTuple{D,Int}`      - number of calibration points in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
 
 # Keyword Arguments
   * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
   * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
-  * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
+  * `nmaps = 1`                 - Number of maps that are calculated. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24, imsize::NTuple{2,Int} = Tuple(acqData.encodingSize[1:2]),
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
+function espirit(acqData::AcquisitionData{T}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
+                 imsize::NTuple{D,Int} = Tuple(acqData.encodingSize[1:D]); 
+                 nmaps::Int = 1, kargs...) where {T,D}
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
   end
 
-  nxAcq, nyAcq = acqData.encodingSize[1:2]
-  nx, ny = imsize
-  match_acq_size = all(imsize .== acqData.encodingSize[1:2])
+  acqsize = Tuple(acqData.encodingSize[1:D])
+  match_acq_size = all(imsize .== acqsize)
 
   #  Force maps to be at least same size as acqData.encodingSize.
-  if (nxAcq >= nx || nyAcq >= ny)
-    nx, ny = acqData.encodingSize[1:2]
+  if any(acqsize .> imsize)
+    imsize = acqsize
   end  
 
-  numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(Complex{T},nx,ny, numSl, numChan, nmaps)
+  idx = match_acq_size ? acqData.subsampleIndices[1] : findIndices(imsize, acqsize)[acqData.subsampleIndices[1]]
 
-  idx = match_acq_size ? acqData.subsampleIndices[1] : findIndices((nx,ny),(nxAcq,nyAcq))[acqData.subsampleIndices[1]]
-  
+  numChan, numSl = numChannels(acqData), numSlices(acqData)
+  maps = zeros(Complex{T}, imsize..., numSl, numChan, nmaps)
+
   for slice = 1:numSl
     # form zeropadded array with kspace data
-    kdata = zeros(Complex{T}, nx * ny, numChan)
+    kdata = zeros(Complex{T}, prod(imsize), numChan)
     for coil = 1:numChan
       kdata[idx, coil] .= kData(acqData, 1, coil, slice)
     end
-    kdata = reshape(kdata, nx, ny, numChan)
+    kdata = reshape(kdata, imsize..., numChan)
 
-    calib = crop(kdata, (ncalib, ncalib, numChan))
+    calib = crop(kdata, ntuple(d->ncalib,D))
 
-    maps[:, :, slice, :, :] .= espirit(calib, (nx, ny), ksize, eigThresh_1 = eigThresh_1, eigThresh_2 = eigThresh_2, nmaps = nmaps, use_poweriterations = use_poweriterations)
+    maps[CartesianIndices(imsize), slice, :, :] .= espirit(calib, imsize, ksize; kargs...)
+  end
+
+  if D == 3 # in case of 3D measurements, we have no slices
+    maps = dropdims(maps, dims=4)
   end
 
   if nmaps == 1
@@ -121,7 +105,6 @@ function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncal
   end
   return maps
 end
-
 
 function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = ntuple(_ -> 6, N)
   ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1, use_poweriterations = true) where {T,N}
@@ -383,14 +366,13 @@ end
   findIndices()
   Calculates the indices which place the center of k-space sampled on oldEnc in the correct place w.r.t a grid of size newEnc
 """
-function findIndices(newEnc::NTuple{2,Int64},oldEnc::NTuple{2,Int64})
+function findIndices(newEnc::NTuple{D,Int64}, oldEnc::NTuple{D,Int64}) where D
+  shift = (newEnc .- oldEnc) .÷ 2
 
-    shiftX=floor((newEnc[1]-oldEnc[1])÷2)
-    shiftY=floor((newEnc[2]-oldEnc[2])÷2)
-    oldCart=CartesianIndices(((shiftX+1):(shiftX+oldEnc[1]),(shiftY+1):(shiftY+oldEnc[2])))
-    newCart=CartesianIndices((1:newEnc[1],1:newEnc[2]))
+  oldCart = CartesianIndices(oldEnc) .+ CartesianIndex(shift)
+  newCart = CartesianIndices(newEnc)
 
-  if newEnc[1]>oldEnc[1] || newEnc[2]>oldEnc[2]
+  if any(newEnc .> oldEnc) 
     return LinearIndices(newCart)[oldCart][:]
   else
     return LinearIndices(oldCart)[:]

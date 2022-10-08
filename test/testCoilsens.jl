@@ -83,6 +83,57 @@ function testESPIRiT(N=128)
 
 end
 
+function testESPIRiT3D(N=128, NSl=128)
+  ## 3D espirit
+  type = ComplexF32
+  sh = shepp_logan(N)
+  x = repeat(sh,1,1,NSl)
+  msk = zeros(type,N,N,NSl)
+  msk[findall(x->x!=0,x)] .= 1
+
+  # coil sensitivites
+  smaps = birdcageSensitivity(N, 8, 1.5)
+  smaps = repeat(smaps,1,1,NSl,1)
+  snorm = sqrt.(sum(abs.(smaps).^2,dims=4))
+  for i=1:8
+      smaps[:,:,:,i] .= msk .* smaps[:,:,:,i] ./ snorm[:,:,:,1]
+  end
+
+  # convert to type
+  x = convert.(type,x)
+  smaps = convert.(type,smaps)
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian3D"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:numSlices] = NSl
+  params[:senseMaps] = smaps
+
+  acqData = simulation( x, params )
+  
+
+  ksize=(6,6,6) # kernel size
+  ncalib = 15 # number of calibration lines
+  eigThresh_1 = 0.02  # threshold for picking singular vectors of calibration matrix
+  eigThresh_2 = 0.95  # threshold for eigen vector decomposition in image space
+
+  smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
+
+  # evaluate error only on the support of smaps
+  smaps2 = msk .* smaps2
+
+  # allow for a constant phase offset
+  α = optimalScalingFactor(smaps, smaps2)
+  # we don't want to allow scalings in the amplitude
+  α /= abs(α)
+  smaps2 .*= α
+
+  err = norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
+  @test err < 3.e-2
+end
 
 function testESPIRiT_newSize(imsize = 256)
 
@@ -171,4 +222,5 @@ end
   # odd matrix size
   testESPIRiT_newSize(127)
 
+  testESPIRiT3D(32,32)
 end
