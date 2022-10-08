@@ -1,4 +1,4 @@
-export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
+export estimateCoilSensitivities, mergeChannels, espirit, geometricCC_2d
 
 """
     `s = estimateCoilSensitivities(I::AbstractArray{T,6})`
@@ -378,38 +378,6 @@ function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4},
     end
   end
   return acqDataCC, smapsCC
-end
-
-function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
-  iterations = 1, outerIterations = 3, cmap = nothing)
-
-  N = acqData.encodingSize
-
-  params = Dict{Symbol,Any}()
-  params[:reco] = "standard" # "multiCoil"
-  #params[:solver] = "cgnr" #solver
-  #params[:iterations] = iterations
-  params[:reconSize] = (N, N)
-  params[:alpha] = 1.25
-  #params[:iterationsInner] = 5
-  params[:normalizeReg] = true
-
-
-  if cmap != nothing
-    params[:correctionMap] = cmap
-    params[:K] = 15
-    params[:m] = 3.0
-  end
-
-  Ireco = reconstruction(acqData, params)
-  s = estimateCoilSensitivities(IrecoCorr).data
-
-  #if !isempty(coilsens)
-  #  params[:senseMaps] = coilsens
-  #end
-
-
-
 end
 
 """
