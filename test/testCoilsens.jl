@@ -33,14 +33,16 @@ function testESPIRiT(N=128)
 
   smaps2 = espirit(acqData,ksize,ncalib,eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
-  # evaluate error only on the supprt of smaps
+  # evaluate error only on the support of smaps
   for i=1:8
     smaps2[:,:,1,i] = msk .* smaps2[:,:,1,i]
   end
+
   # allow for a constant phase offset
-  phs = mean(angle.(smaps))
-  phs2 = mean(angle.(smaps2))
-  smaps2 = exp(1im*(phs-phs2)) .* smaps2
+  α = optimalScalingFactor(smaps, smaps2)
+  # we don't want to allow scalings in the amplitude
+  α /= abs(α)
+  smaps2 .*= α
 
   err = norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
@@ -110,6 +112,12 @@ function testESPIRiT_newSize(imsize = 256)
     emaps2[:,:,1,i] = msk2 .* emaps2[:,:,1,i]
     emaps[:,:,1,i] = msk2 .* emaps[:,:,1,i]
   end
+
+  # allow for a constant phase offset
+  α = optimalScalingFactor(emaps, emaps2)
+  # we don't want to allow scalings in the amplitude
+  α /= abs(α)
+  emaps2 .*= α
 
   err = norm(vec(emaps2)-vec(emaps))/norm(vec(emaps))
   @test err < 3.e-2
