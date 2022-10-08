@@ -322,18 +322,17 @@ function im2row(img::Array{T,M}, winSize::NTuple{N,Int}) where {N,M,T}
   return res
 end
 
-#
-# crop the central area (of size s) of an array A
-#
-function crop(A::Array{T,3}, s::NTuple{3,Int64}) where {T}
-  nx, ny, nz = size(A)
-  idx_x = div(nx, 2)-div(s[1], 2)+1:div(nx, 2)-div(s[1], 2)+s[1]
-  idx_y = div(ny, 2)-div(s[2], 2)+1:div(ny, 2)-div(s[2], 2)+s[2]
-  idx_z = div(nz, 2)-div(s[3], 2)+1:div(nz, 2)-div(s[3], 2)+s[3]
-  return A[idx_x, idx_y, idx_z]
+"""
+    crop(A::Array{T,D}, s::NTuple{R,Int64}) where {T,D,R}
+
+crop the central area (of size s) of the first dimensions of the array A
+"""
+function crop(A::Array{T,D}, s::NTuple{R,Int64}) where {T,D,R}
+
+  idx_center = CartesianIndices(s) .- CartesianIndex(s .÷ 2) .+ CartesianIndex(size(A)[1:R] .÷ 2)
+
+  return A[idx_center, CartesianIndices(size(A)[(R+1):end])]
 end
-
-
 
 
 """
