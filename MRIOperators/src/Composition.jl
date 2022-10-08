@@ -71,7 +71,7 @@ LinearOperators.storage_type(op::CompositeOp) = typeof(op.Mv5)
 
   composition of two operators.
 """
-function ∘(A::T1, B::T2; isWeighting::Bool=false) where {T1<:AbstractLinearOperator, T2<:AbstractLinearOperator}
+function Base.:∘(A::T1, B::T2; isWeighting::Bool=false) where {T1<:AbstractLinearOperator, T2<:AbstractLinearOperator}
   return CompositeOp(A,B;isWeighting=isWeighting)
 end
 

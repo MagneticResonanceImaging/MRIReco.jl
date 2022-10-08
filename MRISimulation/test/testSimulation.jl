@@ -106,7 +106,7 @@ function test_noise(N::Int64=32, snr::Float64=25.0)
     I = shepp_logan(N)
     tr = RadialTrajectory(Float64, N,N)
     @time acqData = simulation_explicit(tr,I)
-    acqDataNoisy = MRIReco.addNoise(acqData,snr)
+    acqDataNoisy = addNoise(acqData,snr)
     relError =  norm(acqData.kdata[:]-acqDataNoisy.kdata[:]) / norm(acqData.kdata[:])
     println("Relative error EXACT vs NOISY: ", relError)
     @test relError < 1e-1
@@ -118,7 +118,7 @@ function test_changeEncodingSize(N=32)
     tr = CartesianTrajectory(Float64, 2*N,2*N)
     acqData = simulation_fast(tr,I)
     acqData.encodingSize = [2*N,2*N]
-    acqData2 = MRIReco.changeEncodingSize2D(acqData, [N,N])
+    acqData2 = changeEncodingSize2D(acqData, [N,N])
     kdata = reshape(acqData.kdata[1],2*N,2*N)[div(N,2)+1:end-div(N,2), div(N,2)+1:end-div(N,2)]
     kdata2 = reshape(acqData2.kdata[1],N,N)
     relError = norm(kdata[:]-4*kdata2[:]) / norm(kdata)

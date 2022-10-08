@@ -1,6 +1,20 @@
+module MRIOperators
+
 import Base: hcat, vcat, \
 export hcat, vcat, \, diagOp
 
+using Reexport
+using MRIBase
+@reexport using SparsityOperators
+using LinearAlgebra
+using NFFT
+using FLoops
+
+import LowRankApprox.psvd
+using Distributions
+using StatsBase
+
+include("Shutter.jl")
 include("Composition.jl")
 include("NFFTOp.jl")
 include("ExplicitOp.jl")
@@ -10,6 +24,7 @@ include("MapSliceOp.jl")
 include("FieldmapNFFTOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
+include("WeightingOp.jl")
 
 """
     hcat(A::AbstractLinearOperator, n::Int)
@@ -187,3 +202,6 @@ end
 # use hermitian conjugate as an estimate for the inverse (fallback)
 #
 \(A::AbstractLinearOperator, x::Vector) = adjoint(A)*x
+
+
+end # module

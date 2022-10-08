@@ -1,4 +1,3 @@
-using SparsityOperators
 
 # test FourierOperators
 function testFT(N=16)

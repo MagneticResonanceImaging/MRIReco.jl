@@ -1,5 +1,7 @@
 export FieldmapNFFTOp, InhomogeneityData, createInhomogeneityData_
 
+include("ExpApproximation.jl")
+
 mutable struct InhomogeneityData{T}
   A_k::Matrix{Complex{T}}
   C_k::Matrix{Complex{T}}
@@ -80,7 +82,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   ncol = prod(shape)
 
  # create and truncate low-rank expansion
-  cparam = MRIReco.createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
+  cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
 
   @debug "K = $K"

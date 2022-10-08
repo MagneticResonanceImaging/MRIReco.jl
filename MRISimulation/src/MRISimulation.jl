@@ -1,10 +1,18 @@
-export simulation,simulation_fast,simulation_explicit,simulateTempSubspace,addNoise
+module MRISimulation
 
+export simulation, simulation_fast, simulation_explicit, simulateTempSubspace, addNoise
+
+using Graphics: @mustimplement
+using StatsBase
+using MRIBase
+using MRIOperators
+using ProgressMeter
+
+include("Sequences/Sequence.jl")
 include("Fieldmap.jl")
 include("RelaxationMap.jl")
-include("CoilSensitivity.jl")
 include("LoydMaxAlg.jl")
-include("ExpApproximation.jl")
+include("CoilSensitivities.jl")
 
 """
     simulation(image::Array{T,3}, simParams::Dict) where T<:AbstractFloat
@@ -483,3 +491,5 @@ function addNoise!(acqData::AcquisitionData, snr::Float64)
     acqData.kdata[i][:] .= addNoise(vec(acqData.kdata[i]),snr,true)[:]
   end
 end
+
+end # MRISimulation

@@ -1,4 +1,10 @@
-export sample, sample_kspace
+module MRISampling
+
+export sample, sample_kspace, sample_random, sample_regular, sample_lines,
+       sample_poissondisk, sample_vdpoisson
+
+using MRIBase
+using Random
 
 include("Regular.jl")
 include("Random.jl")
@@ -121,3 +127,6 @@ function sample_kspace!(acqData::AcquisitionData, redFac,
     rand && (seed += 1)
   end
 end
+
+
+end # module

@@ -1,6 +1,5 @@
 using MRIReco
 using Test
-using HTTP
 
 @testset "ISMRMRD" begin
 

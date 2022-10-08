@@ -47,7 +47,7 @@ function testConvertKspace(N=32)
 
     ## undersample kspace
     T = eltype(kspace)
-    mask_idx = MRIReco.sample_vdpoisson((N,N),2.0)
+    mask_idx = sample_vdpoisson((N,N),2.0)
     mask = zeros(T,N,N,1,1,1,1)
     mask[mask_idx] .= 1
 
@@ -92,7 +92,7 @@ function testConvertKspace3D(N=32)
 
     ## undersample kspace
     T = eltype(kspace)
-    mask_idx = MRIReco.sample_vdpoisson((N,N),2.0)
+    mask_idx = sample_vdpoisson((N,N),2.0)
     mask = zeros(T,N,N)
     mask[mask_idx] .= 1
     mask = repeat(mask,1,1,N,1,1,1)
@@ -146,8 +146,8 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
 
   acqData = simulation(x, params)
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData, redFac, sampling, calsize=5, profiles=false)
-  acqData = MRIReco.addNoise(acqData,25.0)
+  acqData = sample_kspace(acqData, redFac, sampling, calsize=5, profiles=false)
+  acqData = addNoise(acqData,25.0)
 
   # reco
   params[:reco] = "standard"    # encoding model
@@ -227,7 +227,7 @@ function testCSSenseReco(N=32,redFac=1.1)
 
   acqData = simulation(x,params)
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+  acqData = sample_kspace(acqData, redFac, "poisson", calsize=5)
 
   # reco
   params[:reco] = "multiCoil"
@@ -268,7 +268,7 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
 
   acqData = simulation(x,params)
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData, redFac, "poisson", calsize=5)
+  acqData = sample_kspace(acqData, redFac, "poisson", calsize=5)
 
   # reco
   params[:reco] = "multiCoil"
@@ -439,7 +439,7 @@ function testCSReco3d(N=128)
 
   acqData = simulation( real(I), params )
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData,1.5,"poisson",calsize=15)
+  acqData = sample_kspace(acqData,1.5,"poisson",calsize=15)
 
   # 3d reco
   params[:reco] = "standard"    # encoding model
@@ -478,7 +478,7 @@ function testCSSenseReco3d(N=128)
 
   acqData = simulation( real(I), params )
   Random.seed!(1234)
-  acqData = MRIReco.sample_kspace(acqData,4.0,"poisson",calsize=15)
+  acqData = sample_kspace(acqData,4.0,"poisson",calsize=15)
 
   # 3d reco
   params[:reco] = "multiCoil"    # encoding model

@@ -24,7 +24,7 @@ function calculateIncoherence(acqData::AcquisitionData, recoParams::Dict, slice=
 
   pos = rand(1:N, NRed)
 
-  @showprogress 1 "Computing Incoherence..." for i=1:length(pos)
+  for i=1:length(pos)
     e = zeros(ComplexF64, N)
     e[pos[i]] = 1
     res = abs.( adjoint(F[1]) * (F[1] * e) )

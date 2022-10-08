@@ -17,7 +17,7 @@ contrasts and slices
 function reconstruction_simple( acqData::AcquisitionData{T}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::Trafo
+                              , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , normalize::Bool=false
@@ -38,29 +38,26 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
-  @sync for l = 1:numRep
-    for k = 1:numSl
-      Threads.@spawn begin
-        if encodingOps!=nothing
-          F = encodingOps[:,k]
-        else
-          F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
-        end
-        for j = 1:numContr
-          W = WeightingOp(weights[j])
-          for i = 1:numChan
-            kdata = kData(acqData,j,i,k,rep=l).* weights[j]
-            solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
+  #@floop 
+  for l = 1:numRep, k = 1:numSl
+    if encodingOps!=nothing
+      F = encodingOps[:,k]
+    else
+      F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
+    end
+    for j = 1:numContr
+      W = WeightingOp(weights[j])
+      for i = 1:numChan
+        kdata = kData(acqData,j,i,k,rep=l).* weights[j]
+        solver = createLinearSolver(solvername, W∘F[j]; reg=reg, params...)
 
-            I = solve(solver, kdata, startVector=get(params,:startVector,Complex{T}[]),
-                                  solverInfo=get(params,:solverInfo,nothing))
+        I = solve(solver, kdata, startVector=get(params,:startVector,Complex{T}[]),
+                              solverInfo=get(params,:solverInfo,nothing))
 
-            if isCircular( trajectory(acqData, j) )
-              circularShutter!(reshape(I, reconSize), 1.0)
-            end
-            Ireco[:,k,j,i,l] = I
-          end
+        if isCircular( trajectory(acqData, j) )
+          circularShutter!(reshape(I, reconSize), 1.0)
         end
+        Ireco[:,k,j,i,l] = I
       end
     end
   end
@@ -86,7 +83,7 @@ are reconstructed independently.
 function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::Trafo
+                              , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , normalize::Bool=false
@@ -107,23 +104,19 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
   W = WeightingOp( vcat(weights...) )
 
   # reconstruction
-  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl,numRep)
-  @sync for l = 1:numRep
-    for i = 1:numSl
-      Threads.@spawn begin
-        if encodingOps != nothing
-          F = encodingOps[i]
-        else
-          F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
-        end
-        for j = 1:numChan
-          kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
-          solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
+  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl, numRep)
+  @floop for l = 1:numRep, i = 1:numSl
+    if encodingOps != nothing
+      F = encodingOps[i]
+    else
+      F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
+    end
+    for j = 1:numChan
+      kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
+      solver = createLinearSolver(solvername, W∘F; reg=reg, params...)
 
-          Ireco[:,j,i,l] = solve(solver,kdata; params...)
-          # TODO circular shutter
-        end
-      end
+      Ireco[:,j,i,l] = solve(solver,kdata; params...)
+      # TODO circular shutter
     end
   end
 
@@ -157,7 +150,7 @@ are reconstructed independently.
 function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::Trafo
+                              , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
@@ -177,36 +170,32 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   reg[1].params[:sparseTrafo] = sparseTrafo
 
   # solve optimization problem
-  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, 1)
-  @sync for l = 1:numRep
-    for k = 1:numSl
-      Threads.@spawn begin
-        if encodingOps != nothing
-          E = encodingOps[:,k]
-        else
-          E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
-        end
+  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
+  @floop for l = 1:numRep, k = 1:numSl
+    if encodingOps != nothing
+      E = encodingOps[:,k]
+    else
+      E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
+    end
 
-        for j = 1:numContr
-          W = WeightingOp(weights[j],numChan)
-          kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
+    for j = 1:numContr
+      W = WeightingOp(weights[j],numChan)
+      kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
 
-          EFull = ∘(W, E[j], isWeighting=true)
-          solver = createLinearSolver(solvername, EFull; reg=reg, params...)
-          I = solve(solver, kdata; params...)
+      EFull = ∘(W, E[j], isWeighting=true)
+      solver = createLinearSolver(solvername, EFull; reg=reg, params...)
+      I = solve(solver, kdata; params...)
 
-          if isCircular( trajectory(acqData, j) )
-            circularShutter!(reshape(I, reconSize), 1.0)
-          end
-          Ireco[:,k,j,l] = I
-        end
+      if isCircular( trajectory(acqData, j) )
+        circularShutter!(reshape(I, reconSize), 1.0)
       end
+      Ireco[:,k,j,l] = I
     end
   end
 
-  Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
+  Ireco_ = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
 
-  return makeAxisArray(Ireco, acqData)
+  return makeAxisArray(Ireco_, acqData)
 end
 
 
@@ -228,7 +217,7 @@ Different slices are reconstructed independently.
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
-                              , sparseTrafo::Trafo
+                              , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
@@ -249,22 +238,18 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
   W = WeightingOp( vcat(weights...), numChan )
 
-  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl,numRep)
-  @sync for l = 1:numRep
-    for i = 1:numSl
-      Threads.@spawn begin
-        if encodingOps != nothing
-          E = encodingOps[i]
-        else
-          E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
-        end
-
-        kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
-        solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
-
-        Ireco[:,i] = solve(solver, kdata; params...)
-      end
+  Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl, numRep)
+  @floop for l = 1:numRep, i = 1:numSl
+    if encodingOps != nothing
+      E = encodingOps[i]
+    else
+      E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
     end
+
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+    solver = createLinearSolver(solvername, W∘E; reg=reg, params...)
+
+    Ireco[:,i,l] = solve(solver, kdata; params...)
   end
 
 

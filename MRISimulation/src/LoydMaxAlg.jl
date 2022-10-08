@@ -1,5 +1,3 @@
-using StatsBase
-
 """
   use the Loyd-Max algorithm to find a quantizer with `M` quantization levels
   for the signal `sig`.

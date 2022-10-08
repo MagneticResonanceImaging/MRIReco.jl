@@ -1,5 +1,9 @@
-function testSimpleCoilCombination(N=128)
+function optimalScalingFactor(I, Ireco)
+  α = norm(Ireco)>0 ? dot(vec(Ireco),vec(I)) / dot(vec(Ireco),vec(Ireco)) : one(eltype(I))
+  return α
+end
 
+function testSimpleCoilCombination(N=128)
   #image
   img = shepp_logan(N)
   msk = zeros(N,N)
@@ -58,7 +62,7 @@ function testESPIRiT(N=128)
   params[:senseMaps] = smaps
 
   acqData = simulation(img, params)
-  acqData = MRIReco.sample_kspace(acqData, 2.0, "poisson", calsize=15)
+  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15)
 
   ksize=(6,6) # kernel size
   ncalib = 15 # number of calibration lines
@@ -80,7 +84,6 @@ function testESPIRiT(N=128)
 
   err = norm(vec(smaps2)-vec(smaps))/norm(vec(smaps))
   @test err < 3.e-2
-
 end
 
 function testESPIRiT3D(N=128, NSl=128)
@@ -171,7 +174,7 @@ function testESPIRiT_newSize(imsize = 256)
   params[:senseMaps] = smaps
 
   acqData = simulation(img, params)
-  acqData = MRIReco.sample_kspace(acqData, 2.0, "poisson", calsize=15)
+  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15)
 
   ksize=(6,6) # kernel size
   ncalib = 15 # number of calibration lines
@@ -189,7 +192,7 @@ function testESPIRiT_newSize(imsize = 256)
   params[:senseMaps] = smaps2
 
   acqData2 = simulation(img2, params)
-  acqData2 = MRIReco.sample_kspace(acqData2, 2.0, "poisson", calsize=15)
+  acqData2 = sample_kspace(acqData2, 2.0, "poisson", calsize=15)
   emaps2 = espirit(acqData2,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
   # evaluate error only on the support of smaps
@@ -209,7 +212,6 @@ function testESPIRiT_newSize(imsize = 256)
 end
 
 @testset "ESPIRiT" begin
-
   testSimpleCoilCombination()
 
   # test default ESPIRiT using acqData.encodingSize as output map size
@@ -224,3 +226,16 @@ end
 
   testESPIRiT3D(32,32)
 end
+
+@testset "Merge channels" begin
+  # test mergeChannels
+  N = 32
+  data = zeros(Float32,N,N,N,1,2,4);
+  data[:,:,:,1,:,1] .= sqrt(2);
+  dataMerge = mergeChannels(data);
+
+  @test ndims(dataMerge) == 6
+  @test abs(dataMerge[1,1,1,1,1,1] - 2) < 1e-6
+  @test dataMerge[1,1,1,1,1,2] == 0
+end
+

@@ -2,7 +2,7 @@
 """
   Alternative calculation of incoherence using
 """
-function pointspreadfunctionAlt(A::AbstractLinearOperator,shape::Tuple)
+function pointspreadfunctionAlt(A, shape::Tuple)
 
   tres = zeros(ComplexF64,prod(shape))
   unitvec_i = zeros(ComplexF64,prod(shape))
@@ -25,7 +25,7 @@ function pointspreadfunctionAlt(A::AbstractLinearOperator,shape::Tuple)
 
 end
 
-function pointspreadfunction(A::AbstractLinearOperator
+function pointspreadfunction(A
                             , shape::Tuple
                             ; verbose::Bool=true)
     numOfPixel = prod(shape)
@@ -64,7 +64,7 @@ end
 """
   Direct calculation of the point spread function
 """
-function pointspreadfunction2(A::AbstractLinearOperator,shape::Tuple)
+function pointspreadfunction2(A, shape::Tuple)
   numOfPixel = prod(shape)
   tres = zeros(ComplexF64,prod(shape))
   unitvec_i = zeros(ComplexF64,prod(shape))
