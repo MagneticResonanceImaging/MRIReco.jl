@@ -1,4 +1,38 @@
+function testSimpleCoilCombination(N=128)
 
+  #image
+  img = shepp_logan(N)
+  msk = zeros(N,N)
+  msk[findall(x->x!=0,img)] .= 1
+
+  # coil sensitivites
+  smaps = birdcageSensitivity(N, 8, 1.5)
+  snorm = sqrt.(sum(abs.(smaps).^2,dims=4))
+  for i=1:8
+    smaps[:,:,1,i] .= msk .* smaps[:,:,1,i] ./ snorm[:,:,1,1]
+  end
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:senseMaps] = smaps
+
+  ## estimateCoilSensitivities
+  acqData = simulation(img, params)
+  params[:reco] = "direct"
+  params[:reconSize] = (N,N)
+  Ireco = reconstruction(acqData,params)
+
+  smaps3 = estimateCoilSensitivities(Ireco)
+
+  msk = abs.(smaps3[:,:,1,1,1,1]).>0
+
+  err = nrmsd(smaps .* msk, msk .* smaps3[:,:,:,1,:,1])
+  @test err < 1e-15
+end
 
 function testESPIRiT(N=128)
 
@@ -121,23 +155,11 @@ function testESPIRiT_newSize(imsize = 256)
 
   err = norm(vec(emaps2)-vec(emaps))/norm(vec(emaps))
   @test err < 3.e-2
-
-
-  ## estimateCoilSensitivities
-  acqData = simulation(img, params)
-  params[:reco] = "direct"
-  params[:reconSize] = (N,N)
-  Ireco = reconstruction(acqData,params)
-
-  smaps3 = estimateCoilSensitivities(Ireco)
-
-  msk = abs.(smaps3[:,:,1,1,1,1]).>0
-
-  err = nrmsd(smaps .* msk, msk .* smaps3[:,:,:,1,:,1])
-  @test err < 1e-15
 end
 
 @testset "ESPIRiT" begin
+
+  testSimpleCoilCombination()
 
   # test default ESPIRiT using acqData.encodingSize as output map size
   testESPIRiT()
