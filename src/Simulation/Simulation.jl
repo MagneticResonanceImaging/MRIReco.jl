@@ -112,7 +112,7 @@ function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
     nc=1
   else
     if size(senseMaps)[1:3] != (nx,ny,nz)
-      error("senseMaps and image should have the same size!")
+      error("senseMaps and image should have the same size $(size(senseMaps)[1:3]) != $((nx,ny,nz))!")
     end
     sensFac = senseMaps
     nc = size(sensFac,4)

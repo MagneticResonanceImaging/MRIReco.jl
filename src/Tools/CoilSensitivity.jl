@@ -54,11 +54,13 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
 ## Optional Arguments
 * `ksize::NTuple{2,Int64}`    - size of the k-space kernel; `default = (6,6)`
 * `ncalib::Int64`             - number of calibration points in each dimension; `default = 30`
+* `imsize::NTuple{2,Int}` - size of the output sensitivity maps, cannot be smaller than acqData.encodingSize (enforced); `default = (128,128)`
 
 ## Keyword Arguments
   * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
   * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
+  * `match_acq_size = true` - flag to determine if the output sensitivity maps must match the encoding size of the input AcquisitionData
 
 # Method 2
   The second method of this function works with single slice 2D or 3D data; the first argument is the calibration data, i.e. the cropped center of k-space:
@@ -80,22 +82,32 @@ Obtains coil sensitivities from a calibration area using ESPIRiT. The code is ad
   * `nmaps = 1`                 - Number of maps that are calcualted. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24
+function espirit(acqData::AcquisitionData{T}, ksize::NTuple{2,Int} = (6,6), ncalib::Int = 24, imsize::NTuple{2,Int} = Tuple(acqData.encodingSize[1:2]),
   ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps::Int = 1, use_poweriterations::Bool = true) where T
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
   end
 
-  nx, ny = acqData.encodingSize[1:2]
-  numChan, numSl = numChannels(acqData), numSlices(acqData)
-  maps = zeros(Complex{T}, acqData.encodingSize[1], acqData.encodingSize[2], numSl, numChan, nmaps)
+  nxAcq, nyAcq = acqData.encodingSize[1:2]
+  nx, ny = imsize
+  match_acq_size = all(imsize .== acqData.encodingSize[1:2])
 
+  #  Force maps to be at least same size as acqData.encodingSize.
+  if (nxAcq >= nx || nyAcq >= ny)
+    nx, ny = acqData.encodingSize[1:2]
+  end  
+
+  numChan, numSl = numChannels(acqData), numSlices(acqData)
+  maps = zeros(Complex{T},nx,ny, numSl, numChan, nmaps)
+
+  idx = match_acq_size ? acqData.subsampleIndices[1] : findIndices((nx,ny),(nxAcq,nyAcq))[acqData.subsampleIndices[1]]
+  
   for slice = 1:numSl
     # form zeropadded array with kspace data
     kdata = zeros(Complex{T}, nx * ny, numChan)
     for coil = 1:numChan
-      kdata[acqData.subsampleIndices[1], coil] .= kData(acqData, 1, coil, slice)
+      kdata[idx, coil] .= kData(acqData, 1, coil, slice)
     end
     kdata = reshape(kdata, nx, ny, numChan)
 
@@ -397,5 +409,24 @@ function estimateCoilSensitivitiesFixedPoint(acqData::AcquisitionData;
   #end
 
 
+
+end
+
+"""
+  findIndices()
+  Calculates the indices which place the center of k-space sampled on oldEnc in the correct place w.r.t a grid of size newEnc
+"""
+function findIndices(newEnc::NTuple{2,Int64},oldEnc::NTuple{2,Int64})
+
+    shiftX=floor((newEnc[1]-oldEnc[1])÷2)
+    shiftY=floor((newEnc[2]-oldEnc[2])÷2)
+    oldCart=CartesianIndices(((shiftX+1):(shiftX+oldEnc[1]),(shiftY+1):(shiftY+oldEnc[2])))
+    newCart=CartesianIndices((1:newEnc[1],1:newEnc[2]))
+
+  if newEnc[1]>oldEnc[1] || newEnc[2]>oldEnc[2]
+    return LinearIndices(newCart)[oldCart][:]
+  else
+    return LinearIndices(oldCart)[:]
+  end
 
 end
