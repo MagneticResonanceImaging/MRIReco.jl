@@ -121,6 +121,20 @@ function testESPIRiT_newSize(imsize = 256)
 
   err = norm(vec(emaps2)-vec(emaps))/norm(vec(emaps))
   @test err < 3.e-2
+
+
+  ## estimateCoilSensitivities
+  acqData = simulation(img, params)
+  params[:reco] = "direct"
+  params[:reconSize] = (N,N)
+  Ireco = reconstruction(acqData,params)
+
+  smaps3 = estimateCoilSensitivities(Ireco)
+
+  msk = abs.(smaps3[:,:,1,1,1,1]).>0
+
+  err = nrmsd(smaps .* msk, msk .* smaps3[:,:,:,1,:,1])
+  @test err < 1e-15
 end
 
 @testset "ESPIRiT" begin

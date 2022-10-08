@@ -1,13 +1,13 @@
 export estimateCoilSensitivities, mergeChannels, espirit, estimateCoilSensitivitiesFixedPoint, geometricCC_2d
 
 """
-    `s = estimateCoilSensitivities(I::AbstractArray{T,5})`
+    `s = estimateCoilSensitivities(I::AbstractArray{T,6})`
 
 Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually.
 Returns a 5D array.
 """
-function estimateCoilSensitivities(I::AbstractArray{T,5}, thresh = 1.e-2) where {T}
+function estimateCoilSensitivities(I::AbstractArray{T,6}, thresh = 1.e-2) where {T}
   nx, ny, nz, ne, numChan = size(I)
 
   I_sum = sqrt.(sum(abs.(I) .^ 2, dims = 5)) .+ eps()
@@ -25,12 +25,12 @@ end
 
 
 """
-    `I4 = mergeChannels(I::AbstractArray{T,5})`
+    `I4 = mergeChannels(I::AbstractArray{T,6})`
 
 Merge the channels of a multi-coil reconstruction.
-Returns a 4D array.
+Returns a 6D array.
 """
-mergeChannels(I::AbstractArray{T,5}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
+mergeChannels(I::AbstractArray{T,6}) where {T} = sqrt.(sum(abs.(I) .^ 2, dims = 5))
 
 
 """
@@ -216,13 +216,14 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
       end
     end
   end
-  fft!(kern2_, 3:ndims(kern2_))
+  # resize is neccessary for compatibility with MKL
+  reshape(fft!(reshape(kern2_, nc^2, sizePadded...), 2:ndims(kern2_)-1), nc, nc, sizePadded...)
 
   kern2 = zeros(T, nc, nc, imsize...)
   idx_center = CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2)
   @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
 
-  ifft!(kern2, 3:ndims(kern2))
+  reshape(ifft!(reshape(kern2, nc^2, imsize...), 2:ndims(kern2)-1), nc, nc, imsize...)
   kern2 .*= prod(imsize) / prod(sizePadded) / prod(ksize)
 
 
