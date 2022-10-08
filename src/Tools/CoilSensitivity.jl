@@ -222,6 +222,10 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     @floop for n ∈ CartesianIndices(imsize)
       if use_poweriterations && nmaps==1
         S, U = power_iterations!(view(kern2,:, :, n), b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
+        # The following uses the method from IterativeSolvers.jl but is currently slower and allocating more
+        # this is probably because we pre-allocate bᵒˡᵈ
+        # S, U = RegularizedLeastSquares.IterativeSolvers.powm!(view(kern2, :, :, n), b[Threads.threadid()], maxiter=5)
+
         U .*= transpose(exp.(-1im .* angle.(U[1])))
         @views eigenVals[n, 1, :] .= real.(S)
       else
