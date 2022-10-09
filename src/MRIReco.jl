@@ -3,9 +3,7 @@ module MRIReco
 using Reexport
 
 @reexport using MRIBase
-@reexport using MRIFiles
 @reexport using MRIOperators
-#@reexport using MRISampling
 
 using ProgressMeter
 using AxisArrays
