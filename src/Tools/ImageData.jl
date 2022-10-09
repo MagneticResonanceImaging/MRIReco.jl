@@ -1,12 +1,12 @@
 """
     makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
 
-creates an axies array with properly characterized axis from the image `I`.
+creates an axes array with properly characterized axis from the image `I`.
 For this, it uses the information in `acqData`.
 The axies respectively describe the following coordinates:
 x, y, z, acqData.numEchoes, acqData.numCoils
 """
-function ImageUtils.makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionData) where T
+function makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionData) where T
 
   offset = [0.0, 0.0, 0.0]*Unitful.mm
   spacing = fieldOfView(acqData)./encodingSize(acqData)*Unitful.mm
@@ -21,22 +21,5 @@ function ImageUtils.makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionDat
 
   #imMeta = ImageMeta(im, Dict{String,Any}())
   #return imMeta
-  return im
-end
-
-function ImageUtils.makeAxisArray(I::AbstractArray{T,6}, spacing::Vector{Float64}) where T
-
-  offset = [0.0, 0.0, 0.0]*Unitful.mm
-
-  sp = uconvert.(Unitful.mm, spacing*Unitful.m)
-
-  im = AxisArray(I,
-		   Axis{:x}(range(offset[1], step=sp[1], length=size(I,1))),
-		   Axis{:y}(range(offset[2], step=sp[2], length=size(I,2))),
-		   Axis{:z}(range(offset[3], step=sp[3], length=size(I,3))),
-		   Axis{:echos}(1:size(I,4)),
-       Axis{:coils}(1:size(I,5)),
-       Axis{:repetitions}(1:size(I,6)))
-
   return im
 end

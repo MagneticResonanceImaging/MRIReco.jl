@@ -8,11 +8,10 @@ using Reexport
 #@reexport using MRISampling
 
 using ProgressMeter
-using ImageUtils
+using AxisArrays
 using RegularizedLeastSquares
 using LinearAlgebra
 using Random
-using NIfTI
 using FLoops
 using Unitful
 

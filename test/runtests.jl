@@ -8,5 +8,5 @@ using Scratch
 const tmpdir  = @get_scratch!("tmp")
 @info "If you want to check the output of the tests, please head to $tmpdir."
 
-#include("testIO.jl")
+include("testIO.jl")
 include("testReconstruction.jl")
