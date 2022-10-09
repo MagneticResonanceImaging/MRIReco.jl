@@ -48,11 +48,9 @@ b = BrukerFile( joinpath(datadir, "BrukerFile", "2D_RARE") )
 
 acq = RawAcquisitionData(b)
 acqData = AcquisitionData(acq)
-N = acqData.encodingSize
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:reconSize] = (N[1],N[2]) #this should be clear from context
 
 Ireco = reconstruction(acqData, params)
 exportImage( joinpath(tmpdir, "brukerCart.png"), abs.(Ireco[:,:,1,1,1]))
@@ -75,11 +73,7 @@ for i = 1:length(listBrukFiles)
     acq = AcquisitionData(raw)
     params = Dict{Symbol, Any}()
     params[:reco] = "direct"
-    if (acq.encodingSize[3]>1)
-        params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2],acq.encodingSize[3]);
-    else
-        params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2]);
-    end
+    
     Ireco = reconstruction(acq, params);
     @test size(Ireco) == (raw.params["encodedSize"][1], raw.params["encodedSize"][2], raw.params["encodedSize"][3], numContrasts(acq), raw.params["receiverChannels"], numRepetitions(acq))
 
@@ -102,11 +96,6 @@ acq = AcquisitionData(raw);  # TODO vérification des modifications qui ont éta
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-if (acq.encodingSize[3]>1)
-    params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2],acq.encodingSize[3]);
-else
-    params[:reconSize] = (acq.encodingSize[1],acq.encodingSize[2]);
-end
 
 Ireco = reconstruction(acq, params);
 

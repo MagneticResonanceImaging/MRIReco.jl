@@ -3,7 +3,6 @@ export defaultRecoParams
 function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"
-  params[:reconSize] = (32,32)
   params[:sparseTrafoName] = "Wavelet"
   params[:regularization] = "L1"
   params[:λ] = 0.0
@@ -17,7 +16,7 @@ end
 
 function setupDirectReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
   reconSize = recoParams[:reconSize]
-  weights = samplingDensity(acqData,recoParams[:reconSize])
+  weights = samplingDensity(acqData, recoParams[:reconSize])
   # field map
   cmap = get(recoParams, :cmap, Complex{T}[])
 

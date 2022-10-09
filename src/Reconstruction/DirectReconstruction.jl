@@ -36,7 +36,7 @@ function reconstruction_direct(acqData::AcquisitionData{T}
             I = adjoint(F[k]) * kdata
 
             if isCircular( trajectory(acqData, k) )
-            circularShutter!(reshape(I, reconSize), 1.0)
+              circularShutter!(reshape(I, reconSize), 1.0)
             end
             Ireco[:,i,k,j,l] = I
 

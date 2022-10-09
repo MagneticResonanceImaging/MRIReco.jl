@@ -26,6 +26,10 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
     @error "reconstruction of multiple 3d-encoded volumina is not yet supported"
   end
 
+  if !haskey(recoParams, :reconSize)
+    recoParams[:reconSize] = encodingSize(acqData)
+  end  
+
   # load reconstruction parameters
   recoParams = merge(defaultRecoParams(), recoParams)
 

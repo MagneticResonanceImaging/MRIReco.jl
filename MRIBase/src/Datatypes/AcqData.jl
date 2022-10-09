@@ -17,13 +17,13 @@ struct describing MRI acquisition data.
 * `encodingSize::Vector{Int64}`             - size of the underlying image matrix
 * `fov::Vector{Float64}`                    - field of view in m
 """
-mutable struct AcquisitionData{T <: AbstractFloat}
+mutable struct AcquisitionData{T <: AbstractFloat, D}
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory{T}}
   kdata::Array{Matrix{Complex{T}},3}
   subsampleIndices::Vector{Vector{Int64}}
-  encodingSize::Vector{Int64}
-  fov::Vector{Float64}
+  encodingSize::NTuple{D, Int64}
+  fov::NTuple{3,Float64}
 end
 
 fieldOfView(acq::AcquisitionData) = acq.fov
@@ -71,10 +71,10 @@ constructor for `AcquisitionData`
 the other fields of `AcquisitionData` can be passed as keyword arguments.
 """
 function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
-                        ; seqInfo=Dict{Symbol,Any}()
-                        , idx=nothing
-                        , encodingSize=Int64[0,0,0]
-                        , fov=Float64[0,0,0]
+                        ; seqInfo = Dict{Symbol,Any}()
+                        , idx = nothing
+                        , encodingSize = ntuple(d->0, ndims(tr))
+                        , fov = ntuple(d->0.0, 3)
                         , kargs...) where {T <: AbstractFloat, K <: Union{Trajectory,Vector{Trajectory{T}}}}
   tr_vec = vec(tr)
   if idx != nothing
@@ -89,7 +89,7 @@ function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
     end
   end
 
-  return AcquisitionData(seqInfo,tr_vec,kdata,subsampleIndices,encodingSize,fov)
+  return AcquisitionData(seqInfo, tr_vec, kdata, subsampleIndices, encodingSize, fov)
 end
 
 """
@@ -104,19 +104,18 @@ This methods assumes the data to correspond to a single volume
 encoded with a 3d Cartesian sequence.
 """
 function AcquisitionData(kspace::Array{Complex{T},6}) where T
-    sx,sy,sz,nCh,nEchos,nReps = size(kspace)
+    sx, sy, sz, nCh, nEchos, nReps = size(kspace)
 
     if sz == 1
-        tr = MRIBase.CartesianTrajectory(T,sx,sy,TE=T(0),AQ=T(0))
+        tr = MRIBase.CartesianTrajectory(T, sx, sy, TE=T(0), AQ=T(0))
     else
-        tr = MRIBase.CartesianTrajectory3D(T,sx,sy,numSlices=sz,TE=T(0),AQ=T(0))
+        tr = MRIBase.CartesianTrajectory3D(T, sx, sy, numSlices=sz, TE=T(0), AQ=T(0))
     end
 
     kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
-    acq = AcquisitionData(tr,kdata)
+    acq = AcquisitionData(tr, kdata)
 
-    acq.encodingSize = [sx,sy,sz]
-
+    acq.encodingSize = ndims(tr) == 3 ? (sx,sy,sz) : (sx,sy)
 
     for echo in 1:nEchos
         I = findall(x->x!=0,abs.(kspace[:,:,:,1,echo,1]))
@@ -129,11 +128,6 @@ function AcquisitionData(kspace::Array{Complex{T},6}) where T
     end
     return acq
 end
-
-#function Images.pixelspacing(acqData::AcquisitionData)
-#  return [1.0,1.0,1.0]*Unitful.mm
-#  #return fov./encodingSize*Unitful.mm  #TODO: all needs to be properly initialized
-#end
 
 """
     trajectory(acqData::AcquisitionData,i::Int64=1)
@@ -161,28 +155,28 @@ Returns the cartesian k-space contained in `acqData` for all `echo`, `coil`, `sl
 with dimension :
 [x,y,z*slices,channels,echoes,repetitions]
 """
-function kDataCart(acqData::AcquisitionData{T}) where T
-nx, ny, nz = acqData.encodingSize[1:3]
-numChan, numSl = numChannels(acqData), numSlices(acqData)
+function kDataCart(acqData::AcquisitionData{T,D}) where {T,D}
+  N = encodingSize(acqData)
+  numChan, numSl = numChannels(acqData), numSlices(acqData)
 
-if nz > 1 && numSl > 1
-    @warn "Multi slab 3D acquisitions are concatenate along the 3rd dimension"
-end
+  if D == 3 && numSl > 1
+      @warn "Multi slab 3D acquisitions are concatenated along the 3rd dimension"
+  end
 
-numEcho = length(acqData.traj)
-numRep = numRepetitions(acqData)
-kdata = zeros(Complex{T}, nx * ny * nz,numSl,numChan, numEcho,numRep)
-for rep = 1:numRep
-    for sl =1:numSl
-        for echo = 1:numEcho
-            for coil = 1:numChan
-                kdata[acqData.subsampleIndices[echo],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
-            end
-        end
-    end
-end
-kdata = reshape(kdata, nx, ny, nz*numSl, numChan,numEcho,numRep)
-return kdata
+  numEcho = length(acqData.traj)
+  numRep = numRepetitions(acqData)
+  kdata = zeros(Complex{T}, prod(N), numSl, numChan, numEcho,numRep)
+  for rep = 1:numRep
+      for sl =1:numSl
+          for echo = 1:numEcho
+              for coil = 1:numChan
+                  kdata[acqData.subsampleIndices[echo],sl,coil,echo,rep] .= kData(acqData, echo, coil, sl,rep=rep)
+              end
+          end
+      end
+  end
+  kdata = reshape(kdata, N[1], N[2], D==2 ? numSl : N[3]*numSl, numChan,numEcho,numRep)
+  return kdata
 end
 
 """
@@ -278,11 +272,11 @@ end
 # sampling weights
 ##################
 """
-    samplingDensity(acqData::AcquisitionData,shape::Tuple)
+    samplingDensity(acqData::AcquisitionData, shape::Tuple)
 
 returns the sampling density for all trajectories contained in `acqData`.
 """
-function samplingDensity(acqData::AcquisitionData{T},shape::Tuple) where T
+function samplingDensity(acqData::AcquisitionData{T}, shape::Tuple) where T
   numContr = numContrasts(acqData)
   weights = Array{Vector{Complex{T}}}(undef,numContr)
   for echo=1:numContr
@@ -309,9 +303,9 @@ end
 changes the encoding size of 2d encoded `acqData` to `newEncodingSize`.
 Returns a new `AcquisitionData` object.
 """
-function changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+function changeEncodingSize2D(acqData::AcquisitionData, newEncodingSize::NTuple{D,Int64}) where D
   dest = deepcopy(acqData)
-  changeEncodingSize2D!(dest,newEncodingSize)
+  changeEncodingSize2D!(dest, newEncodingSize)
 end
 
 """
@@ -319,8 +313,8 @@ end
 
 does the same thing as `changeEncodingSize2D` but acts in-place on `acqData`.
 """
-function changeEncodingSize2D!(acqData::AcquisitionData{T},newEncodingSize::Vector{Int64}) where T
-  fac = acqData.encodingSize[1:2] ./ newEncodingSize[1:2]
+function changeEncodingSize2D!(acqData::AcquisitionData{T,D}, newEncodingSize::NTuple{D,Int64}) where {T,D}
+  fac = acqData.encodingSize ./ newEncodingSize
   numContr = numContrasts(acqData)
   numSl = numSlices(acqData)
   numReps = numRepetitions(acqData)
@@ -365,7 +359,7 @@ end
 
 convert the 3d encoded AcquisitionData `acqData` to the equivalent 2d AcquisitionData.
 """
-function convert3dTo2d(acqData::AcquisitionData{T}) where T
+function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
   numSl = numSlices(trajectory(acqData,1))
@@ -417,7 +411,7 @@ function convert3dTo2d(acqData::AcquisitionData{T}) where T
     subsampleIndices2d[i] = sort(unique(idx))
   end
 
-  return AcquisitionData(acqData.sequenceInfo, tr2d, kdata2d, subsampleIndices2d, acqData.encodingSize, acqData.fov)
+  return AcquisitionData(acqData.sequenceInfo, tr2d, kdata2d, subsampleIndices2d, acqData.encodingSize[1:2], acqData.fov)
 end
 
 
@@ -427,13 +421,13 @@ end
     Correct in the k-space the offset along read/phase1/phase2
 
 """
-function correctOffset(acq::AcquisitionData, offsetCor=[0,0,0])
+function correctOffset(acq::AcquisitionData{T,D}, offsetCor=[0,0,0]) where {T,D}
     contrs = size(acq.kdata,1)
     sls = size(acq.kdata,2)
     reps = size(acq.kdata,3)
 
-    shift = offsetCor ./ acq.fov
-    shift = (shift .* float.(acq.encodingSize))[1:ndims(acq.traj[1])]
+    shift_ = offsetCor ./ acq.fov
+    shift = (shift_[1:D] .* float.(acq.encodingSize))
     # nodes -> -0.5 to 0.5
     for i = 1:contrs
         phase_nodes = exp.(-2π * im * acq.traj[i].nodes[:,acq.subsampleIndices[i]]' * shift)
@@ -441,29 +435,3 @@ function correctOffset(acq::AcquisitionData, offsetCor=[0,0,0])
     end
     return acq
 end
-
-
-hann(x) = 0.5*(1-cos(2*pi*(x-0.5)))
-
-#= Is this still in use? And why pre-weight the k-space data?
-
-function NFFT.apodization!(acqData::AcquisitionData)
-    numContr = numContrasts(acqData)
-    numSl = numSlices(acqData)
-    numReps = numRepetitions(acqData)
-
-    for rep=1:numReps
-      for slice=1:numSl
-        for echo=1:numContr
-          tr = trajectory(acqData,echo)
-          nodes = kspaceNodes(tr)
-          for k=1:size(acqData.kdata[echo,slice,rep],1)
-            weight = hann(nodes[1,k])*hann(nodes[2,k])+0.5
-            acqData.kdata[echo,slice,rep][k,:] .*= weight
-          end
-        end
-      end
-    end
-
-    return acqData
-end=#

@@ -166,9 +166,9 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   # subsampling
   if !isempty(subsampleIdx) && (subsampleIdx != collect(1:size(tr,2))) && isCartesian(tr)
     if D==2
-      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles))
+      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile, tr.numProfiles), Complex{T})
     else
-      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile,tr.numProfiles,tr.numSlices))
+      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices), Complex{T})
     end
     return S ∘ ftOp
   else

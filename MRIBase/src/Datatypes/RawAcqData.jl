@@ -292,15 +292,15 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
 
   acq = AcquisitionData(tr, kdata,
-                          idx=subsampleIdx,
-                          encodingSize=collect(f.params["encodedSize"]),
-                          fov = collect(f.params["encodedFOV"]) )
+                          idx = subsampleIdx,
+                          encodingSize = ntuple(d->f.params["encodedSize"][d], ndims(tr[1])),
+                          fov = ntuple(d->f.params["encodedFOV"][d], 3) )
 
   if OffsetBruker
     ROT = [[f.profiles[1].head.read_dir...] [f.profiles[1].head.phase_dir...] [f.profiles[1].head.slice_dir...]]
     offset = inv(ROT) * [f.profiles[1].head.position...]
     offset = offset .*[0 1 1]'; @info "read offset not performed (only phase + slice)";
-    acq = correctOffset(acq,offset)
+    acq = correctOffset(acq, offset)
   end
 
   return acq
@@ -313,7 +313,7 @@ converts `acqData` into the equivalent `RawAcquisitionData` object.
 """
 function RawAcquisitionData(acqData::AcquisitionData)
   # XML header
-  params = minimalHeader(Tuple(acqData.encodingSize),Tuple(acqData.fov),tr_name=string(trajectory(acqData,1)))
+  params = minimalHeader(ntuple(d->acqData.encodingSize[d],3), acqData.fov, tr_name=string(trajectory(acqData,1)))
   # acquisition counter
   counter = 1
   # profiles
@@ -396,7 +396,9 @@ function uniqueidx(x::Matrix{T}) where T
   idxs
 end
 
-function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};f_res::Integer=1,tr_name::AbstractString="cartesian",numChannels::Int=1)
+function minimalHeader(encodingSize::NTuple{3,Int}, fov::NTuple{3,AbstractFloat};
+                      f_res::Integer=1, tr_name::AbstractString="cartesian", numChannels::Int=1)
+
   params = Dict{String,Any}()
   params["H1resonanceFrequency_Hz"] = f_res
   params["encodedSize"] = collect(encodingSize)
@@ -407,9 +409,9 @@ function minimalHeader(encodingSize::NTuple{3,Int},fov::NTuple{3,AbstractFloat};
   return params
 end
 
-function profileIdx(acqData::AcquisitionData,contr::Int)
-  tr = trajectory(acqData,contr)
+function profileIdx(acqData::AcquisitionData, contr::Int)
+  tr = trajectory(acqData, contr)
   numSamp = numSamplingPerProfile(tr)
-  numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
-  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1],numSamp)+1 for prof=1:numProf]
+  numProf = div(length(acqData.subsampleIndices[contr]), numSamp)
+  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1], numSamp)+1 for prof=1:numProf]
 end

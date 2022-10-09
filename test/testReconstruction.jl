@@ -518,7 +518,7 @@ function testRegridding(N=64)
   acqDataCart = simulation(x, params)
 
   # regridding
-  acqDataReg = regrid2d(acqDataRad,(N,N))
+  acqDataReg = regrid(acqDataRad,(N,N))
   # cartesian reconstruction
   params[:reco] = "standard"
   params[:reconSize] = (N,N)

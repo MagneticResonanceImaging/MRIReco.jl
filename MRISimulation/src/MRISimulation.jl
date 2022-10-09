@@ -143,7 +143,7 @@ function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
     end
   end
 
-  return AcquisitionData(tr, kdata,encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr, kdata, encodingSize=(nx,ny))
 end
 
 """
@@ -205,7 +205,7 @@ function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
     verbose && next!(p)
   end
 
-  return AcquisitionData(tr,kdata,encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr, kdata, encodingSize=(nx,ny,nz))
 end
 
 """
@@ -241,10 +241,10 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
                     , senseMaps=[]
                     , verbose=true
                     , kargs...) where T<:AbstractFloat
-  nx,ny,nz = size(image)
+  nx, ny, nz = size(image)
   ne = numContrasts(seq)
 
-  correctionMap = zeros(Complex{T},nx,ny,nz)
+  correctionMap = zeros(Complex{T}, nx, ny, nz)
   if isempty(r1map)
     r1map = zeros(nx,ny,nz)
   end
@@ -258,7 +258,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
   end
 
   # compute echo amplitudes
-  ampl = zeros(Complex{T}, nx,ny,nz,ne )
+  ampl = zeros(Complex{T}, nx, ny, nz, ne)
   if verbose
     p = Progress(nx*ny*nz,1,"Compute echo amplitudes ")
   end
@@ -301,7 +301,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
 
   ndims(tr[1])==2 ? numSl=nz : numSl=1
   
-  return AcquisitionData(tr, reshape(out,ne,numSl,1), encodingSize=[nx,ny,nz])
+  return AcquisitionData(tr, reshape(out,ne,numSl,1), encodingSize=size(image)[1:ndims(tr[1])])
 end
 
 """
@@ -492,4 +492,4 @@ function addNoise!(acqData::AcquisitionData, snr::Float64)
   end
 end
 
-end # MRISimulation
+end # module

@@ -6,10 +6,12 @@ For this, it uses the information in `acqData`.
 The axies respectively describe the following coordinates:
 x, y, z, acqData.numEchoes, acqData.numCoils
 """
-function makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionData) where T
+function makeAxisArray(I::AbstractArray{Complex{T},6}, acqData::AcquisitionData{T,D}) where {T,D}
 
-  offset = [0.0, 0.0, 0.0]*Unitful.mm
-  spacing = fieldOfView(acqData)./encodingSize(acqData)*Unitful.mm
+  offset = zeros(3)*Unitful.mm
+  shape = ones(Int, 3)
+  shape[1:D] .= encodingSize(acqData)
+  spacing = fieldOfView(acqData) ./ shape * Unitful.mm
 
   im = AxisArray(I,
 		   Axis{:x}(range(offset[1], step=spacing[1], length=size(I,1))),
@@ -19,7 +21,5 @@ function makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionData) where T
        Axis{:coils}(1:size(I,5)),
        Axis{:repetitions}(1:size(I,6)))
 
-  #imMeta = ImageMeta(im, Dict{String,Any}())
-  #return imMeta
   return im
 end

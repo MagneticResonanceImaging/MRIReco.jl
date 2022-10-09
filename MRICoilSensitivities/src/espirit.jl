@@ -27,15 +27,15 @@ Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code 
   * `nmaps = 1`                 - Number of maps that are calculated. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
-function espirit(acqData::AcquisitionData{T}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
-                 imsize::NTuple{D,Int} = Tuple(acqData.encodingSize[1:D]); 
+function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
+                 imsize::NTuple{D,Int} = encodingSize(acqData); 
                  nmaps::Int = 1, kargs...) where {T,D}
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
   end
 
-  acqsize = Tuple(acqData.encodingSize[1:D])
+  acqsize = encodingSize(acqData)
   match_acq_size = all(imsize .== acqsize)
 
   #  Force maps to be at least same size as acqData.encodingSize.
@@ -71,8 +71,8 @@ function espirit(acqData::AcquisitionData{T}, ksize::NTuple{D,Int} = ntuple(d->6
   return maps
 end
 
-function espirit(calibData::Array{T}, imsize::NTuple{N,Int}, ksize::NTuple{N,Int} = ntuple(_ -> 6, N)
-  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1, use_poweriterations = true) where {T,N}
+function espirit(calibData::Array{T}, imsize::NTuple{D,Int}, ksize::NTuple{D,Int} = ntuple(_ -> 6, D)
+  ; eigThresh_1::Number = 0.02, eigThresh_2::Number = 0.95, nmaps = 1, use_poweriterations = true) where {T,D}
   nc = size(calibData)[end]
 
   # compute calibration matrix, perform SVD and convert right singular vectors
@@ -98,8 +98,8 @@ end
 #   form calibration matrix from data, perform SVD and convert right singular vectors
 #   into k-space kernels
 #
-function dat2Kernel(data::Array{T,M}, ksize::NTuple{N,Int64}) where {T,N,M}
-  M != N+1 && error("data must have 1 dimension more than the length of ksize")
+function dat2Kernel(data::Array{T,M}, ksize::NTuple{D,Int64}) where {T,D,M}
+  M != D+1 && error("data must have 1 dimension more than the length of ksize")
 
   nc = size(data)[end]
 
@@ -164,7 +164,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
       end
     end
   end
-  # resize is neccessary for compatibility with MKL
+  # resize is necessary for compatibility with MKL
   reshape(fft!(reshape(kern2_, nc^2, sizePadded...), 2:ndims(kern2_)-1), nc, nc, sizePadded...)
 
   kern2 = zeros(T, nc, nc, imsize...)
@@ -346,5 +346,4 @@ function findIndices(newEnc::NTuple{D,Int64}, oldEnc::NTuple{D,Int64}) where D
   else
     return LinearIndices(oldCart)[:]
   end
-
 end

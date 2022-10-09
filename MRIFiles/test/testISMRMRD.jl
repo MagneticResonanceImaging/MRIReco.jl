@@ -39,12 +39,12 @@ IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 filename = joinpath(datadir, "simple_spiral.h5")
 
 f = ISMRMRDFile(filename)
+acq = AcquisitionData(f)
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:reconSize] = (128,128) #this should be clear from context
 
-Ireco = reconstruction(AcquisitionData(f), params)
+Ireco = reconstruction(acq, params)
 exportImage(joinpath(tmpdir,"recospiral.png"), abs.(Ireco[:,:,1,1,1,1]))
 
 filenameCopy = joinpath(tmpdir, "simple_spiral_copy.h5")
@@ -54,8 +54,8 @@ acq = RawAcquisitionData(f)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
-@test convert(MRIReco.AcquisitionHeaderImmutable, acq.profiles[1].head) ==
-       convert(MRIReco.AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
+@test convert(MRIFiles.AcquisitionHeaderImmutable, acq.profiles[1].head) ==
+       convert(MRIFiles.AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
