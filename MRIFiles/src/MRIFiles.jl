@@ -1,16 +1,14 @@
 module MRIFiles
 
-using Graphics: @mustimplement
 using Reexport
 
 using MRIBase
+using MRIBase.NFFTTools.AbstractNFFTs: @mustimplement # magic line
 using Reexport
 using FileIO
 using LinearAlgebra
 using HDF5
 using LightXML
-using NIfTI
-
 
 abstract type MRIFile end
 @mustimplement MRIBase.RawAcquisitionData(::MRIFile)

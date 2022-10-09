@@ -2,9 +2,9 @@ module MRISimulation
 
 export simulation, simulation_fast, simulation_explicit, simulateTempSubspace, addNoise
 
-using Graphics: @mustimplement
 using StatsBase
 using MRIBase
+using MRIBase.NFFTTools.AbstractNFFTs: @mustimplement # magic line
 using MRIOperators
 using ProgressMeter
 

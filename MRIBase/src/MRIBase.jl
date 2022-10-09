@@ -1,6 +1,5 @@
 module MRIBase
 
-using Graphics: @mustimplement
 using AbstractNFFTs
 using NFFTTools # for density compensation weights in trajectory
 
