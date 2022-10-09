@@ -12,7 +12,7 @@ contrasts in an MRI acquisition (for a given slice).
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
 """
-function encodingOps_simple(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}; kargs...) where {T,D}
+function encodingOps_simple(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}; kargs...) where {T,D}
   numContr = numContrasts(acqData)
   tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
@@ -21,7 +21,7 @@ function encodingOps_simple(acqData::AcquisitionData{T}, shape::NTuple{D,Int64};
 end
 
 """
-    encodingOps_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+    encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                               , senseMaps::Array{Complex{T}}
                               ; kargs...) where {T,D}
 
@@ -30,11 +30,11 @@ contrasts in an MRI acquisition. The different coils are taken into account
 in terms of their sensitivities
 
 # Arguments
-* `acqData::AcquisitionData{T}`            - AcquisitionData object
+* `acqData::AcquisitionData{T,D}`       - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
-function encodingOps_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                                 , senseMaps::Array{Complex{T},4}
                                 ; slice=1, kargs...) where {T,D}
 
@@ -50,7 +50,7 @@ function encodingOps_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64
 end
 
 """
-    encodingOp_multiEcho(acqData::AcquisitionData, shape::NTuple{D,Int64}; kargs...) where D
+    encodingOp_multiEcho(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}; kargs...) where {T,D}
 
 generates a LinearOperator which describe combined signal encoding of all
 the contrasts in an MRI acquisition (for a given slice).
@@ -59,15 +59,15 @@ the contrasts in an MRI acquisition (for a given slice).
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
 """
-function encodingOp_multiEcho(acqData::AcquisitionData, shape::NTuple{D,Int64}
-                                ; kargs...) where D
+function encodingOp_multiEcho(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
+                                ; kargs...) where {T,D}
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
   return diagOp(ft...)
 end
 
 """
-    encodingOp_multiEcho_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+    encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                                           , senseMaps::Array{Complex{T}}
                                           ; kargs...) where {T,D}
 
@@ -76,11 +76,11 @@ the contrasts in an MRI acquisition (for a given slice). The different coils are
 in terms of their sensitivities
 
 # Arguments
-* `acqData::AcquisitionData{T}`            - AcquisitionData object
+* `acqData::AcquisitionData{T,D}`       - AcquisitionData object
 * `shape::NTuple{2,Int64}`              - size of image to be encoded/reconstructed
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
-function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T}, shape::NTuple{D,Int64}
+function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                                           , senseMaps::Array{Complex{T}}
                                           ; slice::Int64=1, kargs...) where {T,D}
 
@@ -100,14 +100,14 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
 
   numChan = numChannels(acqData)
   # low rank operator
-  N=prod(shape)
+  N = prod(shape)
   subspace = get( params, :phi, Matrix{Float64}(I,N,N) )
   K = size(subspace,2)
-  Φ = MapSliceOp(subspace[:,:,1],2,(N, K, numChan), (N, numContr, numChan))
+  Φ = MapSliceOp(subspace[:,:,1], 2, (N, K, numChan), (N, numContr, numChan))
 
   # Fourier Operator
   tr = trajectory(acqData,1)
-  ft = fourierEncodingOp2d(shape, tr, "fast"; params...)
+  ft = fourierEncodingOp(shape, tr, "fast"; params...)
 
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
@@ -128,7 +128,6 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
   end
 
   return M ∘ (Φ ∘ E)
-
 end
 
 """
@@ -165,11 +164,8 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
 
   # subsampling
   if !isempty(subsampleIdx) && (subsampleIdx != collect(1:size(tr,2))) && isCartesian(tr)
-    if D==2
-      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile, tr.numProfiles), Complex{T})
-    else
-      S = SamplingOp(subsampleIdx,(tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices), Complex{T})
-    end
+    β = (D==2) ? (tr.numSamplingPerProfile, tr.numProfiles) : (tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
+    S = SamplingOp(subsampleIdx, β, Complex{T})
     return S ∘ ftOp
   else
     return ftOp
