@@ -96,7 +96,7 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
     sparseTrafo = recoParams[:sparseTrafo]
   elseif haskey(recoParams,:sparseTrafo)
     sparseTrafoName = get(recoParams, :sparseTrafo, "nothing")
-    sparseTrafo = SparseOp(sparseTrafoName, reconSize; recoParams...)
+    sparseTrafo = SparseOp(Complex{T},sparseTrafoName, reconSize; recoParams...)
   else
     sparseTrafo=nothing
   end
