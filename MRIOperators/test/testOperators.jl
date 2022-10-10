@@ -139,11 +139,29 @@ function testFieldmapFT(N=16)
   @test (norm(y_adj-y_adj_nfft)/norm(y_adj)) < 1e-2
 end
 
+function testSparseOp(T::Type,shape)
+    W = SparseOp(Complex{T},"Wavelet", shape)
+
+    x = zeros(Complex{T},shape)
+    for i=1:shape[1],j=1:shape[2],k=1:shape[3]
+      x[i,j,k] = rand()
+    end
+    x=vec(x)
+
+    xapprox = W' * W * x
+    @test (norm(xapprox-x)/norm(x)) < 1e-3
+end
+
+
 function testOperators()
   @testset "Linear Operator" begin
     testFT()
     testFT3d()
     testFieldmapFT()
+    testSparseOp(Float32,(128,80,1))
+    testSparseOp(Float64,(128,80,1))
+    testSparseOp(Float32,(128,128,80))
+    testSparseOp(Float64,(128,128,80))
   end
 end
 

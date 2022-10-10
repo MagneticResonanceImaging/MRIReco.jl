@@ -1,7 +1,7 @@
 export SparseOp
 
 """
-    SparseOp(name::AbstractString, shape::NTuple{N,Int64}; kargs...) where N
+    SparseOp(type::T,name::AbstractString, shape::NTuple{N,Int64}; kargs...) where{N,T}
 
 generates the sparsifying transform (`<: AbstractLinearOperator`) given its name.
 
@@ -10,7 +10,7 @@ generates the sparsifying transform (`<: AbstractLinearOperator`) given its name
 * `shape::NTuple{D,Int64}`  - size of the Array to be transformed
 * (`kargs`)                 - additional keyword arguments
 """
-function SparseOp(name::AbstractString, shape::NTuple{D,Int64}; kargs...) where D
+function SparseOp(T::Type,name::AbstractString, shape::NTuple{N,Int64}; kargs...) where N
   params = Dict(kargs)
   if name=="Wavelet"
     # if get(params, :multiEcho, false)
@@ -18,12 +18,12 @@ function SparseOp(name::AbstractString, shape::NTuple{D,Int64}; kargs...) where 
     # else
     #   return WaveletOp(params[:shape])
     # end
-    return WaveletOp(ComplexF64,shape)
+    return WaveletOp(T,shape)
   elseif name=="nothing"
-    return opEye(ComplexF64,prod(shape))
+    return opEye(T,prod(shape))
   else
     error("SparseOp $name is not yet defined.")
   end
 
-  return opEye(ComplexF64, prod(shape))
+  return opEye(T, prod(shape))
 end
