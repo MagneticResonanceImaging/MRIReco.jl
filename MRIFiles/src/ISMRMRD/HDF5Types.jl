@@ -219,6 +219,10 @@ struct HDF5_Acquisition
   data::HVL_T{Float32} #for some reason this is stored as float
 end
 
+struct HDF5_AcquisitionHeaderOnly
+  head::AcquisitionHeaderImmutable
+end
+
 function get_hdf5type_acquisition()
   off = i -> Cint(fieldoffset(HDF5_Acquisition,i))
   datatype = h5t_create(H5T_COMPOUND, sizeof(HDF5_Acquisition) )
@@ -240,6 +244,15 @@ function get_hdf5type_acquisition()
   return datatype
 end
 
+function get_hdf5type_acquisition_header_only()
+  off = i -> Cint(fieldoffset(HDF5_AcquisitionHeaderOnly,i))
+  datatype = h5t_create(H5T_COMPOUND, sizeof(HDF5_AcquisitionHeaderOnly) )
+  d1 = get_hdf5type_acquisitionheader()
+  h5t_insert(datatype, "head", off(1), d1)
+  h5t_close(d1)
+
+  return datatype
+end
 
 function writeProfiles(file, dataset, profiles::Vector{Profile})
 
