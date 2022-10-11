@@ -16,11 +16,10 @@ Uses the CGNR method to invert the non-cartesian Fourier encoding.
 function regrid(acqData::AcquisitionData{T,2}, kspaceSize::NTuple{2,Int64}; 
                 cgnr_iter::Int64=3, correctionMap::Array{Complex{T}}=Complex{T}[]) where {T}
   dcf = samplingDensity(acqData, kspaceSize) 
-
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
 
   kdata_cart = [zeros(Complex{T}, prod(kspaceSize), numChan) for j=1:numContr, k=1:numSl, rep=1:1]
-  F = sqrt(prod(kspaceSize))*FFTOp(Complex{T}, kspaceSize)
+  F = T(sqrt(prod(kspaceSize)))*FFTOp(Complex{T}, kspaceSize)
   img = zeros(Complex{T}, prod(kspaceSize))
   for k = 1:numSl
     E = encodingOps_simple(acqData, kspaceSize, slice=k, correctionMap=correctionMap)
