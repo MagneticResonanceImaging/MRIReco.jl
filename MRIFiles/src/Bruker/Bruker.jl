@@ -133,11 +133,11 @@ acqRareFactor(b::BrukerFile) = parse(Int,b["ACQ_phase_factor"])
 acqSpatialSize1(b::BrukerFile) = parse(Int,b["ACQ_spatial_size_1"])
 acqNumRepetitions(b::BrukerFile) = parse(Int,b["NR"])
 acqObjOrder(b::BrukerFile) = parse.(Int,b["ACQ_obj_order"])
-acqReadOffset(b::BrukerFile) = parse.(Float64,b["ACQ_read_offset"])/1000.0
-acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"])/1000.0
-acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"])/1000.0
+acqReadOffset(b::BrukerFile) = parse.(Float64,b["ACQ_read_offset"]) #mm
+acqPhase1Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase1_offset"]) #mm
+acqPhase2Offset(b::BrukerFile) = parse.(Float64,b["ACQ_phase2_offset"]) #mm
 acqGradMatrix(b::BrukerFile) = parse.(Float64,b["ACQ_grad_matrix"])
-acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"])/1000.0
+acqSliceOffset(b::BrukerFile) = parse.(Float64,b["ACQ_slice_offset"]) #mm
 acqFlipAngle(b::BrukerFile) = parse(Float64,b["ACQ_flip_angle"])
 acqProtocolName(b::BrukerFile) = b["ACQ_protocol_name"]
 acqInterEchoTime(b::BrukerFile) = parse(Float64,b["ACQ_inter_echo_time"][1])
@@ -146,7 +146,7 @@ acqRepetitionTime(b::BrukerFile) = parse(Float64,b["ACQ_repetition_time"][1])
 
 Base.ndims(b::BrukerFile) = parse(Int, b["ACQ_dim"])
 
-pvmEffPhase2Offset(b::BrukerFile) =parse.(Float32,b["PVM_EffPhase2Offset"])/1000.0
+pvmEffPhase2Offset(b::BrukerFile) =parse.(Float32,b["PVM_EffPhase2Offset"]) #mm
 pvmEncNReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncNReceivers"])
 pvmEncAvailReceivers(b::BrukerFile) =parse.(Int,b["PVM_EncAvailReceivers"])
 pvmEncSteps1(b::BrukerFile) = parse.(Int,b["PVM_EncSteps1"])
