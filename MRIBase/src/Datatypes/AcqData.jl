@@ -418,7 +418,8 @@ end
 """
     correctOffset(acq::AcquisitionData,offsetCor=[0,0,0])
 
-    Correct in the k-space the offset along read/phase1/phase2
+    Correct in the k-space the offset along read/phase1/phase2.
+    Offset should be in the same units as acq.fov
 
 """
 function correctOffset(acq::AcquisitionData{T,D}, offsetCor=[0,0,0]) where {T,D}
