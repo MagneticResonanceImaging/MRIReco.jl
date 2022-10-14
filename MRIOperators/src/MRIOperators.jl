@@ -145,17 +145,46 @@ function diagOp(op::AbstractLinearOperator, N=1)
   return Op
 end
 
-
-
 ### Normal Matrix Code ###
 
-struct DiagNormalOp{U,V,T}
-  ops::U
+mutable struct DiagNormalOp{T,V} <: AbstractLinearOperator{T}
+  nrow :: Int
+  ncol :: Int
+  symmetric :: Bool
+  hermitian :: Bool
+  prod! :: Function
+  tprod! :: Nothing
+  ctprod! :: Nothing
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   normalOps::V
-  nrow::Int64
-  ncol::Int64
   idx::Vector{Int64}
   y::Vector{T}
+end
+
+LinearOperators.storage_type(op::DiagNormalOp) = typeof(op.Mv5)
+
+function DiagNormalOp(normalOps, N, idx, y::Vector{T}) where {T}
+  
+  function produ!(y, normalOps, idx, x)
+    @floop for i=1:length(normalOps)
+       mul!(view(y,idx[i]:idx[i+1]-1), normalOps[i], view(x,idx[i]:idx[i+1]-1))
+    end
+    return y
+  end  
+
+  return DiagNormalOp(N, N, false, false
+         , (res,x) -> produ!(res, normalOps, idx, x)
+         , nothing
+         , nothing
+         , 0, 0, 0, false, false, false, T[], T[]
+         , normalOps, idx, y)
 end
 
 function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1)))
@@ -169,37 +198,14 @@ function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1
     # we promote the weights to be of the same type as T, which will be required
     # when creating the temporary vector in normalOperator in a later stage
     opInner = normalOperator(S.ops[1], WeightingOp(T.(weights[S.yIdx[1]:S.yIdx[2]-1].^2)))
-    op = DiagNormalOp(S.ops, [copy(opInner) for i=1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
+    op = DiagNormalOp([copy(opInner) for i=1:length(S.ops)], size(S,2), S.xIdx, zeros(T, S.ncol) )
   else
-    op = DiagNormalOp(S.ops, [normalOperator(S.ops[i], WeightingOp(T.(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)))
-                     for i in 1:length(S.ops)], S.ncol, S.ncol, S.xIdx, zeros(T, S.ncol) )
+    op = DiagNormalOp([normalOperator(S.ops[i], WeightingOp(T.(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)))
+                     for i in 1:length(S.ops)], size(S,2), S.xIdx, zeros(T, S.ncol) )
   end
 
   return op
 end
-
-function LinearAlgebra.mul!(y, S::DiagNormalOp, x)
-  _produ_diagnormalop(S.normalOps, S.idx, x, y) 
-  return y 
-end
-
-
-function Base.:*(S::DiagNormalOp, x::AbstractVector{T}) where T
-  _produ_diagnormalop(S.normalOps, S.idx, x, S.y) 
-  return S.y
-end
-
-function _produ_diagnormalop(ops, idx, x, y)
-  @floop for i=1:length(ops)
-     mul!(view(y,idx[i]:idx[i+1]-1), ops[i], view(x,idx[i]:idx[i+1]-1))
-  end
-  return
-end
-
-#
-# use hermitian conjugate as an estimate for the inverse (fallback)
-#
-\(A::AbstractLinearOperator, x::Vector) = adjoint(A)*x
 
 
 end # module

@@ -77,7 +77,23 @@ end
 #########################################################################
 ### Toeplitz Operator ###
 #########################################################################
-struct NFFTToeplitzNormalOp{T,D,W}
+
+mutable struct NFFTToeplitzNormalOp{T,D,W} <: AbstractLinearOperator{T}
+  nrow :: Int
+  ncol :: Int
+  symmetric :: Bool
+  hermitian :: Bool
+  prod! :: Function
+  tprod! :: Nothing
+  ctprod! :: Nothing
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   shape::NTuple{D,Int}
   weights::W
   fftplan
@@ -87,8 +103,32 @@ struct NFFTToeplitzNormalOp{T,D,W}
   xL2::Array{T,D}
 end
 
+LinearOperators.storage_type(op::NFFTToeplitzNormalOp) = typeof(op.Mv5)
 
-function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye(Complex{T},size(S,1))) where {T}
+function NFFTToeplitzNormalOp(shape, W, fftplan, ifftplan, λ, xL1::Array{T,D}, xL2::Array{T,D}) where {T,D}
+
+  function produ!(y, shape, fftplan, ifftplan, λ, xL1, xL2, x)
+    xL1 .= 0
+    x = reshape(x, shape)
+  
+    xL1[CartesianIndices(x)] .= x
+    mul!(xL2, fftplan, xL1)
+    xL2 .*= λ
+    mul!(xL1, ifftplan, xL2)
+  
+    y .= vec(xL1[CartesianIndices(x)])
+    return y
+  end
+
+  return NFFTToeplitzNormalOp(prod(shape), prod(shape), false, false
+         , (res,x) -> produ!(res, shape, fftplan, ifftplan, λ, xL1, xL2, x)
+         , nothing
+         , nothing
+         , 0, 0, 0, false, false, false, T[], T[]
+         , shape, W, fftplan, ifftplan, λ, xL1, xL2)
+end
+
+function NFFTToeplitzNormalOp(S::NFFTOp{T}, W=opEye(T,size(S,1))) where {T}
   shape = S.plan.N
 
   # plan the FFTs
@@ -114,32 +154,12 @@ function SparsityOperators.normalOperator(S::NFFTOp{T}, W=opEye(T,size(S,1))) wh
   if S.toeplitz
     return NFFTToeplitzNormalOp(S,W)
   else
-    tmp = Vector{T}(undef, size(S, 1))
-    return NormalOp(S,W,tmp)
+    return NormalOp(S,W)
   end
 end
-
-function LinearAlgebra.mul!(y, S::NFFTToeplitzNormalOp, b)
-  S.xL1 .= 0
-  b = reshape(b, S.shape)
-
-  S.xL1[CartesianIndices(b)] .= b
-  mul!(S.xL2, S.fftplan, S.xL1)
-  S.xL2 .*= S.λ
-  mul!(S.xL1, S.ifftplan, S.xL2)
-
-  y .= vec(S.xL1[CartesianIndices(b)])
-  return y
-end
-
-
-Base.:*(S::NFFTToeplitzNormalOp, b::AbstractVector) = mul!(similar(b), S, b)
-Base.size(S::NFFTToeplitzNormalOp) = S.shape
-Base.size(S::NFFTToeplitzNormalOp, dim) = S.shape[dim]
-Base.eltype(::Type{NFFTToeplitzNormalOp{T,D,W}}) where {T,D,W} = T
 
 function Base.copy(A::NFFTToeplitzNormalOp{T,D,W}) where {T,D,W}
   fftplan  = plan_fft( zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
   ifftplan = plan_ifft(zeros(T, 2 .* A.shape); flags=FFTW.MEASURE)
-  return NFFTToeplitzNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, A.xL1, A.xL2)
+  return NFFTToeplitzNormalOp(A.shape, A.weights, fftplan, ifftplan, A.λ, copy(A.xL1), copy(A.xL2))
 end

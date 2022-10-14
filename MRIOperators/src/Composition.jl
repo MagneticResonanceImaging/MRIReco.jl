@@ -85,11 +85,46 @@ end
 ### Normal Matrix Code ###
 # Left matrix can be build into a normal operator
 
-struct CompositeNormalOp{S,U,V} 
+mutable struct CompositeNormalOp{T,S,U,V} <: AbstractLinearOperator{T}
+  nrow :: Int
+  ncol :: Int
+  symmetric :: Bool
+  hermitian :: Bool
+  prod! :: Function
+  tprod! :: Nothing
+  ctprod! :: Nothing
+  nprod :: Int
+  ntprod :: Int
+  nctprod :: Int
+  args5 :: Bool
+  use_prod5! :: Bool
+  allocated5 :: Bool
+  Mv5 :: Vector{T}
+  Mtu5 :: Vector{T}
   opOuter::S
   normalOpInner::U
   tmp::V
 end
+
+LinearOperators.storage_type(op::CompositeNormalOp) = typeof(op.Mv5)
+
+
+function CompositeNormalOp(opOuter, normalOpInner, tmp::Vector{T}) where T
+
+  function produ!(y, opOuter, normalOpInner, tmp, x)
+    mul!(tmp, opOuter, x)
+    mul!(tmp, normalOpInner, tmp) # This can be dangerous. We might need to create two tmp vectors
+    return mul!(y, adjoint(opOuter), tmp)
+  end
+
+  return CompositeNormalOp(size(opOuter,2), size(opOuter,2), false, false
+         , (res,x) -> produ!(res, opOuter, normalOpInner, tmp, x)
+         , nothing
+         , nothing
+         , 0, 0, 0, false, false, false, T[], T[]
+         , opOuter, normalOpInner, tmp)
+end
+
 
 function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
   T = promote_type(eltype(S.A), eltype(S.B), eltype(W))
@@ -103,17 +138,7 @@ function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size
   end
 end
 
-function LinearAlgebra.mul!(y, S::CompositeNormalOp, x)
-  mul!(S.tmp, S.opOuter, x)
-  mul!(S.tmp, S.normalOpInner, S.tmp) # This can be dangerous. We might need to create two tmp vectors
-  return mul!(y, adjoint(S.opOuter), S.tmp)
-end
-
-function Base.:*(S::CompositeNormalOp, x::AbstractVector)
-  return adjoint(S.opOuter)*(S.normalOpInner*(S.opOuter*x))
-end
-
-function Base.copy(S::CompositeNormalOp{T,U}) where {T,U}
+function Base.copy(S::CompositeNormalOp) 
   opOuter = copy(S.opOuter)
   opInner = copy(S.normalOpInner)
   tmp = copy(S.tmp)
