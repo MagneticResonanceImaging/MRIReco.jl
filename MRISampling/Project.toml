@@ -1,7 +1,7 @@
 name = "MRISampling"
 uuid = "9be66c26-f988-4649-80fc-f4721a4a33f2"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
@@ -12,7 +12,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 julia = "1.6"
-MRIBase = "0.2.0"
+MRIBase = "0.3.0"
 Reexport = "1"
 
 [extras]
