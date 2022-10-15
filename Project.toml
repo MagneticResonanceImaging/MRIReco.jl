@@ -1,45 +1,44 @@
+authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
-authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.7.0"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
+FLoops = "cc61a311-1640-44b5-9fba-1b764f453329"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
 MRIOperators = "fb1137e3-90a6-46ce-a672-6e1e53d120f2"
-FLoops = "cc61a311-1640-44b5-9fba-1b764f453329"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 AxisArrays = "0.4.6"
 FFTW = "1.0"
+FLoops = "0.2"
 ImageUtils = "0.2.8"
 MRIBase = "0.3.0"
 MRIOperators = "0.1"
 MRISampling = "0.1"
 MRISimulation = "0.1"
-FLoops = "0.2"
 ProgressMeter = "1.2"
 Reexport = "0.2, 1"
 RegularizedLeastSquares = "0.9.0"
-Unitful = "1.2"
 SnoopPrecompile = "1"
+Unitful = "1.2"
 julia = "1.6"
 
-
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
-MRISimulation = "8988da37-ea20-4fa6-9af7-8a6f6f9a8970"
-MRISampling = "9be66c26-f988-4649-80fc-f4721a4a33f2"
-Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
+MRISampling = "9be66c26-f988-4649-80fc-f4721a4a33f2"
+MRISimulation = "8988da37-ea20-4fa6-9af7-8a6f6f9a8970"
+Scratch = "6c6a2e73-6563-6170-7368-637461726353"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "ImageUtils", "MRISimulation", "MRISampling", "Scratch", "FFTW"]

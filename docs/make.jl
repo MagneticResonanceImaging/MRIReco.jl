@@ -1,9 +1,10 @@
-using Documenter, MRIReco
+using Documenter, MRIBase, MRIFiles, MRICoilSensitivities, 
+                  MRIOperators, MRISampling, MRISimulation, MRIReco
 
 makedocs(
     modules = [MRIReco],
     sitename = "Julia MRI Package",
-    authors = "Tobias Knopp, Mirco Grosser",
+    authors = "Tobias Knopp, Mirco Grosser, and Co-Authors",
     pages = [
         "Home" => "index.md",
         "Getting Started" => "gettingStarted.md",
