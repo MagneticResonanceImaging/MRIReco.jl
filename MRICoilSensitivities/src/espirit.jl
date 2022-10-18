@@ -1,5 +1,5 @@
 """
-    espirit(acqData::AcquisitionData, ksize::NTuple{D,Int} = (6,6[,6]), ncalib::Int = 24, 
+    espirit(acqData::AcquisitionData, ksize::NTuple{D,Int} = (6,6[,6]), ncalib::Int = 24,
                imsize::NTuple{D,Int}=Tuple(acqData.encodingSize[1:D])
                ; eigThresh_1::Number=0.02, eigThresh_2::Number=0.95, nmaps = 1) where D
 
@@ -8,8 +8,8 @@
 
 Obtains coil sensitivities from a calibration area using ESPIRiT. Works with 2D and 3D data.
 
-The code is adapted from the MATLAB code by Uecker et al. (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: 
-Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code can be found at: 
+The code is adapted from the MATLAB code by Uecker et al. (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI:
+Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code can be found at:
 [http://people.eecs.berkeley.edu/~mlustig/Software.html]
 
 # Required Arguments
@@ -28,7 +28,7 @@ Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code 
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
 function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
-                 imsize::NTuple{D,Int} = encodingSize(acqData); 
+                 imsize::NTuple{D,Int} = encodingSize(acqData);
                  nmaps::Int = 1, kargs...) where {T,D}
 
   if !isCartesian(trajectory(acqData, 1))
@@ -41,7 +41,7 @@ function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d-
   #  Force maps to be at least same size as acqData.encodingSize.
   if any(acqsize .> imsize)
     imsize = acqsize
-  end  
+  end
 
   idx = match_acq_size ? acqData.subsampleIndices[1] : findIndices(imsize, acqsize)[acqData.subsampleIndices[1]]
 
@@ -286,51 +286,6 @@ function crop(A::Array{T,D}, s::NTuple{R,Int64}) where {T,D,R}
   return A[idx_center, CartesianIndices(size(A)[(R+1):end])]
 end
 
-
-"""
-return SVD-based coil compression matrix for `numVC` virtual coils
-"""
-function geometricCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
-  return svd(kdata).Vt[:, 1:numVC]
-end
-
-"""
-perform SVD-based coil compression for the given `kdata` and `smaps`
-"""
-function geometricCC(kdata::Matrix{T}, smaps::Array{T,4}, numVC::Int64 = size(kdata, 2)) where T <: Complex
-  nx, ny, nz, nc = size(smaps)
-  usv = svd(kdata)
-  kdataCC = kdata * usv.Vt[:, 1:numVC]
-  smapsCC = zeros(T, nx, ny, nz, numVC)
-  for j = 1:nz, i = 1:ny
-    smapsCC[:, i, j, :] .= smaps[:, i, j, :] * usv.Vt[:, 1:numVC]
-  end
-
-  return kdataCC, smapsCC
-end
-
-"""
-perform SVD-based coil compression for the given 2d-encoded `acqData` and `smaps`
-"""
-function geometricCC_2d(acqData::AcquisitionData{T}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T
-  nx, ny, nz, nc = size(smaps)
-  acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(Complex{T}, nx, ny, nz, numVC)
-  for sl = 1:numSlices(acqData)
-    # use first echo and first repetition to determine compression matrix
-    ccMat = geometricCCMat(acqData.kdata[1, sl, 1], numVC)
-    # compress slice of the smaps
-    for i = 1:ny
-      smapsCC[:, i, sl, :] .= smaps[:, i, sl, :] * ccMat
-    end
-    # compress kdata-slice
-    for rep = 1:numRepetitions(acqData), contr = 1:numContrasts(acqData)
-      acqDataCC.kdata[contr, sl, rep] = acqData.kdata[contr, sl, rep] * ccMat
-    end
-  end
-  return acqDataCC, smapsCC
-end
-
 """
   findIndices()
   Calculates the indices which place the center of k-space sampled on oldEnc in the correct place w.r.t a grid of size newEnc
@@ -341,7 +296,7 @@ function findIndices(newEnc::NTuple{D,Int64}, oldEnc::NTuple{D,Int64}) where D
   oldCart = CartesianIndices(oldEnc) .+ CartesianIndex(shift)
   newCart = CartesianIndices(newEnc)
 
-  if any(newEnc .> oldEnc) 
+  if any(newEnc .> oldEnc)
     return LinearIndices(newCart)[oldCart][:]
   else
     return LinearIndices(oldCart)[:]
