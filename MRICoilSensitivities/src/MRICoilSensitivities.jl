@@ -1,6 +1,6 @@
 module MRICoilSensitivities
 
-export estimateCoilSensitivities, mergeChannels, espirit, geometricCC_2d
+export estimateCoilSensitivities, mergeChannels, espirit, geometricCoilCompression
 
 using MRIBase
 using FLoops
