@@ -56,6 +56,30 @@ function cartesian2dNodes(::Type{T}, numProfiles, numSamplingPerProfile
   return reshape(nodes, 2, numSamplingPerProfile*numProfiles)
 end
 
+function cartesianSubsamplingIdx(shape::NTuple{2,Int}, tr::Trajectory)
+  if !isCartesian(tr)
+    @error "SampledFFTOp can only be applied to Cartesian data"
+  end
+  
+  nx,ny = shape
+  numProf, numSamp = (numProfiles(tr), numSamplingPerProfile(tr))
+  idxX = range(1,step=floor(Int, nx/numSamp), length=numSamp)
+  idxY = range(1,step=floor(Int, ny/numProf), length=numProf)
+
+  idx = Vector{Int}(undef,numProf*numSamp)
+  linIdx1 = LinearIndices((nx,ny))
+  linIdx2 = LinearIndices((numSamp,numProf))
+  for j=1:numProf, i=1:numSamp
+    idx[linIdx2[i,j]] = linIdx1[idxX[i],idxY[j]]
+  end
+
+  return idx
+end
+
+function isUndersampledCartTrajectory(shape::NTuple{2,Int}, tr::Trajectory)
+  return shape[1]!=numSamplingPerProfile(tr) || shape[2]!=numProfiles(tr)
+end
+
 function cartesian2dDensity(::Type{T}, numProfiles::Int64, numSamplingPerProfile::Int64) where T
   density = zeros(T,numSamplingPerProfile, numProfiles) 
   for l = 1:numProfiles

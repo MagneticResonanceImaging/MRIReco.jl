@@ -45,6 +45,31 @@ function cartesian3dNodes(::Type{T}, numProfiles, numSamplingPerProfile
   return reshape(nodes, 3, numSamplingPerProfile*numProfiles*numSlices)
 end
 
+function cartesianSubsamplingIdx(shape::NTuple{3,Int}, tr::Trajectory)
+  if !isCartesian(tr)
+    @error "SampledFFTOp can only be applied to Cartesian data"
+  end
+  
+  nx,ny,nz = shape
+  numProf, numSamp, numSl = (numProfiles(tr), numSamplingPerProfile(tr), numSlices(tr))
+  idxX = range(1,step=floor(Int, nx/numSamp), length=numSamp)
+  idxY = range(1,step=floor(Int, ny/numProf), length=numProf)
+  idxZ = range(1,step=floor(Int, nz/numSl), length=numSl)
+
+  idx = Vector{Int}(undef,numProf*numSamp*numSl)
+  linIdx1 = LinearIndices((nx,ny,nz))
+  linIdx2 = LinearIndices((numSamp,numProf,numSl))
+  for k=1:numSl, j=1:numProf, i=1:numSamp
+    idx[linIdx2[i,j,k]] = linIdx1[idxX[i],idxY[j],idxZ[k]]
+  end
+
+  return idx
+end
+
+function isUndersampledCartTrajectory(shape::NTuple{3,Int}, tr::Trajectory)
+  return shape[1]!=numSamplingPerProfile(tr) || shape[2]!=numProfiles(tr) || shape[3]!=numSlices(tr)
+end
+
 function cartesian3dDensity(::Type{T}, numSamplingPerProfile::Int64, numProfiles::Int64, numSlices::Int64) where T
   density = zeros(T, numSamplingPerProfile, numProfiles, numSlices)
   for j = 1:numSlices

@@ -107,6 +107,23 @@ function testFT3d(N=12)
   @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 end
 
+function testUndersampledFourierOp(N=16)
+  x = rand(ComplexF64,N,N) 
+  tr = CartesianTrajectory(Float64, N÷2, N)
+  
+  # FourierOperator
+  F_ft = fourierEncodingOp((N,N), tr, "fast")
+  # Explicit operator
+  F = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N))
+  
+  y1 = F_ft*vec(x)
+  y2 = F*vec(x)
+  x1 = adjoint(F_ft)*y1
+  x2 = adjoint(F)*y2
+  @test y1 ≈ y2   rtol = 1e-2
+  @test x1 ≈ x2   rtol = 1e-2
+end
+
 ## test FieldmapNFFTOp
 function testFieldmapFT(N=16)
   # random image
@@ -158,6 +175,7 @@ function testOperators()
     testFT()
     testFT3d()
     testFieldmapFT()
+    testUndersampledFourierOp()
     testSparseOp(Float32,(128,80,1))
     testSparseOp(Float64,(128,80,1))
     testSparseOp(Float32,(128,128,80))

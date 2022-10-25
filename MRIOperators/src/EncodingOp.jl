@@ -154,7 +154,12 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
       ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; kargs...)
     elseif isCartesian(tr)
       @debug "FFTOp"
-      ftOp = FFTOp(Complex{T}, shape; unitary=false)
+      if !MRIBase.isUndersampledCartTrajectory(shape,tr)
+        ftOp = FFTOp(Complex{T}, shape; unitary=false)
+      else
+        idx = MRIBase.cartesianSubsamplingIdx(shape,tr)
+        ftOp = SamplingOp(idx,shape) ∘ FFTOp(Complex{T}, shape; unitary=false)
+      end
     else
       ftOp = NFFTOp(shape, tr; kargs...)
     end
