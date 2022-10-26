@@ -10,7 +10,7 @@ end
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco
+using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities
 
 ##################
 ## Data Loading ##
@@ -28,7 +28,7 @@ acqData2d = convert3dTo2d(acqData)
 # extract slices
 sl = [50,100,150,200]
 acqData2d.kdata = acqData2d.kdata[:,sl,:]
-acqData2d.encodingSize = [274,208,1]
+acqData2d.encodingSize = (274,208)
 
 ####################################
 ## generate coil sensitivity maps ##

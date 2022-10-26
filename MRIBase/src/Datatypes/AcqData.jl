@@ -372,11 +372,11 @@ function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
   end
 
   # create 2d trajectories along phase encoding directions
-  tr2d = Vector{Trajectory}(undef,numContr)
+  tr2d = Vector{Trajectory{T}}(undef, numContr)
   for i=1:numContr
     tr3d = trajectory(acqData,i)
     # 1. arg (numProfiles=>y), 2. arg (numSamp=>x)
-    tr2d[i] = CartesianTrajectory(numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
+    tr2d[i] = CartesianTrajectory(T,numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
   end
 
   # convert k-space data and place it in the appropriate array structure
@@ -385,14 +385,25 @@ function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
   for i=1:numContr
     tr = trajectory(acqData,i)
     numProf = div( size(acqData.kdata[i,1,1],1), numSamp ) #numProfiles(tr)
-    kdata_i = zeros(T, numSamp, numProf, numChan, numReps)
+    kdata_i = zeros(Complex{real(T)}, numSamp, numProf, numChan, numReps)
     #convert
-    F = 1/sqrt(numSamp)*FFTOp(T, (numSamp,))
+    #F = 1/sqrt(numSamp)*FFTOp(T, )
+
+    shape = (numSamp,)
+    tmpVec = Array{Complex{real(T)}}(undef, shape)
+    iplan = MRIBase.NFFTTools.FFTW.plan_bfft!(tmpVec; flags=MRIBase.NFFTTools.FFTW.MEASURE)
+    factor = T(1.0/numSamp)
+      
     for r=1:numReps
       for p=1:numProf # including slices
         for c=1:numChan
           # p_idx = (s-1)*numProf+p
-          kdata_i[:,p,c,r] .= adjoint(F) * acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c]
+          MRIBase.NFFTTools.FFTW.ifftshift!(tmpVec, reshape(acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c],shape))
+          iplan * tmpVec
+          MRIBase.NFFTTools.FFTW.fftshift!(reshape(kdata_i[:,p,c,r],shape), tmpVec)
+          kdata_i[:,p,c,r] .*= factor
+
+          #kdata_i[:,p,c,r] .= adjoint(F) * acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c]
         end
       end
     end
