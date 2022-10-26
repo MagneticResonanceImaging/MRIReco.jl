@@ -3,7 +3,7 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot","MRIFiles","MRICoilSensitivities"]
+for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
@@ -39,7 +39,9 @@ acqData2d.encodingSize = (274,208)
 @info "Espirit"
 smaps = espirit(acqData2d, (6,6), 30, eigThresh_1=0.04, eigThresh_2=0.98)
 
-heatmap(abs.(smaps[:,:,4,1]))
+#figure(2, figsize=(4,4))
+#imshow(abs.(smaps[:,:,4,1]))
+
 ###############################
 ## Reconstruction Parameters ##
 ###############################
