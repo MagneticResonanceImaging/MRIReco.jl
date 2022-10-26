@@ -3,7 +3,7 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot"]
+for P in ["HTTP", "PyPlot","MRIFiles","MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
@@ -76,16 +76,3 @@ for s in [1,2,3,4]
 end
 
 subplots_adjust(left=0.01,bottom=0.01,wspace=0.3,hspace=0.2,right=0.99,top=0.92)
-
-
-
-
-
-
-
-
-
-
-
-
-

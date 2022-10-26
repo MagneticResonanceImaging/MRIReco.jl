@@ -391,17 +391,20 @@ function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
 
     shape = (numSamp,)
     tmpVec = Array{Complex{real(T)}}(undef, shape)
+    tmpVec2 = Array{Complex{real(T)}}(undef, shape)
+    kdata_i = Array{Complex{real(T)}}(undef, (numSamp, numProf, numChan, numReps))
     iplan = MRIBase.NFFTTools.FFTW.plan_bfft!(tmpVec; flags=MRIBase.NFFTTools.FFTW.MEASURE)
     factor = T(1.0/numSamp)
-      
+
     for r=1:numReps
       for p=1:numProf # including slices
         for c=1:numChan
           # p_idx = (s-1)*numProf+p
           MRIBase.NFFTTools.FFTW.ifftshift!(tmpVec, reshape(acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c],shape))
           iplan * tmpVec
-          MRIBase.NFFTTools.FFTW.fftshift!(reshape(kdata_i[:,p,c,r],shape), tmpVec)
-          kdata_i[:,p,c,r] .*= factor
+          #MRIBase.NFFTTools.FFTW.fftshift!(reshape(kdata_i[:,p,c,r],shape), tmpVec)
+          MRIBase.NFFTTools.FFTW.fftshift!(tmpVec2, tmpVec)
+          kdata_i[:,p,c,r] = factor .* tmpVec2
 
           #kdata_i[:,p,c,r] .= adjoint(F) * acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c]
         end
