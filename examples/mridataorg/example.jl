@@ -7,6 +7,9 @@ for P in ["HTTP", "PyPlot","MRIFiles","MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
+# for now we need to use the latest version of Wavelets.jl (in order to use my commit #3451b21)
+Pkg.add(Pkg.PackageSpec(name="Wavelets",rev="master"))
+
 # Download data
 include("downloadData.jl")
 
@@ -36,7 +39,7 @@ acqData2d.encodingSize = (274,208)
 @info "Espirit"
 smaps = espirit(acqData2d, (6,6), 30, eigThresh_1=0.04, eigThresh_2=0.98)
 
-
+heatmap(abs.(smaps[:,:,4,1]))
 ###############################
 ## Reconstruction Parameters ##
 ###############################

@@ -402,7 +402,6 @@ function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
           # p_idx = (s-1)*numProf+p
           MRIBase.NFFTTools.FFTW.ifftshift!(tmpVec, reshape(acqData.kdata[i,1,r][(p-1)*numSamp+1:p*numSamp,c],shape))
           iplan * tmpVec
-          #MRIBase.NFFTTools.FFTW.fftshift!(reshape(kdata_i[:,p,c,r],shape), tmpVec)
           MRIBase.NFFTTools.FFTW.fftshift!(tmpVec2, tmpVec)
           kdata_i[:,p,c,r] = factor .* tmpVec2
 
