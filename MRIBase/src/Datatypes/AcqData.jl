@@ -376,7 +376,7 @@ function convert3dTo2d(acqData::AcquisitionData{T,3}) where {T}
   for i=1:numContr
     tr3d = trajectory(acqData,i)
     # 1. arg (numProfiles=>y), 2. arg (numSamp=>x)
-    tr2d[i] = CartesianTrajectory(numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
+    tr2d[i] = CartesianTrajectory(T,numSlices(tr3d),numProfiles(tr3d),TE=echoTime(tr3d),AQ=acqTimePerProfile(tr3d))
   end
 
   # convert k-space data and place it in the appropriate array structure
