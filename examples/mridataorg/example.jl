@@ -3,14 +3,17 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot"]
+for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
+
+# for now we need to use the latest version of Wavelets.jl (in order to use my commit #3451b21)
+Pkg.add(Pkg.PackageSpec(name="Wavelets",rev="master"))
 
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco
+using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities
 
 ##################
 ## Data Loading ##
@@ -28,7 +31,7 @@ acqData2d = convert3dTo2d(acqData)
 # extract slices
 sl = [50,100,150,200]
 acqData2d.kdata = acqData2d.kdata[:,sl,:]
-acqData2d.encodingSize = [274,208,1]
+acqData2d.encodingSize = (274,208)
 
 ####################################
 ## generate coil sensitivity maps ##
@@ -36,6 +39,8 @@ acqData2d.encodingSize = [274,208,1]
 @info "Espirit"
 smaps = espirit(acqData2d, (6,6), 30, eigThresh_1=0.04, eigThresh_2=0.98)
 
+#figure(2, figsize=(4,4))
+#imshow(abs.(smaps[:,:,4,1]))
 
 ###############################
 ## Reconstruction Parameters ##
@@ -76,16 +81,3 @@ for s in [1,2,3,4]
 end
 
 subplots_adjust(left=0.01,bottom=0.01,wspace=0.3,hspace=0.2,right=0.99,top=0.92)
-
-
-
-
-
-
-
-
-
-
-
-
-
