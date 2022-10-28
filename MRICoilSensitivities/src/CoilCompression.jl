@@ -20,7 +20,7 @@ function CoilCompression(data::Union{AcquisitionData{T,D},Matrix{T}},numVC::Int6
 end
 
 """
-    calcGCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
+    geometricCoilCompression(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
 
 return a SVD-based Geometric Coil Compression (GCC) matrix for `numVC` virtual coils.
 Coil compression is performed for each position along the readout (kx) direction.
@@ -31,19 +31,9 @@ Input :
 Reference :
 - Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for accelerated imaging with Cartesian sampling. Magnetic Resonance in Medicine 2013;69:571–582 doi: 10.1002/mrm.24267.
 """
-function calcGCCMat(kspace::Array{T,6}, numVC::Int64 = size(kdata, 2)) where T <: Complex
-    kspace_1 = ifftshift(ifft(ifftshift(kspace),1))
-
-
-
-
-
-
-    return svd(kdata).Vt[:, 1:numVC]
+function geometricCoilCompression(kspace::Array{T,6}, numVC::Int64 = size(kdata, 2)) where T <: Complex
+   @error "not implemented"
 end
-
-
-
 
 """
     softwareCoilCompression(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2);) where T <: Complex
