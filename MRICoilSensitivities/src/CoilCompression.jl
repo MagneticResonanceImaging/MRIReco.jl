@@ -1,68 +1,129 @@
-"""
-return SVD-based coil compression matrix for `numVC` virtual coils
-"""
-function geometricCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
-  return svd(kdata).Vt[:, 1:numVC]
+export CoilCompression, softwareCoilCompression, applyCoilCompressionSensitivityMaps
+function CoilCompression(data::Union{AcquisitionData{T,D},Matrix{T}},numVC::Int64 = nothing; CCMode = "SCC") where {T<:Complex,D}
+    if isnothing(numVC)
+        if typeof(data) <: AcquisitionData
+            numVC = size(data.kdata,2)
+        else
+            numVC = size(kdata,2)
+        end
+    end
+
+    if (CCMode == "SCC")
+        return softwareCoilCompression(data,numVC)
+    elseif (CCMode == "GCC")
+        return geometricCoilCompression(data,numVC) #perform gcc along readout
+    elseif (CCMode == "ECC")
+        @error "ECC currently not implemented"
+    else
+        @error "Supported mode are : SCC or GCC (ECC not implemented)"
+    end
 end
 
 """
-perform SVD-based coil compression for the given `kdata` and `smaps`
+    calcGCCMat(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
+
+return a SVD-based Geometric Coil Compression (GCC) matrix for `numVC` virtual coils.
+Coil compression is performed for each position along the readout (kx) direction.
+
+Input :
+    -   kspace::Array{T,4} : dimension : kx,ky,kz,channel
+
+Reference :
+- Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for accelerated imaging with Cartesian sampling. Magnetic Resonance in Medicine 2013;69:571–582 doi: 10.1002/mrm.24267.
 """
-function geometricCoilCompression(kdata::Matrix{T}, smaps::Array{T,4}, numVC::Int64 = size(kdata, 2)) where T <: Complex
-  nx, ny, nz, nc = size(smaps)
+function calcGCCMat(kspace::Array{T,6}, numVC::Int64 = size(kdata, 2)) where T <: Complex
+    kspace_1 = ifftshift(ifft(ifftshift(kspace),1))
+
+
+
+
+
+
+    return svd(kdata).Vt[:, 1:numVC]
+end
+
+
+
+
+"""
+    softwareCoilCompression(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2);) where T <: Complex
+
+Perform SVD-based coil compression for the given `kdata` and `smaps`
+
+Reference :
+- Huang F, Vijayakumar S, Li Y, Hertel S, Duensing GR. A software channel compression technique
+for faster reconstruction with many channels. Magnetic Resonance Imaging 2008;26:133–141 doi: 10.1016/j.mri.2007.04.010.
+"""
+function softwareCoilCompression(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2);) where T <: Complex
   usv = svd(kdata)
   ccMat = usv.Vt[:, 1:numVC]
   kdataCC = kdata * ccMat
+
+  return kdataCC, ccMat
+end
+
+"""
+softwareCoilCompression(acqData::AcquisitionData{T,D}, numVC::Int64 = size(acqData.kdata[1,1,1],2);contr_::Int = 1,rep_::Int = 1) where {T,D}
+
+Perform SVD-based coil compression for the given `kdata` and `smaps`.
+By default the first repetition/echoes is used to estimates the coil compression matrix
+
+Reference :
+- Huang F, Vijayakumar S, Li Y, Hertel S, Duensing GR. A software channel compression technique
+for faster reconstruction with many channels. Magnetic Resonance Imaging 2008;26:133–141 doi: 10.1016/j.mri.2007.04.010.
+"""
+function softwareCoilCompression(acqData::AcquisitionData{T,D}, numVC::Int64 = size(acqData.kdata[1,1,1],2);sContr::Int = 1,sRep::Int = 1) where {T,D}
+    acqDataCC = deepcopy(acqData)
+    nSl = numSlices(acqData)
+    ccMat_vec = Matrix{Complex{T}}[]
+
+    for sl = 1:nSl
+      acqDataCC.kdata[sContr, sl, sRep],ccMat = softwareCoilCompression(acqData.kdata[sContr, sl, sRep],numVC)
+      push!(ccMat_vec,ccMat)
+      # compress kdata-slice
+      for rep = 1:numRepetitions(acqData), contr = 1:numContrasts(acqData)
+        if(rep == sRep) && (contr == sContr) # already performed above
+            continue
+        end
+        acqDataCC.kdata[contr, sl, rep] = acqData.kdata[contr, sl, rep] * ccMat
+      end
+    end
+
+    return acqDataCC, ccMat_vec
+  end
+
+"""
+    applyCoilCompressionSensitivityMaps(smaps::Array{T,4}, ccMat::Array{T}) where T <: Complex
+
+Apply coil compression for the given sensitivty maps `smaps` using the Coil Compression Matrix ccMat
+"""
+function applyCoilCompressionSensitivityMaps(smaps::Array{T,4}, ccMat::Array{T}) where T <: Complex
+  nx, ny, nz, nc = size(smaps)
+
   smapsCC = zeros(T, nx, ny, nz, numVC)
   for j = 1:nz, i = 1:ny
     smapsCC[:, i, j, :] .= smaps[:, i, j, :] * ccMat
   end
 
-  return kdataCC, smapsCC
+  return smapsCC
 end
 
 """
-perform SVD-based coil compression for the given `acqData` and `smaps`
+    applyCoilCompressionSensitivityMaps(smaps::Array{T,4}, ccMat_vec::Vector{Matrix{T}}) where T <: Complex
+
+Apply coil compression to multislice 2D sensitivity maps `smaps` using a vector of Coil Compression Matrix ccMat_vec. Each indices corrsponds to the number of slice
 """
-function geometricCoilCompression(acqData::AcquisitionData{T,2}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T
-  nx, ny, nz, nc = size(smaps)
-  acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(Complex{T}, nx, ny, nz, numVC)
-  for sl = 1:numSlices(acqData)
-    # use first echo and first repetition to determine compression matrix
-    usv = svd(acqData.kdata[1, sl, 1])
-    ccMat = usv.Vt[:, 1:numVC]
-    # compress slice of the smaps
-    for i = 1:ny
-      smapsCC[:, i, sl, :] .= smaps[:, i, sl, :] * ccMat
+function applyCoilCompressionSensitivityMaps(smaps::Array{T,4}, ccMat_vec::Vector{Matrix{T}}) where T <: Complex
+    nx, ny, nz, nc = size(smaps)
+
+    if nz != length(ccMat_vec)
+        @error "Number of Coil compression matrix is not equal to the number of slice"
     end
-    # compress kdata-slice
-    for rep = 1:numRepetitions(acqData), contr = 1:numContrasts(acqData)
-      acqDataCC.kdata[contr, sl, rep] = acqData.kdata[contr, sl, rep] * ccMat
+
+    smapsCC = zeros(T, nx, ny, nz, numVC)
+    for j = 1:nz, i = 1:ny
+      smapsCC[:, i, j, :] .= smaps[:, i, j, :] * ccMat_vec[j]
     end
-  end
-  return acqDataCC, smapsCC
-end
 
-function geometricCoilCompression(acqData::AcquisitionData{T,3}, smaps::Array{Complex{T},4}, numVC::Int64 = size(smaps, 4)) where T
-  nc = size(smaps, 4)
-  N = size(smaps)[1:3]
-  acqDataCC = deepcopy(acqData)
-  smapsCC = zeros(Complex{T}, N..., numVC)
-  
-  # use first echo and first repetition to determine compression matrix
-  usv = svd(acqData.kdata[1, 1, 1])
-  ccMat = usv.Vt[:, 1:numVC]
-
-  # compress slice of the smaps
-  for n in CartesianIndices(N)
-    smapsCC[n, :] .= transpose(ccMat) * smaps[n, :]
+    return smapsCC
   end
-
-  # compress kdata-slice
-  for rep = 1:numRepetitions(acqData), contr = 1:numContrasts(acqData)
-    acqDataCC.kdata[contr, 1, rep] = acqData.kdata[contr, 1, rep] * ccMat
-  end
-  
-  return acqDataCC, smapsCC
-end

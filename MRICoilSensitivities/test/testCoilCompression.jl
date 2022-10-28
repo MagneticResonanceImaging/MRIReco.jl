@@ -29,7 +29,7 @@ function test2DCC(N=64)
   x_ori = reconstruction(acqData, params)
   x_ori = mergeChannels(x_ori)
 
-  acqDataCC, smapsCC = geometricCoilCompression(acqData, smaps, 6)
+  acqDataCC,ccMat = softwareCoilCompression(acqData, 6)
   x_cc = reconstruction(acqDataCC, params)
   x_cc = mergeChannels(x_cc)
 
@@ -75,7 +75,7 @@ function test3DCC(N=64, NSl=64)
   x_ori = reconstruction(acqData, params)
   x_ori = mergeChannels(x_ori)
 
-  acqDataCC, smapsCC = geometricCoilCompression(acqData, smaps, 6)
+  acqDataCC,ccMat = softwareCoilCompression(acqData, 6)
   x_cc = reconstruction(acqDataCC, params)
   x_cc = mergeChannels(x_cc)
 
