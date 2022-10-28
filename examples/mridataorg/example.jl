@@ -7,9 +7,6 @@ for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
-# for now we need to use the latest version of Wavelets.jl (in order to use my commit #3451b21)
-Pkg.add(Pkg.PackageSpec(name="Wavelets",rev="master"))
-
 # Download data
 include("downloadData.jl")
 
