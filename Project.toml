@@ -1,7 +1,7 @@
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
-version = "0.7.0"
+version = "0.7.1"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
