@@ -1,5 +1,5 @@
 """
-ml_cost(x::Matrix{T},y::Matrix{Complex{T}},z::Matrix{Complex{T}}, β)
+    ml_cost(x::Matrix{T},y::Matrix{Complex{T}},z::Matrix{Complex{T}}, β)
 Calculates the regularized ML estimator cost between an estimated phase map and multi-echo scan data
 # Arguments
 * `x::Matrix{T}` - fieldmap estimate (in radians)
@@ -10,24 +10,24 @@ Calculates the regularized ML estimator cost between an estimated phase map and 
 """
 function ml_cost(x::Matrix{T},y::Matrix{Complex{T}},z::Matrix{Complex{T}},m::Matrix{T}, β) where T
 
-    Ψ = (sum(m.* (1 .- cos.(angle.(z) .- angle.(y) .- x)),dims=[1,2]) + β * R(x))[1]
+    Ψ = (sum(m.* (1 .- cos.(angle.(z) .- angle.(y) .- x))) + β * R(x))[1]
 
 end
 
 """
-R(x::Matrix{T})
+    R(x::Matrix{T})
 Regularization term which penalizes roughness in a first-order finite-difference sense
 # Arguments
 * `x::Matrix{T}` - fieldmap estimate (in radians)
 """
 function R(x::Matrix{T}) where T
 
-    return T.(0.5) * sum(abs2,diff(x,dims=1),dims=[1,2]) + T.(0.5) * sum(abs2,diff(x,dims=2),dims=[1,2])
+    return T.(0.5) * sum(abs2,diff(x,dims=1)) + T.(0.5) * sum(abs2,diff(x,dims=2))
 
 end
 
 """
-pcg_ml_est_fieldmap(y::AbstractMatrix{Complex{T}},z::AbstractMatrix{Complex{T}},β) 
+    pcg_ml_est_fieldmap(y::AbstractMatrix{Complex{T}},z::AbstractMatrix{Complex{T}},β) 
 Estimates the fieldmap (low-level) using the method presented in https://doi.org/10.1109/tmi.2008.923956
 # Required Arguments
 * `y::AbstractMatrix{Complex{T}}` - Complex first-echo image data
@@ -76,7 +76,7 @@ function pcg_ml_est_fieldmap(y::AbstractMatrix{Complex{T}},z::AbstractMatrix{Com
 end
 
 """
-estimate_cmap(imData,slices, TE1,TE2,β,isrotated)
+    estimate_cmap(imData,slices, TE1,TE2,β,isrotated)
 Processes 5D volume data (high-level) as output from MRIReco.reconstruction to estimate fieldmaps using the method presented by Funai and Fessler
 # Required Arguments
 * `imData` - 5-D array with complex image data -> [X,Y,Z,ECHO,REPETITION]
