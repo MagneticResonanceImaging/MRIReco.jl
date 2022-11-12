@@ -294,7 +294,7 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   acq = AcquisitionData(tr, kdata,
                           idx = subsampleIdx,
                           encodingSize = ntuple(d->f.params["encodedSize"][d], ndims(tr[1])),
-                          fov = ntuple(d->f.params["encodedFOV"][d], 3) )
+                          fov = Float64.(ntuple(d->f.params["encodedFOV"][d], 3)))
 
   if OffsetBruker
     ROT = [[f.profiles[1].head.read_dir...] [f.profiles[1].head.phase_dir...] [f.profiles[1].head.slice_dir...]]
@@ -311,9 +311,9 @@ end
 
 converts `acqData` into the equivalent `RawAcquisitionData` object.
 """
-function RawAcquisitionData(acqData::AcquisitionData)
+function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
   # XML header
-  params = minimalHeader(ntuple(d->acqData.encodingSize[d],3), acqData.fov, tr_name=string(trajectory(acqData,1)))
+  params = minimalHeader(ntuple(d->acqData.encodingSize[d],D), T.(acqData.fov), tr_name=string(trajectory(acqData,1)))
   # acquisition counter
   counter = 1
   # profiles
@@ -396,7 +396,7 @@ function uniqueidx(x::Matrix{T}) where T
   idxs
 end
 
-function minimalHeader(encodingSize::NTuple{3,Int}, fov::NTuple{3,AbstractFloat};
+function minimalHeader(encodingSize, fov::NTuple{3,AbstractFloat};
                       f_res::Integer=1, tr_name::AbstractString="cartesian", numChannels::Int=1)
 
   params = Dict{String,Any}()
