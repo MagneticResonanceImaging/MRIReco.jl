@@ -30,39 +30,106 @@ Input :
     -   numVS::Int
 
 Optional :
-    -   ws::Int = 1 : sliding window
+    -   dim = 1 : dimension to perform the FFT and apply the coil compression slice by slice
+    -   sContr = 1 : Contrast to use for calibration
+    -   sRep = 1 : repetition to use for calibration
 
 Reference :
 - Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for accelerated imaging with Cartesian sampling. Magnetic Resonance in Medicine 2013;69:571–582 doi: 10.1002/mrm.24267.
 """
-function geometricCoilCompression(kspace::Array{T,6}, numVC::Int = size(kdata, 4); ws::Int = 1) where T <: Complex
-    @error "not implemented yet"
-    #=
-    # round sliding window size to nearest odd number
-    ws = floor(ws/2)*2 + 1;
+function geometricCoilCompression(kspace::Array{T,6}, numVC::Int = size(kdata, 4); dim::Int=1,sContr::Int = 1,sRep::Int = 1) where T <: Complex
+    # permute data if compression is done on 2nd or 3rd dimensions
+    # done for simple reusible code.
 
+    if dim==2
+        kspace = permutedims(kspace,[2,1,3,4,5,6]);
+    end
+
+    if dim==3
+        kspace = permutedims(kspace,[3,1,2,4,5,6]);
+    end
+
+    if dim>3 | dim <1
+        @error "Error, compression dimension is 1 2 or 3"
+    end
+
+    sx,sy,sz,nChan,nContr,nRep = size(kspace)
     # perform ifft along 1st dimension
-    im_data = ifftshift(ifft(ifftshift(kspace),1))
+    calibData = ifftshift(ifft(ifftshift(kspace),1))
+    calibData = reshape(calibData,sx,sy*sz,nChan,nContr,nRep)
+
+    kspaceCC = zeros(T,sx,sy*sz,numVC,nContr,nRep)
+    ccMat = zeros(T,sx,nChan,numVC)
+
     for kx in axes(kspace,1)
-
+        usv = svd(calibData[kx,:,:,sContr,sRep])
+        ccMat[kx,:,:]  = usv.V[:, 1:numVC]
     end
 
-    #=
-    #Calculate compression matrices for each position in the readout over a sliding window of size ws
-    kspaceCC = zeros(T,Nc,min(Nc,ws*Ny*Nz),Nx);
-    zpim = zpad(im,[Nx + ws-1,Ny,Nz,Nc]);
-    for n = [1:Nx]
-        %tmpc = squeeze(im(n,:,:));
-        tmpc = reshape(zpim(n:n+ws-1,:,:,:),ws*Ny*Nz,Nc);
-        [U,S,V] = svd(tmpc,'econ');
-        mtx(:,:,n) = V;
-
-        usv = svd(kdata)
-        ccMat = usv.Vt[:, 1:numVC]
-        kdataCC = kdata * ccMat
+    # align ccMat
+    ccMat = alignCCMtx(ccMat,numVC)
+    # apply ccMat
+    for kx in axes(kspace,1)
+        for rep in 1:nRep, contr in 1:nContr
+            kspaceCC[kx,:,:,contr,rep] = calibData[kx,:,:,contr,rep] * ccMat[kx,:,:]
+        end
     end
-    =#
-    =#
+
+    kspaceCC = reshape(kspaceCC,sx,sy,sz,numVC,nContr,nRep)
+    kspaceCC = fftshift(fft(fftshift(kspaceCC),1))
+
+    if dim==2
+        kspaceCC = permutedims(kspaceCC,[2,1,3,4,5,6]);
+    end
+
+    if dim==3
+        kspaceCC = permutedims(kspaceCC,[3,1,2,4,5,6]);
+    end
+
+    return kspaceCC, ccMat
+end
+
+"""
+     mtx = alignCCmtx(mtx, [ ncc)
+
+Align coil compression matrices based on nearest spanning vectors in
+subspaces. This is an implementation based on Zhang et. al MRM 2013;69(2):571-82.
+
+ Inputs:
+
+ Outputs:
+           mtx - aligned compression matrices.
+
+"""
+function alignCCMtx(ccMat,numVC::Int=size(ccMat,3))
+    sx,_ = size(ccMat);
+
+    # align everything based on the middle slice.
+    n0 = floor(Int32,sx/2);
+    A00 = ccMat[n0,:,1:numVC];
+
+    # Align backwards to first slice
+    A0 = copy(A00)
+    for n = n0-1:-1:1
+        A1 = ccMat[n,:,1:numVC];
+        C = A1'*A0;
+        usv= svd(C);
+        P = usv.V*usv.U';
+        ccMat[n,:,1:numVC] = A1*P';
+        A0 = ccMat[n,:,1:numVC];
+    end
+
+    # Align forward to end slice
+    A0 = copy(A00);
+    for n = n0+1:sx
+        A1 = ccMat[n,:,1:numVC];
+        C = A1'*A0;
+        usv= svd(C);
+        P = usv.V*usv.U';
+        ccMat[n,:,1:numVC] = A1*P';
+        A0 = ccMat[n,:,1:numVC];
+    end
+    return ccMat
 end
 
 """
@@ -76,7 +143,7 @@ for faster reconstruction with many channels. Magnetic Resonance Imaging 2008;26
 """
 function softwareCoilCompression(kdata::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
   usv = svd(kdata)
-  ccMat = usv.Vt[:, 1:numVC]
+  ccMat = usv.V[:, 1:numVC]
   kdataCC = kdata * ccMat
 
   return kdataCC, ccMat
@@ -105,7 +172,7 @@ function softwareCoilCompression(kspace::Array{T,6}, numVC::Int64 = size(kspace,
     if(rep == sRep) && (contr == sContr) # already performed above
         continue
     end
-        kspaceCC[:,:,sContr,sRep],ccMat = softwareCoilCompression(reshape(kspace[:,:,:,:,contr,rep],:,nChan),numVC) * ccMat
+        kspaceCC[:,:,sContr,sRep],ccMat = reshape(kspace[:,:,:,:,contr,rep],:,nChan) * ccMat
     end
     kspaceCC = reshape(kspaceCC,sx,sy,sz,numVC,nContr,nRep)
     return kspaceCC, ccMat

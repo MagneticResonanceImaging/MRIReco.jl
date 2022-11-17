@@ -1,4 +1,4 @@
-function test2DVCC(N=64)
+function test2DCC(N=64)
   #image
   img = shepp_logan(N)
   msk = zeros(N,N)
@@ -33,10 +33,10 @@ function test2DVCC(N=64)
   x_cc = reconstruction(acqDataCC, params)
   x_cc = mergeChannels(x_cc)
 
-  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 1e-1
+  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 2e-4
 end
 
-function test3DVCC(N=64, NSl=64)
+function test3DCC(N=64, NSl=64)
   ## 3D espirit
   type = ComplexF32
   sh = shepp_logan(N)
@@ -79,7 +79,7 @@ function test3DVCC(N=64, NSl=64)
   x_cc = reconstruction(acqDataCC, params)
   x_cc = mergeChannels(x_cc)
 
-  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 1e-1
+  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 2e-4
 
   # extract kspace then perfom Coil Compression
    kdata = kDataCart(acqData)
@@ -88,10 +88,19 @@ function test3DVCC(N=64, NSl=64)
    acqDataCC2 = AcquisitionData(kdataCC)
    x_cc2 = reconstruction(acqDataCC2, params)
    x_cc2 = mergeChannels(x_cc2)
-   @test (norm(vec(x_cc2)-vec(x_cc))/norm(vec(x_cc2))) < 1e-3
+   @test (norm(vec(x_ori)-vec(x_cc2))/norm(vec(x_ori))) < 2e-4
+
+   #  Perform GCC from kspace
+   kdataGCC,ccMat3 = geometricCoilCompression(kdata, 6)
+   acqDataGCC = AcquisitionData(kdataGCC)
+   x_gcc = reconstruction(acqDataGCC, params)
+   x_gcc = mergeChannels(x_gcc)
+   @test (norm(vec(x_gcc)-vec(x_ori))/norm(vec(x_ori))) < 3e-7
+
+
 end
 
 @testset "CoilCompression" begin
-  test2DVCC()
-  test3DVCC()
+  test2DCC()
+  test3DCC()
 end
