@@ -97,7 +97,11 @@ function test3DCC(N=64, NSl=64)
    x_gcc = mergeChannels(x_gcc)
    @test (norm(vec(x_gcc)-vec(x_ori))/norm(vec(x_ori))) < 3e-7
 
-
+   #  Perform GCC from acq
+   acqDataGCC,ccMat3 = geometricCoilCompression(acqData, 6)
+   x_gcc = reconstruction(acqDataGCC, params)
+   x_gcc = mergeChannels(x_gcc)
+   @test (norm(vec(x_gcc)-vec(x_ori))/norm(vec(x_ori))) < 3e-7
 end
 
 @testset "CoilCompression" begin

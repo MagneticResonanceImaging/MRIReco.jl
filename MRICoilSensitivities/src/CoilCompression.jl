@@ -1,26 +1,7 @@
-export CoilCompression, softwareCoilCompression, applyCoilCompressionSensitivityMaps
-function CoilCompression(data::Union{AcquisitionData{T,D},Matrix{T}},numVC::Int64 = nothing; CCMode = "SCC") where {T<:Complex,D}
-    if isnothing(numVC)
-        if typeof(data) <: AcquisitionData
-            numVC = size(data.kdata,2)
-        else
-            numVC = size(kdata,2)
-        end
-    end
-
-    if (CCMode == "SCC")
-        return softwareCoilCompression(data,numVC)
-    elseif (CCMode == "GCC")
-        return geometricCoilCompression(data,numVC) #perform gcc along readout
-    elseif (CCMode == "ECC")
-        @error "ECC currently not implemented"
-    else
-        @error "Supported mode are : SCC or GCC (ECC not implemented)"
-    end
-end
+export softwareCoilCompression, applyCoilCompressionSensitivityMaps
 
 """
-    geometricCoilCompression(kspace::Matrix{T}, numVC::Int64 = size(kdata, 2); ws::Int = 1) where T <: Complex
+    geometricCoilCompression(kspace::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
 
 return a SVD-based Geometric Coil Compression (GCC) matrix for `numVC` virtual coils.
 Coil compression is performed for each position along the readout (kx) direction.
@@ -30,7 +11,7 @@ Input :
     -   numVS::Int
 
 Optional :
-    -   dim = 1 : dimension to perform the FFT and apply the coil compression slice by slice
+    -   dim = 1 : dimension to perform the FFT and apply the coil compression
     -   sContr = 1 : Contrast to use for calibration
     -   sRep = 1 : repetition to use for calibration
 
@@ -87,6 +68,14 @@ function geometricCoilCompression(kspace::Array{T,6}, numVC::Int = size(kdata, 4
     end
 
     return kspaceCC, ccMat
+end
+
+
+function geometricCoilCompression(acq::AcquisitionData{T,D}, numVC::Int = size(acq.kdata,2); dim::Int=1,sContr::Int = 1,sRep::Int = 1) where {T,D}
+    kdata = kDataCart(acq)
+
+    kdataCC,ccMat2 = geometricCoilCompression(kdata, numVC, dim=dim,sContr=sContr,sRep=sRep)
+    return AcquisitionData(kdataCC),ccMat2
 end
 
 """
