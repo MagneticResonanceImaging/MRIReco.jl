@@ -117,11 +117,11 @@ function acqSize(b::BrukerFile)
   return N
 end
 function acqFov(b::BrukerFile)
-  N = parse.(Float64,b["ACQ_fov"])./100
+  N = parse.(Float64,b["ACQ_fov"]) .* 10 #cm to mm
   if length(N) == 3
     return N
   else
-    return push!(N, parse(Float64,b["ACQ_slice_sepn"][1])./100)
+    return push!(N, parse(Float64,b["ACQ_slice_sepn"][1]) .* 10) #cm to mm
   end
 end
 ##$PVM_EncAvailReceivers=1
