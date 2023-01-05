@@ -15,7 +15,7 @@ struct describing MRI acquisition data.
                                               1. dim echoes, 2. dim slices, 3. dim repetitions
 * `subsampleIndices::Vector{Array{Int64}}`  - indices sampled for each echo/contrast
 * `encodingSize::Vector{Int64}`             - size of the underlying image matrix
-* `fov::Vector{Float64}`                    - field of view in m
+* `fov::Vector{Float64}`                    - field of view in mm
 """
 mutable struct AcquisitionData{T <: AbstractFloat, D}
   sequenceInfo::Dict{Symbol,Any}

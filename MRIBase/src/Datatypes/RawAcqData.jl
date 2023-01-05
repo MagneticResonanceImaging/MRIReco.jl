@@ -243,7 +243,7 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   # assume the same number of samples for all profiles
   numSampPerProfile, numChan = size(f.profiles[idx[1]].data)
   numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
-  
+
   if f.params["trajectory"] == "custom"
     numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
     kdata = zeros(typeof(f.profiles[1].data[1, 1]), numSampPerProfile, numProf, numChan)
@@ -264,7 +264,7 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
     kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
     cnt += 1
   end
-  
+
   return reshape(kdata, :, numChan)
 end
 
@@ -272,7 +272,7 @@ end
 """
     AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false, OffsetBruker=false)
 
-converts `RawAcquisitionData` into the equivalent `AcquisitionData` object. 
+converts `RawAcquisitionData` into the equivalent `AcquisitionData` object.
 If OffsetBruker=true, add a phase offset to correct position only along Y/Z direction
 """
 function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=false, OffsetBruker=false)
@@ -286,7 +286,7 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   # subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
   # kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
 
-  
+
   tr = [trajectory(f,contrast=contr) for contr=contrs]
   subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
   kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
