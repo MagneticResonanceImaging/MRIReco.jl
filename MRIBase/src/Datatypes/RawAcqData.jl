@@ -109,8 +109,8 @@ function MRIBase.trajectory(f::RawAcquisitionData; slice::Int=1, contrast::Int=1
                                    f.params["encodedSize"][1])
     end
 
-  elseif (f.params["trajectory"]=="custom")
-    numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
+  elseif (lowercase(f.params["trajectory"]) == "custom")
+    numProf = sum(contr .== contrast)#Int(length(f.profiles)/(numSl * numRep * numContr))
 
     traj = zeros(Float32, D, length(i1:i2), numProf, 1, numSl, numRep)
     times = zeros(Float32, length(i1:i2), numProf, 1, numSl, numRep)
@@ -244,8 +244,8 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
   numSampPerProfile, numChan = size(f.profiles[idx[1]].data)
   numSampPerProfile -= (f.profiles[idx[1]].head.discard_pre+f.profiles[idx[1]].head.discard_post)
 
-  if f.params["trajectory"] == "custom"
-    numProf = Int(length(f.profiles)/(numSl * numRep * numContr))
+  if lowercase(f.params["trajectory"]) == "custom"
+    numProf = sum(contr .== contrast)#Int(length(f.profiles)/(numSl * numRep * numContr))
     kdata = zeros(typeof(f.profiles[1].data[1, 1]), numSampPerProfile, numProf, numChan)
     posIdx = 1:length(f.profiles)
   else # cartesian case

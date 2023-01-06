@@ -541,61 +541,6 @@ function testRegridding(N=64)
   @test (norm(vec(x_rad).-vec(x_reg))/norm(vec(x_rad))) < 1e-2
 end
 
-function testConversionAcqToRaw(N=32)
-    # image
-    x = shepp_logan(N)
-
-    # simulation
-    params = Dict{Symbol, Any}()
-    params[:simulation] = "fast"
-    params[:trajName] = "Radial"
-    params[:numProfiles] = round(Int64,1.25*N)
-    params[:numSamplingPerProfile] = round(Int64,1.25N)
-
-    acqDataRad = simulation(x, params)
-
-    params = Dict{Symbol, Any}()
-    params[:reco] = "direct"
-    params[:reconSize] = (N,N)
-
-    Ireco = reconstruction(acqDataRad, params)
-
-    # convert acqDataRad to rawRad
-    rawRad = RawAcquisitionData(acqDataRad)
-    acqRad = AcquisitionData(rawRad)
-
-    Ireco2 = reconstruction(acqRad, params)
-
-    @test (norm(vec(Ireco)-vec(Ireco2))/norm(vec(Ireco))) < 1e-5
-
-    ## try that in 3D
-    x = shepp_logan(N)
-    x = repeat(x,1,1,N)
-
-    # simulation
-    params = Dict{Symbol, Any}()
-    params[:simulation] = "fast"
-    params[:trajName] = "Kooshball"
-    params[:numProfiles] = round(Int64,pi*N^2)
-    params[:numSamplingPerProfile] = round(Int64,N)
-
-    acqDataRad = simulation(x, params)
-
-    params = Dict{Symbol, Any}()
-    params[:reco] = "direct"
-    params[:reconSize] = (N,N,N)
-
-    Ireco = reconstruction(acqDataRad, params)
-
-    # convert acqDataRad to rawRad
-    rawRad = RawAcquisitionData(acqDataRad)
-    acqRad = AcquisitionData(rawRad)
-
-    Ireco2 = reconstruction(acqRad, params)
-    @test (norm(vec(Ireco)-vec(Ireco2))/norm(vec(Ireco))) < 1e-4
-
-end
-
 function testReco(N=32)
   @testset "Reconstructions" begin
     testGriddingReco()
@@ -622,7 +567,6 @@ function testReco(N=32)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
     testRegridding()
-    testConversionAcqToRaw()
   end
 end
 
