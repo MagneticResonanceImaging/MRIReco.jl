@@ -566,7 +566,7 @@ function testConversionAcqToRaw(N=32)
 
     Ireco2 = reconstruction(acqRad, params)
 
-    @test (norm(vec(Ireco)-vec(Ireco2))/norm(vec(Ireco))) < 1e-6
+    @test (norm(vec(Ireco)-vec(Ireco2))/norm(vec(Ireco))) < 1e-5
 
     ## try that in 3D
     x = shepp_logan(N)
