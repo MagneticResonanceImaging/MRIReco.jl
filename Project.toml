@@ -1,6 +1,6 @@
-authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.7.1"
 
 [deps]
@@ -9,6 +9,7 @@ FLoops = "cc61a311-1640-44b5-9fba-1b764f453329"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
 MRIOperators = "fb1137e3-90a6-46ce-a672-6e1e53d120f2"
+MRISampling = "9be66c26-f988-4649-80fc-f4721a4a33f2"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
