@@ -1,5 +1,10 @@
-using Documenter, MRIBase, MRIFiles, MRICoilSensitivities, 
+using Documenter, MRIBase, MRIFiles, MRICoilSensitivities,
                   MRIOperators, MRISampling, MRISimulation, MRIReco
+using Literate
+
+# Generates examples
+include("generate.jl")
+
 
 makedocs(
     modules = [MRIReco],
@@ -18,6 +23,7 @@ makedocs(
         "Parallel Imaging" => "SENSE.md",
         "Compressed Sensing" => "compressedSensing.md",
         "Customize" => "custom.md",
+        "Examples" => pages("examples"),
         "API" => "API.md"
     ],
 )
