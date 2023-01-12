@@ -10,3 +10,4 @@ const tmpdir  = @get_scratch!("tmp")
 
 include("testIO.jl")
 include("testReconstruction.jl")
+include("testSpecificApplications.jl")

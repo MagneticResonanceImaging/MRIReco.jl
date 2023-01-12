@@ -285,7 +285,7 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
   x_approx = vec(reconstruction(acqData,params))
   # This test is expected to have a higher error since CGNR with CS will not work
   # We still keep this test since it revealed the issue #110
-  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1 
+  @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1
 end
 
 function testOffresonanceReco(N = 128; accelMethod="nfft")
