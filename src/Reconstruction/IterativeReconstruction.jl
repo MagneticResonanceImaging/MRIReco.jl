@@ -146,6 +146,7 @@ are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
+* `noiseData::Array{Complex{<:AbstractFloat}}`        - noise acquisition
 * `solvername::String`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
@@ -156,6 +157,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , reg::Vector{Regularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
+                              , noiseData::Array{Complex{T}}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
@@ -170,6 +172,10 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
+  # Noise pre-whitening matrix (noise uncorrelation matrix)
+  L_inv = noiseDeCorrMat(noiseData)
+  senseMapsUnCorr = UnCorrSenseMaps(L_inv, senseMaps, numChan)
+
   # set sparse trafo in reg
   reg[1].params[:sparseTrafo] = sparseTrafo
 
@@ -179,12 +185,13 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
     if encodingOps != nothing
       E = encodingOps[:,k]
     else
-      E = encodingOps_parallel(acqData, reconSize, senseMaps; slice=k, encParams...)
+      E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
     end
 
     for j = 1:numContr
       W = WeightingOp(weights[j],numChan)
       kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
+      kdata = vec(reshape(kdata, :, numChan) * L_inv')
 
       EFull = ∘(W, E[j], isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)

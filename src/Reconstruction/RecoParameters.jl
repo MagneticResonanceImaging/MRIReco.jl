@@ -120,7 +120,10 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
-  return reconSize, weights, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
+  # noise data acquisition [samples, coils]
+  noiseData = get(recoParams, :noiseData, Complex{T}[])
+
+  return reconSize, weights, noiseData, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
 end
 
 

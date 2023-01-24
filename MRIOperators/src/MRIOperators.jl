@@ -23,6 +23,7 @@ include("MapSliceOp.jl")
 include("FieldmapNFFTOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
+include("NoiseDeCorr.jl")
 
 """
     hcat(A::AbstractLinearOperator, n::Int)
