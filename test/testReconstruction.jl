@@ -322,7 +322,6 @@ function testOffresonanceReco(N = 128; accelMethod="nfft")
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
-
 function testSENSEReco(N = 64, T = ComplexF64)
   numCoils = 8
   I = T.(shepp_logan(N))
@@ -357,6 +356,52 @@ function testSENSEReco(N = 64, T = ComplexF64)
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
+function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
+  numCoils = 8
+  R = 2
+  Img = T.(shepp_logan(N))
+  coord = findall(x -> x==1, Img)
+  Img[coord] .= 0.3
+  coilsens = T.(birdcageSensitivity(N, numCoils, 1.5))
+
+  # simulation parameters
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = div(N,R)
+  params[:numSamplingPerProfile] = N
+  params[:senseMaps] = coilsens
+
+  # do simulation
+  acqData = simulation(Img, params)
+
+  # Generate correlated noise
+  psi = Matrix{Complex{Float64}}(I, numCoils, numCoils)
+  psi[2:numCoils,1] .= 1
+  noise = randn(Complex{Float64}, (2*N, numCoils)) .* 5
+  noise = noise * psi
+
+  # add noise correlation to data
+  noise_data = randn(Complex{Float64}, (N, div(N,2), numCoils)) .* 5
+  noise_data = reshape(noise_data, (N .* div(N,2), numCoils)) * psi
+  acqData.kdata[1,1,1] = acqData.kdata[1,1,1] .+ noise_data
+
+  # reco parameters
+  params = Dict{Symbol, Any}()
+  params[:reco] = "multiCoil" #"standard"
+  params[:reconSize] = (N,N)
+  params[:regularization] = "L2"
+  params[:iterations] = 100
+  params[:solver] = "cgnr"
+  params[:senseMaps] = coilsens
+
+  Ireco = reconstruction(acqData, params)
+
+  params[:noiseData] = noise
+  IrecoUnCorr = reconstruction(acqData, params)
+
+  @test (norm(vec(Img)-vec(Ireco))/norm(vec(Img)-vec(IrecoUnCorr))) > 1
+end
 
 function testOffresonanceSENSEReco(N = 64)
   numCoils = 8
@@ -562,6 +607,7 @@ function testReco(N=32)
     end
     testSENSEReco(64, ComplexF32)
     testSENSEReco(64, ComplexF64)
+    testSENSEnoiseUnCorr(64, ComplexF64)
     testCSRecoMultiCoilCGNR(type = ComplexF64)
     testCSRecoMultiCoilCGNR(type = ComplexF32)
     !Sys.iswindows() && testOffresonanceSENSEReco()

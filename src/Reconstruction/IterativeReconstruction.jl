@@ -146,7 +146,7 @@ are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `noiseData::Array{Complex{<:AbstractFloat}}`        - noise acquisition
+* `L_inv::Array{Complex{<:AbstractFloat}}`        - noise uncorrelation matrix
 * `solvername::String`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
@@ -157,7 +157,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , reg::Vector{Regularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
-                              , noiseData::Array{Complex{T}}
+                              , L_inv
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
@@ -173,7 +173,6 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # Noise pre-whitening matrix (noise uncorrelation matrix)
-  L_inv = noiseDeCorrMat(noiseData)
   senseMapsUnCorr = UnCorrSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
@@ -191,7 +190,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
     for j = 1:numContr
       W = WeightingOp(weights[j],numChan)
       kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
-      kdata = vec(reshape(kdata, :, numChan) * L_inv')
+      if !isempty(L_inv)
+        kdata = vec(reshape(kdata, :, numChan) * L_inv')
+      end
 
       EFull = ∘(W, E[j], isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)

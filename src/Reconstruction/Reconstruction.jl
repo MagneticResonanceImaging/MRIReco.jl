@@ -38,13 +38,13 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
     reconSize, weights, cmap = setupDirectReco(acqData, recoParams)
     return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap)
   else
-    reconSize, weights, noiseData, sparseTrafo, reg, normalize, encOps, solvername, senseMaps = setupIterativeReco(acqData, recoParams)
+    reconSize, weights, L_inv, sparseTrafo, reg, normalize, encOps, solvername, senseMaps = setupIterativeReco(acqData, recoParams)
     if recoParams[:reco] == "standard"
         return reconstruction_simple(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
     elseif recoParams[:reco] == "multiEcho"
         return reconstruction_multiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, normalize, encOps, recoParams)
     elseif recoParams[:reco] == "multiCoil"
-        return reconstruction_multiCoil(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, noiseData, solvername, senseMaps, normalize, encOps, recoParams)
+        return reconstruction_multiCoil(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, L_inv, solvername, senseMaps, normalize, encOps, recoParams)
     elseif recoParams[:reco] == "multiCoilMultiEcho"
         return reconstruction_multiCoilMultiEcho(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
     else

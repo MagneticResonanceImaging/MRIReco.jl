@@ -37,6 +37,7 @@ end
 # * `senseMaps::Array{ComplexF64}`        - coil sensitivities
 # * `correctionMap::Array{ComplexF64}`    - fieldmap for the correction of off-resonance effects
 # * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
+# * `noiseData::Array{ComplexF64}`        - noise Acquisition used for noise uncorrelation (pre-whitening)
 # """
 # mutable struct RecoParameters{N}
 #   reconSize::NTuple{N,Int64}
@@ -47,6 +48,7 @@ end
 #   encodingOps::
 #   solvername::String
 #   senseMaps::Array{ComplexF64}
+#   noiseData::Array{ComplexF64}
 # end
 
 
@@ -122,8 +124,14 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
 
   # noise data acquisition [samples, coils]
   noiseData = get(recoParams, :noiseData, Complex{T}[])
+  if isempty(noiseData)
+    L_inv = noiseData
+  else
+    L = cholesky(covariance(noiseData), check = true)
+    L_inv = inv(L.L) #noise decorrelation matrix
+  end
 
-  return reconSize, weights, noiseData, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
+  return reconSize, weights, L_inv, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
 end
 
 
