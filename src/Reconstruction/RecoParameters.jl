@@ -125,7 +125,7 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
   # noise data acquisition [samples, coils]
   noiseData = get(recoParams, :noiseData, Complex{T}[])
   if isempty(noiseData)
-    L_inv = noiseData
+    L_inv = []
   else
     L = cholesky(covariance(noiseData), check = true)
     L_inv = inv(L.L) #noise decorrelation matrix
