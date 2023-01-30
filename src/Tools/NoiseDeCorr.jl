@@ -1,15 +1,15 @@
-export UnCorrSenseMaps, covariance
+export decorrelateSenseMaps, covariance
 
 """
-        UnCorrSenseMaps(L_inv, senseMaps, numSl)
+        decorrelateSenseMaps(L_inv, senseMaps, numSl)
 
     multiplies the senseMaps by the noise uncorrelation matrix (L_inv).
 """
 
-function UnCorrSenseMaps(L_inv,
+function decorrelateSenseMaps(L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing},
                     senseMaps::Array{Complex{T},4},
                     numChan::Int64) where {T}
-    if isempty(L_inv)
+    if isnothing(L_inv)
         senseMapsUnCorr = senseMaps
     else
         sizeMaps = size(senseMaps)

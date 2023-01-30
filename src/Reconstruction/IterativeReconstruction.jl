@@ -146,7 +146,7 @@ are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `L_inv::Array{Complex{<:AbstractFloat}}`        - noise uncorrelation matrix
+* `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
 * `solvername::String`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
@@ -157,7 +157,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , reg::Vector{Regularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
-                              , L_inv
+                              , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
@@ -172,8 +172,8 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
 
-  # Noise pre-whitening matrix (noise uncorrelation matrix)
-  senseMapsUnCorr = UnCorrSenseMaps(L_inv, senseMaps, numChan)
+  # noise decorrelation
+  senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
   reg[1].params[:sparseTrafo] = sparseTrafo
@@ -190,7 +190,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
     for j = 1:numContr
       W = WeightingOp(weights[j],numChan)
       kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
-      if !isempty(L_inv)
+      if !isnothing(L_inv)
         kdata = vec(reshape(kdata, :, numChan) * L_inv')
       end
 

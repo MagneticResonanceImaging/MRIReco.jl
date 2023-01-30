@@ -375,24 +375,21 @@ function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
 
   # Generate correlated noise
   psi = Matrix{Complex{Float64}}(I, numCoils, numCoils)
-  psi[2:numCoils,1] .= 0.8
-  psi[1,2:numCoils] .= 0.8
-  noise = randn(Complex{Float64}, (2*N, numCoils)) .* 5
+  psi[2:numCoils,1] .= 1
+  noise = randn(Complex{Float64}, (2*N, numCoils))
   noise = noise * psi
 
   # add noise correlation to data
-  noise_data = randn(Complex{Float64}, (N, div(N,R), numCoils)) .* 5
+  noise_data = randn(Complex{Float64}, (N, div(N,R), numCoils))
   noise_data = reshape(noise_data, (N .* div(N,R), numCoils)) * psi
   acqData.kdata[1,1,1] = acqData.kdata[1,1,1] .+ noise_data
 
   # reco parameters
-  params = Dict{Symbol, Any}()
   params[:reco] = "multiCoil" #"standard"
   params[:reconSize] = (N,N)
   params[:regularization] = "L2"
   params[:iterations] = 150
   params[:solver] = "cgnr"
-  params[:senseMaps] = coilsens
 
   Ireco = reconstruction(acqData, params)
 
