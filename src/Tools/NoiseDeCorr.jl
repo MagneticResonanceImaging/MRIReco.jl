@@ -23,7 +23,7 @@ end
 
 """
         covariance(noiseData)
-
+The `noiseData` array should be number of noise samples by number of coils.
   computes the covariance of the noise acquisition.
 """
 
