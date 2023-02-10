@@ -1,6 +1,6 @@
-authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.7.1"
 
 [deps]
