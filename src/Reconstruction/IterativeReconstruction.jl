@@ -232,6 +232,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , reg::Vector{Regularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
+                              , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
@@ -245,6 +246,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   encParams = getEncodingOperatorParams(;params...)
+
+  # noise decorrelation
+  senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
   reg[1].params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
@@ -260,6 +264,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
     end
 
     kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+    if !isnothing(L_inv)
+      kdata = vec(reshape(kdata, :, numChan) * L_inv')
+    end
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull)
