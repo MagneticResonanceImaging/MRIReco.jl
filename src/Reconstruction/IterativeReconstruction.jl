@@ -260,7 +260,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
     if encodingOps != nothing
       E = encodingOps[i]
     else
-      E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+      E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMapsUnCorr; slice=i, encParams...)
     end
 
     kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
