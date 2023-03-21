@@ -4,7 +4,7 @@ function prod_smap!(y::AbstractVector{T}, smaps::AbstractMatrix{T}, x::AbstractV
   x_ = reshape(x,numVox,numContr)
   y_ = reshape(y,numVox,numContr,numChan)
 
-  @assert size(smaps) == size(y_)[1,3]
+  @assert size(smaps) == (size(y_,1), size(y_,3))
 
   @inbounds for i ∈ CartesianIndices(y_)
     y_[i] = x_[i[1],i[2]] * smaps[i[1],i[3]]
@@ -16,7 +16,7 @@ function ctprod_smap!(y::AbstractVector{T}, smapsC::AbstractMatrix{T}, x::Abstra
   x_ = reshape(x,numVox,numContr,numChan)
   y_ = reshape(y,numVox,numContr)
 
-  @assert size(smapsC) == size(x_)[1,3]
+  @assert size(smapsC) == (size(x_,1), size(x_,3))
 
   y_ .= 0
   @inbounds for i ∈ CartesianIndices(x_)
