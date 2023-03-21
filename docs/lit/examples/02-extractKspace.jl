@@ -58,7 +58,7 @@ size(kspace)
 
 # Let's see a standard reconstruction with the `ifft` function works :
 x_approx2 = ifftshift(ifft(ifftshift(kspace)))
-plot_im2D(abs.(x_appro2[:,:,1,1,1,1]),title = "Reco from extracted kspace")
+plot_im2D(abs.(x_approx2[:,:,1,1,1,1]),title = "Reco from extracted kspace")
 
 # We can create create and apply a mask on the kspace
 mask = ones(eltype(kspace),size(kspace))
