@@ -88,6 +88,12 @@ jobs:
           julia --project=docs -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase"))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRISampling"))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
+            Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
             Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
