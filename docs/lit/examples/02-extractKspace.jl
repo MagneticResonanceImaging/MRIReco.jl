@@ -16,6 +16,7 @@ This possibility can be easily combined with the [BartIO](https://github.com/Mag
 using CairoMakie
 using ImageUtils: shepp_logan
 using MRIReco, MRISimulation
+using InteractiveUtils: versioninfo
 
 function plot_im2D(im2D;title::String="")
     f = Figure()
