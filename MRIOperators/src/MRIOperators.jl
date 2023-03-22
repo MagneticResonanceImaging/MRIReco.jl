@@ -98,6 +98,9 @@ mutable struct DiagOp{T} <: AbstractLinearOperator{T}
 end
 
 
+LinearOperators.storage_type(op::DiagOp) = typeof(op.Mv5)
+
+
 """
     diagOp(ops :: AbstractLinearOperator...)
 
@@ -119,7 +122,7 @@ function diagOp(ops :: AbstractLinearOperator...)
   Op = DiagOp{S}( nrow, ncol, false, false,
                      (res,x) -> (diagOpProd(res,x,nrow,xIdx,yIdx,ops...)),
                      (res,y) -> (diagOpTProd(res,y,ncol,yIdx,xIdx,ops...)),
-                     (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)), 
+                     (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)),
                      0, 0, 0, false, false, false, S[], S[],
                      [ops...], false, xIdx, yIdx)
 
@@ -138,7 +141,7 @@ function diagOp(op::AbstractLinearOperator, N=1)
   Op = DiagOp{S}( nrow, ncol, false, false,
                     (res,x) -> (diagOpProd(res,x,nrow,xIdx,yIdx,ops...)),
                     (res,y) -> (diagOpTProd(res,y,ncol,yIdx,xIdx,ops...)),
-                    (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)), 
+                    (res,y) -> (diagOpCTProd(res,y,ncol,yIdx,xIdx,ops...)),
                      0, 0, 0, false, false, false, S[], S[],
                      ops, true, xIdx, yIdx )
 
@@ -171,13 +174,13 @@ end
 LinearOperators.storage_type(op::DiagNormalOp) = typeof(op.Mv5)
 
 function DiagNormalOp(normalOps, N, idx, y::Vector{T}) where {T}
-  
+
   function produ!(y, normalOps, idx, x)
     @floop for i=1:length(normalOps)
        mul!(view(y,idx[i]:idx[i+1]-1), normalOps[i], view(x,idx[i]:idx[i+1]-1))
     end
     return y
-  end  
+  end
 
   return DiagNormalOp(N, N, false, false
          , (res,x) -> produ!(res, normalOps, idx, x)
