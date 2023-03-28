@@ -70,3 +70,16 @@ params[:reconSize] = (N,N2)
 
 x_u = reconstruction(acq_u, params)
 plot_im2D(abs.(x_u[:,:,1,1,1,1]),title = "Reco from undersampled AcquisitionData")
+
+# ## Reproducibility
+
+# This page was generated with the following version of Julia:
+
+using InteractiveUtils
+io = IOBuffer();
+versioninfo(io);
+split(String(take!(io)), '\n')
+
+# And with the following package versions
+
+import Pkg; Pkg.status()
