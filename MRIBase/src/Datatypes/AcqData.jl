@@ -107,9 +107,9 @@ function AcquisitionData(kspace::Array{Complex{T},6}) where T
     sx, sy, sz, nCh, nEchos, nReps = size(kspace)
 
     if sz == 1
-        tr = MRIBase.CartesianTrajectory(T, sx, sy, TE=T(0), AQ=T(0))
+        tr = MRIBase.CartesianTrajectory(T, sy, sx, TE=T(0), AQ=T(0))
     else
-        tr = MRIBase.CartesianTrajectory3D(T, sx, sy, numSlices=sz, TE=T(0), AQ=T(0))
+        tr = MRIBase.CartesianTrajectory3D(T, sy, sx, numSlices=sz, TE=T(0), AQ=T(0))
     end
 
     kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
