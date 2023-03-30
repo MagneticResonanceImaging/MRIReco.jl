@@ -38,7 +38,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
-  #@floop 
+  #@floop
   for l = 1:numRep, k = 1:numSl
     if encodingOps!=nothing
       F = encodingOps[:,k]
@@ -247,6 +247,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  end
   reg[1].params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...), numChan )

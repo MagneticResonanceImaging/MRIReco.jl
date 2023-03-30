@@ -436,6 +436,56 @@ function testOffresonanceSENSEReco(N = 64)
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1.6e-1
 end
 
+function testSenseMultiEcho(N=32,T = ComplexF32)
+    # image
+  x = T.(shepp_logan(N))
+  rmap = 20.0*ones(N,N)
+
+  coilsens = T.(birdcageSensitivity(N, 8, 1.5))
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:r2map] = rmap
+  params[:T_echo] = [2.e-2, 4.e-2]
+  params[:seqName] = "ME"
+  params[:refocusingAngles] = Float64[pi,pi]
+  params[:senseMaps] = coilsens
+
+  acqData = simulation( real(x), params )
+
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiCoil"
+  params[:regularization] = "L2"
+  params[:λ] = 1.e-3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+  params[:senseMaps] = reshape(coilsens,N,N,1,8)
+
+  x_approx = reshape(reconstruction(acqData,params),N,N,:)
+
+  # Reco multiCoilMultiEcho
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiCoilMultiEcho"
+  #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
+  params[:regularization] = "L2"
+  params[:λ] = 3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+  params[:senseMaps] = reshape(coilsens,N,N,1,8)
+
+  x_approx2= reshape(reconstruction(acqData,params),N,N,:)
+
+
+  relErrorEcho1 = norm(x_approx - x_approx2)/norm(x_approx)
+  @test relErrorEcho1 < 1e-6
+end
+
 function testDirectRecoMultiEcho(N=32)
   # image
   x = ComplexF64.(shepp_logan(N))
@@ -608,6 +658,7 @@ function testReco(N=32)
     testCSRecoMultiCoilCGNR(type = ComplexF32)
     !Sys.iswindows() && testOffresonanceSENSEReco()
     testDirectRecoMultiEcho()
+    testSenseMultiEcho(N)
     testRegridding()
   end
 end
