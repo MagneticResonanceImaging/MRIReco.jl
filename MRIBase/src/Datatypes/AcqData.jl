@@ -185,7 +185,7 @@ end
 returns the k-space contained in `acqData` for all echoes and given `coil`, `slice` and `rep`(etition).
 """
 function multiEchoData(acqData::AcquisitionData{T}, coil::Int64, slice::Int64;rep::Int64=1) where T
-  kdata = T[]
+  kdata = Complex{T}[]
   for echo=1:numContrasts(acqData)
     append!(kdata,acqData.kdata[echo,slice,rep][:,coil])
   end
