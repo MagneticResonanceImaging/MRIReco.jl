@@ -1,4 +1,4 @@
-export EncodingOp, lrEncodingOp, fourierEncodingOp, encodingOps_simple, 
+export EncodingOp, lrEncodingOp, fourierEncodingOp, encodingOps_simple,
        encodingOps_parallel, encodingOp_multiEcho, encodingOp_multiEcho_parallel
 
 """
@@ -16,7 +16,7 @@ function encodingOps_simple(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64
   numContr = numContrasts(acqData)
   tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
-  return [fourierEncodingOp(shape, tr[i], "fast", 
+  return [fourierEncodingOp(shape, tr[i], "fast",
                  subsampleIdx=idx[i]; kargs...) for i=1:numContr]
 end
 
@@ -44,7 +44,7 @@ function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int
   # fourier operators
   ft = encodingOps_simple(acqData, shape; slice=slice, kargs...)
   S = SensitivityOp(reshape(smaps,:,numChan),1)
-  Op = [ diagOp(ft[i], numChan) ∘ S for i=1:numContr]
+  Op = [ DiagOp(ft[i], numChan) ∘ S for i=1:numContr]
 
   return Op
 end
@@ -63,7 +63,7 @@ function encodingOp_multiEcho(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int
                                 ; kargs...) where {T,D}
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  return diagOp(ft...)
+  return DiagOp(ft...)
 end
 
 """
@@ -89,8 +89,8 @@ function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTu
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData)) 
-  return diagOp(repeat(ft, outer=numChan)...) ∘ S
+  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
+  return DiagOp(repeat(ft, outer=numChan)...) ∘ S
 end
 
 ###################################
@@ -112,9 +112,9 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
   # coil sensitivities in case of SENSE-reconstruction
   if parallel
     S = SensitivityOp(params[:senseMaps][:,:],K)
-    E = diagOp( [ft for i=1:numChan*K]... )*S
+    E = DiagOp( [ft for i=1:numChan*K]... )*S
   else
-    E = diagOp( [ft for i=1:K]... )
+    E = DiagOp( [ft for i=1:K]... )
   end
 
   #  TODO: sampling operator in case of undersampled cartesian acquisitions
