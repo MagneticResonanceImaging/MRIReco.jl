@@ -1,4 +1,4 @@
-export EncodingOp, lrEncodingOp, fourierEncodingOp, encodingOps_simple, 
+export EncodingOp, lrEncodingOp, fourierEncodingOp, encodingOps_simple,
        encodingOps_parallel, encodingOp_multiEcho, encodingOp_multiEcho_parallel
 
 """
@@ -16,7 +16,7 @@ function encodingOps_simple(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64
   numContr = numContrasts(acqData)
   tr = [trajectory(acqData,i) for i=1:numContr]
   idx = acqData.subsampleIndices
-  return [fourierEncodingOp(shape, tr[i], "fast", 
+  return [fourierEncodingOp(shape, tr[i], "fast",
                  subsampleIdx=idx[i]; kargs...) for i=1:numContr]
 end
 
@@ -89,8 +89,8 @@ function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTu
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData)) 
-  return diagOp(repeat(ft, outer=numChan)...) ∘ S
+  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
+  return diagOp(repeat(ft, inner=numChan)...) ∘ S
 end
 
 ###################################
