@@ -633,34 +633,51 @@ function testRegridding(N=64)
 end
 
 function testReco(N=32)
-  @testset "Reconstructions" begin
-    testGriddingReco()
-    testConvertKspace()
-    testConvertKspace3D()
-    testGriddingReco3d()
-    sampling = ["random", "poisson", "vdPoisson"] # "lines"
-    for samp in sampling
-      testCSReco(sampling=samp)
+    @testset "Reconstructions" begin
+        @testset "MultiEcho" begin
+            testDirectRecoMultiEcho()
+            testSenseMultiEcho(N)
+        end
+
+        @testset "Convert k-space" begin
+            testConvertKspace()
+            testConvertKspace3D()
+        end
+
+        @testset "Gridding" begin
+            testGriddingReco()
+            testGriddingReco3d()
+            testRegridding()
+        end
+
+        @testset "CS" begin
+            sampling = ["random", "poisson", "vdPoisson"] # "lines"
+            for samp in sampling
+                testCSReco(sampling=samp)
+            end
+            testCSRecoMultCoil(type = ComplexF64)
+            testCSRecoMultCoil(type = ComplexF32)
+            testCSSenseReco()
+            testCSReco3d()
+            testCSSenseReco3d()
+            testCSRecoMultiCoilCGNR(type = ComplexF64)
+            testCSRecoMultiCoilCGNR(type = ComplexF32)
+        end
+
+        @testset "off-resonance" begin
+            accelMethods = ["nfft", "hist", "leastsquare"]
+            for a in accelMethods
+                !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
+                !Sys.iswindows() && testOffresonanceSENSEReco()
+            end
+        end
+
+        @testset "SENSE" begin
+            testSENSEReco(64, ComplexF32)
+            testSENSEReco(64, ComplexF64)
+            testSENSEnoiseUnCorr(64, ComplexF64)
+        end
     end
-    testCSRecoMultCoil(type = ComplexF64)
-    testCSRecoMultCoil(type = ComplexF32)
-    testCSSenseReco()
-    testCSReco3d()
-    testCSSenseReco3d()
-    accelMethods = ["nfft", "hist", "leastsquare"]
-    for a in accelMethods
-      !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
-    end
-    testSENSEReco(64, ComplexF32)
-    testSENSEReco(64, ComplexF64)
-    testSENSEnoiseUnCorr(64, ComplexF64)
-    testCSRecoMultiCoilCGNR(type = ComplexF64)
-    testCSRecoMultiCoilCGNR(type = ComplexF32)
-    !Sys.iswindows() && testOffresonanceSENSEReco()
-    testDirectRecoMultiEcho()
-    testSenseMultiEcho(N)
-    testRegridding()
-  end
 end
 
 testReco()
