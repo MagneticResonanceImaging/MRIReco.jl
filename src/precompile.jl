@@ -1,7 +1,7 @@
-using SnoopPrecompile 
+using PrecompileTools 
 
-@precompile_setup begin
-    @precompile_all_calls begin
+@setup_workload begin
+    @compile_workload begin
 
       N = 8
       T = ComplexF32
