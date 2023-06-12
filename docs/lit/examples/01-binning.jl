@@ -91,6 +91,7 @@ plot_im2D(abs.(Ireco[:,:,1,2]),title = "Second bin")
 
 # This page was generated with the following version of Julia:
 
+using InteractiveUtils
 io = IOBuffer();
 versioninfo(io);
 split(String(take!(io)), '\n')

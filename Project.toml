@@ -13,7 +13,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
-SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
@@ -28,7 +28,7 @@ MRISimulation = "0.1"
 ProgressMeter = "1.2"
 Reexport = "0.2, 1"
 RegularizedLeastSquares = "0.9.0"
-SnoopPrecompile = "1"
+PrecompileTools = "1"
 Unitful = "1.2"
 julia = "1.6"
 
