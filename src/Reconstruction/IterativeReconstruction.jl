@@ -331,8 +331,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   W = WeightingOp( vcat(weights...), numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
-  #@floop for l = 1:numRep, i = 1:numSl
-  for l = 1:numRep, i = 1:numSl
+  @floop for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       E = encodingOps[i]
     else
