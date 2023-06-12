@@ -474,7 +474,7 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   params[:reco] = "multiCoilMultiEcho"
   #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
   params[:regularization] = "L2"
-  params[:λ] = 3
+  params[:λ] = 1.e-3
   params[:iterations] = 1
   params[:solver] = "cgnr"
   params[:senseMaps] = reshape(coilsens,N,N,1,8)
