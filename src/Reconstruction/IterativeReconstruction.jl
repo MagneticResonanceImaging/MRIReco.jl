@@ -326,7 +326,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   if isnothing(sparseTrafo)
     sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
   end
-  reg[1].params[:sparseTrafo] = diagOp( repeat([sparseTrafo],numContr)... )
+  reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...), numChan )
 
