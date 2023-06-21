@@ -82,7 +82,7 @@ are reconstructed independently.
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
-function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
+function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo
@@ -90,7 +90,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -101,6 +101,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...) )
@@ -115,7 +118,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
     end
     for j = 1:numChan
       kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
-      EFull = ∘(W, F[j])#, isWeighting=true)
+      EFull = ∘(W, F)#, isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)
       solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
@@ -133,7 +136,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
     Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan,numRep)
   end
 
-  return makeAxisArray(permutedims(Ireco,[1,2,5,3,4,6]), acqData)
+  return makeAxisArray(Ireco, acqData)
 end
 
 """

@@ -1,7 +1,7 @@
 export AcquisitionData, kData, kDataCart, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
        numContrasts, numChannels, numSlices, numRepetitions,
-       encodingSize, fieldOfView, multiCoilData, multiCoilMultiEchoData
+       encodingSize, fieldOfView, multiCoilData, multiCoilMultiEchoData, multiEchoData
 
 """
 struct describing MRI acquisition data.
