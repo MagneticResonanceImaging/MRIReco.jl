@@ -112,8 +112,9 @@ function AcquisitionData(kspace::Array{Complex{T},6}) where T
         tr = MRIBase.CartesianTrajectory3D(T, sy, sx, numSlices=sz, TE=T(0), AQ=T(0))
     end
 
-    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
-    acq = AcquisitionData(tr, kdata)
+    kdata = [reshape(kspace[:,:,:,:,i,k],:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+    traj = [tr for i=1:nEchos]
+    acq = AcquisitionData(traj, kdata, encodingSize=ntuple(d->0, ndims(tr)))
 
     acq.encodingSize = ndims(tr) == 3 ? (sx,sy,sz) : (sx,sy)
 
