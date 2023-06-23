@@ -209,10 +209,8 @@ returns the k-space contained in `acqData` for all coils, echoes and given `slic
 """
 function multiCoilMultiEchoData(acqData::AcquisitionData{T},slice::Int64;rep=1) where T
   kdata = Complex{T}[]
-  for coil=1:numChannels(acqData)
-    for echo=1:numContrasts(acqData)
-      append!(kdata, acqData.kdata[echo,slice,rep][:,coil])
-    end
+  for echo=1:numContrasts(acqData)
+      append!(kdata, vec(acqData.kdata[echo,slice,rep]))
   end
   return kdata
 end
