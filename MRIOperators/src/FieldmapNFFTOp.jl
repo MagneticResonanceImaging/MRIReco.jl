@@ -33,10 +33,6 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
   circTraj::Bool
   shape::NTuple{D,Int64}
   cparam::InhomogeneityData{T}
-  d::Vector{Vector{T}}
-  p::Vector{Array{T,D}}
-  x_tmp::Vector{Complex{T}}
-  y_tmp::Vector{Complex{T}}
 
 end
 
@@ -89,7 +85,6 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   x_tmp = zeros(Complex{T}, ncol)
   y_tmp = zeros(Complex{T}, nrow)
 
-
  # create and truncate low-rank expansion
   cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
@@ -103,7 +98,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
     plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL)
   end
   
-  d = [zeros(ComplexF64, length(idx[κ])) for κ=1:K ]
+  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
   p = [zeros(Complex{T}, shape) for κ=1:K]
 
   circTraj = isCircular(tr)
@@ -111,8 +106,8 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   return FieldmapNFFTOp{T,Nothing,Function,D}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, ComplexF64[], ComplexF64[]
-            , plans, idx, circTraj, shape, cparam,d,p,x_tmp,y_tmp)
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , plans, idx, circTraj, shape, cparam)
 end
 
 function Base.copy(cparam::InhomogeneityData{T}) where T
@@ -123,25 +118,27 @@ end
 
 function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
 
+  shape = S.shape
+
   K=length(S.plans)
   plans = [copy(S.plans[i]) for i=1:K]
   idx = copy(S.idx)
 
-  cparam = copy(S.cparam)
-  d = copy(S.d)
-  p = copy(S.p)
-  x_tmp = copy(S.x_tmp)
-  y_tmp = copy(S.y_tmp)
+  x_tmp = zeros(Complex{T}, S.ncol)
+  y_tmp = zeros(Complex{T}, S.nrow)
 
-  D_ = length(S.shape)
+  cparam = copy(S.cparam)
+  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K]
+  p = [zeros(Complex{T}, shape) for κ=1:K]
+
+  D_ = length(shape)
   circTraj = S.circTraj
-  shape = S.shape
 
   return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
             , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
-            , plans, idx, circTraj, shape, cparam,d,p,x_tmp,y_tmp)
+            , plans, idx, circTraj, shape, cparam)
 end
 
 function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::Vector{T},shape::Tuple, plan,
