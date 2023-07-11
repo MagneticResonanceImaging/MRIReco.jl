@@ -134,10 +134,13 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   D_ = length(shape)
   circTraj = S.circTraj
 
+  mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
+  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p)
+
   return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
-            , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
+            , mul!
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plans, idx, circTraj, shape, cparam)
 end
 
