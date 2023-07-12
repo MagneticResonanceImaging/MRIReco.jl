@@ -169,6 +169,34 @@ function testSparseOp(T::Type,shape)
     @test (norm(xapprox-x)/norm(x)) < 1e-3
 end
 
+## test FieldmapNFFTOp
+function testCopySizes(N=16)
+  # random image
+  x = zeros(ComplexF64,N,N)
+  for i=1:N,j=1:N
+    x[i,j] = rand()
+  end
+
+  tr = CartesianTrajectory(Float64,N,N;TE=0.0,AQ=0.01)
+  times = readoutTimes(tr)
+  nodes = kspaceNodes(tr)
+  cmap = im*quadraticFieldmap(N,N)[:,:,1]
+
+  # FourierMatrix
+  idx = CartesianIndices((N,N))[collect(1:N^2)]
+
+  # Operators
+
+  F_nfft = NFFTOp((N,N),tr,symmetrize=false)
+  F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false)
+
+  # Copy the FieldmapNFFTOp operator and change the plans field of the new operator to empty 
+  F_fmap_nfft_copy = copy(F_fmap_nfft)
+  F_nfft_copy = copy(F_nfft)
+
+  @test sizeof(F_fmap_nfft_copy) == sizeof(F_fmap_nfft)
+
+end
 
 function testOperators()
   @testset "Linear Operator" begin
