@@ -647,7 +647,7 @@ end
 function testReco(N=32)
     @testset "Reconstructions" begin
         @testset "MultiEcho" begin
-            testDirectRecoMultiEcho()
+            testRecoMultiEcho()
             testSenseMultiEcho(N)
         end
 
