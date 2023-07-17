@@ -437,7 +437,7 @@ function testOffresonanceSENSEReco(N = 64)
 end
 
 function testSenseMultiEcho(N=32,T = ComplexF32)
-    # image
+  # image
   x = T.(shepp_logan(N))
   rmap = 20.0*ones(N,N)
 
@@ -472,7 +472,6 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   params = Dict{Symbol, Any}()
   params[:reconSize] = (N,N)
   params[:reco] = "multiCoilMultiEcho"
-  #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
   params[:regularization] = "L2"
   params[:λ] = 1.e-3
   params[:iterations] = 1
@@ -481,12 +480,11 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
 
   x_approx2= reshape(reconstruction(acqData,params),N,N,:)
 
-
   relErrorEcho1 = norm(x_approx - x_approx2)/norm(x_approx)
   @test relErrorEcho1 < 1e-6
 end
 
-function testDirectRecoMultiEcho(N=32)
+function testRecoMultiEcho(N=32)
   # image
   x = ComplexF64.(shepp_logan(N))
   rmap = 20.0*ones(N,N)
@@ -513,6 +511,20 @@ function testDirectRecoMultiEcho(N=32)
   @test relErrorEcho1 < 1e-3
   relErrorEcho2 = norm(exp(-20.0*4.e-2)*x - x_approx[:,:,2])/norm(exp(-20.0*4.e-2)*x)
   @test relErrorEcho2 < 1e-3
+
+  # Reco multiEcho
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiEcho"
+  params[:regularization] = "L2"
+  params[:λ] = 1.e-3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+
+  x_approx2 = reshape(reconstruction(acqData,params),N,N,:)
+
+  relErrorEcho3 = norm(x_approx - x_approx2)/norm(x_approx)
+  @test relErrorEcho3 < 1e-3
 end
 
 function testCSReco3d(N=128)
