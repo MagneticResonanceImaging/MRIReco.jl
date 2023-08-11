@@ -86,11 +86,11 @@ function espirit(calibData::Array{T}, imsize::NTuple{D,Int}, ksize::NTuple{D,Int
 
   # sensitivity maps correspond to eigen vectors with a singular value of 1
   msk = zeros(Bool,size(W))
-  msk[findall(x -> x > eigThresh_2, abs.(W))] .= true
+  msk[W .> eigThresh_2] .= true
   maps .*= msk
   maps_ = fftshift(maps, 1:length(imsize))
 
-  return maps_
+  return maps_, W
 end
 
 #
@@ -168,15 +168,22 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   reshape(fft!(reshape(kern2_, nc^2, sizePadded...), 2:ndims(kern2_)-1), nc, nc, sizePadded...)
 
   kern2 = zeros(T, nc, nc, imsize...)
-  idx_center = CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2)
-  @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
 
+  # This code works but requires one additional allocation of kern2
+  # idx_center = CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2)
+  # @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
+  # kern2 = ifftshift(kern2, 3:ndims(kern2_))
+
+  idx_center = collect(CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2))
+  [idx_center[i] = CartesianIndex(mod1.(Tuple(idx_center[i]) .+ cld.(imsize, 2), imsize)) for i in eachindex(idx_center)]
+  @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
+  
   reshape(ifft!(reshape(kern2, nc^2, imsize...), 2:ndims(kern2)-1), nc, nc, imsize...)
   kern2 .*= prod(imsize) / prod(sizePadded) / prod(ksize)
 
 
-  eigenVecs = Array{T}(undef, imsize..., nc, nmaps)
-  eigenVals = Array{T}(undef, imsize...,  1, nmaps)
+  eigenVecs = Array{     T }(undef, imsize..., nc, nmaps)
+  eigenVals = Array{real(T)}(undef, imsize...,  1, nmaps)
 
   nblas = BLAS.get_num_threads()
   try
