@@ -90,7 +90,7 @@ function espirit(calibData::Array{T}, imsize::NTuple{D,Int}, ksize::NTuple{D,Int
   maps .*= msk
   maps_ = fftshift(maps, 1:length(imsize))
 
-  return maps_, W
+  return maps_
 end
 
 #
