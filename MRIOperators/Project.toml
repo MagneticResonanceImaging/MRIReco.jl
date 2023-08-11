@@ -1,7 +1,7 @@
 name = "MRIOperators"
 uuid = "fb1137e3-90a6-46ce-a672-6e1e53d120f2"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.2"
+version = "0.2.0"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
