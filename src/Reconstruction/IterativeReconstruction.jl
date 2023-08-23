@@ -15,14 +15,13 @@ contrasts and slices
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_simple( acqData::AcquisitionData{T}
-                              , reconSize::NTuple{D,Int64}
-                              , reg::Vector{Regularization}
+                              ; reconSize::NTuple{D,Int64}
+                              , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
-                              , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T <: AbstractFloat}
+                              , params...) where {D, T <: AbstractFloat}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -34,7 +33,9 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg[1].params[:sparseTrafo] = sparseTrafo
+  if !isnothing(sparseTrafo)
+    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  end
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
@@ -83,14 +84,13 @@ are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
-                              , reconSize::NTuple{D,Int64}
-                              , reg::Vector{Regularization}
+                              ; reconSize::NTuple{D,Int64}
+                              , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
-                              , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
+                              , params...) where {D , T <: AbstractFloat}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -101,7 +101,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
+  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
+  if !isnothing(sparseTrafo)
+    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  end
+  
 
   W = WeightingOp( vcat(weights...) )
 
@@ -153,16 +157,15 @@ are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoil(acqData::AcquisitionData{T}
-                              , reconSize::NTuple{D,Int64}
-                              , reg::Vector{Regularization}
+                              ; reconSize::NTuple{D,Int64}
+                              , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
-                              , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T}
+                              , params...) where {D , T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -176,7 +179,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
-  reg[1].params[:sparseTrafo] = sparseTrafo
+  if !isnothing(sparseTrafo)
+    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  end
 
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
@@ -228,15 +233,14 @@ Different slices are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
-                              , reconSize::NTuple{D,Int64}
-                              , reg::Vector{Regularization}
+                              ; reconSize::NTuple{D,Int64}
+                              , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
-                              , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T}
+                              , params...) where {D, T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -247,7 +251,10 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
+  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
+  if !isnothing(sparseTrafo)
+    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  end
 
   W = WeightingOp( vcat(weights...), numChan )
 

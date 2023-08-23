@@ -6,7 +6,7 @@ function defaultRecoParams()
   params[:sparseTrafoName] = "Wavelet"
   params[:regularization] = "L1"
   params[:λ] = 0.0
-  params[:normalizeReg] = false
+  params[:normalizeReg] = NoNormalization()
   params[:solver] = "admm"
   params[:ρ] = 5.e-2
   params[:iterations] = 30
@@ -71,7 +71,7 @@ builds relevant parameters and operators from the entries in `recoParams`
 
 `sparseTrafo` and `reg` can also be speficied using their names in form of a string.
 """
-function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
+function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
 
   red3d = ndims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
   if red3d  # acqData is 3d data converted to 2d
@@ -108,9 +108,10 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
   regName = get(recoParams, :regularization, "L1")
   λ = T(get(recoParams,:λ,0.0))
   reg = Regularization(regName, λ; shape=reconSize, recoParams...)
+  reg = vec(reg)
 
   # normalize regularizer ?
-  normalize = get(recoParams, :normalizeReg, false)
+  normalize = get(recoParams, :normalizeReg, NoNormalization())
 
   encOps = get(recoParams, :encodingOps, nothing)
 
@@ -132,7 +133,17 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
     L_inv = inv(L.L) #noise decorrelation matrix
   end
 
-  return reconSize, weights, L_inv, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
+
+  recoParams[:reconSize] = reconSize
+  recoParams[:weights] = weights
+  recoParams[:L_inv] = L_inv
+  recoParams[:sparseTrafo] = sparseTrafo
+  recoParams[:reg] = reg
+  recoParams[:normalize] = normalize 
+  recoParams[:encOps] = encOps
+  recoParams[:solvername] = solvername
+  recoParams[:senseMaps] = senseMaps
+  return recoParams
 end
 
 
