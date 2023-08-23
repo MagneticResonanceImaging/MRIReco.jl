@@ -1,7 +1,7 @@
 name = "MRICoilSensitivities"
 uuid = "c57eb701-aafc-44a2-a53c-128049758959"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"

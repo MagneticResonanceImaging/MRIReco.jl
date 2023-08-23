@@ -129,7 +129,8 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   if isempty(noiseData)
     L_inv = nothing
   else
-    L = cholesky(covariance(noiseData), check = true)
+    psi = convert(typeof(noiseData), covariance(noiseData))
+    L = cholesky(psi, check = true)
     L_inv = inv(L.L) #noise decorrelation matrix
   end
 
