@@ -2,25 +2,25 @@ export SensitivityOp
 
 function prod_smap!(y::AbstractVector{T}, smaps::AbstractMatrix{T}, x::AbstractVector{T}, numVox, numChan, numContr=1) where T
   x_ = reshape(x,numVox,numContr)
-  y_ = reshape(y,numVox,numContr,numChan)
+  y_ = reshape(y,numVox,numChan,numContr)
 
-  @assert size(smaps) == (size(y_,1), size(y_,3))
+  @assert size(smaps) == (size(y_,1), size(y_,2))
 
   @inbounds for i ∈ CartesianIndices(y_)
-    y_[i] = x_[i[1],i[2]] * smaps[i[1],i[3]]
+    y_[i] = x_[i[1],i[3]] * smaps[i[1],i[2]]
   end
   return y
 end
 
 function ctprod_smap!(y::AbstractVector{T}, smapsC::AbstractMatrix{T}, x::AbstractVector{T}, numVox, numChan, numContr=1) where T
-  x_ = reshape(x,numVox,numContr,numChan)
+  x_ = reshape(x,numVox,numChan,numContr)
   y_ = reshape(y,numVox,numContr)
 
-  @assert size(smapsC) == (size(x_,1), size(x_,3))
+  @assert size(smapsC) == (size(x_,1), size(x_,2))
 
   y_ .= 0
   @inbounds for i ∈ CartesianIndices(x_)
-    y_[i[1],i[2]] += x_[i] * smapsC[i[1],i[3]]
+    y_[i[1],i[3]] += x_[i] * smapsC[i[1],i[2]]
   end
   return y
 end

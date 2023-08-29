@@ -82,7 +82,7 @@ are reconstructed independently.
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
-function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
+function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , reconSize::NTuple{D,Int64}
                               , reg::Vector{Regularization}
                               , sparseTrafo
@@ -90,7 +90,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
                               , solvername::String
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T <: AbstractFloat}
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D , T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -101,6 +101,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...) )
@@ -115,7 +118,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
     end
     for j = 1:numChan
       kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
-      EFull = ∘(W, F[j])#, isWeighting=true)
+      EFull = ∘(W, F)#, isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)
       solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
@@ -133,7 +136,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{Complex{T}}
     Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan,numRep)
   end
 
-  return makeAxisArray(permutedims(Ireco,[1,2,5,3,4,6]), acqData)
+  return makeAxisArray(Ireco, acqData)
 end
 
 """
@@ -251,6 +254,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
   W = WeightingOp( vcat(weights...), numChan )
@@ -283,6 +289,84 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   else
     # 3d reconstruction
     Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1, numRep)
+  end
+
+  return makeAxisArray(Ireco, acqData)
+end
+
+
+
+"""
+Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly.
+Different slices are reconstructed independently.
+
+# Arguments
+* `acqData::AcquisitionData`            - AcquisitionData object
+* `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
+* `reg::Regularization`                 - Regularization to be used
+* `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
+* `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
+* `solvername::String`                  - name of the solver to use
+* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
+* (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
+"""
+function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
+                              , reconSize::NTuple{D,Int64}
+                              , reg::Vector{Regularization}
+                              , sparseTrafo
+                              , weights::Vector{Vector{Complex{T}}}
+                              , solvername::String
+                              , senseMaps::Array{Complex{T}}
+                              , normalize::Bool=false
+                              , encodingOps=nothing
+                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T}
+
+  encDims = ndims(trajectory(acqData))
+  if encDims!=length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
+
+  numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
+  numBasis = size(params[:basis],2)
+   
+  encParams = getEncodingOperatorParams(;params...)
+
+  # set sparse trafo in reg
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  end
+  reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numBasis)... )
+
+  W = WeightingOp( vcat(weights...), numChan )
+
+  Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
+  @floop for l = 1:numRep, i = 1:numSl
+    if encodingOps != nothing
+      E = encodingOps[i]
+    else
+      E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
+      subOp = SubspaceOp(params[:basis],acqData.encodingSize,numContr)
+      E = ∘(E,subOp)
+    end
+
+    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+
+    EFull = ∘(W, E)#, isWeighting=true)
+    EFullᴴEFull = normalOperator(EFull)
+    solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+
+    Ireco[:,i,l] = solve(solver, kdata; params...)
+  end
+
+
+  if encDims==2
+    # 2d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numBasis, numSl, 1, numRep)
+    Ireco = permutedims(Ireco, [1,2,4,3,5,6])
+  else
+    # 3d reconstruction
+    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numBasis, 1, numRep)
   end
 
   return makeAxisArray(Ireco, acqData)

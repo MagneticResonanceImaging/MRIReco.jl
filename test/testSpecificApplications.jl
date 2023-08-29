@@ -95,10 +95,81 @@ function testBinning(N=32)
     @test (norm(vec(Ireco3[:,:,1,1])-vec(Ireco3[:,:,1,2]))/norm(vec(Ireco3[:,:,1,2]))) < 0.05
 end
 
+function testSubspace(N=32)
+    T = ComplexF32
+    x = T.(shepp_logan(N))
+    rmap = 5.0*abs.(x)
+    coilsens = T.(birdcageSensitivity(N, 8, 1.5))
+    TEnum = collect(2.e-2:2.e-2:50.e-2)
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+    params[:r2map] = rmap
+    params[:T_echo] = TEnum
+    params[:seqName] = "ME"
+    params[:refocusingAngles] = Float64.(repeat([pi],length(TEnum)))
+    params[:senseMaps] = coilsens
+
+    acqData = simulation( real(x), params )
+
+    params = Dict{Symbol, Any}()
+    params[:reconSize] = (N,N)
+    params[:reco] = "multiCoilMultiEcho"
+    #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
+    params[:regularization] = "L2"
+    params[:λ] = 1.e-3
+    params[:iterations] = 1
+    params[:solver] = "cgnr"
+    params[:senseMaps] = reshape(coilsens,N,N,1,8)
+
+    x_approx= reconstruction(acqData,params)
+
+    ## create basis
+    function createExpBasis(TE_vec::AbstractVector{T},T2_vec::AbstractVector{T}) where {T<:Real}
+    nTE = length(TE_vec)
+    nSimu = length(T2_vec)
+    expSignal = zeros(T,nSimu,nTE)
+    
+    for (i,T2) in enumerate(T2_vec)
+        expSignal[i,:] = exp.(-TE_vec/T2_vec[i])
+    end
+    
+    return expSignal
+    end
+    
+    T2_vec = 1:1:2000
+    sDict = createExpBasis(Float32.(TEnum),Float32.(T2_vec))
+
+    svd_obj = svd(sDict)
+    basis = Complex.(svd_obj.V)[:,1:10]
+
+    params = Dict{Symbol, Any}()
+    params[:reconSize] = (N,N)
+    params[:reco] = "multiCoilMultiEchoSubspace"
+    #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
+    params[:regularization] = "L2"
+    params[:λ] = 1.e-3
+    params[:iterations] = 1
+    params[:solver] = "cgnr"
+    params[:senseMaps] = reshape(coilsens,N,N,1,8)
+    params[:basis] = basis
+
+    α = reconstruction(acqData,params)
+    x_approx2 = applySubspace(α,basis)
+
+    relError = norm(x_approx - x_approx2)/norm(x_approx)
+    @test relError < 5e-3
+end
+
 function testSpecificApplications(N=32)
     @testset "testSpecificApplications" begin
     testConversionAcqToRaw(N)
     testBinning(N)
+    testSubspace(N)
     end
 end
 
