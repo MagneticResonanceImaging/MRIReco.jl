@@ -44,7 +44,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           end
 
           i = findfirst_(s, '=')
-          key = strip(s[4:i-1])
+          key = strip(s[4:prevind(s,i)])
 
           # Small HACK
           if in(key, skipKeys)
@@ -70,7 +70,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
               end
             else
               j = findfirst_(val, ')')
-              currentSizes = [parse(Int64,s) for s in split(val[2:j-1],",")]
+              currentSizes = [parse(Int64,s) for s in split(val[2:prevind(val,j)],",")]
               file.dict[key] = nothing
               currentKey = key
               currentIdx = 1
@@ -81,7 +81,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
       else
          if line[1] == '<' && isnothing(remainingString)
            j = findfirst_(line, '>')
-           file.dict[currentKey] = line[2:j-1]
+           file.dict[currentKey] = line[2:prevind(line,j)]
            finishedReading = true
            tupleReading = false
          elseif line[1] == '(' || tupleReading  # skip these for the moment ...
@@ -103,7 +103,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
              if j != 0
                # Tuple read
                try
-                 valsStr = split(strip(part[1:j-1]), ",")
+                 valsStr = split(strip(part[1:prevind(part,j)]), ",")
                  vals = Any[]
                  for valStr in valsStr
                    #try
