@@ -3,6 +3,13 @@ import Base: read, getindex, get, haskey
 export JcampdxFile, findfirst_
 
 findfirst_(A, v) = something(findfirst(isequal(v), A), 0)
+function prevind_(A,i) 
+  if i == 0
+    return -1
+  else
+    return prevind(A,i)
+  end
+end
 
 const JCVAL = Union{AbstractString,Number,Bool,Array,Tuple,Nothing}
 const HTSS = Dict{AbstractString,JCVAL}
@@ -44,7 +51,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           end
 
           i = findfirst_(s, '=')
-          key = strip(s[4:prevind(s,i)])
+          key = strip(s[4:prevind_(s,i)])
 
           # Small HACK
           if in(key, skipKeys)
@@ -70,7 +77,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
               end
             else
               j = findfirst_(val, ')')
-              currentSizes = [parse(Int64,s) for s in split(val[2:prevind(val,j)],",")]
+              currentSizes = [parse(Int64,s) for s in split(val[2:prevind_(val,j)],",")]
               file.dict[key] = nothing
               currentKey = key
               currentIdx = 1
@@ -81,7 +88,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
       else
          if line[1] == '<' && isnothing(remainingString)
            j = findfirst_(line, '>')
-           file.dict[currentKey] = line[2:prevind(line,j)]
+           file.dict[currentKey] = line[2:prevind_(line,j)]
            finishedReading = true
            tupleReading = false
          elseif line[1] == '(' || tupleReading  # skip these for the moment ...
@@ -103,7 +110,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
              if j != 0
                # Tuple read
                try
-                 valsStr = split(strip(part[1:prevind(part,j)]), ",")
+                 valsStr = split(strip(part[1:prevind_(part,j)]), ",")
                  vals = Any[]
                  for valStr in valsStr
                    #try
