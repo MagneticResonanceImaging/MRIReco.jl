@@ -11,6 +11,18 @@ function prevind_(A,i)
   end
 end
 
+function repeatSubstringPattern(subLine::SubString{String})
+  if(subLine[1]=='@')
+    idx = findfirst_(subLine,'*')
+    repN = subLine[2:idx-1]
+    val = subLine[idx+2:end-1]
+    
+   return [val for _ in 1:parse(Int64,repN)]
+  else
+    return subLine
+  end
+end
+
 const JCVAL = Union{AbstractString,Number,Bool,Array,Tuple,Nothing}
 const HTSS = Dict{AbstractString,JCVAL}
 
@@ -36,7 +48,6 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
     skipKeys = ["VisuAcqFrameTime"]
 
     for line in eachline(stream)
-      
       if line[1] == '#' && line[2] == '#' && line[3] == '$' 
         # the last command was not successfully parsed
         finishedReading = true
@@ -157,17 +168,8 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
          else
            #print(split(strip(line)," "))
            valsStr = split(strip(line), " ")
-           vals = nothing
-           try
-             vals = parse(Int64,valsStr)
-           catch
-             try
-               vals = parse(Float64,valsStr)
-             catch
-               vals = valsStr
-             end
-           end
-
+           vals=vcat(repeatSubstringPattern.(valsStr)...)
+           
            if file.dict[currentKey] == nothing
              @debug "Will now allocate memory of size:" currentSizes
              file.dict[currentKey] = Array{eltype(vals)}(undef, reverse(currentSizes)...)
