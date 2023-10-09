@@ -121,7 +121,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
              if j != 0
                # Tuple read
                try
-                 valsStr = split(strip(part[1:prevind_(part,j)]), ",")
+                 valsStr = split(strip(part[1:prevind_(part,j)]), ", ")
                  vals = Any[]
                  for valStr in valsStr
                    #try

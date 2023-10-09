@@ -9,7 +9,7 @@
     @test b["PVM_FreqDriftYN"] == "Yes"
 
     @test b["VisuCoreWordType"] == "_16BIT_SGN_INT"
-    @test b["VisuFGOrderDesc"][1] == Any[15.0, " <FG_SLICE>", " <>", 0.0, 2.0]
+    @test b["VisuFGOrderDesc"][1] == Any[15.0, "<FG_SLICE>", "<>", 0.0, 2.0]
     @test b["VisuCoreDataOffs"] == repeat(["0","0","0"],5)
 
     t2 = @elapsed b["ExcPulse1"]
