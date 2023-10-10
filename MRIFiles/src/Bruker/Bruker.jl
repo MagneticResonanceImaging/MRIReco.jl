@@ -29,6 +29,9 @@ mutable struct BrukerFile <: MRIFile
   maxEntriesAcqp
 end
 
+include("BrukerSequence.jl")
+include("BrukerSequence360.jl")
+
 function BrukerFile(path::String; maxEntriesAcqp=2000)
   params = JcampdxFile()
   paramsProc = JcampdxFile()
@@ -154,6 +157,7 @@ pvmEncSteps2(b::BrukerFile) = parse.(Int,b["PVM_EncSteps2"])
 pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
 pvmEncValues2(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps2"])
 pvmMatrix(b::BrukerFile) = parse.(Int,b["PVM_Matrix"])
+pvmEncMatrix(b::BrukerFile) = parse.(Int,b["PVM_EncMatrix"])
 pvmSpiralMode(b::BrukerFile) = b["PVM_SpiralMode"]
 pvmSpiralNbOfInterleaves(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfInterleaves"])
 pvmSpiralNbOfGradientPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfGradientPoints"])
@@ -176,7 +180,7 @@ pvmTrajResultSize(b::BrukerFile) = parse(Int,b["PVM_TrajResultSize"])
 pvmTrajKx(b::BrukerFile) = parse.(Float32,b["PVM_TrajKx"])
 pvmTrajKy(b::BrukerFile) = parse.(Float32,b["PVM_TrajKy"])
 
-
+visuExperimentNumber(b::BrukerFile) = isempty(b["VisuExperimentNumber"]) ? 0 : parse(Int64,b["VisuExperimentNumber"])
 """
 brukerParams(b::BrukerFile)
 
@@ -192,7 +196,7 @@ function brukerParams(b::BrukerFile)
   F = acqFov(b)
   params["encodedFOV"] = F
   params["receiverChannels"] = pvmEncNReceivers(b)
-  params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["SW"])*1000000)
+  params["H1resonanceFrequency_Hz"] = round(Int, parse(Float64,b["PVM_FrqWork"][1])*1000000)
   params["studyID"] = b["VisuStudyId"]
   #params["studyDescription"] = b["ACQ_scan_name"]
   #params["studyInstanceUID"] =
@@ -200,7 +204,7 @@ function brukerParams(b::BrukerFile)
 
   params["patientName"] = b["VisuSubjectName"]
 
-  params["measurementID"] = parse(Int64,b["VisuExperimentNumber"])
+  params["measurementID"] = visuExperimentNumber(b)
   params["seriesDescription"] = b["ACQ_scan_name"]
 
   params["institutionName"] = latin1toutf8(b["ACQ_institution"])
@@ -230,13 +234,28 @@ function acqDataType(b::BrukerFile)
   return Int8
 end
 
+function acqWordSize(b::BrukerFile)
+  format = b["ACQ_word_size"]
+  if format == "_32_BIT"
+    return Int32
+  elseif format == "_16_BIT"
+    return Int16
+  else
+    @error "Data type unknown: $(format)"
+  end
+  return Int8
+end
+
 function MRIBase.RawAcquisitionData(b::BrukerFile)
-  if isfile(joinpath(b.path, "fid"))
-    protocolName = acqProtocolName(b)
-    @info "Bruker protocol name : $protocolName"
-    if acqProtocolName(b) == "UTE3D"
+  protocolName = acqProtocolName(b)
+  @info "Bruker protocol name : $protocolName"
+
+  if occursin("PV-360",b["ACQ_sw_version"]) ## PV360
+    return RawAcquisitionDataFid_360(b) #standard cartesian cases
+  else ## PV6
+    if protocolName == "UTE3D"
       return RawAcquisitionData_3DUTE(b)
-    elseif acqProtocolName(b) == "SPIRAL"
+    elseif protocolName == "SPIRAL"
       return RawAcquisitionDataRawDataSpiral(b)
     else
       return RawAcquisitionDataFid(b) #standard cartesian cases
@@ -244,7 +263,6 @@ function MRIBase.RawAcquisitionData(b::BrukerFile)
   end
 end
 
-include("BrukerSequence.jl")
 
 function RawAcquisitionDataRawDataSpiral(b::BrukerFile)
   # Have not a way to read out this. Not sure if its true
