@@ -158,6 +158,7 @@ pvmEncValues1(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps1"])
 pvmEncValues2(b::BrukerFile) = parse.(Float32,b["PVM_EncSteps2"])
 pvmMatrix(b::BrukerFile) = parse.(Int,b["PVM_Matrix"])
 pvmEncMatrix(b::BrukerFile) = parse.(Int,b["PVM_EncMatrix"])
+pvmEncPpi(b::BrukerFile) = parse.(Int,b["PVM_EncPpi"]) 
 pvmSpiralMode(b::BrukerFile) = b["PVM_SpiralMode"]
 pvmSpiralNbOfInterleaves(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfInterleaves"])
 pvmSpiralNbOfGradientPoints(b::BrukerFile) = parse.(Int,b["PVM_SpiralNbOfGradientPoints"])

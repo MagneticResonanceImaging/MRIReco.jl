@@ -4,7 +4,21 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
   T = Complex{MRIFiles.acqWordSize(b)}
   filename = joinpath(b.path, "rawdata.job0")
 
-  N = MRIFiles.pvmMatrix(b)
+  N = MRIFiles.pvmEncMatrix(b)
+  if length(N) < 3
+    N_ = ones(Int,3)
+    N_[1:length(N)] .= N
+    N = N_
+  end
+
+  N_PPi = pvmEncPpi(b)
+  if length(N_PPi) < 3
+    N_ = ones(Int,3)
+    N_[1:length(N_PPi)] .= N_PPi
+    N_PPi = N_
+  end
+
+  N .= N .* N_PPi
 
   numChannel = parse.(Int,b["PVM_EncNReceivers"])
   numAvailableChannel = MRIFiles.pvmEncAvailReceivers(b)
@@ -14,7 +28,7 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
   numRep = MRIFiles.acqNumRepetitions(b)
   numEncSteps = MRIFiles.acqSpatialSize1(b) 
 
-  profileLength = MRIFiles.acqSize(b)[1] #Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype)) # number of points + zeros
+  profileLength = N[1]*numChannel#MRIFiles.acqSize(b)[1] #Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype)) # number of points + zeros
 
   I = open(filename,"r") do fd
     read!(fd,Array{T,6}(undef, profileLength,
