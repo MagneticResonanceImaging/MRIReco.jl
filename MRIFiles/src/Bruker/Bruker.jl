@@ -48,9 +48,10 @@ function getindex(b::BrukerFile, parameter)#::String
     b.acqpRead = true
   elseif !b.visupars_globalRead && length(parameter) >= 4 &&
          parameter[1:4] == "Visu"
-    visupath = joinpath(readdir(joinpath(b.path,"pdata"),join=true)[1],"visu_pars")
-    if isfile(visupath)
-      read(b.params, visupath)
+    visupaths = joinpath.(readdir(joinpath(b.path,"pdata"),join=true),"visu_pars")
+    visupath = visupaths[isfile.(visupaths)]
+    if !isempty(visupath)
+      read(b.params, visupath[1])
       b.visupars_globalRead = true
     end
   elseif !b.mpiParRead && length(parameter) >= 6 &&
