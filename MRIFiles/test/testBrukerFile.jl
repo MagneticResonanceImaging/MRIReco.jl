@@ -86,6 +86,36 @@ for i = 1:length(listBrukFiles)
     @test norm(vec(I2dseq)-vec(Isos))/norm(vec(I2dseq)) < listNormValues[i]
 end
 
+
+## Test reconstruction for multi-coil datasets with CS acceleration
+b = BrukerFile( joinpath(datadir, "BrukerFile", "PV360_3D_FLASH_CS" ))
+raw = RawAcquisitionData(b)
+acq = AcquisitionData(raw,OffsetBruker=true)
+
+sens = espirit(acq,eigThresh_2 = 0);
+
+params = Dict{Symbol, Any}()
+params[:reco] = "multiCoil"    # encoding model
+params[:reconSize] = acq.encodingSize
+params[:sparseTrafo] = "Wavelet" #sparse trafo
+params[:regularization] = "L1"       # regularization
+params[:λ] = 30.0
+params[:solver] = "admm"    # solver
+params[:iterations] = 3
+params[:iterationsInner] = 2
+params[:ρ] = 1.0e-1
+params[:senseMaps] = sens
+
+img_CS = abs.(reconstruction(acq, params))
+img_CS = permutedims(img_CS[:,:,:,1,1,1],[2,1,3])
+img_CS = img_CS ./ maximum(img_CS);
+
+I2dseq = recoData(b)
+I2dseq = I2dseq ./ maximum(I2dseq);
+
+@test norm(vec(I2dseq)-vec(img_CS))/norm(vec(I2dseq)) < 0.2
+
+
 if !Sys.iswindows()
 # Reconstruction of 3DUTE
 @info "Reconstruction of 3DUTE"

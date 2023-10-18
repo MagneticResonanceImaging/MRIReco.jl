@@ -27,10 +27,11 @@ LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 MRIReco = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+MRICoilSensitivities = "c57eb701-aafc-44a2-a53c-128049758959"
 ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
 
 [targets]
-test = ["Test", "LazyArtifacts", "Scratch", "MRIReco", "ImageUtils"]
+test = ["Test", "LazyArtifacts", "Scratch", "MRIReco", "ImageUtils","MRICoilSensitivities"]
 
 
 
