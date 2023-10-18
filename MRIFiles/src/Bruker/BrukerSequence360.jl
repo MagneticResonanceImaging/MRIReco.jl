@@ -4,21 +4,16 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
   T = Complex{MRIFiles.acqWordSize(b)}
   filename = joinpath(b.path, "rawdata.job0")
 
-  N = MRIFiles.pvmEncMatrix(b)
+  N = pvmMatrix(b)
+  factor_AntiAlias = pvmAntiAlias(b)
+  
+  N = round.(Int,N .* factor_AntiAlias)
+
   if length(N) < 3
     N_ = ones(Int,3)
     N_[1:length(N)] .= N
     N = N_
   end
-
-  N_PPi = pvmEncPpi(b)
-  if length(N_PPi) < 3
-    N_ = ones(Int,3)
-    N_[1:length(N_PPi)] .= N_PPi
-    N_PPi = N_
-  end
-
-  N .= N .* N_PPi
 
   numChannel = parse.(Int,b["PVM_EncNReceivers"])
   numAvailableChannel = MRIFiles.pvmEncAvailReceivers(b)
@@ -99,11 +94,6 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
   params = MRIFiles.brukerParams(b)
   params["trajectory"] = "cartesian"
   
-  if length(N) < 3
-    N_ = ones(Int,3)
-    N_[1:length(N)] .= N
-    N = N_
-  end
   params["encodedSize"] = N
 
   return RawAcquisitionData(params, profiles)
