@@ -1,4 +1,4 @@
-using Test, LinearAlgebra, MRIFiles, MRIReco
+using Test, LinearAlgebra, MRIFiles, MRIReco, MRICoilSensitivities
 
 using Scratch
 using LazyArtifacts

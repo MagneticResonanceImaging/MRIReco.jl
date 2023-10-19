@@ -3,6 +3,25 @@ import Base: read, getindex, get, haskey
 export JcampdxFile, findfirst_
 
 findfirst_(A, v) = something(findfirst(isequal(v), A), 0)
+function prevind_(A,i) 
+  if i == 0
+    return -1
+  else
+    return prevind(A,i)
+  end
+end
+
+function repeatSubstringPattern(subLine::SubString{String})
+  if(subLine[1]=='@')
+    idx = findfirst_(subLine,'*')
+    repN = subLine[2:idx-1]
+    val = subLine[idx+2:end-1]
+    
+   return [val for _ in 1:parse(Int64,repN)]
+  else
+    return subLine
+  end
+end
 
 const JCVAL = Union{AbstractString,Number,Bool,Array,Tuple,Nothing}
 const HTSS = Dict{AbstractString,JCVAL}
@@ -29,7 +48,6 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
     skipKeys = ["VisuAcqFrameTime"]
 
     for line in eachline(stream)
-      
       if line[1] == '#' && line[2] == '#' && line[3] == '$' 
         # the last command was not successfully parsed
         finishedReading = true
@@ -44,7 +62,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           end
 
           i = findfirst_(s, '=')
-          key = strip(s[4:i-1])
+          key = strip(s[4:prevind_(s,i)])
 
           # Small HACK
           if in(key, skipKeys)
@@ -70,7 +88,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
               end
             else
               j = findfirst_(val, ')')
-              currentSizes = [parse(Int64,s) for s in split(val[2:j-1],",")]
+              currentSizes = [parse(Int64,s) for s in split(val[2:prevind_(val,j)],",")]
               file.dict[key] = nothing
               currentKey = key
               currentIdx = 1
@@ -81,7 +99,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
       else
          if line[1] == '<' && isnothing(remainingString)
            j = findfirst_(line, '>')
-           file.dict[currentKey] = line[2:j-1]
+           file.dict[currentKey] = line[2:prevind_(line,j)]
            finishedReading = true
            tupleReading = false
          elseif line[1] == '(' || tupleReading  # skip these for the moment ...
@@ -103,7 +121,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
              if j != 0
                # Tuple read
                try
-                 valsStr = split(strip(part[1:j-1]), ",")
+                 valsStr = split(strip(part[1:prevind_(part,j)]), ", ")
                  vals = Any[]
                  for valStr in valsStr
                    #try
@@ -150,17 +168,8 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
          else
            #print(split(strip(line)," "))
            valsStr = split(strip(line), " ")
-           vals = nothing
-           try
-             vals = parse(Int64,valsStr)
-           catch
-             try
-               vals = parse(Float64,valsStr)
-             catch
-               vals = valsStr
-             end
-           end
-
+           vals=vcat(repeatSubstringPattern.(valsStr)...)
+           
            if file.dict[currentKey] == nothing
              @debug "Will now allocate memory of size:" currentSizes
              file.dict[currentKey] = Array{eltype(vals)}(undef, reverse(currentSizes)...)
