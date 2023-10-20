@@ -285,7 +285,7 @@ function samplingDensity(acqData::AcquisitionData{T}, shape::Tuple) where T
       weights[echo] = [1.0/sqrt(prod(shape)) for node=1:size(nodes,2)]
     else
       nodes = kspaceNodes(tr)
-      plan = plan_nfft(nodes, shape, m=2, σ=2)
+      plan = plan_nfft(Float64.(nodes), shape, m=2, σ=2)
       weights[echo] = sqrt.(sdc(plan, iters=10))
     end
 

@@ -1,5 +1,3 @@
-export reconstruction_direct_2d, reconstruction_direct_3d
-
 """
     reconstruction_direct(acqData::AcquisitionData, reconSize::NTuple{D,Int64}, weights::Vector{Vector{Complex{<:AbstractFloat}}}, correctionMap::Array{Complex{<:AbstractFloat}}=Complex{<:AbstractFloat}[])
 

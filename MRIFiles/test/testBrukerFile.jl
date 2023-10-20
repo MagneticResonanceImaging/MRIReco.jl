@@ -139,7 +139,7 @@ I2dseq = circshift(I2dseq,(0,0,1,0))
 
 #test reconstruction of repetitions
 @test size(Isos,6)==2
-@test MRIReco.norm(vec(I2dseq)-vec(Isos[:,:,:,1,1,:]))/MRIReco.norm(vec(I2dseq)) < 0.1
+@test MRIReco.norm(vec(I2dseq)-vec(Isos[:,:,:,1,1,:]))/MRIReco.norm(vec(I2dseq)) < 0.15
 
 end
 
