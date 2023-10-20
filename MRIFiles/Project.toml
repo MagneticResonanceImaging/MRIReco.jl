@@ -19,7 +19,6 @@ FileIO = "1.2"
 HDF5 = "0.16"
 LightXML = "0.9"
 Reexport = "1"
-MRIReco = "0.7"
 ImageUtils = "0.2.5"
 
 [extras]
