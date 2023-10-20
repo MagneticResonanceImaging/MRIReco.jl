@@ -1,25 +1,28 @@
 module MRIOperators
 
-import Base: hcat, vcat, \
-export hcat, vcat, \, DiagOp
+using Base: hcat, vcat, \
 
 using Reexport
 using MRIBase
-@reexport using SparsityOperators
+@reexport using LinearOperatorCollection
 using LinearAlgebra
 using NFFT
+using NFFT.FFTW
+using Wavelets
 using FLoops
 
-import LowRankApprox.psvd
+using LowRankApprox: psvd
 using Distributions
 using StatsBase
 
+export DiagOp
+
 include("Shutter.jl")
 include("Composition.jl")
-include("NFFTOp.jl")
 include("ExplicitOp.jl")
 include("SensitivityOp.jl")
 include("MapSliceOp.jl")
+include("NFFTOp.jl")
 include("FieldmapNFFTOp.jl")
 include("EncodingOp.jl")
 include("SparseOp.jl")
@@ -28,9 +31,9 @@ include("SubspaceOp.jl")
 """
     hcat(A::AbstractLinearOperator, n::Int)
 
-horizontally concatenates alinear operator `A` n times
+horizontally concatenates a linear operator `A` n times
 """
-function hcat(A::AbstractLinearOperator, n::Int)
+function LinearOperators.hcat(A::AbstractLinearOperator, n::Int)
   op = A
   for i = 2:n
     op = LinearOperators.hcat(op, A)
@@ -43,7 +46,7 @@ end
 
 vertically concatenates alinear operator `A` n times
 """
-function vcat(A::AbstractLinearOperator, n::Int)
+function LinearOperators.vcat(A::AbstractLinearOperator, n::Int)
   op = A
   for i = 2:n
     op = LinearOperators.vcat(op, A)
@@ -191,7 +194,7 @@ function DiagNormalOp(normalOps, N, idx, y::Vector{T}) where {T}
          , normalOps, idx, y)
 end
 
-function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1)))
+function LinearOperatorCollection.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1)))
   weights = W*ones(S.nrow)
 
   T = promote_type(eltype(S), eltype(W))
@@ -201,10 +204,10 @@ function SparsityOperators.normalOperator(S::DiagOp, W=opEye(eltype(S), size(S,1
 
     # we promote the weights to be of the same type as T, which will be required
     # when creating the temporary vector in normalOperator in a later stage
-    opInner = normalOperator(S.ops[1], WeightingOp(T.(weights[S.yIdx[1]:S.yIdx[2]-1].^2)))
+    opInner = normalOperator(S.ops[1], WeightingOp(T; weights=T.(weights[S.yIdx[1]:S.yIdx[2]-1].^2)))
     op = DiagNormalOp([copy(opInner) for i=1:length(S.ops)], size(S,2), S.xIdx, zeros(T, S.ncol) )
   else
-    op = DiagNormalOp([normalOperator(S.ops[i], WeightingOp(T.(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)))
+    op = DiagNormalOp([normalOperator(S.ops[i], WeightingOp(T; weights=T.(weights[S.yIdx[i]:S.yIdx[i+1]-1].^2)))
                      for i in 1:length(S.ops)], size(S,2), S.xIdx, zeros(T, S.ncol) )
   end
 

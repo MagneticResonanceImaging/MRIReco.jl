@@ -1,4 +1,4 @@
-using MRIReco, MRISampling, MRISimulation
+using MRIReco, MRISampling, MRISimulation, FFTW
 using Test
 using LinearAlgebra
 using Random

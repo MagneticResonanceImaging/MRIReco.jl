@@ -130,7 +130,7 @@ function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
   # kdata = zeros(Complex{T}, size(nodes,2),nc,nz)
   kdata = [zeros(Complex{T},size(nodes,2),nc) for echo=1:1, slice=1:nz, rep=1:1]
   if verbose==true
-    p = Progress(nz*nc, 1, "Simulating data...")
+    p = Progress(nz*nc, dt=1, desc="Simulating data...")
   end
 
   @sync for z = 1:nz
@@ -195,7 +195,7 @@ function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
   # kdata = zeros(Complex{T}, size(nodes,2),nc)
   kdata = [zeros(Complex{T},size(nodes,2),nc) for echo=1:1, slice=1:1, rep=1:1]
   if verbose==true
-    p = Progress(nc, 1, "Simulating data...")
+    p = Progress(nc, dt=1, desc="Simulating data...")
   end
 
   E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
@@ -260,7 +260,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
   # compute echo amplitudes
   ampl = zeros(Complex{T}, nx, ny, nz, ne)
   if verbose
-    p = Progress(nx*ny*nz,1,"Compute echo amplitudes ")
+    p = Progress(nx*ny*nz, dt=1, desc="Compute echo amplitudes ")
   end
   for k = 1:nz
     for j=1:ny
@@ -275,7 +275,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
   out = Vector{Matrix{Complex{T}}}(undef,0)
 
   if verbose
-    p = Progress(numContrasts(seq), 1, "Simulating data...")
+    p = Progress(numContrasts(seq), dt=1, desc="Simulating data...")
   end
   # tr = [trajectory(seq,i) for i=1:numContrasts(seq)]
   for i = 1:ne

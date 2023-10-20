@@ -46,7 +46,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
       F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
     end
     for j = 1:numContr
-      W = WeightingOp(weights[j])
+      W = WeightingOp(Complex{T}; weights=weights[j])
       for i = 1:numChan
         kdata = kData(acqData,j,i,k,rep=l).* weights[j]
         EFull = ∘(W, F[j])#, isWeighting=true)
@@ -106,7 +106,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
   end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
-  W = WeightingOp( vcat(weights...) )
+  W = WeightingOp(Complex{T}; weights=vcat(weights...) )
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl, numRep)
@@ -129,14 +129,14 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
 
   if encDims==2
     # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl,numRep)
-    Ireco = permutedims(Ireco, [1,2,5,3,4,6])
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl,numRep)
+    Ireco_ = permutedims(Ireco_, [1,2,5,3,4,6])
   else
     # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan,numRep)
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan,numRep)
   end
 
-  return makeAxisArray(Ireco, acqData)
+  return makeAxisArray(Ireco_, acqData)
 end
 
 """
@@ -191,7 +191,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
     end
 
     for j = 1:numContr
-      W = WeightingOp(weights[j],numChan)
+      W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
       kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
       if !isnothing(L_inv)
         kdata = vec(reshape(kdata, :, numChan) * L_inv')
@@ -259,7 +259,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numContr)... )
 
-  W = WeightingOp( vcat(weights...), numChan )
+  W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl, numRep)
   @floop for l = 1:numRep, i = 1:numSl
@@ -284,14 +284,14 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
   if encDims==2
     # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numContr, numSl, 1, numRep)
-    Ireco = permutedims(Ireco, [1,2,4,3,5,6])
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], numContr, numSl, 1, numRep)
+    Ireco_ = permutedims(Ireco_, [1,2,4,3,5,6])
   else
     # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1, numRep)
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, 1, numRep)
   end
 
-  return makeAxisArray(Ireco, acqData)
+  return makeAxisArray(Ireco_, acqData)
 end
 
 
@@ -338,7 +338,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   end
   reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numBasis)... )
 
-  W = WeightingOp( vcat(weights...), numChan )
+  W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
   @floop for l = 1:numRep, i = 1:numSl
@@ -362,12 +362,12 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
 
   if encDims==2
     # 2d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], numBasis, numSl, 1, numRep)
-    Ireco = permutedims(Ireco, [1,2,4,3,5,6])
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], numBasis, numSl, 1, numRep)
+    Ireco_ = permutedims(Ireco_, [1,2,4,3,5,6])
   else
     # 3d reconstruction
-    Ireco = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numBasis, 1, numRep)
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numBasis, 1, numRep)
   end
 
-  return makeAxisArray(Ireco, acqData)
+  return makeAxisArray(Ireco_, acqData)
 end

@@ -37,7 +37,7 @@ struct CoilDescription
 end
 
 customParse(::Type{T}, node) where T = parse(T,content(node))
-customParse(::Type{String}, node) where T = content(node)
+customParse(::Type{String}, node) = content(node)
 function customParse(::Type{Vector{T}}, node) where T
   x = content(get_elements_by_tagname(node, "x")[1])
   y = content(get_elements_by_tagname(node, "y")[1])

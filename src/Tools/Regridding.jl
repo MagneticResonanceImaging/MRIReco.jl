@@ -19,12 +19,12 @@ function regrid(acqData::AcquisitionData{T,2}, kspaceSize::NTuple{2,Int64};
   numContr, numChan, numSl = numContrasts(acqData), numChannels(acqData), numSlices(acqData)
 
   kdata_cart = [zeros(Complex{T}, prod(kspaceSize), numChan) for j=1:numContr, k=1:numSl, rep=1:1]
-  F = T(sqrt(prod(kspaceSize)))*FFTOp(Complex{T}, kspaceSize)
+  F = T(sqrt(prod(kspaceSize)))*FFTOp(Complex{T}, shape=kspaceSize)
   img = zeros(Complex{T}, prod(kspaceSize))
   for k = 1:numSl
     E = encodingOps_simple(acqData, kspaceSize, slice=k, correctionMap=correctionMap)
     for j = 1:numContr
-      W = WeightingOp(dcf[j])
+      W = WeightingOp(Complex{T}; weights=dcf[j])
       solver = RegularizedLeastSquares.CGNR(W*E[j], iterations=cgnr_iter)
       for i = 1:numChan
         kdata = kData(acqData,j,i,k).* dcf[j]

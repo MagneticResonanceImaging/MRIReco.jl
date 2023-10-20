@@ -1,5 +1,5 @@
-using Test, MRIBase, MRIOperators, MRISimulation
-using LinearAlgebra, SparsityOperators
+using Test, MRIBase, MRIOperators, MRISimulation, NFFT.FFTW
+using LinearAlgebra, LinearOperatorCollection
 
 
 include("testOperators.jl")
