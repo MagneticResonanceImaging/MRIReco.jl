@@ -4,10 +4,9 @@ function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"
   params[:sparseTrafoName] = "Wavelet"
-  params[:regularization] = "L1"
-  params[:λ] = 0.0
+  params[:reg] = L1Regularization(0.0)
   params[:normalizeReg] = NoNormalization()
-  params[:solver] = "admm"
+  params[:solver] = ADMM
   params[:ρ] = 5.e-2
   params[:iterations] = 30
 
@@ -61,9 +60,9 @@ builds relevant parameters and operators from the entries in `recoParams`
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `reg::Regularization`                 - Regularization to be used
+* `reg::AbstractRegularization`                 - Regularization to be used
 * `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * `correctionMap::Array{Complex{<:AbstractFloat}}`    - fieldmap for the correction of off-resonance effects
 * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
@@ -105,9 +104,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   end
 
   # bare regularization (without sparsifying transform)
-  regName = get(recoParams, :regularization, "L1")
-  λ = T(get(recoParams,:λ,0.0))
-  reg = Regularization(regName, λ; shape=reconSize, recoParams...)
+  reg = get(recoParams,:reg,L1Regularization(zero(T)))
   reg = vec(reg)
 
   # normalize regularizer ?
@@ -116,7 +113,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   encOps = get(recoParams, :encodingOps, nothing)
 
   # solvername
-  solvername = get(recoParams, :solver, "fista")
+  solver = get(recoParams, :solver, FISTA)
 
   # sensitivity maps
   senseMaps = get(recoParams, :senseMaps, Complex{T}[])
@@ -142,7 +139,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   recoParams[:reg] = reg
   recoParams[:normalize] = normalize 
   recoParams[:encOps] = encOps
-  recoParams[:solvername] = solvername
+  recoParams[:solver] = solver
   recoParams[:senseMaps] = senseMaps
   return recoParams
 end

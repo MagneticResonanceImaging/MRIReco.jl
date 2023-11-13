@@ -10,7 +10,7 @@ contrasts and slices
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -19,7 +19,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
-                              , solvername::String
+                              , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
                               , params...) where {D, T <: AbstractFloat}
 
@@ -52,9 +52,9 @@ function reconstruction_simple( acqData::AcquisitionData{T}
         kdata = kData(acqData,j,i,k,rep=l).* weights[j]
         EFull = ∘(W, F[j])#, isWeighting=true)
         EFullᴴEFull = normalOperator(EFull)
-        solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
-        I = solve(solver, kdata, startVector=get(params,:startVector,Complex{T}[]),
+        I = solve(solv, kdata, startVector=get(params,:startVector,Complex{T}[]),
                               solverInfo=get(params,:solverInfo,nothing))
 
         if isCircular( trajectory(acqData, j) )
@@ -79,7 +79,7 @@ are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -88,7 +88,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
-                              , solvername::String
+                              , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
                               , params...) where {D , T <: AbstractFloat}
 
@@ -122,9 +122,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
       kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
       EFull = ∘(W, F)#, isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)
-      solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+      solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
-      Ireco[:,j,i,l] = solve(solver,kdata; params...)
+      Ireco[:,j,i,l] = solve(solv,kdata; params...)
       # TODO circular shutter
     end
   end
@@ -152,7 +152,7 @@ are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
@@ -163,7 +163,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
-                              , solvername::String
+                              , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
                               , encodingOps=nothing
                               , params...) where {D , T}
@@ -202,8 +202,8 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
       EFull = ∘(W, E[j], isWeighting=true)
       EFullᴴEFull = normalOperator(EFull)
-      solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
-      I = solve(solver, kdata; params...)
+      solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+      I = solve(solv, kdata; params...)
 
       if isCircular( trajectory(acqData, j) )
         circularShutter!(reshape(I, reconSize), 1.0)
@@ -228,7 +228,7 @@ Different slices are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
@@ -239,7 +239,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
-                              , solvername::String
+                              , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
                               , encodingOps=nothing
                               , params...) where {D, T}
@@ -279,9 +279,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull)
-    solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
-    Ireco[:,i,l] = solve(solver, kdata; params...)
+    Ireco[:,i,l] = solve(solv, kdata; params...)
   end
 
 
@@ -309,7 +309,7 @@ Different slices are reconstructed independently.
 * `reg::Regularization`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
@@ -319,9 +319,8 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
-                              , solvername::String
+                              , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
-                              , normalize::Bool=false
                               , encodingOps=nothing
                               , params...) where {D, T}
 
@@ -358,9 +357,9 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull)
-    solver = createLinearSolver(solvername, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
-    Ireco[:,i,l] = solve(solver, kdata; params...)
+    Ireco[:,i,l] = solve(solv, kdata; params...)
   end
 
 
