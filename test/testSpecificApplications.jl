@@ -120,10 +120,9 @@ function testSubspace(N=32)
     params[:reconSize] = (N,N)
     params[:reco] = "multiCoilMultiEcho"
     #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
-    params[:regularization] = "L2"
-    params[:λ] = 1.e-3
+    params[:reg] = L2Regularization(1.e-3)
     params[:iterations] = 1
-    params[:solver] = "cgnr"
+    params[:solver] = CGNR
     params[:senseMaps] = reshape(coilsens,N,N,1,8)
 
     x_approx= reconstruction(acqData,params)
@@ -151,10 +150,9 @@ function testSubspace(N=32)
     params[:reconSize] = (N,N)
     params[:reco] = "multiCoilMultiEchoSubspace"
     #params[:sparseTrafo] = "nothing" #"nothing" #sparse trafo
-    params[:regularization] = "L2"
-    params[:λ] = 1.e-3
+    params[:reg] = L2Regularization(1.e-3)
     params[:iterations] = 1
-    params[:solver] = "cgnr"
+    params[:solver] = CGNR
     params[:senseMaps] = reshape(coilsens,N,N,1,8)
     params[:basis] = basis
 
