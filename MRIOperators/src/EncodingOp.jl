@@ -90,7 +90,8 @@ function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTu
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
   S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
-  return DiagOp(repeat(ft, outer=numChan)...) ∘ S
+  ops2 = [copy(ft[n]) for j=1:numChan,n=eachindex(ft)]
+  return DiagOp(ops2...) ∘ S
 end
 
 ###################################
@@ -120,11 +121,11 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
   #  TODO: sampling operator in case of undersampled cartesian acquisitions
   # vectorize sampling pattern
   if get(params,:sampling, nothing) == "binary"
-    M = SamplingOp(Array{Bool}(acqData.subsampleIndices))
+    M = SamplingOp(ComplexF64, pattern=Array{Bool}(acqData.subsampleIndices))
   else
     # sampling idx for all contrasts but one coil
     subIdx = hcat(acqData.subsampleIndices...)
-    M = SamplingOp( hcat([subIdx for c=1:numChan]...), (N, numContr, numChan))
+    M = SamplingOp(ComplexF64, pattern=hcat([subIdx for c=1:numChan]...), shape=(N, numContr, numChan))
   end
 
   return M ∘ (Φ ∘ E)
@@ -155,13 +156,13 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
     elseif isCartesian(tr)
       @debug "FFTOp"
       if !MRIBase.isUndersampledCartTrajectory(shape,tr)
-        ftOp = FFTOp(Complex{T}, shape; unitary=false)
+        ftOp = FFTOp(Complex{T}; shape, unitary=false)
       else
         idx = MRIBase.cartesianSubsamplingIdx(shape,tr)
-        ftOp = SamplingOp(idx,shape) ∘ FFTOp(Complex{T}, shape; unitary=false)
+        ftOp = SamplingOp(Complex{T}; pattern=idx, shape) ∘ FFTOp(Complex{T}; shape, unitary=false)
       end
     else
-      ftOp = NFFTOp(shape, tr; kargs...)
+      ftOp = NFFTOp(tr; shape, kargs...)
     end
   else
     @error "opName $(opName) is not known"
@@ -170,7 +171,7 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   # subsampling
   if !isempty(subsampleIdx) && (subsampleIdx != collect(1:size(tr,2))) && isCartesian(tr)
     β = (D==2) ? (tr.numSamplingPerProfile, tr.numProfiles) : (tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-    S = SamplingOp(subsampleIdx, β, Complex{T})
+    S = SamplingOp(Complex{T}; pattern = subsampleIdx, shape=β)
     return S ∘ ftOp
   else
     return ftOp

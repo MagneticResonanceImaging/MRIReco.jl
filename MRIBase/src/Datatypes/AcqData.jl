@@ -1,7 +1,7 @@
 export AcquisitionData, kData, kDataCart, kdataSingleSlice, convertUndersampledData,
        changeEncodingSize2D, convert3dTo2d, samplingDensity,
        numContrasts, numChannels, numSlices, numRepetitions,
-       encodingSize, fieldOfView, multiCoilData
+       encodingSize, fieldOfView, multiCoilData, multiCoilMultiEchoData, multiEchoData
 
 """
 struct describing MRI acquisition data.
@@ -112,8 +112,9 @@ function AcquisitionData(kspace::Array{Complex{T},6}) where T
         tr = MRIBase.CartesianTrajectory3D(T, sy, sx, numSlices=sz, TE=T(0), AQ=T(0))
     end
 
-    kdata = [reshape(kspace,:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
-    acq = AcquisitionData(tr, kdata)
+    kdata = [reshape(kspace[:,:,:,:,i,k],:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+    traj = [tr for i=1:nEchos]
+    acq = AcquisitionData(traj, kdata, encodingSize=ntuple(d->0, ndims(tr)))
 
     acq.encodingSize = ndims(tr) == 3 ? (sx,sy,sz) : (sx,sy)
 
@@ -185,7 +186,7 @@ end
 returns the k-space contained in `acqData` for all echoes and given `coil`, `slice` and `rep`(etition).
 """
 function multiEchoData(acqData::AcquisitionData{T}, coil::Int64, slice::Int64;rep::Int64=1) where T
-  kdata = T[]
+  kdata = Complex{T}[]
   for echo=1:numContrasts(acqData)
     append!(kdata,acqData.kdata[echo,slice,rep][:,coil])
   end
@@ -208,10 +209,8 @@ returns the k-space contained in `acqData` for all coils, echoes and given `slic
 """
 function multiCoilMultiEchoData(acqData::AcquisitionData{T},slice::Int64;rep=1) where T
   kdata = Complex{T}[]
-  for coil=1:numChannels(acqData)
-    for echo=1:numContrasts(acqData)
-      append!(kdata, acqData.kdata[echo,slice,rep][:,coil])
-    end
+  for echo=1:numContrasts(acqData)
+      append!(kdata, vec(acqData.kdata[echo,slice,rep]))
   end
   return kdata
 end
@@ -286,7 +285,7 @@ function samplingDensity(acqData::AcquisitionData{T}, shape::Tuple) where T
       weights[echo] = [1.0/sqrt(prod(shape)) for node=1:size(nodes,2)]
     else
       nodes = kspaceNodes(tr)
-      plan = plan_nfft(nodes, shape, m=2, σ=2)
+      plan = plan_nfft(Float64.(nodes), shape, m=2, σ=2)
       weights[echo] = sqrt.(sdc(plan, iters=10))
     end
 

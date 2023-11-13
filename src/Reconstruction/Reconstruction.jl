@@ -49,6 +49,8 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
         return reconstruction_multiCoil(acqData; recoParams...)
     elseif recoParams[:reco] == "multiCoilMultiEcho"
         return reconstruction_multiCoilMultiEcho(acqData; recoParams...)
+    elseif recoParams[:reco] == "multiCoilMultiEchoSubspace"
+      return reconstruction_multiCoilMultiEcho_subspace(acqData, reconSize[1:encodingDims], reg, sparseTrafo, weights, solvername, senseMaps, normalize, encOps, recoParams)
     else
         @error "reco model $(recoParams[:reco]) not found"
     end

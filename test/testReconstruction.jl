@@ -436,7 +436,55 @@ function testOffresonanceSENSEReco(N = 64)
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1.6e-1
 end
 
-function testDirectRecoMultiEcho(N=32)
+function testSenseMultiEcho(N=32,T = ComplexF32)
+  # image
+  x = T.(shepp_logan(N))
+  rmap = 20.0*ones(N,N)
+
+  coilsens = T.(birdcageSensitivity(N, 8, 1.5))
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:r2map] = rmap
+  params[:T_echo] = [2.e-2, 4.e-2]
+  params[:seqName] = "ME"
+  params[:refocusingAngles] = Float64[pi,pi]
+  params[:senseMaps] = coilsens
+
+  acqData = simulation( real(x), params )
+
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiCoil"
+  params[:regularization] = "L2"
+  params[:λ] = 1.e-3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+  params[:senseMaps] = reshape(coilsens,N,N,1,8)
+
+  x_approx = reshape(reconstruction(acqData,params),N,N,:)
+
+  # Reco multiCoilMultiEcho
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiCoilMultiEcho"
+  params[:regularization] = "L2"
+  params[:λ] = 1.e-3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+  params[:senseMaps] = reshape(coilsens,N,N,1,8)
+
+  x_approx2= reshape(reconstruction(acqData,params),N,N,:)
+
+  relErrorEcho1 = norm(x_approx - x_approx2)/norm(x_approx)
+  @test relErrorEcho1 < 1e-6
+end
+
+function testRecoMultiEcho(N=32)
   # image
   x = ComplexF64.(shepp_logan(N))
   rmap = 20.0*ones(N,N)
@@ -463,6 +511,20 @@ function testDirectRecoMultiEcho(N=32)
   @test relErrorEcho1 < 1e-3
   relErrorEcho2 = norm(exp(-20.0*4.e-2)*x - x_approx[:,:,2])/norm(exp(-20.0*4.e-2)*x)
   @test relErrorEcho2 < 1e-3
+
+  # Reco multiEcho
+  params = Dict{Symbol, Any}()
+  params[:reconSize] = (N,N)
+  params[:reco] = "multiEcho"
+  params[:regularization] = "L2"
+  params[:λ] = 1.e-3
+  params[:iterations] = 1
+  params[:solver] = "cgnr"
+
+  x_approx2 = reshape(reconstruction(acqData,params),N,N,:)
+
+  relErrorEcho3 = norm(x_approx - x_approx2)/norm(x_approx)
+  @test relErrorEcho3 < 1e-3
 end
 
 function testCSReco3d(N=128)
@@ -583,33 +645,51 @@ function testRegridding(N=64)
 end
 
 function testReco(N=32)
-  @testset "Reconstructions" begin
-    testGriddingReco()
-    testConvertKspace()
-    testConvertKspace3D()
-    testGriddingReco3d()
-    sampling = ["random", "poisson", "vdPoisson"] # "lines"
-    for samp in sampling
-      testCSReco(sampling=samp)
+    @testset "Reconstructions" begin
+        @testset "MultiEcho" begin
+            testRecoMultiEcho()
+            testSenseMultiEcho(N)
+        end
+
+        @testset "Convert k-space" begin
+            testConvertKspace()
+            testConvertKspace3D()
+        end
+
+        @testset "Gridding" begin
+            testGriddingReco()
+            testGriddingReco3d()
+            testRegridding()
+        end
+
+        @testset "CS" begin
+            sampling = ["random", "poisson", "vdPoisson"] # "lines"
+            for samp in sampling
+                testCSReco(sampling=samp)
+            end
+            testCSRecoMultCoil(type = ComplexF64)
+            testCSRecoMultCoil(type = ComplexF32)
+            testCSSenseReco()
+            testCSReco3d()
+            testCSSenseReco3d()
+            testCSRecoMultiCoilCGNR(type = ComplexF64)
+            testCSRecoMultiCoilCGNR(type = ComplexF32)
+        end
+
+        @testset "off-resonance" begin
+            accelMethods = ["nfft", "hist", "leastsquare"]
+            for a in accelMethods
+                !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
+                !Sys.iswindows() && testOffresonanceSENSEReco()
+            end
+        end
+
+        @testset "SENSE" begin
+            testSENSEReco(64, ComplexF32)
+            testSENSEReco(64, ComplexF64)
+            testSENSEnoiseUnCorr(64, ComplexF64)
+        end
     end
-    testCSRecoMultCoil(type = ComplexF64)
-    testCSRecoMultCoil(type = ComplexF32)
-    testCSSenseReco()
-    testCSReco3d()
-    testCSSenseReco3d()
-    accelMethods = ["nfft", "hist", "leastsquare"]
-    for a in accelMethods
-      !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
-    end
-    testSENSEReco(64, ComplexF32)
-    testSENSEReco(64, ComplexF64)
-    testSENSEnoiseUnCorr(64, ComplexF64)
-    testCSRecoMultiCoilCGNR(type = ComplexF64)
-    testCSRecoMultiCoilCGNR(type = ComplexF32)
-    !Sys.iswindows() && testOffresonanceSENSEReco()
-    testDirectRecoMultiEcho()
-    testRegridding()
-  end
 end
 
 testReco()

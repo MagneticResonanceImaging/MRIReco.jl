@@ -1,7 +1,7 @@
 name = "MRIFiles"
 uuid = "5a6f062f-bf45-497d-b654-ad17aae2a530"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.6"
+version = "0.2.0"
 
 [deps]
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
@@ -14,12 +14,11 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
 julia = "1.6"
-MRIBase = "0.3"
+MRIBase = "0.3, 0.4"
 FileIO = "1.2"
-HDF5 = "0.16"
+HDF5 = "0.16, 0.17"
 LightXML = "0.9"
 Reexport = "1"
-MRIReco = "0.7"
 ImageUtils = "0.2.5"
 
 [extras]
@@ -27,10 +26,11 @@ LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 MRIReco = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+MRICoilSensitivities = "c57eb701-aafc-44a2-a53c-128049758959"
 ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
 
 [targets]
-test = ["Test", "LazyArtifacts", "Scratch", "MRIReco", "ImageUtils"]
+test = ["Test", "LazyArtifacts", "Scratch", "MRIReco", "ImageUtils","MRICoilSensitivities"]
 
 
 

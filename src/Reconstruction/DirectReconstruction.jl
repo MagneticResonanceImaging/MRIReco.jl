@@ -1,5 +1,3 @@
-export reconstruction_direct_2d, reconstruction_direct_3d
-
 """
     reconstruction_direct(acqData::AcquisitionData, reconSize::NTuple{D,Int64}, weights::Vector{Vector{Complex{<:AbstractFloat}}}, correctionMap::Array{Complex{<:AbstractFloat}}=Complex{<:AbstractFloat}[])
 
@@ -25,7 +23,7 @@ function reconstruction_direct(acqData::AcquisitionData{T}
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
 
-  p = Progress(numSl*numChan*numContr*numRep, 1, "Direct Reconstruction...")
+  p = Progress(numSl*numChan*numContr*numRep, dt=1, desc="Direct Reconstruction...")
 
   for i = 1:numSl
     F = encodingOps_simple(acqData, reconSize, slice=i, correctionMap=correctionMap)

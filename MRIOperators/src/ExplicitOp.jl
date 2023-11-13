@@ -154,7 +154,7 @@ function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
   return vec(out)
 end
 
-function adjoint(op::ExplicitOp{T}) where T
+function Base.adjoint(op::ExplicitOp{T}) where T
   return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
                         op.ctprod!, nothing, op.prod!)
 end

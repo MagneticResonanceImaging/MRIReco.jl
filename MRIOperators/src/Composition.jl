@@ -126,7 +126,7 @@ function CompositeNormalOp(opOuter, normalOpInner, tmp::Vector{T}) where T
 end
 
 
-function SparsityOperators.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
+function LinearOperatorCollection.normalOperator(S::CompositeOp, W=opEye(eltype(S),size(S,1)))
   T = promote_type(eltype(S.A), eltype(S.B), eltype(W))
   if S.isWeighting #&& typeof(W) <: opEye
     # In this case we are converting the left argument into a 

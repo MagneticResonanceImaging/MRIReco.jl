@@ -14,7 +14,7 @@ function testFT(N=16)
 
   # Operators
   tr = CartesianTrajectory(Float64,N,N)
-  F_nfft = NFFTOp((N,N),tr,symmetrize=false)
+  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false)
   F_exp = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N),symmetrize=false)
 
   # test agains FourierOperators
@@ -34,14 +34,14 @@ function testFT(N=16)
 
   # test AHA w/o Toeplitz
   F_nfft.toeplitz = false
-  AHA = SparsityOperators.normalOperator(F_nfft)
+  AHA = LinearOperatorCollection.normalOperator(F_nfft)
   y_AHA_nfft = AHA * vec(x)
   y_AHA = F' * F * vec(x)
   @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 
   # test AHA with Toeplitz
   F_nfft.toeplitz = true
-  AHA = SparsityOperators.normalOperator(F_nfft)
+  AHA = LinearOperatorCollection.normalOperator(F_nfft)
   y_AHA_nfft = AHA * vec(x)
   y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
   y_AHA = F' * F * vec(x)
@@ -50,7 +50,7 @@ function testFT(N=16)
   # test type stability;
   # TODO: Ensure type stability for Trajectory objects and test here
   nodes = Float32.(tr.nodes)
-  F_nfft = NFFTOp((N,N),nodes,symmetrize=false)
+  F_nfft = NFFTOp(ComplexF32; shape=(N,N), nodes,symmetrize=false)
 
   y_nfft = F_nfft * vec(ComplexF32.(x))
   y_adj_nfft = adjoint(F_nfft) * vec(ComplexF32.(x))
@@ -73,7 +73,7 @@ function testFT3d(N=12)
 
   # Operators
   tr = CartesianTrajectory3D(Float64,N,N,numSlices=N)
-  F_nfft = NFFTOp((N,N,N),tr,symmetrize=false)
+  F_nfft = NFFTOp(tr; shape=(N,N,N), symmetrize=false)
   F_exp = ExplicitOp((N,N,N),tr,zeros(ComplexF64,N,N,N),symmetrize=false)
 
   # test agains FourierOperators
@@ -93,14 +93,14 @@ function testFT3d(N=12)
 
   # test AHA w/o Toeplitz
   F_nfft.toeplitz = false
-  AHA = SparsityOperators.normalOperator(F_nfft)
+  AHA = LinearOperatorCollection.normalOperator(F_nfft)
   y_AHA_nfft = AHA * vec(x)
   y_AHA = F' * F * vec(x)
   @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 
   # test AHA with Toeplitz
   F_nfft.toeplitz = true
-  AHA = SparsityOperators.normalOperator(F_nfft)
+  AHA = LinearOperatorCollection.normalOperator(F_nfft)
   y_AHA_nfft = AHA * vec(x)
   y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
   y_AHA = F' * F * vec(x)
@@ -187,7 +187,7 @@ function testCopySizes(N=16)
 
   # Operators
 
-  F_nfft = NFFTOp((N,N),tr,symmetrize=false)
+  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false)
   F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false)
 
   # Copy the FieldmapNFFTOp operator and change the plans field of the new operator to empty 
