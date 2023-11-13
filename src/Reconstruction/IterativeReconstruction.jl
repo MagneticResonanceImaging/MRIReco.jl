@@ -34,7 +34,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   # set sparse trafo in reg
   if !isnothing(sparseTrafo)
-    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
   end
 
   # reconstruction
@@ -101,10 +101,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
-  if !isnothing(sparseTrafo)
-    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
   end
+  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
+  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
   
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...) )
@@ -180,7 +181,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
   # set sparse trafo in reg
   if !isnothing(sparseTrafo)
-    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
   end
 
   # solve optimization problem
@@ -255,10 +256,11 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
-  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
-  if !isnothing(sparseTrafo)
-    reg = map(r -> SparseRegularization(r, sparseTrafo), reg)
+  if isnothing(sparseTrafo)
+    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
   end
+  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
+  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
@@ -313,15 +315,15 @@ Different slices are reconstructed independently.
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
 function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
-                              , reconSize::NTuple{D,Int64}
-                              , reg::Vector{Regularization}
+                              ; reconSize::NTuple{D,Int64}
+                              , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
                               , weights::Vector{Vector{Complex{T}}}
                               , solvername::String
                               , senseMaps::Array{Complex{T}}
                               , normalize::Bool=false
                               , encodingOps=nothing
-                              , params::Dict{Symbol,Any}=Dict{Symbol,Any}()) where {D, T}
+                              , params...) where {D, T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -337,7 +339,8 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   if isnothing(sparseTrafo)
     sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
   end
-  reg[1].params[:sparseTrafo] = DiagOp( repeat([sparseTrafo],numBasis)... )
+  sparseTrafo = DiagOp( repeat([sparseTrafo],numBasis)... )
+  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
