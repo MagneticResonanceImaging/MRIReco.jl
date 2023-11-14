@@ -7,7 +7,7 @@ contrasts and slices
 # Arguments
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `reg::Regularization`                 - Regularization to be used
+* `reg::Vector{<:AbstractRegularization}`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
@@ -76,7 +76,7 @@ are reconstructed independently.
 # Arguments
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `reg::Regularization`                 - Regularization to be used
+* `reg::Vector{<:AbstractRegularization}`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
@@ -148,7 +148,7 @@ are reconstructed independently.
 # Arguments
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `reg::Regularization`                 - Regularization to be used
+* `reg::Vector{<:AbstractRegularization}`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
@@ -225,7 +225,7 @@ Different slices are reconstructed independently.
 # Arguments
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `reg::Regularization`                 - Regularization to be used
+* `reg::Vector{<:AbstractRegularization}`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
@@ -306,7 +306,7 @@ Different slices are reconstructed independently.
 # Arguments
 * `acqData::AcquisitionData`            - AcquisitionData object
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
-* `reg::Regularization`                 - Regularization to be used
+* `reg::Vector{<:AbstractRegularization}`                 - Regularization to be used
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use

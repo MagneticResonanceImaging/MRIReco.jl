@@ -29,9 +29,9 @@ using PrecompileTools
       params = Dict{Symbol, Any}()
       params[:reco] = "multiCoil" #"standard"
       params[:reconSize] = (N,N)
-      params[:regularization] = "L2"
+      params[:reg] = L2Regularization(0.0)
       params[:iterations] = 2
-      params[:solver] = "cgnr"
+      params[:solver] = CGNR
       params[:senseMaps] = coilsens
       
 

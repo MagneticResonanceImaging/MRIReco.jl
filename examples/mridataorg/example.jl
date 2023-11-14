@@ -3,14 +3,14 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
+for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities", "RegularizedLeastSquares"]
   !isinstalled(P) && Pkg.add(P)
 end
 
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities
+using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, RegularizedLeastSquares
 
 ##################
 ## Data Loading ##
@@ -45,10 +45,9 @@ smaps = espirit(acqData2d, (6,6), 30, eigThresh_1=0.04, eigThresh_2=0.98)
 params = Dict{Symbol, Any}()
 params[:reco] = "multiCoil"
 params[:reconSize] = Tuple(acqData2d.encodingSize[1:2])
-params[:solver] = "admm"
-params[:regularization] = "L1"
+params[:solver] = ADMM
+params[:reg] = L1Regularization(2.e-1)
 params[:sparseTrafo] = "Wavelet"
-params[:λ] = 2.e-1
 params[:iterations] = 30
 params[:ρ] = 0.1
 params[:absTol] = 1.e-4

@@ -52,9 +52,8 @@ params[:reco] = "multiCoil"
 params[:reconSize] = (320,320)
 params[:senseMaps] = smaps
 
-params[:solver] = "cgnr"
-params[:regularization] = "L2"
-params[:λ] = 1.e-4
+params[:solver] = CGNR
+params[:reg] = L2Regularization(1.e-4)
 params[:iterations] = 5
 params[:normalizeReg] = true
 
@@ -69,9 +68,8 @@ params[:reco] = "multiCoil"
 params[:reconSize] = (320,320)
 params[:senseMaps] = smaps
 
-params[:solver] = "admm"
-params[:regularization] = "TV"
-params[:λ] = 1.e-1 # 5.e-2
+params[:solver] = ADMM
+params[:reg] = TVRegularization(1.e-1)
 params[:iterations] = 50
 params[:ρ] = 0.1
 params[:absTol] = 1.e-4

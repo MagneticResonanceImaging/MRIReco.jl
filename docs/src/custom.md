@@ -85,11 +85,10 @@ params = Dict{Symbol,Any}()
 params[:reco] = "standard"
 params[:reconSize] = (nx,ny)
 params[:iterations] = 50
-params[:λ] = 2.e-2
-params[:regularization] = "L1"
+params[:reg] = L1Regularization(2.e-2)
 params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2.e-2)
 params[:ρ] = 0.1
-params[:solver] = "admm"
+params[:solver] = ADMM
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
 

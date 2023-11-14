@@ -12,6 +12,7 @@ using ImageUtils: shepp_logan
 using LinearAlgebra
 using  Random
 using MRIReco, MRISimulation, MRICoilSensitivities, MRISampling,MRIOperators
+using RegularizedLeastSquares
 color=Makie.wong_colors() # color for plots
 
 N = 128
@@ -86,10 +87,9 @@ acqData_u2 = AcquisitionData(kspace);
 params = Dict{Symbol,Any}()
 params[:reconSize] = (N, N)
 params[:reco] = "multiCoilMultiEcho"
-params[:regularization] = "L2"
-params[:λ] = 1.e-3
+params[:reg] = L2Regularization(1.e-3)
 params[:iterations] = 1
-params[:solver] = "cgnr"
+params[:solver] = CGNR
 params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
 
 im_x = reconstruction(acqData, params).data # fully reconstruction
@@ -192,10 +192,9 @@ params = Dict{Symbol,Any}()
 params[:reconSize] = (N, N)
 params[:reco] = "multiCoilMultiEchoSubspace"
 
-params[:regularization] = "L1"
+params[:reg] = L1Regularization(0.001)
 params[:sparseTrafo] = "Wavelet" #sparse trafo
-params[:λ] = 0.001
-params[:solver] = "admm"
+params[:solver] = ADMM
 params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
 params[:basis] = basis
 
