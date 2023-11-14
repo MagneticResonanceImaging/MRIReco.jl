@@ -1,4 +1,5 @@
 using MRIReco, MRISampling, MRISimulation, FFTW
+using RegularizedLeastSquares
 using Test
 using LinearAlgebra
 using Random
