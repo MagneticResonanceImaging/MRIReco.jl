@@ -50,18 +50,17 @@ jobs:
           Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
-          Pkg.add("RegularizedLeastSquares")
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - name: Run subpackage tests
         shell: bash
         run: |
-          julia --project="MRIBase" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
-          julia --project="MRIFiles" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
-          julia --project="MRISampling" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
-          julia --project="MRISimulation" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
-          julia --project="MRIOperators" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
-          julia --project="MRICoilSensitivities" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.update(); Pkg.test()"
+          julia --project="MRIBase" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
+          julia --project="MRIFiles" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
+          julia --project="MRISampling" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
+          julia --project="MRISimulation" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
+          julia --project="MRIOperators" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
+          julia --project="MRICoilSensitivities" -e "using Pkg; Pkg.develop(PackageSpec(path=\".\")); Pkg.add("RegularizedLeastSquares"); Pkg.update(); Pkg.test()"
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v3
         with:
