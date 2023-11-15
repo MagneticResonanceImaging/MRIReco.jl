@@ -50,6 +50,7 @@ jobs:
           Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
+          Pkg.add("RegularizedLeastSquares")
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - name: Run subpackage tests
@@ -83,6 +84,7 @@ jobs:
           Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
+          Pkg.add("RegularizedLeastSquares")
       - run: |
           julia --project=docs -e '
             using Pkg
