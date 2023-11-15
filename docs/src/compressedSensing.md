@@ -69,7 +69,7 @@ params[:reconSize] = (320,320)
 params[:senseMaps] = smaps
 
 params[:solver] = ADMM
-params[:reg] = TVRegularization(1.e-1)
+params[:reg] = TVRegularization(1.e-1, shape = (320, 320))
 params[:iterations] = 50
 params[:ρ] = 0.1
 params[:absTol] = 1.e-4

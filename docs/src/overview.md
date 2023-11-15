@@ -11,7 +11,7 @@ following graph, the most important (not all) dependencies of MRIReco are visual
 
 Most importantly, all iterative solvers are implemented in RegularizedLeastSquares.jl
 so that MRIReco can benefit from all improvements made in that package. Gridding
-is implemented in the NFFT.jl package, which has many applications byond MRI.
+is implemented in the NFFT.jl package, which has many applications beyond MRI.
 Sparsifying transformations are usually also not MRI specific and therefore implemented
 in independent packages (e.g. Wavelets.jl). For storing image data MRIReco.jl uses
 NiFTI.jl. Dicom data can potentially be saved by the DICOM.jl package, which, however,
