@@ -93,19 +93,30 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     end
   end
 
-  # sparsifying transform
-  if haskey(recoParams,:sparseTrafo) && typeof(recoParams[:sparseTrafo]) != String
-    sparseTrafo = recoParams[:sparseTrafo]
-  elseif haskey(recoParams,:sparseTrafo)
-    sparseTrafoName = get(recoParams, :sparseTrafo, "nothing")
-    sparseTrafo = SparseOp(Complex{T},sparseTrafoName, reconSize; recoParams...)
-  else
-    sparseTrafo=nothing
-  end
-
   # bare regularization (without sparsifying transform)
   reg = get(recoParams,:reg,L1Regularization(zero(T)))
   reg = vec(reg)
+
+  # sparsifying transform
+  if haskey(recoParams, :sparseTrafo)
+    sparseTrafos = recoParams[:sparseTrafo]
+    if !(typeof(sparseTrafos) <: Vector)
+      sparseTrafos = [sparseTrafos]
+    end
+
+    # Construct SparseOp for each string instance
+    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; recoParams...) : x, sparseTrafos)
+
+    # Fill up SparseOps for remaining reg terms with nothing
+    temp = Union{Nothing, eltype(sparseTrafos)}[nothing for i = 1:length(reg)]
+    for (i,sparseTrafo) in enumerate(sparseTrafos)
+      temp[i] = sparseTrafo
+    end
+
+    sparseTrafo = identity.(temp)
+  else
+    sparseTrafo = fill(nothing, length(reg))
+  end
 
   # normalize regularizer ?
   normalize = get(recoParams, :normalizeReg, NoNormalization())

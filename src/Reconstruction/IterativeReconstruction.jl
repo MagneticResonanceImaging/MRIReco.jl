@@ -33,9 +33,16 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  if !isnothing(sparseTrafo)
-    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  temp = []
+  for (i,r) in enumerate(reg)
+    trafo = sparseTrafo[i]
+    if !isnothing(trafo)
+      push!(temp, TransformedRegularization(r, trafo))
+    else
+      push!(temp, r)
+    end
   end
+  reg = identity.(temp)
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
@@ -101,12 +108,16 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  if isnothing(sparseTrafo)
-    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  temp = []
+  for (i,r) in enumerate(reg)
+    trafo = sparseTrafo[i]
+    if isnothing(trafo)
+      trafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+    end
+    trafo = DiagOp( repeat([trafo],numContr)... )
+    push!(temp, TransformedRegularization(r, trafo))
   end
-  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
-  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
-  
+  reg = identity.(temp)
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...) )
 
@@ -180,9 +191,17 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
-  if !isnothing(sparseTrafo)
-    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  temp = []
+  for (i,r) in enumerate(reg)
+    trafo = sparseTrafo[i]
+    if !isnothing(trafo)
+      push!(temp, TransformedRegularization(r, trafo))
+    else
+      push!(temp, r)
+    end
   end
+  reg = identity.(temp)
+
 
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
@@ -257,11 +276,16 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
 
   # set sparse trafo in reg
-  if isnothing(sparseTrafo)
-    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  temp = []
+  for (i,r) in enumerate(reg)
+    trafo = sparseTrafo[i]
+    if isnothing(trafo)
+      trafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+    end
+    trafo = DiagOp( repeat([trafo],numContr)... )
+    push!(temp, TransformedRegularization(r, trafo))
   end
-  sparseTrafo = DiagOp( repeat([sparseTrafo],numContr)... )
-  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  reg = identity.(temp)
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
@@ -336,11 +360,16 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   encParams = getEncodingOperatorParams(;params...)
 
   # set sparse trafo in reg
-  if isnothing(sparseTrafo)
-    sparseTrafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+  temp = []
+  for (i,r) in enumerate(reg)
+    trafo = sparseTrafo[i]
+    if isnothing(trafo)
+      trafo = SparseOp(Complex{T},"nothing", reconSize; params...)
+    end
+    trafo = DiagOp( repeat([trafo],numContr)... )
+    push!(temp, TransformedRegularization(r, trafo))
   end
-  sparseTrafo = DiagOp( repeat([sparseTrafo],numBasis)... )
-  reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  reg = identity.(temp)
 
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
