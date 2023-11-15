@@ -1,4 +1,4 @@
-using Wavelets, DelimitedFiles, LinearAlgebra, PyPlot, MRIReco, RegularizedLeastSquares
+using Wavelets, DelimitedFiles, LinearAlgebra, PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
 
 function analyzeImage(x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64};t0::Int64=size(D,2),tol=1e-3) where T
   nx,ny = xsize

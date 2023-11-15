@@ -12,7 +12,7 @@ using ImageUtils: shepp_logan
 using LinearAlgebra
 using  Random
 using MRIReco, MRISimulation, MRICoilSensitivities, MRISampling,MRIOperators
-using RegularizedLeastSquares
+using MRIReco.RegularizedLeastSquares
 color=Makie.wong_colors() # color for plots
 
 N = 128

@@ -1,4 +1,4 @@
-using PyPlot, MRIReco, RegularizedLeastSquares
+using PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
 
 # load fully sampled data
 f = ISMRMRDFile(@__DIR__()*"/data/knee_3dFSE_slice170.h5")

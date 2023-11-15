@@ -1,4 +1,4 @@
-using MRIReco, FFTW, LinearAlgebra, BenchmarkTools, RegularizedLeastSquares
+using MRIReco, FFTW, LinearAlgebra, BenchmarkTools, MRIReco.RegularizedLeastSquares
 
 FFTW.set_num_threads(1);BLAS.set_num_threads(1)
 

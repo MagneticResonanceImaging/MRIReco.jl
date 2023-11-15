@@ -3,14 +3,14 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities", "RegularizedLeastSquares"]
+for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, RegularizedLeastSquares, FFTW
+using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, MRIReco.RegularizedLeastSquares, FFTW
 
 ##################
 ## Data Loading ##

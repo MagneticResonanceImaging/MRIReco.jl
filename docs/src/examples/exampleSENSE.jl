@@ -1,4 +1,4 @@
-using PyPlot, MRIReco, RegularizedLeastSquares
+using PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
 
 ##### simple example ####
 

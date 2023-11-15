@@ -1,4 +1,4 @@
-using MRIReco, RegularizedLeastSquares
+using MRIReco, MRIReco.RegularizedLeastSquares
 
 ##### simple example ####
 

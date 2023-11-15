@@ -1,5 +1,5 @@
 using Test, LinearAlgebra, MRIFiles, MRIReco, MRICoilSensitivities
-using RegularizedLeastSquares
+using MRIReco.RegularizedLeastSquares
 using Scratch
 using LazyArtifacts
 using ImageUtils
