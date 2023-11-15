@@ -186,32 +186,33 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
-  @floop for l = 1:numRep, k = 1:numSl
-    if encodingOps != nothing
-      E = encodingOps[:,k]
-    else
-      E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
-    end
-
-    for j = 1:numContr
-      W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
-      kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
-      if !isnothing(L_inv)
-        kdata = vec(reshape(kdata, :, numChan) * L_inv')
+  let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
+    @floop for l = 1:numRep, k = 1:numSl
+      if encodingOps != nothing
+        E = encodingOps[:,k]
+      else
+        E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
       end
 
-      EFull = ∘(W, E[j], isWeighting=true)
-      EFullᴴEFull = normalOperator(EFull)
-      solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
-      I = solve(solv, kdata; params...)
+      for j = 1:numContr
+        W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
+        kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
+        if !isnothing(L_inv)
+          kdata = vec(reshape(kdata, :, numChan) * L_inv')
+        end
 
-      if isCircular( trajectory(acqData, j) )
-        circularShutter!(reshape(I, reconSize), 1.0)
+        EFull = ∘(W, E[j], isWeighting=true)
+        EFullᴴEFull = normalOperator(EFull)
+        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+        I = solve(solv, kdata; params...)
+
+        if isCircular( trajectory(acqData, j) )
+          circularShutter!(reshape(I, reconSize), 1.0)
+        end
+        Ireco[:,k,j,l] = I
       end
-      Ireco[:,k,j,l] = I
     end
   end
-
   Ireco_ = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
 
   return makeAxisArray(Ireco_, acqData)
