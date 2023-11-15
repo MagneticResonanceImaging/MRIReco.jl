@@ -10,7 +10,7 @@ end
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, RegularizedLeastSquares
+using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, RegularizedLeastSquares, FFTW
 
 ##################
 ## Data Loading ##
@@ -54,7 +54,7 @@ params[:absTol] = 1.e-4
 params[:relTol] = 1.e-3
 params[:tolInner] = 1.e-2
 params[:senseMaps] = smaps
-params[:normalizeReg] = true
+params[:normalizeReg] = MeasurementBasedNormalization()
 
 ############################
 ## Perform reconstruction ##

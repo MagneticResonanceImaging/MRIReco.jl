@@ -55,7 +55,7 @@ params[:senseMaps] = smaps
 params[:solver] = CGNR
 params[:reg] = L2Regularization(1.e-4)
 params[:iterations] = 5
-params[:normalizeReg] = true
+params[:normalizeReg] = MeasurementBasedNormalization()
 
 img_cg = reconstruction(acqDataSub, params)
 ```
@@ -75,7 +75,7 @@ params[:ρ] = 0.1
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
 params[:tolInner] = 1.e-2
-params[:normalizeReg] = true
+params[:normalizeReg] = MeasurementBasedNormalization()
 
 img_tv = reconstruction(acqDataSub, params)
 ```
