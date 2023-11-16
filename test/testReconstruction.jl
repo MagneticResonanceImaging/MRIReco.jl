@@ -153,9 +153,8 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
   params[:reco] = "standard"    # encoding model
   params[:reconSize] = (N,N)
   params[:sparseTrafo] = "Wavelet" #sparse trafo
-  params[:regularization] = "L1"       # regularization
-  params[:λ] = 1.e-3
-  params[:solver] = "admm"    # solver
+  params[:reg] = L1Regularization(1.e-3)       # regularization
+  params[:solver] = ADMM    # solver
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
 
@@ -188,9 +187,8 @@ function testCSRecoMultCoil(N=32;type = ComplexF64)
   params[:reco] = "standard"    # encoding model
   params[:reconSize] = (N,N)
   params[:sparseTrafo] = "nothing" #sparse trafo
-  params[:regularization] = "TV"       # regularization
-  params[:λ] = 2.e-3
-  params[:solver] = "admm"    # solver
+  params[:reg] = TVRegularization(2.e-3, shape = (N,N))       # regularization
+  params[:solver] = ADMM    # solver
   params[:iterations] = 100
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-5
@@ -234,9 +232,8 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:reconSize] = (N,N)
   params[:senseMaps] = reshape(sensMaps,N,N,1,2)
   params[:sparseTrafo] = "Wavelet" # sparse trafo
-  params[:regularization] = "L1"       # regularization
-  params[:λ] = 1.e-3
-  params[:solver] = "admm"
+  params[:reg] = L1Regularization(1.e-3)       # regularization
+  params[:solver] = ADMM
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-5
@@ -274,9 +271,8 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
   params[:reco] = "multiCoil"
   params[:reconSize] = (N,N)
   params[:senseMaps] = reshape(sensMaps,N,N,1,2)
-  params[:regularization] = "L2"       # regularization
-  params[:λ] = 1.e-3
-  params[:solver] = "cgnr"
+  params[:reg] = L2Regularization(1.e-3)       # regularization
+  params[:solver] = CGNR
   params[:iterations] = 1
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-5
@@ -310,9 +306,9 @@ function testOffresonanceReco(N = 128; accelMethod="nfft")
   # reco parameters
   params = Dict{Symbol, Any}()
   params[:reco] = "standard"
-  params[:regularization] = "L2"
+  params[:reg] = L2Regularization(0.0)
   params[:iterations] = 3
-  params[:solver] = "admm"
+  params[:solver] = ADMM
   params[:reconSize] = (N,N)
   params[:correctionMap] = cmap
   params[:method] = accelMethod
@@ -346,9 +342,9 @@ function testSENSEReco(N = 64, T = ComplexF64)
   params = Dict{Symbol, Any}()
   params[:reco] = "multiCoil" #"standard"
   params[:reconSize] = (N,N)
-  params[:regularization] = "L2"
+  params[:reg] = L2Regularization(0.0)
   params[:iterations] = 50
-  params[:solver] = "cgnr"
+  params[:solver] = CGNR
   params[:senseMaps] = coilsens
 
   Ireco = reconstruction(acqData, params)
@@ -387,9 +383,9 @@ function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
   # reco parameters
   params[:reco] = "multiCoil" #"standard"
   params[:reconSize] = (N,N)
-  params[:regularization] = "L2"
+  params[:reg] = L2Regularization(0.0)
   params[:iterations] = 150
-  params[:solver] = "cgnr"
+  params[:solver] = CGNR
 
   Ireco = reconstruction(acqData, params)
 
@@ -425,9 +421,9 @@ function testOffresonanceSENSEReco(N = 64)
   params = Dict{Symbol, Any}()
   params[:reco] = "multiCoil" #"standard"
   params[:reconSize] = (N,N)
-  params[:regularization] = "L2"
+  params[:reg] = L2Regularization(0.0)
   params[:iterations] = 3
-  params[:solver] = "admm"
+  params[:solver] = ADMM
   params[:senseMaps] = coilsens
   params[:correctionMap] = cmap
 
@@ -460,10 +456,9 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   params = Dict{Symbol, Any}()
   params[:reconSize] = (N,N)
   params[:reco] = "multiCoil"
-  params[:regularization] = "L2"
-  params[:λ] = 1.e-3
+  params[:reg] = L2Regularization(1.e-3)
   params[:iterations] = 1
-  params[:solver] = "cgnr"
+  params[:solver] = CGNR
   params[:senseMaps] = reshape(coilsens,N,N,1,8)
 
   x_approx = reshape(reconstruction(acqData,params),N,N,:)
@@ -472,10 +467,9 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   params = Dict{Symbol, Any}()
   params[:reconSize] = (N,N)
   params[:reco] = "multiCoilMultiEcho"
-  params[:regularization] = "L2"
-  params[:λ] = 1.e-3
+  params[:reg] = L2Regularization(1.e-3)
   params[:iterations] = 1
-  params[:solver] = "cgnr"
+  params[:solver] = CGNR
   params[:senseMaps] = reshape(coilsens,N,N,1,8)
 
   x_approx2= reshape(reconstruction(acqData,params),N,N,:)
@@ -516,10 +510,9 @@ function testRecoMultiEcho(N=32)
   params = Dict{Symbol, Any}()
   params[:reconSize] = (N,N)
   params[:reco] = "multiEcho"
-  params[:regularization] = "L2"
-  params[:λ] = 1.e-3
+  params[:reg] = L2Regularization(1.e-3)
   params[:iterations] = 1
-  params[:solver] = "cgnr"
+  params[:solver] = CGNR
 
   x_approx2 = reshape(reconstruction(acqData,params),N,N,:)
 
@@ -548,9 +541,8 @@ function testCSReco3d(N=128)
   params[:reco] = "standard"    # encoding model
   params[:reconSize] = (8,N,N)
   params[:sparseTrafo] = "Wavelet" #"nothing" #sparse trafo
-  params[:regularization] = "L1" #"TV"       # regularization
-  params[:λ] = 1.e-3
-  params[:solver] = "admm"    # solver
+  params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
+  params[:solver] = ADMM    # solver
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-4
@@ -588,9 +580,8 @@ function testCSSenseReco3d(N=128)
   params[:reconSize] = (8,N,N)
   params[:senseMaps] = reshape(sensMaps,8,N,N,2)
   params[:sparseTrafo] = "Wavelet" #"nothing" #sparse trafo
-  params[:regularization] = "L1" #"TV"       # regularization
-  params[:λ] = 1.e-3
-  params[:solver] = "admm"    # solver
+  params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
+  params[:solver] = ADMM    # solver
   params[:iterations] = 1000
   params[:ρ] = 1.0e-1
   params[:absTol] = 1.e-5
@@ -625,9 +616,8 @@ function testRegridding(N=64)
   # cartesian reconstruction
   params[:reco] = "standard"
   params[:reconSize] = (N,N)
-  params[:solver] = "cgnr"
-  params[:regularization] = "L2"
-  params[:λ] = 0.0
+  params[:solver] = CGNR
+  params[:reg] = L2Regularization(0.0)
   params[:iterations] = 3
 
   x_reg = collect(reshape(reconstruction(acqDataReg, params),N,N))

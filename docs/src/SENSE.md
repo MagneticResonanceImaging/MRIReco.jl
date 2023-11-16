@@ -32,10 +32,9 @@ acqData = simulation(I, params)
 params = Dict{Symbol, Any}()
 params[:reco] = "multiCoil"
 params[:reconSize] = (N,N)
-params[:regularization] = "L2"
-params[:λ] = 1.e-3
+params[:reg] = L2Regularization(1.e-3)
 params[:iterations] = 40
-params[:solver] = "cgnr"
+params[:solver] = CGNR
 params[:senseMaps] = coilsens
 
 # do reconstruction

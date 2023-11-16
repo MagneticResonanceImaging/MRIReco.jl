@@ -1,4 +1,4 @@
-using Wavelets, DelimitedFiles, LinearAlgebra, PyPlot, MRIReco
+using Wavelets, DelimitedFiles, LinearAlgebra, PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
 
 function analyzeImage(x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64};t0::Int64=size(D,2),tol=1e-3) where T
   nx,ny = xsize
@@ -66,11 +66,10 @@ params = Dict{Symbol,Any}()
 params[:reco] = "standard"
 params[:reconSize] = (nx,ny)
 params[:iterations] = 50
-params[:λ] = 2.e-2
-params[:regularization] = "L1"
+params[:reg] = L1Regularization(2.e-2)
 params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2.e-2)
 params[:ρ] = 0.1
-params[:solver] = "admm"
+params[:solver] = ADMM
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
 

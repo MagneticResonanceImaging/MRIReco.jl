@@ -4,10 +4,9 @@ function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"
   params[:sparseTrafoName] = "Wavelet"
-  params[:regularization] = "L1"
-  params[:λ] = 0.0
-  params[:normalizeReg] = false
-  params[:solver] = "admm"
+  params[:reg] = L1Regularization(0.0)
+  params[:normalizeReg] = NoNormalization()
+  params[:solver] = ADMM
   params[:ρ] = 5.e-2
   params[:iterations] = 30
 
@@ -61,9 +60,9 @@ builds relevant parameters and operators from the entries in `recoParams`
 * `reconSize::NTuple{2,Int64}`              - size of image to reconstruct
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
-* `reg::Regularization`                 - Regularization to be used
+* `reg::AbstractRegularization`                 - Regularization to be used
 * `normalize::Bool`                     - adjust regularization parameter according to the size of k-space data
-* `solvername::String`                  - name of the solver to use
+* `solver::Type{<:AbstractLinearSolver}`                  - solver to use
 * `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
 * `correctionMap::Array{Complex{<:AbstractFloat}}`    - fieldmap for the correction of off-resonance effects
 * `method::String="nfft"`               - method to use for time-segmentation when correctio field inhomogeneities
@@ -71,7 +70,7 @@ builds relevant parameters and operators from the entries in `recoParams`
 
 `sparseTrafo` and `reg` can also be speficied using their names in form of a string.
 """
-function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
+function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
 
   red3d = ndims(trajectory(acqData,1))==2 && length(recoParams[:reconSize])==3
   if red3d  # acqData is 3d data converted to 2d
@@ -94,28 +93,38 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
     end
   end
 
+  # bare regularization (without sparsifying transform)
+  reg = get(recoParams,:reg,L1Regularization(zero(T)))
+  reg = vec(reg)
+
   # sparsifying transform
-  if haskey(recoParams,:sparseTrafo) && typeof(recoParams[:sparseTrafo]) != String
-    sparseTrafo = recoParams[:sparseTrafo]
-  elseif haskey(recoParams,:sparseTrafo)
-    sparseTrafoName = get(recoParams, :sparseTrafo, "nothing")
-    sparseTrafo = SparseOp(Complex{T},sparseTrafoName, reconSize; recoParams...)
+  if haskey(recoParams, :sparseTrafo)
+    sparseTrafos = recoParams[:sparseTrafo]
+    if !(typeof(sparseTrafos) <: Vector)
+      sparseTrafos = [sparseTrafos]
+    end
+
+    # Construct SparseOp for each string instance
+    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; recoParams...) : x, sparseTrafos)
+
+    # Fill up SparseOps for remaining reg terms with nothing
+    temp = Union{Nothing, eltype(sparseTrafos)}[nothing for i = 1:length(reg)]
+    for (i,sparseTrafo) in enumerate(sparseTrafos)
+      temp[i] = sparseTrafo
+    end
+
+    sparseTrafo = identity.(temp)
   else
-    sparseTrafo=nothing
+    sparseTrafo = fill(nothing, length(reg))
   end
 
-  # bare regularization (without sparsifying transform)
-  regName = get(recoParams, :regularization, "L1")
-  λ = T(get(recoParams,:λ,0.0))
-  reg = Regularization(regName, λ; shape=reconSize, recoParams...)
-
   # normalize regularizer ?
-  normalize = get(recoParams, :normalizeReg, false)
+  normalize = get(recoParams, :normalizeReg, NoNormalization())
 
   encOps = get(recoParams, :encodingOps, nothing)
 
   # solvername
-  solvername = get(recoParams, :solver, "fista")
+  solver = get(recoParams, :solver, FISTA)
 
   # sensitivity maps
   senseMaps = get(recoParams, :senseMaps, Complex{T}[])
@@ -133,7 +142,17 @@ function setupIterativeReco(acqData::AcquisitionData{T}, recoParams::Dict) where
     L_inv = inv(L.L) #noise decorrelation matrix
   end
 
-  return reconSize, weights, L_inv, sparseTrafo, vec(reg), normalize, encOps, solvername, senseMaps
+
+  recoParams[:reconSize] = reconSize
+  recoParams[:weights] = weights
+  recoParams[:L_inv] = L_inv
+  recoParams[:sparseTrafo] = sparseTrafo
+  recoParams[:reg] = reg
+  recoParams[:normalize] = normalize 
+  recoParams[:encOps] = encOps
+  recoParams[:solver] = solver
+  recoParams[:senseMaps] = senseMaps
+  return recoParams
 end
 
 

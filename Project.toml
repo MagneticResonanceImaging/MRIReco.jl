@@ -1,7 +1,7 @@
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.8.0"
+version = "0.9.0"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
@@ -26,7 +26,7 @@ MRIOperators = "0.2"
 PrecompileTools = "1"
 ProgressMeter = "1.2"
 Reexport = "0.2, 1"
-RegularizedLeastSquares = "0.9.0, 0.10"
+RegularizedLeastSquares = "0.11"
 Unitful = "1.2"
 julia = "1.6"
 
