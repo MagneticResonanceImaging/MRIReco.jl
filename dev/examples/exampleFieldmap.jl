@@ -1,4 +1,4 @@
-using MRIReco
+using MRIReco, MRIReco.RegularizedLeastSquares
 
 ##### simple example ####
 
@@ -32,9 +32,9 @@ exportImage(filename, abs.(Ireco[:,:,1,1,1]) )
 
 # now with fieldmap correction
 params[:reco] = "standard"
-params[:regularization] = "L2"
+params[:reg] = L2Regularization(0.0)
 params[:iterations] = 3
-params[:solver] = "admm"
+params[:solver] = ADMM
 params[:correctionMap] = cmap
 params[:alpha] = 1.75
 params[:m] = 4.0
