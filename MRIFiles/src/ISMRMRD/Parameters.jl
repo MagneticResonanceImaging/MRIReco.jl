@@ -310,7 +310,7 @@ function insertNode(xs, paramName::String, param::Limit)
 end
 
 function insertNode(xs, paramName::String, param_::Dict{String,Any})
-  xsp = new_child(xs, paramName)
+  xsp = paramName == "userParameters" ? xs : new_child(xs, paramName)  
   param = deepcopy(param_)
   if haskey(param, "comment")
     insertNode(xsp, "comment", param["comment"])
