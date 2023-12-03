@@ -1,5 +1,6 @@
 using MRIReco
 using Test
+using MRIFiles.HDF5
 
 @testset "ISMRMRD" begin
 
@@ -35,6 +36,18 @@ write(ioCopy, acqCopy.profiles[1].head)
 @test io.data == ioCopy.data
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
+# test that the offsets in the header are not padded
+h5open(filenameCopy) do fd
+  dt1 = HDF5.datatype(fd["dataset/data"])
+  dt2 = HDF5.Datatype(HDF5.h5t_get_member_type(dt1, 0))
+  offsets = [0, 2, 10, 14, 18, 22, 34, 36, 38, 40, 168, 170, 172, 174, 176, 178,
+  182, 194, 206, 218, 230, 242, 276, 308]  
+  for (i,off) in enumerate(offsets)
+    @test Int(HDF5.h5t_get_member_offset(dt2,i-1)) == off
+  end
+end
+
+# test reconstructing the data
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
 @test IrecoCopy == Ireco
