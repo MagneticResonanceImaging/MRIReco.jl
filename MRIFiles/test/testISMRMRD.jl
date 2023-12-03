@@ -28,8 +28,11 @@ fCopy = ISMRMRDFile(filenameCopy)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(fCopy)
 
-@test convert(AcquisitionHeaderImmutable, acq.profiles[1].head) ==
-       convert(AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
+io = IOBuffer()
+write(io, acq.profiles[1].head)
+ioCopy = IOBuffer()
+write(ioCopy, acqCopy.profiles[1].head)
+@test io.data == ioCopy.data
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
@@ -62,8 +65,11 @@ acq = RawAcquisitionData(f)
 save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
-@test convert(MRIFiles.AcquisitionHeaderImmutable, acq.profiles[1].head) ==
-       convert(MRIFiles.AcquisitionHeaderImmutable, acqCopy.profiles[1].head)
+io = IOBuffer()
+write(IOBuffer(), acq.profiles[1].head)
+ioCopy = IOBuffer()
+write(IOBuffer(), acqCopy.profiles[1].head)
+@test io.data == ioCopy.data
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 

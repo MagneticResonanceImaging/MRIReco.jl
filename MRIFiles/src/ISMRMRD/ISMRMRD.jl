@@ -22,17 +22,19 @@ function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset";
     M = size(h["/$(dataset)/data"]) # for some reason this is a matrix 
 
     # In the next lines we only read the headers of the profiles such that
-    # we can later filter on them
+    # we can later filter on them. We first read the data into a binary blob (NTuple)
+    # and the exploit the read implementation that reconstructs the struct field by field
     dTypeHeader = get_hdf5type_acquisition_header_only()
-    headerData = Array{HDF5_AcquisitionHeaderOnly}(undef, M)
-    HDF5.API.h5d_read(h["/$(dataset)/data"], dTypeHeader, H5S_ALL, H5S_ALL, H5P_DEFAULT, headerData)
+    headerData_ = Array{NTuple{ISMRMRD_HEADER_SIZE,UInt8}}(undef, M)
+    HDF5.API.h5d_read(h["/$(dataset)/data"], dTypeHeader, H5S_ALL, H5S_ALL, H5P_DEFAULT, headerData_)
+    headerData = [ read(IOBuffer(collect(headerData_[m])),AcquisitionHeader) for m in CartesianIndices(M)]
 
     profiles = Profile[]
 
     for m in CartesianIndices(M)
-      if (repetition == nothing || headerData[m].head.idx.repetition in repetition) &&
-          (slice == nothing || headerData[m].head.idx.slice in slice) &&
-          (contrast == nothing || headerData[m].head.idx.contrast in contrast)
+      if (repetition == nothing || headerData[m].idx.repetition in repetition) &&
+          (slice == nothing || headerData[m].idx.slice in slice) &&
+          (contrast == nothing || headerData[m].idx.contrast in contrast)
          d = h["/$(dataset)/data"][m] # Here we read the header again. This could/should be avoided
          head = read_header(d.head)
          D = Int(head.trajectory_dimensions)
