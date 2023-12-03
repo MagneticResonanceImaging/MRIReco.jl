@@ -1,4 +1,6 @@
 export RawAcquisitionData, EncodingCounters, AcquisitionHeader, Profile, minimalHeader, profileIdx
+export Limit, MeasurementDependency, CoilDescription
+
 
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
@@ -407,6 +409,25 @@ function minimalHeader(encodingSize, fov::NTuple{3,AbstractFloat};
   params["receiverChannels"] = numChannels
 
   return params
+end
+
+# The following three structs will be contained in the parameter dictionary when reading a full
+# ISMRMRD file
+
+struct Limit
+  minimum::Int
+  maximum::Int
+  center::Int
+end
+
+struct MeasurementDependency
+  dependencyType::String
+  measurementID::String
+end
+
+struct CoilDescription
+  number::Int
+  name::String
 end
 
 function profileIdx(acqData::AcquisitionData, contr::Int)
