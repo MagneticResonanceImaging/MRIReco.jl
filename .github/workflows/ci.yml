@@ -44,6 +44,7 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRISampling"))
@@ -77,6 +78,7 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))
           Pkg.add(PackageSpec(path=pwd(), subdir="MRISampling"))
