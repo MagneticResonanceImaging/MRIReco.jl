@@ -106,11 +106,15 @@ LinearOperators.storage_type(op::DiagOp) = typeof(op.Mv5)
 
 
 """
-    DiagOp(ops :: AbstractLinearOperator...)
+    DiagOp(ops::AbstractLinearOperator...)
+    DiagOp(ops::Vector{AbstractLinearOperator})
+    DiagOp(ops::NTuple{N,AbstractLinearOperator})
 
 create a bloc-diagonal operator out of the `LinearOperator`s contained in ops
 """
-function DiagOp(ops :: AbstractLinearOperator...)
+DiagOp(ops::AbstractLinearOperator...) = DiagOp(ops)
+
+function DiagOp(ops)
   nrow = 0
   ncol = 0
   S = eltype(ops[1])
