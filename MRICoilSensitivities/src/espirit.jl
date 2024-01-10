@@ -180,13 +180,14 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     kern2 = [Matrix{T}(undef, nc, nc) for _ = 1:Threads.nthreads()]
 
     @floop for n ∈ CartesianIndices(imsize)
+      kernel_dft!(kern2[Threads.threadid()], kern2_, n, imsize, sizePadded)
+
       if use_poweriterations && nmaps == 1
-        kernel_dft!(kern2[Threads.threadid()], kern2_, n, imsize, sizePadded)
         S, U = power_iterations!(kern2[Threads.threadid()], b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
         U .*= transpose(exp.(-1im .* angle.(U[1])))
         @views eigenVals[n, 1, :] .= real.(S)
       else
-        S, U = eigen!(view(kern2, :, :, n); sortby = (λ) -> -abs(λ))
+        S, U = eigen!(kern2[Threads.threadid()]; sortby = (λ) -> -abs(λ))
         U = @view U[:,1:nmaps]
         U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
         @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
