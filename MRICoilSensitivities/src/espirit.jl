@@ -28,8 +28,8 @@ Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code 
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
 """
 function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
-                 imsize::NTuple{D,Int} = encodingSize(acqData);
-                 nmaps::Int = 1, kargs...) where {T,D}
+  imsize::NTuple{D,Int} = encodingSize(acqData);
+  nmaps::Int = 1, kargs...) where {T,D}
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -165,22 +165,9 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     end
   end
   # resize is necessary for compatibility with MKL
-  reshape(fft!(reshape(kern2_, nc^2, sizePadded...), 2:ndims(kern2_)-1), nc, nc, sizePadded...)
-
-  kern2 = zeros(T, nc, nc, imsize...)
-
-  # This code works but requires one additional allocation of kern2
-  # idx_center = CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2)
-  # @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
-  # kern2 = ifftshift(kern2, 3:ndims(kern2_))
-
-  idx_center = collect(CartesianIndices(sizePadded) .- CartesianIndex(sizePadded .÷ 2) .+ CartesianIndex(imsize .÷ 2))
-  [idx_center[i] = CartesianIndex(mod1.(Tuple(idx_center[i]) .+ cld.(imsize, 2), imsize)) for i in eachindex(idx_center)]
-  @views ifftshift!(kern2[:,:,idx_center], kern2_, 3:ndims(kern2_))
-  
-  reshape(ifft!(reshape(kern2, nc^2, imsize...), 2:ndims(kern2)-1), nc, nc, imsize...)
-  kern2 .*= prod(imsize) / prod(sizePadded) / prod(ksize)
-
+  kern2_tmp = reshape(fft(reshape(kern2_, nc^2, sizePadded...), 2:ndims(kern2_)-1), nc, nc, sizePadded...)
+  ifftshift!(kern2_, kern2_tmp, 3:ndims(kern2_))
+  kern2_ ./= prod(sizePadded) * prod(ksize)
 
   eigenVecs = Array{     T }(undef, imsize..., nc, nmaps)
   eigenVals = Array{real(T)}(undef, imsize...,  1, nmaps)
@@ -190,18 +177,17 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     BLAS.set_num_threads(1)
     b    = [randn(T, nc)  for _=1:Threads.nthreads()]
     bᵒˡᵈ = [similar(b[1]) for _=1:Threads.nthreads()]
+    kern2 = [Matrix{T}(undef, nc, nc) for _ = 1:Threads.nthreads()]
 
     @floop for n ∈ CartesianIndices(imsize)
-      if use_poweriterations && nmaps==1
-        S, U = power_iterations!(view(kern2,:, :, n), b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
-        # The following uses the method from IterativeSolvers.jl but is currently slower and allocating more
-        # this is probably because we pre-allocate bᵒˡᵈ
-        #S, U = RegularizedLeastSquares.IterativeSolvers.powm!(view(kern2, :, :, n), b[Threads.threadid()], maxiter=5)
+      kernel_dft!(kern2[Threads.threadid()], kern2_, n, imsize, sizePadded)
 
+      if use_poweriterations && nmaps == 1
+        S, U = power_iterations!(kern2[Threads.threadid()], b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
         U .*= transpose(exp.(-1im .* angle.(U[1])))
         @views eigenVals[n, 1, :] .= real.(S)
       else
-        S, U = eigen!(view(kern2, :, :, n); sortby = (λ) -> -abs(λ))
+        S, U = eigen!(kern2[Threads.threadid()]; sortby = (λ) -> -abs(λ))
         U = @view U[:,1:nmaps]
         U .*= transpose(exp.(-1im .* angle.(@view U[1, :])))
         @views eigenVals[n, 1, :] .= real.(S[1:nmaps])
@@ -217,10 +203,7 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
 end
 
 """
-    power_iterations!(A;
-    b = randn(eltype(A), size(A,2)),
-    bᵒˡᵈ = similar(b),
-    rtol=1e-6, maxiter=1000, verbose=false)
+    power_iterations!(A; b = randn(eltype(A), size(A,2)), bᵒˡᵈ = similar(b), rtol=1e-6, maxiter=1000)
 
 Power iterations to determine the maximum eigenvalue of a normal operator or square matrix.
 
@@ -232,28 +215,21 @@ Power iterations to determine the maximum eigenvalue of a normal operator or squ
 * `b = randn(eltype(A), size(A,2))` - pre-allocated random vector; will be modified
 * `bᵒˡᵈ = similar(b)`   - pre-allocated vector; will be modified
 * `maxiter=1000`        - maximum number of power iterations
-* `verbose=false`       - print maximum eigenvalue if `true`
 
 # Output
 maximum eigenvalue of the operator
 """
-function power_iterations!(A;
-  b = randn(eltype(A), size(A,2)),
-  bᵒˡᵈ = similar(b),
-  rtol=1e-6, maxiter=1000, verbose=false)
-
+function power_iterations!(A; b = randn(eltype(A), size(A,2)), bᵒˡᵈ = similar(b), rtol=1e-6, maxiter=1000)
   b ./= norm(b)
   λ = Inf
 
-  for i = 1:maxiter
+  for _ = 1:maxiter
     copy!(bᵒˡᵈ, b)
     mul!(b, A, bᵒˡᵈ)
 
     λᵒˡᵈ = λ
     λ = dot(bᵒˡᵈ, b) / dot(bᵒˡᵈ, bᵒˡᵈ)
     b ./= norm(b)
-
-    #verbose && println("iter = $i; λ = $λ")
     abs(λ/λᵒˡᵈ - 1) < rtol && break
   end
 
@@ -308,4 +284,13 @@ function findIndices(newEnc::NTuple{D,Int64}, oldEnc::NTuple{D,Int64}) where D
   else
     return LinearIndices(oldCart)[:]
   end
+end
+
+function kernel_dft!(kern2, kern2_, img_idx, imsize, sizePadded)
+  kern2 .= 0
+  @inbounds for ik = CartesianIndices(sizePadded)
+    p = exp(1im * 2π * sum((Tuple(img_idx) .- 1) .* (Tuple(ik) .- sizePadded .÷ 2 .- 1) ./ imsize))
+    @views kern2 .+= kern2_[:,:,ik] .* p
+  end
+  return kern2
 end
