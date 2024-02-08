@@ -125,7 +125,7 @@ function acqFov(b::BrukerFile)
   if length(N) == 3
     return N
   else
-    return push!(N, parse(Float64,b["ACQ_slice_sepn"][1]) .* 10) #cm to mm
+    return push!(N, parse(Float64,b["PVM_SPackArrSliceDistance"][1]) .* 10) #cm to mm
   end
 end
 ##$PVM_EncAvailReceivers=1
