@@ -147,6 +147,7 @@ MRIReco.addNoise(x::Vector, snr::Float64, complex= true)
 MRIReco.addNoise(acqData::AcquisitionData, snr::Float64)
 MRIReco.addNoise!(acqData::AcquisitionData, snr::Float64)
 MRIReco.birdcageSensitivity
+MRIReco.measured2DSensitivity
 MRIReco.quadraticFieldmap
 ```
 
