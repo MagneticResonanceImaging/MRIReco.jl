@@ -127,9 +127,10 @@ end
 
 
 function measured2DSensitivity(N::Int64,
-                               ncoils::Int64)
+                               ncoils::Int64;
+                               T::Type{<:Complex{<:AbstractFloat}} = ComplexF32)
 
-    out = zeros(ComplexF32, N, N, 1, ncoils)
+    out = zeros(T, N, N, 1, ncoils)
 
     for c in 1:ncoils, x in 1:N, y in 1:N
         out[x, y, 1, c] = xsens(c, [x, y], size(out))
