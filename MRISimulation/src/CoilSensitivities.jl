@@ -49,9 +49,9 @@ Checkout the original file:
 for more information.
 """
 
-function get_sens_coeff(kx::Int64,
-                        ky::Int64,
-                        c::Int64)
+function get_sens_coeff(kx::Int,
+                        ky::Int,
+                        c::Int)
 
   sens_coeff = [[[ +2.202641e+02+7.959795e+02im,	+7.555631e+02-1.436550e+03im,	+2.545977e+03+6.890254e+02im,	-1.556657e+03+1.514510e+03im,	+2.119276e+02-1.494780e+03im ];;
   [ +1.298826e+03-2.217249e+02im,	+5.104937e+03-1.257278e+03im,	+2.718070e+03+9.347223e+03im,	-4.162577e+03+4.012845e+03im,	-2.934868e+02-1.494939e+02im ];;
