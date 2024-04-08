@@ -119,7 +119,7 @@ function xsens(c::Int64,
 
     for i in 1:coil_coeff
         for j in 1:coil_coeff
-            val += get_sens_coeff(i, j, c) * exp(-2im * π * ((i - shift) * cpos[1] + (j - shift) * cpos[2]) / 4)
+            val += get_sens_coeff(i, j, c) * cis(-2 * π * ((i - shift) * cpos[1] + (j - shift) * cpos[2]) / 4)
         end
     end
     return val
