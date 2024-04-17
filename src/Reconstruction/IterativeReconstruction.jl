@@ -18,10 +18,11 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
-                              , params...) where {D, T <: AbstractFloat}
+                              , arrayType::Type{aT}
+                              , params...) where {D, T <: AbstractFloat, aT <: AbstractArray, vecTc}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -45,19 +46,20 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   reg = identity.(temp)
 
   # reconstruction
-  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
+  Ireco = aT{Complex{T}}(undef, prod(reconSize), numSl, numContr, numChan, numRep)
+  Ireco .= zero(Complex{T})
   #@floop
   for l = 1:numRep, k = 1:numSl
     if encodingOps!=nothing
       F = encodingOps[:,k]
     else
-      F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
+      F = encodingOps_simple(acqData, reconSize, slice=k; S = aT{Complex{T}, 1}, encParams...)
     end
     for j = 1:numContr
       W = WeightingOp(Complex{T}; weights=weights[j])
       for i = 1:numChan
-        kdata = kData(acqData,j,i,k,rep=l).* weights[j]
-        EFull = ∘(W, F[j])#, isWeighting=true)
+        kdata = aT{Complex{T}}(kData(acqData,j,i,k,rep=l)).* weights[j]
+        EFull = ProdOp(W, F[j])#, isWeighting=true)
         EFullᴴEFull = normalOperator(EFull)
         solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
@@ -70,6 +72,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
       end
     end
   end
+  @info "done"
   Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan, numRep)
 
   return makeAxisArray(Ireco, acqData)
