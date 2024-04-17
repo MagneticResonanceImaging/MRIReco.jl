@@ -9,6 +9,7 @@ function defaultRecoParams()
   params[:solver] = ADMM
   params[:ρ] = 5.e-2
   params[:iterations] = 30
+  params[:arrayType] = Array
 
   return params
 end
@@ -80,16 +81,19 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     reconSize = recoParams[:reconSize]
   end
 
+  arrayType = get(recoParams, :arrayType, Array)
+  vecTc = arrayType{Complex{T}, 1}
+
   # density weights
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    weights = samplingDensity(acqData,reconSize)
+    weights = map(weight -> vecTc(weight), samplingDensity(acqData,reconSize))
   else
     numContr = numContrasts(acqData)
-    weights = Array{Vector{Complex{T}}}(undef,numContr)
+    weights = Array{vecTc}(undef,numContr)
     for contr=1:numContr
       numNodes = size(acqData.kdata[contr],1)
-      weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
+      weights[contr] = vecTc([1.0/sqrt(prod(reconSize)) for node=1:numNodes])
     end
   end
 
@@ -105,7 +109,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     end
 
     # Construct SparseOp for each string instance
-    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; recoParams...) : x, sparseTrafos)
+    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; S = vecTc, recoParams...) : x, sparseTrafos)
 
     # Fill up SparseOps for remaining reg terms with nothing
     temp = Union{Nothing, eltype(sparseTrafos)}[nothing for i = 1:length(reg)]
@@ -127,13 +131,13 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   solver = get(recoParams, :solver, FISTA)
 
   # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, Complex{T}[])
+  senseMaps = get(recoParams, :senseMaps, vecTc())
   if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
   # noise data acquisition [samples, coils]
-  noiseData = get(recoParams, :noiseData, Complex{T}[])
+  noiseData = get(recoParams, :noiseData, vecTc())
   if isempty(noiseData)
     L_inv = nothing
   else
