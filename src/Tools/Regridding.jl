@@ -28,7 +28,7 @@ function regrid(acqData::AcquisitionData{T,2}, kspaceSize::NTuple{2,Int64};
       solver = RegularizedLeastSquares.CGNR(W*E[j], iterations=cgnr_iter)
       for i = 1:numChan
         kdata = kData(acqData,j,i,k).* dcf[j]
-        img .= solve(solver, kdata)
+        img .= solve!(solver, kdata)
         kdata_cart[j,k,1][:,i] .= F*img
       end
     end
