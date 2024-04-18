@@ -162,7 +162,7 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
         ftOp = SamplingOp(Complex{T}; pattern=idx, shape) ∘ FFTOp(Complex{T}; shape, unitary=false)
       end
     else
-      ftOp = NFFTOp(Complex{T}; nodes = tr.nodes, shape, kargs...)
+      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, kargs...)
     end
   else
     @error "opName $(opName) is not known"
