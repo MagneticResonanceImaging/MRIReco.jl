@@ -23,7 +23,7 @@ function CartesianTrajectory3D(::Type{T}, numProfiles, numSamplingPerProfile
                   , kargs...) where T
   nodes = cartesian3dNodes(T, numProfiles, numSamplingPerProfile; numSlices=numSlices)
   times = readoutTimes(T, numProfiles, numSamplingPerProfile, numSlices; TE=TE, AQ=AQ)
-  return  Trajectory("Cartesian3D", nodes, times, TE, AQ, numProfiles, numSamplingPerProfile, numSlices, true, false)
+  return  Trajectory("Cartesian3D", nodes, times, T(TE), T(AQ), numProfiles, numSamplingPerProfile, numSlices, true, false)
 end
 
 function cartesian3dNodes(::Type{T}, numProfiles, numSamplingPerProfile
