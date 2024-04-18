@@ -18,7 +18,6 @@ using StatsBase
 export DiagOp
 
 include("Shutter.jl")
-include("Composition.jl")
 include("ExplicitOp.jl")
 include("SensitivityOp.jl")
 include("MapSliceOp.jl")
