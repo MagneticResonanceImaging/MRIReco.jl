@@ -18,7 +18,7 @@ function SparseOp(T::Type,name::AbstractString, shape::NTuple{N,Int64}; S = Vect
     # else
     #   return WaveletOp(params[:shape])
     # end
-    return WaveletOp(T; shape) # does not support S
+    return WaveletOp(T; shape, S = S)
   elseif name=="nothing"
     return opEye(T,prod(shape), S = S)
   else
