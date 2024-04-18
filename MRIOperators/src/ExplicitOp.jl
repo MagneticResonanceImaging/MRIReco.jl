@@ -1,6 +1,6 @@
 export ExplicitOp
 
-mutable struct ExplicitOp{T,F1,F2} <: AbstractLinearOperator{T}
+mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractLinearOperator{T}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -14,8 +14,8 @@ mutable struct ExplicitOp{T,F1,F2} <: AbstractLinearOperator{T}
   args5 :: Bool
   use_prod5! :: Bool
   allocated5 :: Bool
-  Mv5 :: Vector{T}
-  Mtu5 :: Vector{T}
+  Mv5 :: vecT
+  Mtu5 :: vecT
 end
 
 LinearOperators.storage_type(op::ExplicitOp) = typeof(op.Mv5)
@@ -34,12 +34,31 @@ generates a `ExplicitOp` which explicitely evaluates the MRI Fourier signal enco
                                          this results in complex valued image even for real-valued input.
 * `kargs`                              - additional keyword arguments
 """
-function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
-                        ; echoImage::Bool=false, kargs...) where D
+function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Tc,D}
+                        ; echoImage::Bool=false, S = storage_type(correctionmap), kargs...) where {T, Tc <: Union{Complex{T}, T}, D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   nrow = size(nodes,2)
   ncol = prod(shape)
+
+  if isempty(correctionmap)
+    disturbanceTerm = zeros(Complex{T}, shape...)
+  else
+    disturbanceTerm = correctionmap
+  end
+
+  tmp = S(undef, 0)
+  if !isa(tmp, Vector)
+    nodes_ = similar(tmp, T, size(nodes))
+    nodes_[:] = nodes
+    times_ = similar(tmp, T, size(times))
+    times_[:] = times
+    disturbanceTerm_ = similar(tmp, size(disturbanceTerm))
+    disturbanceTerm_[:] = disturbanceTerm
+    nodes = nodes_
+    times = times_
+    disturbanceTerm = disturbanceTerm_    
+  end
 
   # if echo image is desired echo time is needed as an offset
   if echoImage
@@ -47,26 +66,20 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array
   else
       echoOffset = 0.0
   end
+  echoOffset = T(echoOffset)
 
-  return ExplicitOp{ComplexF64,Nothing,Function}(nrow, ncol, false, false
-            , (res,x)->(res .= produ(x, shape, nodes, times, echoOffset, correctionmap))
+  return ExplicitOp{Complex{T}, S, Nothing, Function}(nrow, ncol, false, false
+            , (res,x)->(produ!(res, x, shape, nodes, times, echoOffset, disturbanceTerm))
             , nothing
-            , (res,y)->(res .= ctprodu(y, shape, nodes, times, echoOffset, correctionmap))
-            , 0,0,0, false, false, false, ComplexF64[], ComplexF64[])
+            , (res,y)->(ctprodu!(res, y, shape, nodes, times, echoOffset, disturbanceTerm))
+            , 0,0,0, false, false, false, tmp, tmp)
 end
 
-function produ(x::Vector{T}, shape::NTuple{2,Int64},
-                    nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                    correctionmap::Matrix{ComplexF64}) where T<:Union{Real,Complex}
-
-   if isempty(correctionmap)
-       disturbanceTerm = zeros(ComplexF64,shape...)
-   else
-       disturbanceTerm = correctionmap
-   end
+function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
+                    nodes::Matrix{T}, times::Vector{T}, echoOffset::T,
+                    disturbanceTerm::Matrix{Tc}) where {T, Tc <: Union{T, Complex{T}}}
 
    x= reshape(x,shape)
-   out = zeros(ComplexF64,size(nodes,2))
    for nx=1:shape[1]
        for ny=1:shape[2]
            for k=1:size(nodes,2)
@@ -77,21 +90,15 @@ function produ(x::Vector{T}, shape::NTuple{2,Int64},
            end
        end
    end
-   return vec(out)
+   return out
 end
 
-function produ(x::Vector{T}, shape::NTuple{3,Int64},
-                    nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                    correctionmap::Array{ComplexF64,3}) where T<:Union{Real,Complex}
+function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{3,Int64},
+                    nodes::Matrix{T}, times::Vector{T}, echoOffset::T,
+                    disturbanceTerm::Array{Tc,3}) where {T, Tc <: Union{T, Complex{T}}}
 
-   if isempty(correctionmap)
-       disturbanceTerm = zeros(ComplexF64,shape...)
-   else
-       disturbanceTerm = correctionmap
-   end
 
    x = reshape(x,shape)
-   out = zeros(ComplexF64,size(nodes,2))
    for nx=1:shape[1]
        for ny=1:shape[2]
            for nz=1:shape[3]
@@ -103,20 +110,15 @@ function produ(x::Vector{T}, shape::NTuple{3,Int64},
            end
        end
    end
-   return vec(out)
+   return out
 end
 
-function ctprodu(x::Vector{T}, shape::NTuple{2,Int64},
-                        nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                        correctionmap::Matrix{ComplexF64}) where T<:Union{Real,Complex}
+function ctprodu!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
+                        nodes::Matrix{T}, times::Vector{T}, echoOffset::T,
+                        disturbanceTerm::Matrix{Tc}) where {T, Tc <: Union{T, Complex{T}}}
 
-  if isempty(correctionmap)
-      disturbanceTerm = zeros(ComplexF64,shape...)
-  else
-      disturbanceTerm = correctionmap
-  end
 
-  out = zeros(ComplexF64,shape)
+  out = reshape(out, shape)
   for nx=1:shape[1]
       for ny=1:shape[2]
           for k=1:size(nodes,2)
@@ -126,20 +128,14 @@ function ctprodu(x::Vector{T}, shape::NTuple{2,Int64},
           end
       end
   end
-  return vec(out)
+  return out
 end
 
-function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
-                        nodes::Matrix{Float64}, times::Vector{Float64}, echoOffset::Float64,
-                        correctionmap::Array{ComplexF64,3}) where T<:Union{Real,Complex}
+function ctprodu!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{3,Int64},
+                        nodes::Matrix{T}, times::Vector{T}, echoOffset::T,
+                        disturbanceTerm::Array{Tc,3}) where {T, Tc <: Union{T, Complex{T}}}
 
-  if isempty(correctionmap)
-      disturbanceTerm = zeros(ComplexF64,shape...)
-  else
-      disturbanceTerm = correctionmap
-  end
-
-  out = zeros(ComplexF64,shape)
+  out = reshape(out, shape)
   for nx=1:shape[1]
       for ny=1:shape[2]
           for nz=1:shape[3]
@@ -151,10 +147,10 @@ function ctprodu(x::Vector{T}, shape::NTuple{3,Int64},
           end
       end
   end
-  return vec(out)
+  return out
 end
 
 function Base.adjoint(op::ExplicitOp{T}) where T
   return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-                        op.ctprod!, nothing, op.prod!)
+                        op.ctprod!, nothing, op.prod!; S = LinearOperators.storage_type(op))
 end
