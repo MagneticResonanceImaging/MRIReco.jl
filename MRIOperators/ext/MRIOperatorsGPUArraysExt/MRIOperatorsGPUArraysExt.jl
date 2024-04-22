@@ -1,8 +1,9 @@
 module MRIOperatorsGPUArraysExt
 
-using MRIOperators, GPUArrays
+using MRIOperators, GPUArrays, MRIOperators.FFTW
 
 include("ExplicitOp.jl")
+include("Shutter.jl")
 
 
 end # module
