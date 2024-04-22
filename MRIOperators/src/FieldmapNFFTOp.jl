@@ -73,6 +73,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         K=20,
                         K_tol::Float64=1.e-3,
                         step::Int64=10,
+                        S = Vector{Complex{T}},
                         kargs...) where {T,D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
