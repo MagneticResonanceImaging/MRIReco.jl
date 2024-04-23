@@ -168,3 +168,5 @@ end
 # convenience methods
 volumeSize(reconSize::NTuple{2,Int}, numSlice::Int) = (reconSize..., numSlice)
 volumeSize(reconSize::NTuple{3,Int}, numSlice::Int) = reconSize
+
+executor(::Type{<:AbstractArray}) = nothing

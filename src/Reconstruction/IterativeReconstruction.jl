@@ -21,7 +21,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
-                              , arrayType::Type{aT}
+                              , arrayType::Type{aT} = Array
                               , params...) where {D, T <: AbstractFloat, aT <: AbstractArray, vecTc}
 
   encDims = ndims(trajectory(acqData))
@@ -48,7 +48,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   # reconstruction
   Ireco = aT{Complex{T}}(undef, prod(reconSize), numSl, numContr, numChan, numRep)
   Ireco .= zero(Complex{T})
-  #@floop
+  #@floop executor(aT) 
   for l = 1:numRep, k = 1:numSl
     if encodingOps!=nothing
       F = encodingOps[:,k]
@@ -72,7 +72,6 @@ function reconstruction_simple( acqData::AcquisitionData{T}
       end
     end
   end
-  @info "done"
   Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan, numRep)
 
   return makeAxisArray(Ireco, acqData)
@@ -125,7 +124,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(aT) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       F = encodingOps[i]
     else
@@ -174,12 +173,13 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D , T}
+                              , arrayType::Type{aT} = Array
+                              , params...) where {D , T, aT <: AbstractArray, vecTc}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -206,23 +206,24 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
 
   # solve optimization problem
-  Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
+  Ireco = aT{Complex{T}}(undef, prod(reconSize), numSl, numContr, numRep)
+  Ireco .= zero(Complex{T})
   let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
-    @floop for l = 1:numRep, k = 1:numSl
+    @floop executor(aT) for l = 1:1, k = 1:1
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
-        E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
+        E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, S = typeof(similar(Ireco, 0)), encParams...)
       end
 
-      for j = 1:numContr
+      for j = 1:1
         W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
-        kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
+        kdata = aT{Complex{T}}(multiCoilData(acqData, j, k, rep=l)) .* repeat(weights[j], numChan)
         if !isnothing(L_inv)
           kdata = vec(reshape(kdata, :, numChan) * L_inv')
         end
 
-        EFull = ∘(W, E[j], isWeighting=true)
+        EFull = ∘(W, E[j])
         EFullᴴEFull = normalOperator(EFull)
         solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
         I = solve!(solv, kdata)
@@ -292,7 +293,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(aT) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       E = encodingOps[i]
     else
@@ -376,7 +377,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(aT) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       E = encodingOps[i]
     else

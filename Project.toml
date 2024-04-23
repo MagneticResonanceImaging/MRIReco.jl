@@ -16,10 +16,14 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[weakdeps]
+GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+
 [compat]
 AxisArrays = "0.4.6"
 FFTW = "1.0"
 FLoops = "0.2"
+GPUArrays = "8, 9, 10"
 ImageUtils = "0.2.8"
 MRIBase = "0.3, 0.4"
 MRIOperators = "0.2"
@@ -40,3 +44,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "ImageUtils", "MRISimulation", "MRISampling", "Scratch", "FFTW"]
+
+[extensions]
+MRIRecoGPUArraysExt = "GPUArrays"
