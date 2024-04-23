@@ -72,7 +72,7 @@ function LinearOperatorCollection.diagOpCTProd(y::Vector{T}, x::Vector{T}, ncol:
   return y
 end
 
-function LinearOperatorCollection.diagNormOpProd(y::Vector{T}, normalOps, idx, x::Vector{T}) where T
+function LinearOperatorCollection.diagNormOpProd!(y::Vector{T}, normalOps, idx, x::Vector{T}) where T
   @floop for i=1:length(normalOps)
     mul!(view(y,idx[i]:idx[i+1]-1), normalOps[i], view(x,idx[i]:idx[i+1]-1))
  end
