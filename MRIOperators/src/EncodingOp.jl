@@ -139,7 +139,7 @@ return Fourier encoding operator (either Explicit or NFFT)
 """
 function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
           subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap::Array{Complex{T}}=Complex{T}[],
-          echoImage::Bool=true, S = Vector{Complex{T}} kargs...) where {T,D}
+          echoImage::Bool=true, S = Vector{Complex{T}}, kargs...) where {T,D}
 
   # extract proper portion of correctionMap
   if !isempty(correctionMap)
@@ -162,7 +162,7 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
         ftOp = SamplingOp(Complex{T}; pattern=idx, shape, S = S) ∘ FFTOp(Complex{T}; shape, unitary=false, S = S)
       end
     else
-      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = Skargs...)
+      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, kargs...)
     end
   else
     @error "opName $(opName) is not known"
