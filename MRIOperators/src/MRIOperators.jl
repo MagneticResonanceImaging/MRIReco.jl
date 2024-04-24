@@ -83,4 +83,6 @@ function Base.copy(S::LinearOperator{T}) where T
   deepcopy(S)
 end
 
+fftParams(::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+
 end # module

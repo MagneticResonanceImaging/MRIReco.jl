@@ -152,17 +152,17 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   elseif opName=="fast"
     @debug "NFFT-based Op"
     if !isempty(correctionMap) && correctionMap!=zeros(Complex{T},size(correctionMap))
-      ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; S = S, kargs...)
+      ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; S = S, fftParams(S)..., kargs...)
     elseif isCartesian(tr)
       @debug "FFTOp"
       if !MRIBase.isUndersampledCartTrajectory(shape,tr)
-        ftOp = FFTOp(Complex{T}; shape, unitary=false, S = S)
+        ftOp = FFTOp(Complex{T}; shape, unitary=false, S = S, fftParams(S)...)
       else
         idx = MRIBase.cartesianSubsamplingIdx(shape,tr)
-        ftOp = SamplingOp(Complex{T}; pattern=idx, shape, S = S) ∘ FFTOp(Complex{T}; shape, unitary=false, S = S)
+        ftOp = SamplingOp(Complex{T}; pattern=idx, shape, S = S) ∘ FFTOp(Complex{T}; shape, unitary=false, S = S, fftParams(S)...)
       end
     else
-      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, kargs...)
+      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, fftParams(S)..., kargs...)
     end
   else
     @error "opName $(opName) is not known"
