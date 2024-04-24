@@ -160,9 +160,11 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
 end
 
 
-function getEncodingOperatorParams(; kargs...)
+function getEncodingOperatorParams(; arrayType = Array, kargs...)
   encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol]
-  return Dict([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
+  dict = Dict{Symbol, Any}([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
+  push!(dict, :copyOpsFn => copyOpsFn(arrayType))
+  return dict
 end
 
 # convenience methods

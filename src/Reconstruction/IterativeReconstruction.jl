@@ -31,7 +31,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
 
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
@@ -106,7 +106,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
@@ -187,7 +187,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # noise decorrelation
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
@@ -273,7 +273,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # noise decorrelation
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
@@ -360,7 +360,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   numBasis = size(params[:basis],2)
    
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
