@@ -209,14 +209,14 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   Ireco = aT{Complex{T}}(undef, prod(reconSize), numSl, numContr, numRep)
   Ireco .= zero(Complex{T})
   let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
-    @floop executor(aT) for l = 1:1, k = 1:1
+    @floop executor(aT) for l = 1:numRep, k = 1:numSl
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
         E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, S = typeof(similar(Ireco, 0)), encParams...)
       end
 
-      for j = 1:1
+      for j = 1:numContr
         W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
         kdata = aT{Complex{T}}(multiCoilData(acqData, j, k, rep=l)) .* repeat(weights[j], numChan)
         if !isnothing(L_inv)
