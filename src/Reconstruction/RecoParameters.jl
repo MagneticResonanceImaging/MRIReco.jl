@@ -99,7 +99,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
 
   # bare regularization (without sparsifying transform)
   reg = get(recoParams,:reg,L1Regularization(zero(T)))
-  reg = vec(reg)
+  reg = isa(reg, AbstractVector) ? reg : [reg]
 
   # sparsifying transform
   if haskey(recoParams, :sparseTrafo)
@@ -170,3 +170,4 @@ volumeSize(reconSize::NTuple{2,Int}, numSlice::Int) = (reconSize..., numSlice)
 volumeSize(reconSize::NTuple{3,Int}, numSlice::Int) = reconSize
 
 executor(::Type{<:AbstractArray}) = nothing
+copyOpsFn(::Type{<:AbstractArray}) = copy

@@ -60,7 +60,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
       for i = 1:numChan
         kdata = aT{Complex{T}}(kData(acqData,j,i,k,rep=l)).* weights[j]
         EFull = ProdOp(W, F[j])#, isWeighting=true)
-        EFullᴴEFull = normalOperator(EFull)
+        EFullᴴEFull = normalOperator(EFull; copyOpsFn = copyOpsFn(aT))
         solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
         I = solve!(solv, kdata, x0=get(params,:startVector,0))
@@ -133,7 +133,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
     for j = 1:numChan
       kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
       EFull = ∘(W, F)#, isWeighting=true)
-      EFullᴴEFull = normalOperator(EFull)
+      EFullᴴEFull = normalOperator(EFull; copyOpsFn = copyOpsFn(aT))
       solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
       Ireco[:,j,i,l] = solve!(solv,kdata)
@@ -224,7 +224,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
         end
 
         EFull = ∘(W, E[j])
-        EFullᴴEFull = normalOperator(EFull)
+        EFullᴴEFull = normalOperator(EFull; copyOpsFn = copyOpsFn(aT))
         solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
         I = solve!(solv, kdata)
 
@@ -306,7 +306,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
     end
 
     EFull = ∘(W, E)#, isWeighting=true)
-    EFullᴴEFull = normalOperator(EFull)
+    EFullᴴEFull = normalOperator(EFull; copyOpsFn = copyOpsFn(aT))
     solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
     Ireco[:,i,l] = solve!(solv, kdata)
@@ -389,7 +389,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
     kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
 
     EFull = ∘(W, E)#, isWeighting=true)
-    EFullᴴEFull = normalOperator(EFull)
+    EFullᴴEFull = normalOperator(EFull; copyOpsFn = copyOpsFn(aT))
     solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
 
     Ireco[:,i,l] = solve!(solv, kdata)
