@@ -82,7 +82,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   end
 
   arrayType = get(recoParams, :arrayType, Array)
-  vecTc = arrayType{Complex{T}, 1}
+  vecTc = typeof(arrayType{Complex{T}, 1}(undef, 0))
 
   # density weights
   densityWeighting = get(recoParams,:densityWeighting,true)

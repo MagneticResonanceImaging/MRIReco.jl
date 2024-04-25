@@ -40,7 +40,7 @@ function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1; S = Vector{T}) w
     tmp = S(undef, 0)
     if !isa(tmp, Vector)
       tmp = similar(tmp, T, size(sensMaps))
-      tmp[:] = sensMaps
+      copyto!(tmp, sensMaps)
       sensMaps = tmp
     end
     sensMapsC = conj.(sensMaps)
