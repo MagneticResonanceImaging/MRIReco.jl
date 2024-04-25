@@ -3,7 +3,6 @@ export defaultRecoParams
 function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"
-  params[:sparseTrafoName] = "Wavelet"
   params[:reg] = L1Regularization(0.0)
   params[:normalizeReg] = NoNormalization()
   params[:solver] = ADMM
