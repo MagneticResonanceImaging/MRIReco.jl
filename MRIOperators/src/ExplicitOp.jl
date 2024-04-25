@@ -50,11 +50,11 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::Ab
   tmp = S(undef, 0)
   if !isa(tmp, Vector)
     nodes_ = similar(tmp, T, size(nodes))
-    nodes_[:] = nodes
+    copyto!(nodes_, nodes)
     times_ = similar(tmp, T, size(times))
-    times_[:] = times
+    copyto!(times_, times)
     disturbanceTerm_ = similar(tmp, size(disturbanceTerm))
-    disturbanceTerm_[:] = disturbanceTerm
+    copyto!(disturbanceTerm_, disturbanceTerm)
     nodes = nodes_
     times = times_
     disturbanceTerm = disturbanceTerm_    
