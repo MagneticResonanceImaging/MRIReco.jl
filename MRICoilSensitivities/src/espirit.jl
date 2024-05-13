@@ -20,16 +20,20 @@ Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code 
 
 # Optional Arguments
   * `ksize::NTuple{D,Int}`      - number of calibration points in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
+  * `ncalib::Int`      - size of the central part corresponding to the calibration data.
 
 # Keyword Arguments
   * `eigThresh_1::Number=0.02`  - threshold for the singular values of the calibration matrix (relative to the largest value); reduce for more accuracy, increase for saving memory and computation time.
   * `eigThresh_2::Number=0.95`  - threshold to mask the final maps: for each voxel, the map will be set to 0, if, for this voxel, no singular value > `eigThresh_2` exists.
   * `nmaps = 1`                 - Number of maps that are calculated. Set to 1 for regular SENSE; set to 2 for soft-SENSE (cf. [Uecker et al. "ESPIRiT—an eigenvalue approach to autocalibrating parallel MRI: Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)).
   * `use_poweriterations = true` - flag to determine if power iterations are used; power iterations are only used if `nmaps == 1`. They provide speed benefits over the full eigen decomposition, but are an approximation.
+  * `echo::Int = 1` - select the k-space corresponding to the echo
+  * `rep::Int = 1` - select the k-space corresponding to the rep
 """
 function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d->6,D), ncalib::Int = 24,
                  imsize::NTuple{D,Int} = encodingSize(acqData);
-                 nmaps::Int = 1, kargs...) where {T,D}
+                 nmaps::Int = 1,
+                 echo::Int = 1, rep::Int = 1, kargs...) where {T,D}
 
   if !isCartesian(trajectory(acqData, 1))
     @error "espirit does not yet support non-cartesian sampling"
@@ -52,7 +56,7 @@ function espirit(acqData::AcquisitionData{T,D}, ksize::NTuple{D,Int} = ntuple(d-
     # form zeropadded array with kspace data
     kdata = zeros(Complex{T}, prod(imsize), numChan)
     for coil = 1:numChan
-      kdata[idx, coil] .= kData(acqData, 1, coil, slice)
+      kdata[idx, coil] .= kData(acqData, echo, coil, slice;rep=rep)
     end
     kdata = reshape(kdata, imsize..., numChan)
 
