@@ -2,7 +2,6 @@ function MRIOperators.circularShutter!(I::AbstractGPUArray, radiusFactor::Number
   imgSize = size(I)
   center = imgSize./2.0
   radius = maximum(center) * radiusFactor
-  @error "GPU"
   # Applying filtering
   gpu_call(I, center, radius) do ctx, I_, center_, radius_
     cart = @cartesianidx(I_)
