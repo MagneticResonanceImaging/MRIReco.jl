@@ -369,7 +369,7 @@ function RawAcquisitionDataFid(b::BrukerFile)
                   position = (pos[1], pos[2], pos[3])
 
                   head = AcquisitionHeader(number_of_samples=N[1], idx=counter,
-                                           read_dir=read_dir, phase_dir=phase_dir,
+                                           read_dir=read_dir.*(-1)^(nEcho-1), phase_dir=phase_dir,
                                            slice_dir=slice_dir, position=position,
                                            center_sample=div(N[1],2),
                                            available_channels = numAvailableChannel, #TODO
