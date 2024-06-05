@@ -2,17 +2,17 @@ export FieldmapNFFTOp, InhomogeneityData, createInhomogeneityData_
 
 include("ExpApproximation.jl")
 
-mutable struct InhomogeneityData{T}
-  A_k::Matrix{Complex{T}}
-  C_k::Matrix{Complex{T}}
-  times::Vector{T}
-  Cmap::Matrix{Complex{T}}
+mutable struct InhomogeneityData{T, matT <: AbstractArray{Complex{T}, 2}, vecT <: AbstractArray{T, 1}}
+  A_k::matT
+  C_k::matT
+  times::vecT
+  Cmap::matT
   t_hat::T
   z_hat::Complex{T}
   method::String
 end
 
-mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI <: AbstractVector{<:Signed}, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -26,14 +26,13 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
   args5 :: Bool
   use_prod5! :: Bool
   allocated5 :: Bool
-  Mv5 :: Vector{Complex{T}}
-  Mtu5 :: Vector{Complex{T}}
+  Mv5 :: vecT
+  Mtu5 :: vecT
   plans
-  idx::Vector{Vector{Int64}}
+  idx::Vector{vecI}
   circTraj::Bool
   shape::NTuple{D,Int64}
-  cparam::InhomogeneityData{T}
-
+  cparam::InhomogeneityData{T, matT, vecTR}
 end
 
 LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
@@ -75,7 +74,6 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         step::Int64=10,
                         S = Vector{Complex{T}},
                         kargs...) where {T,D}
-
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
     times = times .- echoTime(tr)
@@ -83,8 +81,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   nrow = size(nodes,2)
   ncol = prod(shape)
 
-  x_tmp = zeros(Complex{T}, ncol)
-  y_tmp = zeros(Complex{T}, nrow)
+  tmp = S(undef, 0)
 
  # create and truncate low-rank expansion
   cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
@@ -92,19 +89,35 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plans = Vector{NFFT.NFFTPlan{T,D,1}}(undef,K)
-  idx = Vector{Vector{Int64}}(undef,K)
+  plans = [] # Dont fully specify type yet
+  idx = []
   for κ=1:K
-    idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL)
+    push!(idx, findall(x->x!=0.0, cparam.A_k[:,κ]))
+    push!(plans, plan_nfft(S, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL))
   end
+  plans = identity.(plans) # This gives the vectors (more) concrete types
+  idx = identity.(idx)
+
+  if !<:(S, Array)
+    # Move InhomogeneityData to (potentially) GPU
+    A_k = copyto!(similar(tmp, Complex{T}, size(cparam.A_k)...), cparam.A_k)
+    C_k = copyto!(similar(tmp, Complex{T}, size(cparam.C_k)...), cparam.C_k)
+    times = copyto!(similar(tmp, T, size(cparam.times)...), cparam.times)
+    Cmap = copyto!(similar(tmp, Complex{T}, size(cparam.Cmap)...), cparam.Cmap)
+    cparam = InhomogeneityData(A_k, C_k, times, Cmap, cparam.t_hat, cparam.z_hat, cparam.method)
+    # Move idx to (potentially) GPU
+    idx = map(i -> copyto!(similar(tmp, Int32, size(i)...), i), idx)
+  end
+
+  x_tmp = fill!(similar(tmp, Complex{T}, ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(tmp, Complex{T}, nrow), zero(Complex{T}))
   
-  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
-  p = [zeros(Complex{T}, shape) for κ=1:K]
+  d = [fill!(similar(tmp, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(tmp, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   circTraj = isCircular(tr)
 
-  return FieldmapNFFTOp{T,Nothing,Function,D}(nrow, ncol, false, false
+  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
             , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
