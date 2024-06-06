@@ -138,12 +138,12 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   plans = [copy(S.plans[i]) for i=1:K]
   idx = copy(S.idx)
 
-  x_tmp = zeros(Complex{T}, S.ncol)
-  y_tmp = zeros(Complex{T}, S.nrow)
+  x_tmp = fill!(similar(S.Mv5, Complex{T}, S.ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(S.Mv5, Complex{T}, S.nrow), zero(Complex{T}))
 
   cparam = copy(S.cparam)
-  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K]
-  p = [zeros(Complex{T}, shape) for κ=1:K]
+  d = [fill!(similar(S.Mv5, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(S.Mv5, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   D_ = length(shape)
   circTraj = S.circTraj
@@ -151,7 +151,7 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
   ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p)
 
-  return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
+  return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
