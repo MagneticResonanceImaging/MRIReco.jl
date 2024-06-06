@@ -12,7 +12,7 @@ mutable struct InhomogeneityData{T, matT <: AbstractArray{Complex{T}, 2}, vecT <
   method::String
 end
 
-mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI <: AbstractVector{<:Signed}, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -117,10 +117,10 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   circTraj = isCircular(tr)
 
-  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
+  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, S(undef, 0), S(undef, 0) 
             , plans, idx, circTraj, shape, cparam)
 end
 
@@ -158,9 +158,9 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
             , plans, idx, circTraj, shape, cparam)
 end
 
-function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::Vector{T},shape::Tuple, plan,
-               idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-               shutter::Bool, d::Vector{Vector{T}}, p::Vector{Array{T,D}}) where {T,D}
+function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVector{T},shape::Tuple, plan,
+               idx, cparam::InhomogeneityData,
+               shutter::Bool, d, p) where {T}
 
   s .= zero(T)
   K = size(cparam.A_k,2)
@@ -201,8 +201,8 @@ function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
 end
 
 
-function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData{T}, shutter::Bool, d::Vector{Vector{Complex{T}}}, p::Vector{Array{Complex{T},D}}) where {T,D}
+function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::AbstractVector{Complex{T}}, shape::Tuple, plan, idx,
+                 cparam::InhomogeneityData{T}, shutter::Bool, d, p) where {T}
 
   y .= zero(Complex{T})
   K = size(cparam.A_k,2)
