@@ -6,7 +6,7 @@ function defaultRecoParams()
   params[:reg] = L1Regularization(0.0)
   params[:normalizeReg] = NoNormalization()
   params[:solver] = ADMM
-  params[:ρ] = 5.e-2
+  params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
 
@@ -151,8 +151,8 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   recoParams[:L_inv] = L_inv
   recoParams[:sparseTrafo] = sparseTrafo
   recoParams[:reg] = reg
-  recoParams[:normalize] = normalize 
-  recoParams[:encOps] = encOps
+  recoParams[:normalizeReg] = normalize 
+  recoParams[:encodingOps] = encOps
   recoParams[:solver] = solver
   recoParams[:senseMaps] = senseMaps
   return recoParams

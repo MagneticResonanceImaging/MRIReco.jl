@@ -61,7 +61,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
         kdata = aT{Complex{T}}(kData(acqData,j,i,k,rep=l)).* weights[j]
         EFull = ProdOp(W, F[j])#, isWeighting=true)
         EFullᴴEFull = normalOperator(EFull; normalOpParams(aT)...)
-        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+        solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
         I = solve!(solv, kdata, x0=get(params,:startVector,0))
 
@@ -98,7 +98,8 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , weights::Vector{Vector{Complex{T}}}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
-                              , params...) where {D , T <: AbstractFloat}
+                              , arrayType::Type{aT} = Array
+                              , params...) where {D , T <: AbstractFloat, aT <: AbstractArray}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -134,7 +135,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
       kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
       EFull = ∘(W, F)#, isWeighting=true)
       EFullᴴEFull = normalOperator(EFull; normalOpParams(aT)...)
-      solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
       Ireco[:,j,i,l] = solve!(solv,kdata)
       # TODO circular shutter
@@ -225,7 +226,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
         EFull = ∘(W, E[j])
         EFullᴴEFull = normalOperator(EFull; normalOpParams(aT)...)
-        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+        solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
         I = solve!(solv, kdata)
 
         if isCircular( trajectory(acqData, j) )
@@ -265,7 +266,8 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D, T}
+                              , arrayType::Type{aT} = Array
+                              , params...) where {D, T, aT <: AbstractArray}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -307,7 +309,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(aT)...)
-    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
     Ireco[:,i,l] = solve!(solv, kdata)
   end
@@ -350,7 +352,8 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               , solver::Type{<:AbstractLinearSolver}
                               , senseMaps::Array{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D, T}
+                              , arrayType::Type{aT} = Array
+                              , params...) where {D, T, aT <: AbstractArray}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -390,7 +393,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(aT)...)
-    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
     Ireco[:,i,l] = solve!(solv, kdata)
   end

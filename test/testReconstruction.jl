@@ -161,7 +161,7 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson",arrayType = Array)
   params[:reg] = L1Regularization(1.e-3)       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:arrayType] = arrayType
 
   x_approx = reconstruction(acqData, params)
@@ -196,7 +196,7 @@ function testCSRecoMultCoil(N=32;type = ComplexF64,arrayType = Array)
   params[:reg] = TVRegularization(2.e-3, shape = (N,N))       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 100
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
   params[:arrayType] = arrayType
@@ -242,7 +242,7 @@ function testCSSenseReco(N=32,redFac=1.1;arrayType = Array)
   params[:reg] = L1Regularization(1.e-3)       # regularization
   params[:solver] = ADMM
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
   params[:arrayType] = arrayType
@@ -282,7 +282,7 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = 
   params[:reg] = L2Regularization(1.e-3)       # regularization
   params[:solver] = CGNR
   params[:iterations] = 1
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
   params[:arrayType] = arrayType
@@ -607,7 +607,7 @@ function testCSReco3d(N=128;arrayType = Array)
   params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-4
   params[:relTol] = 1.e-4
   params[:arrayType] = arrayType
@@ -647,7 +647,7 @@ function testCSSenseReco3d(N=128;arrayType = Array)
   params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
   params[:arrayType] = arrayType
