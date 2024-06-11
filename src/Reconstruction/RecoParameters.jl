@@ -9,6 +9,7 @@ function defaultRecoParams()
   params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
+  params[:kwargWarning] = false
 
   return params
 end
@@ -83,19 +84,20 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     reconSize = recoParams[:reconSize]
   end
 
+  # Array type
   arrayType = get(recoParams, :arrayType, Array)
-  vecTc = typeof(arrayType{Complex{T}, 1}(undef, 0))
+  S = typeof(arrayType{Complex{T}}(undef, 0))  
 
   # density weights
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    weights = map(weight -> vecTc(weight), samplingDensity(acqData,reconSize))
+    weights = map(weight -> S(weight), samplingDensity(acqData,reconSize))
   else
     numContr = numContrasts(acqData)
-    weights = Array{vecTc}(undef,numContr)
+    weights = Array{S}(undef,numContr)
     for contr=1:numContr
       numNodes = size(acqData.kdata[contr],1)
-      weights[contr] = vecTc([1.0/sqrt(prod(reconSize)) for node=1:numNodes])
+      weights[contr] = S([1.0/sqrt(prod(reconSize)) for node=1:numNodes])
     end
   end
 
@@ -111,7 +113,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     end
 
     # Construct SparseOp for each string instance
-    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; S = vecTc, recoParams...) : x, sparseTrafos)
+    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; S = S, recoParams...) : x, sparseTrafos)
 
     # Fill up SparseOps for remaining reg terms with nothing
     temp = Union{Nothing, eltype(sparseTrafos)}[nothing for i = 1:length(reg)]
@@ -133,24 +135,23 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   solver = get(recoParams, :solver, FISTA)
 
   # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, vecTc())
+  senseMaps = arrayType(get(recoParams, :senseMaps, S()))
   if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
   # noise data acquisition [samples, coils]
-  noiseData = get(recoParams, :noiseData, vecTc())
+  noiseData = arrayType(get(recoParams, :noiseData, S()))
   if isempty(noiseData)
     L_inv = nothing
   else
     psi = convert(typeof(noiseData), covariance(noiseData))
-    L = cholesky(psi, check = true)
+    # Check if approx. hermitian and avoid check in cholesky
+    # GPU arrays can have float rounding differences
+    @assert isapprox(adjoint(psi), psi)
+    L = cholesky(psi; check = false)
     L_inv = inv(L.L) #noise decorrelation matrix
   end
-
-  # Array type
-  arrayType = get(recoParams, :arrayType, Array)
-  S = typeof(arrayType{Complex{T}}(undef, 0))
 
   recoParams[:reconSize] = reconSize
   recoParams[:weights] = weights
@@ -168,7 +169,7 @@ end
 
 
 function getEncodingOperatorParams(; arrayType = Array, kargs...)
-  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol]
+  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol, :S]
   dict = Dict{Symbol, Any}([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
   push!(dict, :copyOpsFn => copyOpsFn(arrayType))
   return dict

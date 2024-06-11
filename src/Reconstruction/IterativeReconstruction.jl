@@ -165,7 +165,7 @@ are reconstructed independently.
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -176,7 +176,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , weights::Vector{vecTc}
                               , L_inv::Union{LowerTriangular{Complex{T}, <:AbstractMatrix{Complex{T}}}, Nothing}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
                               , params...) where {D , T, vecTc <: AbstractVector{Complex{T}}}
@@ -251,7 +251,7 @@ Different slices are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -262,7 +262,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , weights::Vector{vecTc}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
@@ -300,11 +300,10 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
       E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMapsUnCorr; slice=i, encParams...)
     end
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+    kdata = arrayType(multiCoilMultiEchoData(acqData, i)) .* repeat(vcat(weights...), numChan)
     if !isnothing(L_inv)
-      kdata = vec(reshape(kdata, :, numChan) * L_inv')
+      kdata = arrayType(vec(reshape(kdata, :, numChan) * L_inv'))
     end
-    kdata = arrayType(kdata)
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
@@ -339,7 +338,7 @@ Different slices are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -349,7 +348,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               , sparseTrafo
                               , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}

@@ -35,7 +35,7 @@ in terms of their sensitivities
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
 function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                                , senseMaps::Array{Complex{T},4}
+                                , senseMaps::AbstractArray{Complex{T},4}
                                 ; slice=1, S = Vector{Complex{T}}, copyOpsFn = copy, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
@@ -43,7 +43,7 @@ function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int
   numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; slice=slice, S = S, kargs...)
-  SOp = SensitivityOp(reshape(smaps,:,numChan),1, S = S)
+  SOp = SensitivityOp(reshape(smaps,:,numChan),1)
   Op = [ DiagOp(ft[i], numChan; copyOpsFn = copyOpsFn) ∘ SOp for i=1:numContr]
 
   return Op
@@ -81,15 +81,15 @@ in terms of their sensitivities
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
 function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                                          , senseMaps::Array{Complex{T}}
-                                          ; slice::Int64=1, S = Vector{Complex{T}}, copyOpsFn = copy, kargs...) where {T,D}
+                                          , senseMaps::AbstractArray{Complex{T}}
+                                          ; slice::Int64=1, copyOpsFn = copy, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
 
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  SOp = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData), S = S)
+  SOp = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
   ops2 = [copyOpsFn(ft[n]) for j=1:numChan,n=eachindex(ft)]
   return DiagOp(ops2...) ∘ SOp
 end

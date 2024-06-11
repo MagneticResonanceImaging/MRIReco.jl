@@ -35,20 +35,14 @@ the coil sensitivities specified in `sensMaps`
 * `sensMaps`    - sensitivity maps ( 1. dim -> voxels, 2. dim-> coils)
 * `numEchoes`   - number of contrasts to which the operator will be applied
 """
-function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1; S = Vector{T}) where T
+function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1) where T
     numVox, numChan = size(sensMaps)
-    tmp = S(undef, 0)
-    if !isa(tmp, Vector)
-      tmp = similar(tmp, T, size(sensMaps))
-      copyto!(tmp, sensMaps)
-      sensMaps = tmp
-    end
     sensMapsC = conj.(sensMaps)
     return LinearOperator{T}(numVox*numContr*numChan, numVox*numContr, false, false,
                          (res,x) -> prod_smap!(res,sensMaps,x,numVox,numChan,numContr),
                          nothing,
                          (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr),
-                         S = S)
+                         S = typeof(similar(sensMaps, 0)))
 end
 
 """
