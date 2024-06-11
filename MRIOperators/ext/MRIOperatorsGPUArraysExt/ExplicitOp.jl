@@ -4,6 +4,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
 
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
+  fill!(out, zero(Tc))
   gpu_call(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; elements = size(nodes, 2)) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
     k = linear_index(ctx)
     if !(1 <= k <= limit)
@@ -29,6 +30,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
 
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
+  fill!(out, zero(Tc))
   gpu_call(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; elements = size(nodes, 2)) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
     k = linear_index(ctx)
     if !(1 <= k <= limit)
@@ -56,6 +58,7 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
 
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
+  fill!(out, zero(Tc))
   gpu_call(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; elements = limit) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
     linearIndex = linear_index(ctx)
     if !(1 <= linearIndex <= limit)
@@ -83,6 +86,7 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
 
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
+  fill!(out, zero(Tc))
   gpu_call(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; elements = limit) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
     linearIndex = linear_index(ctx)
     if !(1 <= linearIndex <= limit)

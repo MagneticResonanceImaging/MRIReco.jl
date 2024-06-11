@@ -74,6 +74,7 @@ function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
                     disturbanceTerm::Matrix{Tc}) where {T, Tc <: Union{T, Complex{T}}}
 
    x= reshape(x,shape)
+   fill!(out, zero(Tc))
    for nx=1:shape[1]
        for ny=1:shape[2]
            for k=1:size(nodes,2)
@@ -93,6 +94,7 @@ function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{3,Int64},
 
 
    x = reshape(x,shape)
+   fill!(out, zero(Tc))
    for nx=1:shape[1]
        for ny=1:shape[2]
            for nz=1:shape[3]
@@ -113,6 +115,7 @@ function ctprodu!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
 
 
   out = reshape(out, shape)
+  fill!(out, zero(Tc))
   for nx=1:shape[1]
       for ny=1:shape[2]
           for k=1:size(nodes,2)
@@ -130,6 +133,7 @@ function ctprodu!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{3,Int64},
                         disturbanceTerm::Array{Tc,3}) where {T, Tc <: Union{T, Complex{T}}}
 
   out = reshape(out, shape)
+  fill!(out, zero(Tc))
   for nx=1:shape[1]
       for ny=1:shape[2]
           for nz=1:shape[3]
