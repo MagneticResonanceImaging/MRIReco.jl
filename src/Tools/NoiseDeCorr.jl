@@ -6,8 +6,8 @@ export decorrelateSenseMaps, covariance
     multiplies the senseMaps by the noise uncorrelation matrix (L_inv).
 """
 
-function decorrelateSenseMaps(L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing},
-                    senseMaps::Array{Complex{T},4},
+function decorrelateSenseMaps(L_inv::Union{LowerTriangular{Complex{T}, <:AbstractMatrix{Complex{T}}}, Nothing},
+                    senseMaps::AbstractArray{Complex{T},4},
                     numChan::Int64) where {T}
     if isnothing(L_inv)
         senseMapsUnCorr = senseMaps
@@ -27,7 +27,7 @@ The `noiseData` array should be number of noise samples by number of coils.
   computes the covariance of the noise acquisition.
 """
 
-function covariance(noiseData::Array{Complex{T},2}) where {T}
+function covariance(noiseData::AbstractArray{Complex{T},2}) where {T}
 
     N = size(noiseData, 1)
     cov = (1/(N-1)) .* (noiseData' * noiseData)

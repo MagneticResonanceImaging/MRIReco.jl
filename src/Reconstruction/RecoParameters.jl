@@ -3,12 +3,13 @@ export defaultRecoParams
 function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"
-  params[:sparseTrafoName] = "Wavelet"
   params[:reg] = L1Regularization(0.0)
   params[:normalizeReg] = NoNormalization()
   params[:solver] = ADMM
-  params[:ρ] = 5.e-2
+  params[:rho] = 5.e-2
   params[:iterations] = 30
+  params[:arrayType] = Array
+  params[:kwargWarning] = false
 
   return params
 end
@@ -19,7 +20,10 @@ function setupDirectReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
   # field map
   cmap = get(recoParams, :cmap, Complex{T}[])
 
-  return reconSize, weights, cmap
+  arrayType = get(recoParams, :arrayType, Array)
+  S = typeof(arrayType{Complex{T}}(undef, 0))
+
+  return reconSize, weights, cmap, arrayType, S
 end
 
 
@@ -80,22 +84,26 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     reconSize = recoParams[:reconSize]
   end
 
+  # Array type
+  arrayType = get(recoParams, :arrayType, Array)
+  S = typeof(arrayType{Complex{T}}(undef, 0))  
+
   # density weights
   densityWeighting = get(recoParams,:densityWeighting,true)
   if densityWeighting
-    weights = samplingDensity(acqData,reconSize)
+    weights = map(weight -> S(weight), samplingDensity(acqData,reconSize))
   else
     numContr = numContrasts(acqData)
-    weights = Array{Vector{Complex{T}}}(undef,numContr)
+    weights = Array{S}(undef,numContr)
     for contr=1:numContr
       numNodes = size(acqData.kdata[contr],1)
-      weights[contr] = [1.0/sqrt(prod(reconSize)) for node=1:numNodes]
+      weights[contr] = S([1.0/sqrt(prod(reconSize)) for node=1:numNodes])
     end
   end
 
   # bare regularization (without sparsifying transform)
   reg = get(recoParams,:reg,L1Regularization(zero(T)))
-  reg = vec(reg)
+  reg = isa(reg, AbstractVector) ? reg : [reg]
 
   # sparsifying transform
   if haskey(recoParams, :sparseTrafo)
@@ -105,7 +113,7 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     end
 
     # Construct SparseOp for each string instance
-    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; recoParams...) : x, sparseTrafos)
+    sparseTrafos = map(x-> x isa String ? SparseOp(Complex{T}, x, reconSize; S = S, recoParams...) : x, sparseTrafos)
 
     # Fill up SparseOps for remaining reg terms with nothing
     temp = Union{Nothing, eltype(sparseTrafos)}[nothing for i = 1:length(reg)]
@@ -127,40 +135,54 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   solver = get(recoParams, :solver, FISTA)
 
   # sensitivity maps
-  senseMaps = get(recoParams, :senseMaps, Complex{T}[])
+  senseMaps = arrayType(get(recoParams, :senseMaps, S()))
   if red3d && !isempty(senseMaps) # make sure the dimensions match the trajectory dimensions
     senseMaps = permutedims(senseMaps,[2,3,1,4])
   end
 
   # noise data acquisition [samples, coils]
-  noiseData = get(recoParams, :noiseData, Complex{T}[])
+  noiseData = arrayType(get(recoParams, :noiseData, S()))
   if isempty(noiseData)
     L_inv = nothing
   else
     psi = convert(typeof(noiseData), covariance(noiseData))
-    L = cholesky(psi, check = true)
+    # Check if approx. hermitian and avoid check in cholesky
+    # GPU arrays can have float rounding differences
+    @assert isapprox(adjoint(psi), psi)
+    L = cholesky(psi; check = false)
     L_inv = inv(L.L) #noise decorrelation matrix
   end
-
 
   recoParams[:reconSize] = reconSize
   recoParams[:weights] = weights
   recoParams[:L_inv] = L_inv
   recoParams[:sparseTrafo] = sparseTrafo
   recoParams[:reg] = reg
-  recoParams[:normalize] = normalize 
-  recoParams[:encOps] = encOps
+  recoParams[:normalizeReg] = normalize 
+  recoParams[:encodingOps] = encOps
   recoParams[:solver] = solver
   recoParams[:senseMaps] = senseMaps
+  recoParams[:arrayType] = arrayType
+  recoParams[:S] = S
   return recoParams
 end
 
 
-function getEncodingOperatorParams(; kargs...)
-  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol]
-  return Dict([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
+function getEncodingOperatorParams(; arrayType = Array, kargs...)
+  encKeys = [:correctionMap, :method, :toeplitz, :oversamplingFactor, :kernelSize, :K, :K_tol, :S]
+  dict = Dict{Symbol, Any}([key=>kargs[key] for key in intersect(keys(kargs),encKeys)])
+  push!(dict, :copyOpsFn => copyOpsFn(arrayType))
+  return dict
 end
 
 # convenience methods
 volumeSize(reconSize::NTuple{2,Int}, numSlice::Int) = (reconSize..., numSlice)
 volumeSize(reconSize::NTuple{3,Int}, numSlice::Int) = reconSize
+
+executor(::Type{<:AbstractArray}) = nothing
+copyOpsFn(::Type{<:AbstractArray}) = copy
+normalOpParams(::Type{aT}) where aT <: AbstractArray = (; :copyOpsFn => copyOpsFn(aT), MRIOperators.fftParams(aT)...)
+
+executor(f::Function) = executor(f{Complex{Float32}}(undef, 0))
+copyOpsFn(f::Function) = copyOpsFn(f{Complex{Float32}}(undef, 0))
+normalOpParams(f::Function) = normalOpParams(f{Complex{Float32}}(undef, 0))

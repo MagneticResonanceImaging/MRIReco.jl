@@ -36,8 +36,8 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
 
   # iterative reco
   if recoParams[:reco] == "direct"
-    reconSize, weights, cmap = setupDirectReco(acqData, recoParams)
-    return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap)
+    reconSize, weights, cmap, arrayType, S = setupDirectReco(acqData, recoParams)
+    return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap, arrayType, S)
   else
     setupIterativeReco!(acqData, recoParams)
     recoParams[:reconSize] = recoParams[:reconSize][1:encodingDims]

@@ -1,6 +1,6 @@
 
-# test FourierOperators
-function testFT(N=16)
+# test FourierOperators, almost duplicate with NFFT tests in LinearOperatorCollection, except for ExplicitOp usage
+function testFT(N=16; arrayType = Array)
   # random image
   x = zeros(ComplexF64,N,N)
   for i=1:N,j=1:N
@@ -13,19 +13,20 @@ function testFT(N=16)
   F_adj = F'
 
   # Operators
+  xop = arrayType(vec(x))
   tr = CartesianTrajectory(Float64,N,N)
-  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false)
-  F_exp = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N),symmetrize=false)
+  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N), symmetrize=false, S = typeof(xop))
+  F_exp = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N),symmetrize=false, S = typeof(xop))
 
   # test agains FourierOperators
   y = vec( ifftshift(reshape(F*vec(fftshift(x)),N,N)) )
   y_adj = vec( ifftshift(reshape(F_adj*vec(fftshift(x)),N,N)) )
 
-  y_nfft = F_nfft*vec(x)
-  y_adj_nfft = adjoint(F_nfft) * vec(x)
+  y_nfft = Array(F_nfft * xop)
+  y_adj_nfft = Array(adjoint(F_nfft) * xop)
 
-  y_exp = F_exp*vec(x)
-  y_adj_exp = adjoint(F_exp) * vec(x)
+  y_exp = Array(F_exp * xop)
+  y_adj_exp = Array(adjoint(F_exp) * xop)
 
   @test y     ≈ y_nfft      rtol = 1e-2
   @test y     ≈ y_exp       rtol = 1e-2
@@ -35,31 +36,32 @@ function testFT(N=16)
   # test AHA w/o Toeplitz
   F_nfft.toeplitz = false
   AHA = LinearOperatorCollection.normalOperator(F_nfft)
-  y_AHA_nfft = AHA * vec(x)
+  y_AHA_nfft = Array(AHA * xop)
   y_AHA = F' * F * vec(x)
   @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 
   # test AHA with Toeplitz
   F_nfft.toeplitz = true
   AHA = LinearOperatorCollection.normalOperator(F_nfft)
-  y_AHA_nfft = AHA * vec(x)
-  y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
+  y_AHA_nfft_1 = Array(AHA * xop)
+  y_AHA_nfft_2 = Array(adjoint(F_nfft) * F_nfft * xop)
   y_AHA = F' * F * vec(x)
-  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
+  @test y_AHA_nfft_1 ≈ y_AHA_nfft_2   rtol = 1e-2
+  @test y_AHA ≈ y_AHA_nfft_1   rtol = 1e-2
 
   # test type stability;
   # TODO: Ensure type stability for Trajectory objects and test here
   nodes = Float32.(tr.nodes)
-  F_nfft = NFFTOp(ComplexF32; shape=(N,N), nodes,symmetrize=false)
+  F_nfft = NFFTOp(ComplexF32; shape=(N,N), nodes,symmetrize=false,  S = typeof(ComplexF32.(xop)))
 
-  y_nfft = F_nfft * vec(ComplexF32.(x))
-  y_adj_nfft = adjoint(F_nfft) * vec(ComplexF32.(x))
+  y_nfft = F_nfft * ComplexF32.(xop)
+  y_adj_nfft = adjoint(F_nfft) * ComplexF32.(xop)
 
   @test Complex{eltype(nodes)} === eltype(y_nfft)
   @test Complex{eltype(nodes)} === eltype(y_adj_nfft)
 end
 
-function testFT3d(N=12)
+function testFT3d(N=12; arrayType = Array)
   # random image
   x = zeros(ComplexF64,N,N,N)
   for i=1:N,j=1:N,k=1:N
@@ -72,19 +74,20 @@ function testFT3d(N=12)
   F_adj = F'
 
   # Operators
+  xop = arrayType(vec(x))
   tr = CartesianTrajectory3D(Float64,N,N,numSlices=N)
-  F_nfft = NFFTOp(tr; shape=(N,N,N), symmetrize=false)
-  F_exp = ExplicitOp((N,N,N),tr,zeros(ComplexF64,N,N,N),symmetrize=false)
+  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N,N), symmetrize=false, S = typeof(xop))
+  F_exp = ExplicitOp((N,N,N),tr,zeros(ComplexF64,N,N,N),symmetrize=false, S = typeof(xop))
 
   # test agains FourierOperators
   y = vec( ifftshift(reshape(F*vec(fftshift(x)),N,N,N)) )
   y_adj = vec( ifftshift(reshape(F_adj*vec(fftshift(x)),N,N,N)) )
 
-  y_nfft = F_nfft*vec(x)
-  y_adj_nfft = adjoint(F_nfft) * vec(x)
+  y_nfft = Array(F_nfft * xop)
+  y_adj_nfft = Array(adjoint(F_nfft) * xop)
 
-  y_exp = F_exp*vec(x)
-  y_adj_exp = adjoint(F_exp) * vec(x)
+  y_exp = Array(F_exp * xop)
+  y_adj_exp = Array(adjoint(F_exp) * xop)
 
   @test  y     ≈ y_exp      rtol = 1e-2
   @test  y     ≈ y_nfft     rtol = 1e-2
@@ -94,38 +97,40 @@ function testFT3d(N=12)
   # test AHA w/o Toeplitz
   F_nfft.toeplitz = false
   AHA = LinearOperatorCollection.normalOperator(F_nfft)
-  y_AHA_nfft = AHA * vec(x)
+  y_AHA_nfft = Array(AHA * xop)
   y_AHA = F' * F * vec(x)
   @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
 
   # test AHA with Toeplitz
   F_nfft.toeplitz = true
   AHA = LinearOperatorCollection.normalOperator(F_nfft)
-  y_AHA_nfft = AHA * vec(x)
-  y_AHA_nfft = adjoint(F_nfft) * F_nfft * vec(x)
+  y_AHA_nfft_1 = Array(AHA * xop)
+  y_AHA_nfft_2 = Array(adjoint(F_nfft) * F_nfft * xop)
   y_AHA = F' * F * vec(x)
-  @test y_AHA ≈ y_AHA_nfft   rtol = 1e-2
+  @test y_AHA_nfft_1 ≈ y_AHA_nfft_2   rtol = 1e-2
+  @test y_AHA ≈ y_AHA_nfft_1   rtol = 1e-2
 end
 
-function testUndersampledFourierOp(N=16)
+function testUndersampledFourierOp(N=16; arrayType = Array)
   x = rand(ComplexF64,N,N) 
   tr = CartesianTrajectory(Float64, N÷2, N)
   
+  xop = arrayType(vec(x))
   # FourierOperator
-  F_ft = fourierEncodingOp((N,N), tr, "fast")
+  F_ft = fourierEncodingOp((N,N), tr, "fast"; S = typeof(xop))
   # Explicit operator
-  F = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N))
+  F = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N); S = typeof(xop))
   
-  y1 = F_ft*vec(x)
-  y2 = F*vec(x)
-  x1 = adjoint(F_ft)*y1
-  x2 = adjoint(F)*y2
+  y1 = Array(F_ft*xop)
+  y2 = Array(F*xop)
+  x1 = Array(adjoint(F_ft)*arrayType(y1))
+  x2 = Array(adjoint(F)*arrayType(y2))
   @test y1 ≈ y2   rtol = 1e-2
   @test x1 ≈ x2   rtol = 1e-2
 end
 
 ## test FieldmapNFFTOp
-function testFieldmapFT(N=16)
+function testFieldmapFT(N=16; arrayType = Array)
   # random image
   x = zeros(ComplexF64,N,N)
   for i=1:N,j=1:N
@@ -143,34 +148,36 @@ function testFieldmapFT(N=16)
   F_adj = F'
 
   # Operators
-  F_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false)
+  xop = arrayType(vec(x))
+  F_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop))
 
   # test agains FourierOperators
   y = F*vec(x)
   y_adj = F_adj*vec(x)
 
-  y_nfft = F_nfft*vec(x)
-  y_adj_nfft = adjoint(F_nfft) * vec(x)
+  y_nfft = Array(F_nfft*xop)
+  y_adj_nfft = Array(adjoint(F_nfft) * xop)
 
   @test (norm(y-y_nfft)/norm(y)) < 1e-2
   @test (norm(y_adj-y_adj_nfft)/norm(y_adj)) < 1e-2
 end
 
-function testSparseOp(T::Type,shape)
-    W = SparseOp(Complex{T},"Wavelet", shape)
-
+function testSparseOp(T::Type,shape; arrayType = Array)
     x = zeros(Complex{T},shape)
     for i=1:shape[1],j=1:shape[2],k=1:shape[3]
       x[i,j,k] = rand()
     end
-    x=vec(x)
 
-    xapprox = W' * W * x
+    xop = arrayType(vec(x))
+    W = SparseOp(Complex{T},"Wavelet", shape; S = typeof(xop))
+
+
+    xapprox = reshape(Array(W' * W * xop), size(x)...)
     @test (norm(xapprox-x)/norm(x)) < 1e-3
 end
 
 ## test FieldmapNFFTOp
-function testCopySizes(N=16)
+function testCopySizes(N=16; arrayType = Array)
   # random image
   x = zeros(ComplexF64,N,N)
   for i=1:N,j=1:N
@@ -186,9 +193,9 @@ function testCopySizes(N=16)
   idx = CartesianIndices((N,N))[collect(1:N^2)]
 
   # Operators
-
-  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false)
-  F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false)
+  xop = arrayType(vec(xop))
+  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false, S = typeof(xop))
+  F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop))
 
   # Copy the FieldmapNFFTOp operator and change the plans field of the new operator to empty 
   F_fmap_nfft_copy = copy(F_fmap_nfft)
@@ -198,17 +205,19 @@ function testCopySizes(N=16)
 
 end
 
-function testOperators()
-  @testset "Linear Operator" begin
-    testFT()
-    testFT3d()
-    testFieldmapFT()
-    testUndersampledFourierOp()
-    testSparseOp(Float32,(128,80,1))
-    testSparseOp(Float64,(128,80,1))
-    testSparseOp(Float32,(128,128,80))
-    testSparseOp(Float64,(128,128,80))
+function testOperators(arrayType = Array)
+  @testset "MRI Linear Operator: $arrayType" begin
+    arrayType == JLArray || @testset "FT" testFT(;arrayType)
+    arrayType == JLArray || @testset "FT3d" testFT3d(;arrayType)
+    @testset "FieldmapFT" testFieldmapFT(;arrayType)
+    @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
+    @testset "Sparse Op F32 2D" testSparseOp(Float32,(128,80,1);arrayType)
+    @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)
+    @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
+    @testset "Sparse Op F64 3D" testSparseOp(Float64,(128,128,80);arrayType)
   end
 end
 
-testOperators()
+for arrayType in arrayTypes
+  testOperators(arrayType)
+end
