@@ -1,7 +1,7 @@
 function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, s::vecT, sp, plan, idx, x_::vecT, p::Vector{arrT}) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
   for κ=1:K
     if !isempty(idx[κ])
-      copyto!(p[κ], C[κ,:] .* x_)
+      p[κ][:] .= C[κ,:] .* x_
       mul!(d[κ], plan[κ], p[κ])  
       # Assumption: l is unique per idx[κ]
       gpu_call(idx[κ], d[κ], view(A, :, κ), s) do ctx, indices, d_, A_, s_

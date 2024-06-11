@@ -19,7 +19,10 @@ function setupDirectReco(acqData::AcquisitionData{T}, recoParams::Dict) where T
   # field map
   cmap = get(recoParams, :cmap, Complex{T}[])
 
-  return reconSize, weights, cmap
+  arrayType = get(recoParams, :arrayType, Array)
+  S = typeof(arrayType{Complex{T}}(undef, 0))
+
+  return reconSize, weights, cmap, arrayType, S
 end
 
 
@@ -145,6 +148,9 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
     L_inv = inv(L.L) #noise decorrelation matrix
   end
 
+  # Array type
+  arrayType = get(recoParams, :arrayType, Array)
+  S = typeof(arrayType{Complex{T}}(undef, 0))
 
   recoParams[:reconSize] = reconSize
   recoParams[:weights] = weights
@@ -155,6 +161,8 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   recoParams[:encodingOps] = encOps
   recoParams[:solver] = solver
   recoParams[:senseMaps] = senseMaps
+  recoParams[:arrayType] = arrayType
+  recoParams[:S] = S
   return recoParams
 end
 
