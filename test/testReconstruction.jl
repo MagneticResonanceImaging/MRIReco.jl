@@ -492,7 +492,7 @@ function testSenseMultiEcho(N=32,T = ComplexF32;arrayType = Array)
   @test relErrorEcho1 < 1e-6
 end
 
-function testSenseMultiEchoMeasCoils(N=32;T = ComplexF32;arrayType = Array)
+function testSenseMultiEchoMeasCoils(N=32;T = ComplexF32,arrayType = Array)
     # image
     x = T.(shepp_logan(N))
     rmap = 20.0*ones(N,N)
@@ -703,34 +703,34 @@ end
 function testReco(N=32;arrayType = Array)
     @testset "Reconstructions: $arrayType" begin
         @testset "MultiEcho" begin
-            testRecoMultiEcho(;arrayType)
-            testSenseMultiEcho(N;arrayType)
-            testSenseMultiEchoMeasCoils(N;arrayType)
+            @testset testRecoMultiEcho(;arrayType)
+            @testset testSenseMultiEcho(N;arrayType)
+            @testset testSenseMultiEchoMeasCoils(N;arrayType)
         end
 
         @testset "Convert k-space" begin
-            testConvertKspace(;arrayType)
-            testConvertKspace3D(;arrayType)
+            @testset "K-Space" testConvertKspace(;arrayType)
+            @testset "K-Space 3D" testConvertKspace3D(;arrayType)
         end
 
         @testset "Gridding" begin
-            testGriddingReco(;arrayType)
-            testGriddingReco3d(;arrayType)
-            testRegridding(;arrayType)
+            @testset "Gridding" testGriddingReco(;arrayType)
+            @testset "Gridding 3D" testGriddingReco3d(;arrayType)
+            @testset "Regridding" testRegridding(;arrayType)
         end
 
         @testset "CS" begin
             sampling = ["random", "poisson", "vdPoisson"] # "lines"
-            for samp in sampling
+            @testset "Sampling" for samp in sampling
                 testCSReco(sampling=samp;arrayType)
             end
-            testCSRecoMultCoil(type = ComplexF64;arrayType)
-            testCSRecoMultCoil(type = ComplexF32;arrayType)
-            testCSSenseReco(;arrayType)
-            testCSReco3d(;arrayType)
-            testCSSenseReco3d(;arrayType)
-            testCSRecoMultiCoilCGNR(type = ComplexF64;arrayType)
-            testCSRecoMultiCoilCGNR(type = ComplexF32;arrayType)
+            @testset "MultiCoil F64" testCSRecoMultCoil(type = ComplexF64;arrayType)
+            @testset "MultiCoil F32" testCSRecoMultCoil(type = ComplexF32;arrayType)
+            @testset "Sense" testCSSenseReco(;arrayType)
+            @testset "3D" testCSReco3d(;arrayType)
+            @testset "Sense 3D" testCSSenseReco3d(;arrayType)
+            @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF64;arrayType)
+            @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF32;arrayType)
         end
 
         @testset "off-resonance" begin
@@ -742,9 +742,9 @@ function testReco(N=32;arrayType = Array)
         end
 
         @testset "SENSE" begin
-            testSENSEReco(64, ComplexF32;arrayType)
-            testSENSEReco(64, ComplexF64;arrayType)
-            testSENSEnoiseUnCorr(64, ComplexF64;arrayType)
+            @testset "SENSE F32" testSENSEReco(64, ComplexF32;arrayType)
+            @testset "SENSE F64" testSENSEReco(64, ComplexF64;arrayType)
+            @testset "SENSE F64 Uncorr" testSENSEnoiseUnCorr(64, ComplexF64;arrayType)
         end
     end
 end
