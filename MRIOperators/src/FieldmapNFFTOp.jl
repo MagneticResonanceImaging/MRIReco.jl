@@ -130,7 +130,7 @@ function Base.copy(cparam::InhomogeneityData{T}) where T
 
 end
 
-function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
+function Base.copy(S::FieldmapNFFTOp{T}) where {T}
 
   shape = S.shape
 
