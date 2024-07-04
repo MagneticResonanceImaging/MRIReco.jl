@@ -10,7 +10,7 @@ const tmpdir  = @get_scratch!("tmp")
 @info "If you want to check the output of the tests, please head to $tmpdir."
 
 areTypesDefined = @isdefined arrayTypes
-arrayTypes = areTypesDefined ? arrayTypes : [Array]
+arrayTypes = areTypesDefined ? arrayTypes : [Array, JLArray]
 @testset "MRIReco" begin
   include("testIO.jl")
   include("testReconstruction.jl")
