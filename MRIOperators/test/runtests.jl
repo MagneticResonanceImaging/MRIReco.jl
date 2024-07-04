@@ -4,7 +4,7 @@ using JLArrays
 
 
 areTypesDefined = @isdefined arrayTypes
-arrayTypes = areTypesDefined ? arrayTypes : [Array] #, JLArray]
+arrayTypes = areTypesDefined ? arrayTypes : [Array, JLArray]
 
 @testset "MRIOperators" begin
   include("testOperators.jl")
