@@ -9,6 +9,7 @@ steps:
     command: |
       julia --color=yes --project -e '
       using Pkg
+      Pkg.develop(PackageSpec(path=pwd(), subdir="MRIOperators"))
       Pkg.add("TestEnv")
       using TestEnv
       TestEnv.activate();
@@ -16,6 +17,26 @@ steps:
       Pkg.instantiate()
       include("test/gpu/cuda.jl")'
     timeout_in_minutes: 30
+
+  - label: "Nvidia GPUs -- MRIOperators.jl"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1.10"
+    agents:
+      queue: "juliagpu"
+      cuda: "*"
+    command: |
+      julia --color=yes --project -e '
+      using Pkg
+      Pkg.develop(PackageSpec(path=pwd(), subdir="MRIOperators"))
+      Pkg.add("TestEnv")
+      using TestEnv
+      TestEnv.activate();
+      Pkg.add("CUDA")
+      Pkg.instantiate()
+      include("MRIOperators/test/gpu/cuda.jl")'
+    timeout_in_minutes: 30
+
 
 #  - label: "AMD GPUs -- MRIReco.jl"
 #    plugins:
