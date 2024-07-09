@@ -1,4 +1,4 @@
-export softwareCoilCompression, applyCoilCompressionSensitivityMaps
+export softwareCoilCompression, applyCoilCompressionSensitivityMaps, geometricCoilCompression
 
 """
     geometricCoilCompression(kspace::Matrix{T}, numVC::Int64 = size(kdata, 2)) where T <: Complex
