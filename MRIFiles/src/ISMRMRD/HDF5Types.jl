@@ -245,7 +245,7 @@ function writeProfiles(file, dataset, profiles::Vector{Profile})
     #for some reason this is stored as float
     d = HVL_T(2*length(profiles[l].data), pointer(reinterpret(Float32,profiles[l].data)))
 
-    iobuf = IOBuffer()
+    iobuf = IOBuffer(sizehint=ISMRMRD_HEADER_PLUS_POINTERS_SIZE)
     write(iobuf, profiles[l].head )
     write(iobuf, t )
     write(iobuf, d)
