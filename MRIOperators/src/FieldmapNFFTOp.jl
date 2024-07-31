@@ -91,12 +91,18 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   plans = [] # Dont fully specify type yet
   idx = []
+  baseArrayType = Base.typename(S).wrapper # https://github.com/JuliaLang/julia/issues/35543
   for κ=1:K
-    push!(idx, findall(x->x!=0.0, cparam.A_k[:,κ]))
-    push!(plans, plan_nfft(S, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL))
+    posIndices = findall(x->x!=0.0, cparam.A_k[:,κ])
+    if !isempty(posIndices)
+      push!(idx, posIndices)
+      push!(plans, plan_nfft(baseArrayType, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL))
+    end
   end
   plans = identity.(plans) # This gives the vectors (more) concrete types
   idx = identity.(idx)
+  K=length(plans)
+  
 
   if !<:(S, Array)
     # Move InhomogeneityData to (potentially) GPU
@@ -163,7 +169,7 @@ function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVecto
                shutter::Bool, d, p) where {T}
 
   s .= zero(T)
-  K = size(cparam.A_k,2)
+  K=length(plan)
 
   if shutter
     circularShutter!(reshape(x, shape), 1.0)
@@ -205,7 +211,7 @@ function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, 
                  cparam::InhomogeneityData{T}, shutter::Bool, d, p) where {T}
 
   y .= zero(Complex{T})
-  K = size(cparam.A_k,2)
+  K=length(plan)
 
   x_tmp .= x
 
