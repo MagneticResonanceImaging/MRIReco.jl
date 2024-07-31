@@ -4,6 +4,7 @@ author = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.3.0"
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
@@ -21,6 +22,7 @@ Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 
 [compat]
+Adapt = "3, 4"
 StatsBase = "0.33, 0.34"
 Distributions = "0.25"
 GPUArrays = "8, 9, 10"

@@ -48,11 +48,10 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::Ab
   end
 
   tmp = S(undef, 0)
-  if !isa(tmp, Vector)
-    nodes = copyto!(similar(tmp, T, size(nodes)), nodes)
-    times = copyto!(similar(tmp, T, size(times)), times)
-    disturbanceTerm = copyto!(similar(tmp, size(disturbanceTerm)), disturbanceTerm)
-  end
+  baseArrayType = stripParameters(S)
+  nodes = adapt(baseArrayType, nodes)
+  times = adapt(baseArrayType, times)
+  disturbanceTerm = adapt(baseArrayType, disturbanceTerm)
 
   # if echo image is desired echo time is needed as an offset
   if echoImage

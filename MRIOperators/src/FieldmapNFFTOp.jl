@@ -12,6 +12,8 @@ mutable struct InhomogeneityData{T, matT <: AbstractArray{Complex{T}, 2}, vecT <
   method::String
 end
 
+Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
+
 mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
@@ -81,8 +83,6 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   nrow = size(nodes,2)
   ncol = prod(shape)
 
-  tmp = S(undef, 0)
-
  # create and truncate low-rank expansion
   cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
@@ -91,7 +91,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   plans = [] # Dont fully specify type yet
   idx = []
-  baseArrayType = Base.typename(S).wrapper # https://github.com/JuliaLang/julia/issues/35543
+  baseArrayType = stripParameters(S)
   for κ=1:K
     posIndices = findall(x->x!=0.0, cparam.A_k[:,κ])
     if !isempty(posIndices)
@@ -103,18 +103,14 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   idx = identity.(idx)
   K=length(plans)
   
+  cparam = adapt(baseArrayType, cparam)
+  idx = adapt.(baseArrayType, idx)
 
-  if !<:(S, Array)
-    # Move InhomogeneityData to (potentially) GPU
-    A_k = copyto!(similar(tmp, Complex{T}, size(cparam.A_k)...), cparam.A_k)
-    C_k = copyto!(similar(tmp, Complex{T}, size(cparam.C_k)...), cparam.C_k)
-    times = copyto!(similar(tmp, T, size(cparam.times)...), cparam.times)
-    Cmap = copyto!(similar(tmp, Complex{T}, size(cparam.Cmap)...), cparam.Cmap)
-    cparam = InhomogeneityData(A_k, C_k, times, Cmap, cparam.t_hat, cparam.z_hat, cparam.method)
-    # Move idx to (potentially) GPU
-    idx = map(i -> copyto!(similar(tmp, Int32, size(i)...), i), idx)
+  if !isa(first(idx), Array)
+    idx = map(i -> Int32.(i), idx)
   end
 
+  tmp = S(undef, 0)
   x_tmp = fill!(similar(tmp, Complex{T}, ncol), zero(Complex{T}))
   y_tmp = fill!(similar(tmp, Complex{T}, nrow), zero(Complex{T}))
   
@@ -126,7 +122,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, S(undef, 0), S(undef, 0) 
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, tmp, tmp 
             , plans, idx, circTraj, shape, cparam)
 end
 

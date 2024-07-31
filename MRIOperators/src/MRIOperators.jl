@@ -2,6 +2,7 @@ module MRIOperators
 
 using Base: hcat, vcat, \
 
+using Adapt
 using Reexport
 using MRIBase
 @reexport using LinearOperatorCollection
@@ -83,5 +84,8 @@ function Base.copy(S::LinearOperator{T}) where T
 end
 
 fftParams(::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+
+# https://github.com/JuliaLang/julia/issues/35543
+stripParameters(arrT::Type{<:AbstractArray}) = Base.typename(arrT).wrapper
 
 end # module
