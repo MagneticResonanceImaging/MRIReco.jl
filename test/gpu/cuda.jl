@@ -1,4 +1,4 @@
-using CUDA, CuNFFT
+using CUDA
 
 arrayTypes = [CuArray]
 
