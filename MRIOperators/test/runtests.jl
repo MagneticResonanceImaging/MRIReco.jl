@@ -1,5 +1,5 @@
 using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT.FFTW
-using LinearAlgebra, LinearOperatorCollection
+using LinearAlgebra, MRIOperators.LinearOperatorCollection
 using JLArrays
 
 
