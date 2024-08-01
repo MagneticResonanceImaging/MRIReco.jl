@@ -73,27 +73,27 @@ steps:
     timeout_in_minutes: 30
 
 
-- label: "AMD GPUs -- MRIOperators.jl"
-  plugins:
-    - JuliaCI/julia#v1:
-        version: "1.10"
-  agents:
-    queue: "juliagpu"
-    rocm: "*"
-    rocmgpu: "*"
-  command: |
-    julia --color=yes --project -e '
-    using Pkg
-    Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
-      , PackageSpec(path=pwd(), subdir="MRIFiles")
-      , PackageSpec(path=pwd(), subdir="MRISampling")
-      , PackageSpec(path=pwd(), subdir="MRISimulation")
-      , PackageSpec(path=pwd(), subdir="MRIOperators")
-      , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
-    Pkg.add("TestEnv")
-    using TestEnv
-    TestEnv.activate("MRIOperators");
-    Pkg.add("AMDGPU")
-    Pkg.instantiate()
-    include("MRIOperators/test/gpu/rocm.jl")'
-  timeout_in_minutes: 30
+  - label: "AMD GPUs -- MRIOperators.jl"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1.10"
+    agents:
+      queue: "juliagpu"
+      rocm: "*"
+      rocmgpu: "*"
+    command: |
+      julia --color=yes --project -e '
+      using Pkg
+      Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
+        , PackageSpec(path=pwd(), subdir="MRIFiles")
+        , PackageSpec(path=pwd(), subdir="MRISampling")
+        , PackageSpec(path=pwd(), subdir="MRISimulation")
+        , PackageSpec(path=pwd(), subdir="MRIOperators")
+        , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
+      Pkg.add("TestEnv")
+      using TestEnv
+      TestEnv.activate("MRIOperators");
+      Pkg.add("AMDGPU")
+      Pkg.instantiate()
+      include("MRIOperators/test/gpu/rocm.jl")'
+    timeout_in_minutes: 30
