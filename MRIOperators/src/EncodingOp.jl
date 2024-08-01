@@ -35,16 +35,16 @@ in terms of their sensitivities
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
 function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                                , senseMaps::Array{Complex{T},4}
-                                ; slice=1, kargs...) where {T,D}
+                                , senseMaps::AbstractArray{Complex{T},4}
+                                ; slice=1, S = Vector{Complex{T}}, copyOpsFn = copy, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
 
   numContr, numChan = numContrasts(acqData), numChannels(acqData)
   # fourier operators
-  ft = encodingOps_simple(acqData, shape; slice=slice, kargs...)
-  S = SensitivityOp(reshape(smaps,:,numChan),1)
-  Op = [ DiagOp(ft[i], numChan) ∘ S for i=1:numContr]
+  ft = encodingOps_simple(acqData, shape; slice=slice, S = S, kargs...)
+  SOp = SensitivityOp(reshape(smaps,:,numChan),1)
+  Op = [ DiagOp(ft[i], numChan; copyOpsFn = copyOpsFn) ∘ SOp for i=1:numContr]
 
   return Op
 end
@@ -81,17 +81,17 @@ in terms of their sensitivities
 * `senseMaps::Array{Complex{T}}`        - coil sensitivities
 """
 function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                                          , senseMaps::Array{Complex{T}}
-                                          ; slice::Int64=1, kargs...) where {T,D}
+                                          , senseMaps::AbstractArray{Complex{T}}
+                                          ; slice::Int64=1, copyOpsFn = copy, kargs...) where {T,D}
 
   smaps = ( D==2 ? senseMaps[:,:,slice,:] : senseMaps )
 
   numChan = numChannels(acqData)
   # fourier operators
   ft = encodingOps_simple(acqData, shape; kargs...)
-  S = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
-  ops2 = [copy(ft[n]) for j=1:numChan,n=eachindex(ft)]
-  return DiagOp(ops2...) ∘ S
+  SOp = SensitivityOp(reshape(smaps,:,numChan),numContrasts(acqData))
+  ops2 = [copyOpsFn(ft[n]) for j=1:numChan,n=eachindex(ft)]
+  return DiagOp(ops2...) ∘ SOp
 end
 
 ###################################
@@ -139,7 +139,7 @@ return Fourier encoding operator (either Explicit or NFFT)
 """
 function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
           subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap::Array{Complex{T}}=Complex{T}[],
-          echoImage::Bool=true,  kargs...) where {T,D}
+          echoImage::Bool=true, S = Vector{Complex{T}}, kargs...) where {T,D}
 
   # extract proper portion of correctionMap
   if !isempty(correctionMap)
@@ -148,21 +148,21 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   # Fourier transformations
   if opName=="explicit"
     @debug "ExplicitOp"
-    ftOp = ExplicitOp(shape, tr, cmap, echoImage=echoImage)
+    ftOp = ExplicitOp(shape, tr, cmap, echoImage=echoImage, S = S)
   elseif opName=="fast"
     @debug "NFFT-based Op"
     if !isempty(correctionMap) && correctionMap!=zeros(Complex{T},size(correctionMap))
-      ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; kargs...)
+      ftOp = FieldmapNFFTOp(shape, tr, cmap, echoImage=echoImage; S = S, fftParams(S)..., kargs...)
     elseif isCartesian(tr)
       @debug "FFTOp"
       if !MRIBase.isUndersampledCartTrajectory(shape,tr)
-        ftOp = FFTOp(Complex{T}; shape, unitary=false)
+        ftOp = FFTOp(Complex{T}; shape, unitary=false, S = S, fftParams(S)...)
       else
         idx = MRIBase.cartesianSubsamplingIdx(shape,tr)
-        ftOp = SamplingOp(Complex{T}; pattern=idx, shape) ∘ FFTOp(Complex{T}; shape, unitary=false)
+        ftOp = SamplingOp(Complex{T}; pattern=idx, shape, S = S) ∘ FFTOp(Complex{T}; shape, unitary=false, S = S, fftParams(S)...)
       end
     else
-      ftOp = NFFTOp(tr; shape, kargs...)
+      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, fftParams(S)..., kargs...)
     end
   else
     @error "opName $(opName) is not known"
@@ -171,7 +171,7 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   # subsampling
   if !isempty(subsampleIdx) && (subsampleIdx != collect(1:size(tr,2))) && isCartesian(tr)
     β = (D==2) ? (tr.numSamplingPerProfile, tr.numProfiles) : (tr.numSamplingPerProfile, tr.numProfiles, tr.numSlices)
-    S = SamplingOp(Complex{T}; pattern = subsampleIdx, shape=β)
+    S = SamplingOp(Complex{T}; pattern = subsampleIdx, shape=β, S = S)
     return S ∘ ftOp
   else
     return ftOp

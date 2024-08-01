@@ -44,12 +44,12 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRIBase"))
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRIFiles"))
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRISampling"))
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRISimulation"))
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRIOperators"))
-          Pkg.develop(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
+          Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
+            , PackageSpec(path=pwd(), subdir="MRIFiles")
+            , PackageSpec(path=pwd(), subdir="MRISampling")
+            , PackageSpec(path=pwd(), subdir="MRISimulation")
+            , PackageSpec(path=pwd(), subdir="MRIOperators")
+            , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - name: Run subpackage tests
@@ -78,12 +78,12 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase"))
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRISampling"))
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
-          Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
+          Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
+            , PackageSpec(path=pwd(), subdir="MRIFiles")
+            , PackageSpec(path=pwd(), subdir="MRISampling")
+            , PackageSpec(path=pwd(), subdir="MRISimulation")
+            , PackageSpec(path=pwd(), subdir="MRIOperators")
+            , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
       - run: |
           julia --project=docs -e '
             using Pkg
