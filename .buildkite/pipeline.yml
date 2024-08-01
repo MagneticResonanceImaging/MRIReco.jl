@@ -41,7 +41,7 @@ steps:
         , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
       Pkg.add("TestEnv")
       using TestEnv
-      TestEnv.activate();
+      TestEnv.activate("MRIOperators");
       Pkg.add("CUDA")
       Pkg.instantiate()
       include("MRIOperators/test/gpu/cuda.jl")'
@@ -67,7 +67,7 @@ steps:
   #    , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
   #  Pkg.add("TestEnv")
   #  using TestEnv
-  #  TestEnv.activate();
+  #  TestEnv.activate("MRIOperators");
   #  Pkg.add("AMDGPU")
   #  Pkg.instantiate()
   #  include("MRIOperators/test/gpu/rocm.jl")'
