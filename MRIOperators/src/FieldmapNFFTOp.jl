@@ -2,17 +2,19 @@ export FieldmapNFFTOp, InhomogeneityData, createInhomogeneityData_
 
 include("ExpApproximation.jl")
 
-mutable struct InhomogeneityData{T}
-  A_k::Matrix{Complex{T}}
-  C_k::Matrix{Complex{T}}
-  times::Vector{T}
-  Cmap::Matrix{Complex{T}}
+mutable struct InhomogeneityData{T, matT <: AbstractArray{Complex{T}, 2}, vecT <: AbstractArray{T, 1}}
+  A_k::matT
+  C_k::matT
+  times::vecT
+  Cmap::matT
   t_hat::T
   z_hat::Complex{T}
   method::String
 end
 
-mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
+Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
+
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -26,14 +28,13 @@ mutable struct FieldmapNFFTOp{T,F1,F2,D} <:AbstractLinearOperator{Complex{T}}
   args5 :: Bool
   use_prod5! :: Bool
   allocated5 :: Bool
-  Mv5 :: Vector{Complex{T}}
-  Mtu5 :: Vector{Complex{T}}
+  Mv5 :: vecT
+  Mtu5 :: vecT
   plans
-  idx::Vector{Vector{Int64}}
+  idx::Vector{vecI}
   circTraj::Bool
   shape::NTuple{D,Int64}
-  cparam::InhomogeneityData{T}
-
+  cparam::InhomogeneityData{T, matT, vecTR}
 end
 
 LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
@@ -73,8 +74,8 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         K=20,
                         K_tol::Float64=1.e-3,
                         step::Int64=10,
+                        S = Vector{Complex{T}},
                         kargs...) where {T,D}
-
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
     times = times .- echoTime(tr)
@@ -82,31 +83,46 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   nrow = size(nodes,2)
   ncol = prod(shape)
 
-  x_tmp = zeros(Complex{T}, ncol)
-  y_tmp = zeros(Complex{T}, nrow)
-
  # create and truncate low-rank expansion
   cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
   K = size(cparam.A_k,2)
 
   @debug "K = $K"
 
-  plans = Vector{NFFT.NFFTPlan{T,D,1}}(undef,K)
-  idx = Vector{Vector{Int64}}(undef,K)
+  plans = [] # Dont fully specify type yet
+  idx = []
+  baseArrayType = stripParameters(S)
   for κ=1:K
-    idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL)
+    posIndices = findall(x->x!=0.0, cparam.A_k[:,κ])
+    if !isempty(posIndices)
+      push!(idx, posIndices)
+      push!(plans, plan_nfft(baseArrayType, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL))
+    end
   end
+  plans = identity.(plans) # This gives the vectors (more) concrete types
+  idx = identity.(idx)
+  K=length(plans)
   
-  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
-  p = [zeros(Complex{T}, shape) for κ=1:K]
+  cparam = adapt(baseArrayType, cparam)
+  idx = adapt.(baseArrayType, idx)
+
+  if !isa(first(idx), Array)
+    idx = map(i -> Int32.(i), idx)
+  end
+
+  tmp = S(undef, 0)
+  x_tmp = fill!(similar(tmp, Complex{T}, ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(tmp, Complex{T}, nrow), zero(Complex{T}))
+  
+  d = [fill!(similar(tmp, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(tmp, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   circTraj = isCircular(tr)
 
-  return FieldmapNFFTOp{T,Nothing,Function,D}(nrow, ncol, false, false
+  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, tmp, tmp 
             , plans, idx, circTraj, shape, cparam)
 end
 
@@ -116,7 +132,7 @@ function Base.copy(cparam::InhomogeneityData{T}) where T
 
 end
 
-function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
+function Base.copy(S::FieldmapNFFTOp{T}) where {T}
 
   shape = S.shape
 
@@ -124,12 +140,12 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   plans = [copy(S.plans[i]) for i=1:K]
   idx = copy(S.idx)
 
-  x_tmp = zeros(Complex{T}, S.ncol)
-  y_tmp = zeros(Complex{T}, S.nrow)
+  x_tmp = fill!(similar(S.Mv5, Complex{T}, S.ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(S.Mv5, Complex{T}, S.nrow), zero(Complex{T}))
 
   cparam = copy(S.cparam)
-  d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K]
-  p = [zeros(Complex{T}, shape) for κ=1:K]
+  d = [fill!(similar(S.Mv5, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(S.Mv5, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   D_ = length(shape)
   circTraj = S.circTraj
@@ -137,19 +153,19 @@ function Base.copy(S::FieldmapNFFTOp{T,Nothing,Function,D}) where {T,D}
   mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
   ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p)
 
-  return FieldmapNFFTOp{T,Nothing,Function,D_}(S.nrow, S.ncol, false, false
+  return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
             , plans, idx, circTraj, shape, cparam)
 end
 
-function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::Vector{T},shape::Tuple, plan,
-               idx::Vector{Vector{Int64}}, cparam::InhomogeneityData,
-               shutter::Bool, d::Vector{Vector{T}}, p::Vector{Array{T,D}}) where {T,D}
+function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVector{T},shape::Tuple, plan,
+               idx, cparam::InhomogeneityData,
+               shutter::Bool, d, p) where {T}
 
   s .= zero(T)
-  K = size(cparam.A_k,2)
+  K=length(plan)
 
   if shutter
     circularShutter!(reshape(x, shape), 1.0)
@@ -187,11 +203,11 @@ function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
 end
 
 
-function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::Vector{Complex{T}}, shape::Tuple, plan, idx::Vector{Vector{Int64}},
-                 cparam::InhomogeneityData{T}, shutter::Bool, d::Vector{Vector{Complex{T}}}, p::Vector{Array{Complex{T},D}}) where {T,D}
+function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::AbstractVector{Complex{T}}, shape::Tuple, plan, idx,
+                 cparam::InhomogeneityData{T}, shutter::Bool, d, p) where {T}
 
   y .= zero(Complex{T})
-  K = size(cparam.A_k,2)
+  K=length(plan)
 
   x_tmp .= x
 

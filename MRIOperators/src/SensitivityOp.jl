@@ -41,7 +41,8 @@ function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1) where T
     return LinearOperator{T}(numVox*numContr*numChan, numVox*numContr, false, false,
                          (res,x) -> prod_smap!(res,sensMaps,x,numVox,numChan,numContr),
                          nothing,
-                         (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr))
+                         (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr),
+                         S = typeof(similar(sensMaps, 0)))
 end
 
 """
