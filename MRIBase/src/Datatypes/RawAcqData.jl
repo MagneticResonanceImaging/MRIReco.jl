@@ -264,9 +264,7 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
     i1 = f.profiles[l].head.discard_pre + 1
     i2 = i1+numSampPerProfile-1
     kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
-    if f.profiles[l].head.read_dir[1] < 0
-      kdata[:,cnt,:] .= reverse(kdata[:,cnt,:], dims=1)
-    end
+
     cnt += 1
   end
 
