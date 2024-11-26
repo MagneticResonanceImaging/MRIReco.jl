@@ -21,9 +21,11 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
   numEchos = MRIFiles.acqNumEchos(b)
   phaseFactor = MRIFiles.acqPhaseFactor(b) 
   numRep = MRIFiles.acqNumRepetitions(b)
-  numEncSteps = MRIFiles.acqSpatialSize1(b) 
+  numEncSteps = MRIFiles.acqSpatialSize1(b)
+  readoutLength =  parse.(Int,b["PVM_EncMatrix"])[1]
 
-  profileLength = N[1]*numChannel#MRIFiles.acqSize(b)[1] #Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype)) # number of points + zeros
+  centerSample = parse.(Int,b["PVM_EncPftOverscans"])[1]
+  profileLength = readoutLength*numChannel#MRIFiles.acqSize(b)[1] #Int((ceil(N[1]*numChannel*sizeof(dtype)/1024))*1024/sizeof(dtype)) # number of points + zeros
 
   I = open(filename,"r") do fd
     read!(fd,Array{T,6}(undef, profileLength,
@@ -34,8 +36,8 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
                                    numRep))
   end
 
-  encSteps1 = parse.(Int,b["PVM_EncGenSteps1"]).+round(Int,N[2]/2)
-  encSteps2 = parse.(Int,b["PVM_EncGenSteps2"]).+round(Int,N[3]/2)
+  encSteps1 = parse.(Int,b["PVM_EncGenSteps1"]).+floor(Int,N[2]/2)
+  encSteps2 = parse.(Int,b["PVM_EncGenSteps2"]).+floor(Int,N[3]/2)
 
   objOrd = MRIFiles.acqObjOrder(b)
   objOrd = objOrd.-minimum(objOrd)
@@ -79,7 +81,7 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
               head = AcquisitionHeader(number_of_samples=N[1], idx=counter,
                                         read_dir=read_dir, phase_dir=phase_dir,
                                         slice_dir=slice_dir, position=position,
-                                        center_sample=div(N[1],2),
+                                        center_sample=centerSample,#div(N[1],2),
                                         available_channels = numChannel, #numAvailableChannel ?
                                         active_channels = numChannel)
               traj = Matrix{Float32}(undef,0,0)

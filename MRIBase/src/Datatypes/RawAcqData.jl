@@ -206,7 +206,7 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, 
     i1 = tr_center_idx - center_sample + 1 + f.profiles[i].head.discard_pre
     i2 = tr_center_idx - center_sample + numSamp - f.profiles[i].head.discard_post
     # convert to linear index
-    lineIdx = collect(i1:i2) .+ numSamp*((encSt2[i]-1)*numProf + (encSt1[i]-1))
+    lineIdx = collect(i1:i2) .+ numEncSamp *((encSt2[i]-1)*numProf + (encSt1[i]-1))
     append!(idx, lineIdx)
   end
 
