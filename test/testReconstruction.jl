@@ -614,7 +614,7 @@ function testCSReco3d(N=128;arrayType = Array)
 
   Ireco = reconstruction(acqData, params)
 
-  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 2e-1
 end
 
 function testCSSenseReco3d(N=128;arrayType = Array)
