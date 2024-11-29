@@ -264,7 +264,10 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
     i1 = f.profiles[l].head.discard_pre + 1
     i2 = i1+numSampPerProfile-1
     kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
-
+    if flag_is_set(f.profiles[l],"ACQ_IS_REVERSE")
+      kdata[:,cnt,:] .= reverse(kdata[:,cnt,:], dims=1)
+      flag_remove!(f.profiles[l],"ACQ_IS_REVERSE")
+    end
     cnt += 1
   end
 

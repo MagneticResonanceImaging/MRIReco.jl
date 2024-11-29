@@ -49,7 +49,7 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
 
   offset3 = ndims(b) == 2 ? MRIFiles.acqSliceOffset(b) : MRIFiles.pvmEffPhase2Offset(b)
 
-
+ 
   profiles = Profile[]
   for nR = 1:numRep
     for nEnc = 1:div(numEncSteps, phaseFactor)
@@ -84,9 +84,20 @@ function RawAcquisitionDataFid_360(b::BrukerFile)
                                         center_sample=centerSample,#div(N[1],2),
                                         available_channels = numChannel, #numAvailableChannel ?
                                         active_channels = numChannel)
+
+
               traj = Matrix{Float32}(undef,0,0)
               dat = map(T, reshape(I[:,nEcho,nPhase,nSl,nEnc,nR],:,numChannel))
-              push!(profiles, Profile(head,traj,dat) )
+              p = Profile(head,traj,dat)
+
+              if (b["EchoAcqMode"] == "allEchoes") && mod(nEcho,2) == 0 # set reverse specific flags for MGE
+                @info nEcho
+              flag_set!(p,"ACQ_IS_REVERSE")
+              end
+
+              push!(profiles,p)
+
+              
           end
         end
       end
