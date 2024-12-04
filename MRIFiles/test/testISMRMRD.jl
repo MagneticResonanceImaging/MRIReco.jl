@@ -33,8 +33,8 @@ io = IOBuffer()
 write(io, acq.profiles[1].head)
 ioCopy = IOBuffer()
 write(ioCopy, acqCopy.profiles[1].head)
-@test io.data == ioCopy.data
 @test acqCopy.profiles[1].data == acq.profiles[1].data
+@test io.data == ioCopy.data
 
 # test that the offsets in the header are not padded
 h5open(filenameCopy) do fd
