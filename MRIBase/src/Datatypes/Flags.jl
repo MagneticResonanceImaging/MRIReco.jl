@@ -44,32 +44,20 @@ FLAGS = Dict(
 )
 
 function bitshift(A, k)
-  if k >= 0
-      out = A << k
-  else
-      out = A >> abs(k)
-  end
-
+  k >= 0 ? out = A << k : out = A >> abs(k)
   return out
 end
 
-function create_flag_bitmask(flag)
-  # Determine the bit position for the flag
-  if isa(flag, String)
-    b = FLAGS[flag]
-  elseif flag > 0
-      b = UInt64(flag)
-      @info "Bitmask for "
-  else
-    @error "Flag is of the wrong type."
-  end
-  bitmask = bitshift(UInt64(1), b - 1)
-  return  bitmask
-end 
+create_flag_bitmask(flag::T) where T  = error("Unexpected type for bitmask, expected String or positive Integer, found $T")
+create_flag_bitmask(flag::AbstractString) = create_flag_bitmask(FLAGS[flag])
+function create_flag_bitmask(flag::Integer)
+  flag > 0 || throw(DomainError(flag, "Bitmask can only be created for positive integers"))
+  b = UInt64(flag)
+  return bitshift(UInt64(1),  b - 1)
+end
 
 function flag_is_set(obj::Profile, flag)
   bitmask = create_flag_bitmask(flag)
-
   ret = obj.head.flags & bitmask > 0
   return ret
 end
@@ -77,20 +65,14 @@ end
 
 function flag_set!(obj::Profile, flag)
   bitmask = create_flag_bitmask(flag)
-
-  if ~flag_is_set(obj,flag)
-    obj.head.flags = obj.head.flags + bitmask;
-  end
+  obj.head.flags = obj.head.flags | bitmask
 end
 
 function flag_remove!(obj::Profile, flag)
   bitmask = create_flag_bitmask(flag)
-
-  if flag_is_set(obj,flag)
-    obj.head.flags = obj.head.flags - bitmask;
-  end
+  obj.head.flags = obj.head.flags & ~bitmask
 end
 
-function flag_remove_all!(obj::Profile, )
+function flag_remove_all!(obj::Profile)
     obj.head.flags = UInt64(0);
 end
