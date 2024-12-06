@@ -108,7 +108,14 @@ function RawAcquisitionDataFid(b::BrukerFile)
                                            active_channels = numChannel)
                   traj = Matrix{Float32}(undef,0,0)
                   dat = map(T, reshape(I[:,nEcho,nPhase1,nSl,nPhase2,nEnc2,nR],:,numChannel))
-                  push!(profiles, Profile(head,traj,dat) )
+
+                  p = Profile(head,traj,dat)
+                  if (b["EchoAcqMode"] == "allEchoes") && mod(nEcho,2) == 0 # set reverse specific flags for MGE
+                    @info nEcho
+                  flag_set!(p,"ACQ_IS_REVERSE")
+                  end
+
+                  push!(profiles, p )
               end
             end
           end
