@@ -16,7 +16,10 @@
 
   flag_set!(p,"ACQ_IS_REVERSE")
   flag_set!(p,"ACQ_IS_NAVIGATION_DATA")
-  
+
+  fl = flags_of(p)
+
+  @test isequal(fl[1],"ACQ_IS_NAVIGATION_DATA") && isequal(fl[2],"ACQ_IS_REVERSE")
   @test flag_is_set(p,"ACQ_IS_REVERSE") & flag_is_set(p,"ACQ_IS_NAVIGATION_DATA")
   flag_remove_all!(p)
   @test p.head.flags == UInt64(0)
