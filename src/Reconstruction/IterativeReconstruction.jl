@@ -370,7 +370,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
     if isnothing(trafo)
       trafo = SparseOp(Complex{T},"nothing", reconSize; params...)
     end
-    trafo = DiagOp( repeat([trafo],numContr)... )
+    trafo = DiagOp( repeat([trafo],numBasis)... )
     push!(temp, TransformedRegularization(r, trafo))
   end
   reg = identity.(temp)

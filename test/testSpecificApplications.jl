@@ -161,6 +161,14 @@ function testSubspace(N=32)
 
     relError = norm(x_approx - x_approx2)/norm(x_approx)
     @test relError < 5e-3
+
+    params[:reg] = L1Regularization(1.e-3)
+    params[:sparseTrafo] = "Wavelet" #sparse trafo
+    params[:solver] = FISTA
+    α = reconstruction(acqData,params)
+
+    relError = norm(x_approx - x_approx2)/norm(x_approx)
+    @test relError < 5e-3
 end
 
 function testSpecificApplications(N=32)
