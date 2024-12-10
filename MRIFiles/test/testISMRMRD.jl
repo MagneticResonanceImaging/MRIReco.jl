@@ -33,7 +33,9 @@ io = IOBuffer()
 write(io, acq.profiles[1].head)
 ioCopy = IOBuffer()
 write(ioCopy, acqCopy.profiles[1].head)
-@test io.data == ioCopy.data
+seekstart(io)
+seekstart(ioCopy)
+@test read(io) == read(ioCopy)
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
 # test that the offsets in the header are not padded
