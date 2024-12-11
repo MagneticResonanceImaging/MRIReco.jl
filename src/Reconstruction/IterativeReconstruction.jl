@@ -208,14 +208,13 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
   let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
-    @floop executor(arrayType) for l = 1:numRep, k = 1:numSl
+    @floop executor(arrayType) for l = 1:numRep, k = 1:numSl,  j = 1:numContr
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
         E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
       end
 
-      for j = 1:numContr
         W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
         kdata = arrayType((multiCoilData(acqData, j, k, rep=l))) .* repeat(weights[j], numChan)
         if !isnothing(L_inv)
