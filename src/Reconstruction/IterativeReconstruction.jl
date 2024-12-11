@@ -215,22 +215,21 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
         E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
       end
 
-        W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
-        kdata = arrayType((multiCoilData(acqData, j, k, rep=l))) .* repeat(weights[j], numChan)
-        if !isnothing(L_inv)
-          kdata = vec(reshape(kdata, :, numChan) * L_inv')
-        end
-
-        EFull = ∘(W, E[j])
-        EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-        solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
-        I = solve!(solv, kdata)
-
-        if isCircular( trajectory(acqData, j) )
-          circularShutter!(reshape(I, reconSize), 1.0)
-        end
-        Ireco[:,k,j,l] = Array(I)
+      W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
+      kdata = arrayType((multiCoilData(acqData, j, k, rep=l))) .* repeat(weights[j], numChan)
+      if !isnothing(L_inv)
+        kdata = vec(reshape(kdata, :, numChan) * L_inv')
       end
+
+      EFull = ∘(W, E[j])
+      EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+      I = solve!(solv, kdata)
+
+      if isCircular( trajectory(acqData, j) )
+        circularShutter!(reshape(I, reconSize), 1.0)
+      end
+      Ireco[:,k,j,l] = Array(I)
     end
   end
   Ireco_ = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
