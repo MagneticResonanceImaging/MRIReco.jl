@@ -6,11 +6,53 @@ end</code></pre><p>with</p><pre><code class="language-julia">mutable struct Prof
   head::AcquisitionHeader
   traj::Array{Float32,2}
   data::Array{Complex{Float32},2}
-end</code></pre><p>The <code>params</code> member of <code>RawAcquisitionData</code> is basically the a flattened dictionary derived from the XML part of an ISMRMRD file. A <code>Profile</code> describes the data measured after a single excitation during an MRI experiment. It has members <code>head</code>, <code>traj</code>, and <code>data</code>, which exactly resemble the structures specified by the ISMRMRD file format.</p><h2 id="Preprocessed-Data"><a class="docs-heading-anchor" href="#Preprocessed-Data">Preprocessed Data</a><a id="Preprocessed-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Preprocessed-Data" title="Permalink"></a></h2><p>The <code>RawAcquisitionData</code> can be preprocessed into a form, which makes it more convenient for reconstruction algorithms. The <code>AcquisitionData</code> type looks like</p><pre><code class="language-julia">mutable struct AcquisitionData
+end</code></pre><p>The <code>params</code> member of <code>RawAcquisitionData</code> is basically the a flattened dictionary derived from the XML part of an ISMRMRD file. A <code>Profile</code> describes the data measured after a single excitation during an MRI experiment. It has members <code>head</code>, <code>traj</code>, and <code>data</code>, which exactly resemble the structures specified by the ISMRMRD file format.</p><p>AcquisitionHeader has exactly the same structure as ISMRMRD. You can find more information about it <a href="https://ismrmrd.readthedocs.io/en/latest/mrd_raw_data.html#acquisitionheader">here</a></p><p>Two fields are especially important in it :</p><ul><li>flags</li><li>idx</li></ul><h3 id="flags"><a class="docs-heading-anchor" href="#flags">flags</a><a id="flags-1"></a><a class="docs-heading-anchor-permalink" href="#flags" title="Permalink"></a></h3><p>The flags field in the AcquisitionHeader is a 64 bit mask that can be used to indicate specific attributes of the corresponding readout. One usage of these flags is to reverse the signal during conversion from RawAcquisitionData to AcquisitionData if the flag &quot;ACQ<em>IS</em>REVERSE&quot; is set.</p><pre><code class="language-julia">FLAGS = Dict(
+    &quot;ACQ_FIRST_IN_ENCODE_STEP1&quot;                =&gt; 1,
+    &quot;ACQ_LAST_IN_ENCODE_STEP1&quot;                 =&gt; 2,
+    &quot;ACQ_FIRST_IN_ENCODE_STEP2&quot;                =&gt; 3,
+    &quot;ACQ_LAST_IN_ENCODE_STEP2&quot;                 =&gt; 4,
+    &quot;ACQ_FIRST_IN_AVERAGE&quot;                     =&gt; 5,
+    &quot;ACQ_LAST_IN_AVERAGE&quot;                      =&gt; 6,
+    &quot;ACQ_FIRST_IN_SLICE&quot;                       =&gt; 7,
+    &quot;ACQ_LAST_IN_SLICE&quot;                        =&gt; 8,
+    &quot;ACQ_FIRST_IN_CONTRAST&quot;                    =&gt; 9,
+    &quot;ACQ_LAST_IN_CONTRAST&quot;                     =&gt; 10,
+    &quot;ACQ_FIRST_IN_PHASE&quot;                       =&gt; 11,
+    &quot;ACQ_LAST_IN_PHASE&quot;                        =&gt; 12,
+    &quot;ACQ_FIRST_IN_REPETITION&quot;                  =&gt; 13,
+    &quot;ACQ_LAST_IN_REPETITION&quot;                   =&gt; 14,
+    &quot;ACQ_FIRST_IN_SET&quot;                         =&gt; 15,
+    &quot;ACQ_LAST_IN_SET&quot;                          =&gt; 16,
+    &quot;ACQ_FIRST_IN_SEGMENT&quot;                     =&gt; 17,
+    &quot;ACQ_LAST_IN_SEGMENT&quot;                      =&gt; 18,
+    &quot;ACQ_IS_NOISE_MEASUREMENT&quot;                 =&gt; 19,
+    &quot;ACQ_IS_PARALLEL_CALIBRATION&quot;              =&gt; 20,
+    &quot;ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING&quot;  =&gt; 21,
+    &quot;ACQ_IS_REVERSE&quot;                           =&gt; 22,
+    &quot;ACQ_IS_NAVIGATION_DATA&quot;                   =&gt; 23,
+    &quot;ACQ_IS_PHASECORR_DATA&quot;                    =&gt; 24,
+    &quot;ACQ_LAST_IN_MEASUREMENT&quot;                  =&gt; 25,
+    &quot;ACQ_IS_HPFEEDBACK_DATA&quot;                   =&gt; 26,
+    &quot;ACQ_IS_DUMMYSCAN_DATA&quot;                    =&gt; 27,
+    &quot;ACQ_IS_RTFEEDBACK_DATA&quot;                   =&gt; 28,
+    &quot;ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA&quot;    =&gt; 29,
+    &quot;ACQ_COMPRESSION1&quot;                         =&gt; 53,
+    &quot;ACQ_COMPRESSION2&quot;                         =&gt; 54,
+    &quot;ACQ_COMPRESSION3&quot;                         =&gt; 55,
+    &quot;ACQ_COMPRESSION4&quot;                         =&gt; 56,
+    &quot;ACQ_USER1&quot;                                =&gt; 57,
+    &quot;ACQ_USER2&quot;                                =&gt; 58,
+    &quot;ACQ_USER3&quot;                                =&gt; 59,
+    &quot;ACQ_USER4&quot;                                =&gt; 60,
+    &quot;ACQ_USER5&quot;                                =&gt; 61,
+    &quot;ACQ_USER6&quot;                                =&gt; 62,
+    &quot;ACQ_USER7&quot;                                =&gt; 63,
+    &quot;ACQ_USER8&quot;                                =&gt; 64
+)</code></pre><p>You can check the flags of a profile with <code>flags_of(p:Profile)</code> or <code>flag_is_set</code> and manipulate them with thus functions :</p><ul><li><code>flag_set!(obj::Profile, flag)</code></li><li><code>flag_remove!(obj::Profile, flag)</code></li><li><code>flag_remove_all!(obj::Profile)</code></li></ul><h3 id="idx"><a class="docs-heading-anchor" href="#idx">idx</a><a id="idx-1"></a><a class="docs-heading-anchor-permalink" href="#idx" title="Permalink"></a></h3><p>MR acquisitions often loop through a set of counters (e.g. phase encodes) in a complete experiment. The following encoding counters are referred to by the idx field in the AcquisitionHeader (<a href="https://ismrmrd.readthedocs.io/en/latest/mrd_raw_data.html#mrd-encodingcounters">See the ISMRMRD documentation</a>)</p><h2 id="Preprocessed-Data"><a class="docs-heading-anchor" href="#Preprocessed-Data">Preprocessed Data</a><a id="Preprocessed-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Preprocessed-Data" title="Permalink"></a></h2><p>The <code>RawAcquisitionData</code> can be preprocessed into a form, which makes it more convenient for reconstruction algorithms. The <code>AcquisitionData</code> type looks like</p><pre><code class="language-julia">mutable struct AcquisitionData
   sequenceInfo::Dict{Symbol,Any}
   traj::Vector{Trajectory}
   kdata::Array{Matrix{ComplexF64},3}
   subsampleIndices::Vector{Array{Int64}}
   encodingSize::Vector{Int64}
   fov::Vector{Float64}
-end</code></pre><p>It consists of the sequence informations stored in a dictionary, the k-space trajectory, the k-space data, and several parameters describing the dimension of the data and some additional index vectors.</p><p>The k-space data <code>kdata</code> has three dimensions encoding</p><ol><li>dim : contrasts/echoes</li><li>dim : slices</li><li>dim : repetitions</li></ol><p>Each element is a matrix encoding</p><ol><li>dim : k-space nodes</li><li>dim : channels/coils</li></ol><p>In case of undersampled data, the subsampling indices are stored in <code>subsampleIndices</code>. One check if the data is undersampled by checking if <code>isempty(subsampleIndices)</code>.</p><p>The encoded space is stored in the field <code>encodingSize</code>. It is especially relevant for non-Cartesian trajectories where it is not clear upfront, how large the grid size for reconstruction should be chosen. Finally <code>fov</code> describes the physical lengths of the encoding grid.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../filehandling/">File Handling »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 17 July 2024 06:01">Wednesday 17 July 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>It consists of the sequence informations stored in a dictionary, the k-space trajectory, the k-space data, and several parameters describing the dimension of the data and some additional index vectors.</p><p>The k-space data <code>kdata</code> has three dimensions encoding</p><ol><li>dim : contrasts/echoes</li><li>dim : slices</li><li>dim : repetitions</li></ol><p>Each element is a matrix encoding</p><ol><li>dim : k-space nodes</li><li>dim : channels/coils</li></ol><p>In case of undersampled data, the subsampling indices are stored in <code>subsampleIndices</code>. One check if the data is undersampled by checking if <code>isempty(subsampleIndices)</code>.</p><p>The encoded space is stored in the field <code>encodingSize</code>. It is especially relevant for non-Cartesian trajectories where it is not clear upfront, how large the grid size for reconstruction should be chosen. Finally <code>fov</code> describes the physical lengths of the encoding grid.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../filehandling/">File Handling »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 11 December 2024 19:33">Wednesday 11 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
