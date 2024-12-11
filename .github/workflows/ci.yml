@@ -76,26 +76,16 @@ jobs:
         with:
           version: '1'
       - name: Install subpackages
-        shell: julia --color=yes --project=. {0}
+        shell: julia --color=yes --project=docs {0}
         run: |
           using Pkg
-          Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
+          Pkg.develop([PackageSpec(path=pwd())
+            , PackageSpec(path=pwd(), subdir="MRIBase")
             , PackageSpec(path=pwd(), subdir="MRIFiles")
             , PackageSpec(path=pwd(), subdir="MRISampling")
             , PackageSpec(path=pwd(), subdir="MRISimulation")
             , PackageSpec(path=pwd(), subdir="MRIOperators")
             , PackageSpec(path=pwd(), subdir="MRICoilSensitivities")])
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRIBase"))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRIFiles"))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRISampling"))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRISimulation"))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRIOperators"))
-            Pkg.add(PackageSpec(path=pwd(), subdir="MRICoilSensitivities"))
-            Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
             using Documenter: doctest
