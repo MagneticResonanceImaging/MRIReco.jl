@@ -79,7 +79,8 @@ jobs:
         shell: julia --color=yes --project=docs {0}
         run: |
           using Pkg
-          Pkg.develop([PackageSpec(path=pwd(), subdir="MRIBase")
+          Pkg.develop([PackageSpec(path=pwd())]
+            ,  PackageSpec(path=pwd(), subdir="MRIBase")
             , PackageSpec(path=pwd(), subdir="MRIFiles")
             , PackageSpec(path=pwd(), subdir="MRISampling")
             , PackageSpec(path=pwd(), subdir="MRISimulation")
