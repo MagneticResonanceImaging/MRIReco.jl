@@ -1,4 +1,5 @@
-using MRIReco, MRIReco.RegularizedLeastSquares
+using MRIReco, MRIReco.RegularizedLeastSquares, MRISimulation
+using ImageUtils: shepp_logan
 
 ##### simple example ####
 
