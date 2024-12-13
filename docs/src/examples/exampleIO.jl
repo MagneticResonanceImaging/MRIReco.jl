@@ -1,4 +1,4 @@
-using HTTP, PyPlot, MRIReco
+using HTTP, CairoMakie, MRIReco
 
 if !isdir("brukerfileCart")
   HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/brukerfileCart.zip") do http
