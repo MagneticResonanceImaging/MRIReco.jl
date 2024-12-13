@@ -1,5 +1,6 @@
-using PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
-
+using CairoMakie, MRIReco, MRIReco.RegularizedLeastSquares
+using MRIFiles, MRISampling, MRICoilSensitivities
+include(joinpath(@__DIR__,"exampleUtils.jl"))
 # load fully sampled data
 f = ISMRMRDFile(@__DIR__()*"/data/knee_3dFSE_slice170.h5")
 acqData = AcquisitionData(f);
@@ -58,21 +59,21 @@ params[:normalizeReg] = MeasurementBasedNormalization()
 img_tv = reconstruction(acqDataSub, params)
 
 
-# use PyPlot for interactive display
-figure(1)
-clf()
-subplot(2,2,1)
-title("Phantom")
-imshow(abs.(img[:,:,1,1,1]))
-subplot(2,2,2)
-title("Mask")
-imshow(abs.(msk))
-subplot(2,2,3)
-title("CG Reconstruction")
-imshow(abs.(img_cg[:,:,1,1,1]))
-subplot(2,2,4)
-title("TV Reconstruction")
-imshow(abs.(img_tv[:,:,1,1,1]))
+begin
+  colormap=:grays
+  f = Figure(size=(800,800))
+  ax = Axis(f[1,1],title="Phantom")
+  heatmap!(ax,rotr90(abs.(img[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,2],title="Mask")
+  heatmap!(ax,rotr90(abs.(msk));colormap)
+  ax = Axis(f[2,1],title="CG Reconstruction")
+  heatmap!(ax,rotr90(abs.(img_cg[:,:,1,1,1]));colormap)
+  ax = Axis(f[2,2],title="TV Reconstruction")
+  heatmap!(ax,rotr90(abs.(img_tv[:,:,1,1,1]));colormap)
+  [hidedecorations!(f.content[ax]) for ax in eachindex(f.content)]
+  f
+end
+
 
 # export images
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/kneeOrig.png")
