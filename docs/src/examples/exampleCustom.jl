@@ -1,4 +1,6 @@
-using Wavelets, DelimitedFiles, LinearAlgebra, PyPlot, MRIReco, MRIReco.RegularizedLeastSquares
+using MRIReco, MRIFiles, MRIOperators
+using MRIReco.MRIOperators.Wavelets, MRIReco.RegularizedLeastSquares
+using DelimitedFiles, LinearAlgebra, CairoMakie
 include(joinpath(@__DIR__,"exampleUtils.jl"))
 
 function analyzeImage(x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64};t0::Int64=size(D,2),tol=1e-3) where T
@@ -35,7 +37,7 @@ end
 function dictOp(D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64},tol::Float64=1.e-3) where T
   produ = x->analyzeImage(x,D,xsize,psize,tol=tol)
   ctprodu = x->synthesizeImage(x,D,xsize,psize)
-  return LinearOperator(prod(xsize)*size(D,2),prod(xsize),false,false
+  return LinearOperator(T,prod(xsize)*size(D,2),prod(xsize),false,false
           , produ
           , nothing
           , ctprodu )
@@ -44,9 +46,9 @@ end
 ## To test our method, let us load some simulated data and subsample it
 
 # phantom
-img = readdlm("data/mribrain100.tsv")
+img = readdlm(joinpath(@__DIR__,"data/mribrain100.tsv"))
 
-acqData = AcquisitionData(ISMRMRDFile("data/acqDataBrainSim100.h5"))
+acqData = AcquisitionData(ISMRMRDFile(joinpath(@__DIR__,"data/acqDataBrainSim100.h5")))
 nx,ny = acqData.encodingSize
 
 # undersample kspace data
@@ -56,7 +58,7 @@ acqData = sample_kspace(acqData, 2.0, "poisson", calsize=25,profiles=false);
 ## Load the Dictionary, build the sparsifying transform and perform the reconstruction
 
 # load the dictionary
-D = ComplexF64.(readdlm("data/brainDict98.tsv"))
+D = ComplexF32.(readdlm(joinpath(@__DIR__,"data/brainDict98.tsv")))
 
 # some parameters
 px, py = (6,6)  # patch size
@@ -69,7 +71,7 @@ params[:reconSize] = (nx,ny)
 params[:iterations] = 50
 params[:reg] = L1Regularization(2.e-2)
 params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2.e-2)
-params[:ρ] = 0.1
+params[:rho] = 0.1
 params[:solver] = ADMM
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
@@ -81,7 +83,7 @@ img_d = reconstruction(acqData,params)
 # For comparison, let us perform the same reconstruction as above but with a Wavelet transform
 
 delete!(params, :sparseTrafo)
-params[:sparseTrafoName] = "Wavelet"
+params[:sparseTrafo] = "Wavelet"
 
 img_w = reconstruction(acqData,params)
 @info "relative error: $(norm(img-img_w)/norm(img))"
