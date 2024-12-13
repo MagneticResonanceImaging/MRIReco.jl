@@ -25,7 +25,7 @@ msk[acqDataSub.subsampleIndices[1]] .= 1
 # Estimate the coil sensitivities using ESPIRiT and reconstruct using SENSE
 
 # coil sensitivities
-smaps = espirit(acqData,(6,6),30,eigThresh_1=0.035,eigThresh_2=0.98)
+smaps = espirit(acqData,(6,6),30,eigThresh_2=0)
 
 # SENSE reconstruction
 params = Dict{Symbol, Any}()
@@ -48,13 +48,14 @@ params[:reconSize] = (320,320)
 params[:senseMaps] = smaps
 
 params[:solver] = ADMM
-params[:reg] = TVRegularization(1.e-1, shape = (320, 320))
+params[:reg] = TVRegularization(2e-1, shape = (320, 320))
 params[:iterations] = 50
-params[:ρ] = 0.1
+params[:rho] = 0.1
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
 params[:tolInner] = 1.e-2
 params[:normalizeReg] = MeasurementBasedNormalization()
+
 
 img_tv = reconstruction(acqDataSub, params)
 
