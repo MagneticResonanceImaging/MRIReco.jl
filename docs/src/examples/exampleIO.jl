@@ -1,4 +1,5 @@
 using HTTP, CairoMakie, MRIReco
+include(joinpath(@__DIR__,"exampleUtils.jl"))
 
 if !isdir("brukerfileCart")
   HTTP.open("GET", "http://media.tuhh.de/ibi/mrireco/brukerfileCart.zip") do http
