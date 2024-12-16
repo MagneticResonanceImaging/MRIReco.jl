@@ -1,9 +1,9 @@
-using MRIReco, MRIFiles, MRIOperators
+using MRIReco, MRIFiles, MRIOperators, MRISampling
 using MRIReco.MRIOperators.Wavelets, MRIReco.RegularizedLeastSquares
 using DelimitedFiles, LinearAlgebra, CairoMakie
 include(joinpath(@__DIR__,"exampleUtils.jl"))
 
-function analyzeImage(x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64};t0::Int64=size(D,2),tol=1e-3) where T
+function analyzeImage(res, x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64};t0::Int64=size(D,2),tol=1e-3) where T
   nx,ny = xsize
   px,py = psize
   x = reshape(x,nx,ny)
@@ -18,10 +18,10 @@ function analyzeImage(x::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NT
       α[:,i,j] .= matchingpursuit(patch, x->D*x, x->transpose(D)*x, tol)
     end
   end
-  return vec(α)
+  return res .= vec(α)
 end
 
-function synthesizeImage(α::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64}) where T
+function synthesizeImage(res, α::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64}) where T
   nx,ny = xsize
   px,py = psize
   x = zeros(T,nx+px-1,ny+py-1)
@@ -31,18 +31,17 @@ function synthesizeImage(α::Vector{T},D::Matrix{T},xsize::NTuple{2,Int64},psize
       x[i:i+px-1,j:j+py-1] .+= reshape(D*α[:,i,j],px,py)
     end
   end
-  return vec(x[1:nx,1:ny])/(px*py)
+  return res .= vec(x[1:nx,1:ny])/(px*py)
 end
 
 function dictOp(D::Matrix{T},xsize::NTuple{2,Int64},psize::NTuple{2,Int64},tol::Float64=1.e-3) where T
-  produ = x->analyzeImage(x,D,xsize,psize,tol=tol)
-  ctprodu = x->synthesizeImage(x,D,xsize,psize)
+        produ = (res,x)->analyzeImage(x,D,xsize,psize,tol=tol)
+        ctprodu = (res,x)->synthesizeImage(x,D,xsize,psize)
   return LinearOperator(T,prod(xsize)*size(D,2),prod(xsize),false,false
           , produ
           , nothing
           , ctprodu )
 end
-
 ## To test our method, let us load some simulated data and subsample it
 
 # phantom
@@ -54,6 +53,14 @@ nx,ny = acqData.encodingSize
 # undersample kspace data
 acqData = sample_kspace(acqData, 2.0, "poisson", calsize=25,profiles=false);
 
+
+# CS reconstruction using Wavelets
+params = Dict{Symbol,Any}()
+params[:reco] = "direct"
+params[:reconSize] = (nx,ny)
+
+@time img_u = reconstruction(acqData,params)
+@info "relative error: $(norm(img-img_u)/norm(img))"
 
 ## Load the Dictionary, build the sparsifying transform and perform the reconstruction
 
@@ -70,38 +77,61 @@ params[:reco] = "standard"
 params[:reconSize] = (nx,ny)
 params[:iterations] = 50
 params[:reg] = L1Regularization(2.e-2)
-params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2.e-2)
+params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2e-2)
 params[:rho] = 0.1
 params[:solver] = ADMM
 params[:absTol] = 1.e-4
 params[:relTol] = 1.e-2
+params[:normalizeReg] = MeasurementBasedNormalization()
+params[:kwargWarning] = true
 
-img_d = reconstruction(acqData,params)
+@time img_d = reconstruction(acqData,params)
 @info "relative error: $(norm(img-img_d)/norm(img))"
 
 
+# use CairoMakie for interactive display
+begin
+  colormap=:grays
+  f = Figure(size=(1000,300))
+  ax = Axis(f[1,1],title="Original")
+  heatmap!(ax,rotr90(abs.(img[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,2],title="Undersampled")
+  heatmap!(ax,rotr90(abs.(img_u[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,3],title="Wavelet")
+  heatmap!(ax,rotr90(abs.(img_w[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,4],title="Dictionary")
+  heatmap!(ax,rotr90(abs.(img_d[:,:,1,1,1]));colormap)
+  [hidedecorations!(f.content[ax]) for ax in eachindex(f.content)]
+  f
+end
 # For comparison, let us perform the same reconstruction as above but with a Wavelet transform
 
-delete!(params, :sparseTrafo)
+params = Dict{Symbol,Any}()
+params[:reco] = "standard"
+params[:reconSize] = (nx,ny)
+params[:iterations] = 50
+params[:reg] = L1Regularization(2.e-2)
 params[:sparseTrafo] = "Wavelet"
 
 img_w = reconstruction(acqData,params)
 @info "relative error: $(norm(img-img_w)/norm(img))"
 
 
-# use PyPlot for interactive display
-figure(34)
-clf()
-subplot(2,2,1)
-title("Original")
-imshow(abs.(img[:,:,1,1,1]))
-subplot(2,2,3)
-title("Wavelet")
-imshow(abs.(img_w[:,:,1,1,1]))
-subplot(2,2,4)
-title("Dictionary")
-imshow(abs.(img_d[:,:,1,1,1]))
-
+# use CairoMakie for interactive display
+begin
+  colormap=:grays
+  f = Figure(size=(1000,300))
+  ax = Axis(f[1,1],title="Original")
+  heatmap!(ax,rotr90(abs.(img[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,2],title="Undersampled")
+  heatmap!(ax,rotr90(abs.(img_u[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,3],title="Wavelet")
+  heatmap!(ax,rotr90(abs.(img_w[:,:,1,1,1]));colormap)
+  ax = Axis(f[1,4],title="Dictionary")
+  heatmap!(ax,rotr90(abs.(img_d[:,:,1,1,1]));colormap)
+  [hidedecorations!(f.content[ax]) for ax in eachindex(f.content)]
+  f
+end
 
 # export images
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/brainOrig.png")
