@@ -1,5 +1,6 @@
-using PyPlot, MRIReco 
-
+using CairoMakie, MRIReco, MRISimulation
+using ImageUtils: shepp_logan
+include(joinpath(@__DIR__,"exampleUtils.jl"))
 ##### simple example ####
 
 N = 256
@@ -21,15 +22,17 @@ params[:reco] = "direct"
 params[:reconSize] = (N,N)
 Ireco = reconstruction(acqData, params)
 
-# use PyPlot for interactive display
-figure(1)
-clf()
-subplot(1,2,1)
-title("Phantom")
-imshow(abs.(I))
-subplot(1,2,2)
-title("Reconstruction")
-imshow(abs.(Ireco[:,:,1,1,1]))
+# use CairoMakie for  display
+begin
+  colormap=:grays
+  f = Figure(size=(500,250))
+  ax = Axis(f[1,1],title="Phantom")
+  heatmap!(ax,rotr90(abs.(I));colormap)
+  ax = Axis(f[1,2],title="Reconstruction")
+  heatmap!(ax,rotr90(abs.(Ireco[:,:,1,1,1])))
+  [hidedecorations!(f.content[ax]) for ax in eachindex(f.content)]
+  f
+end
 
 # export images
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/simpleReco.png")
