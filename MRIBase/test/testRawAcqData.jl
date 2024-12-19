@@ -6,7 +6,8 @@ using MRIBase
 function get_default_cartesian_raw_acq_data(n_profiles, n_samples_per_profile, data=nothing)
     params = Dict{String, Any}()
     params["trajectory"] = "Cartesian"
-    params["encodedSize"] = [n_profiles, n_samples_per_profile]
+    params["encodedSize"] = [n_samples_per_profile, n_profiles]
+    params["encodedFOV"] = [n_samples_per_profile, n_profiles, 1]
     
     traj_nodes = kspaceNodes(trajectory(Float32, "Cartesian", n_profiles, n_samples_per_profile))
     traj_nodes = reshape(traj_nodes, 2, n_samples_per_profile, n_profiles)
@@ -16,7 +17,7 @@ function get_default_cartesian_raw_acq_data(n_profiles, n_samples_per_profile, d
 
     profiles = Vector{Profile}(undef, n_profiles)
     for i_profile in 1:n_profiles
-        profile_head = AcquisitionHeader(idx=EncodingCounters(kspace_encode_step_1=i_profile-1))
+        profile_head = AcquisitionHeader(idx=EncodingCounters(kspace_encode_step_1=i_profile-1), center_sample=div(n_samples_per_profile,2))
         profiles[i_profile] = Profile(
             profile_head, 
             traj_nodes[:, :, i_profile], 
@@ -43,13 +44,13 @@ end
 end
 
 
-@testset "MRIBase.rawdata with 2D cartesian data and shuffled profiles" begin
+@testset "kDataCart restores the order when profiles are shuffled" begin
     n_profiles = 10
     n_samples_per_profile = 12
     data = rand(ComplexF32, n_samples_per_profile, n_profiles)
     f = get_default_cartesian_raw_acq_data(n_profiles, n_samples_per_profile, data)
     f.profiles = shuffle(f.profiles)
-    kdata = MRIBase.rawdata(f)
-    kdata = reshape(kdata, n_samples_per_profile, n_profiles)
+    acq = AcquisitionData(f)
+    kdata = kDataCart(acq)[:, :, 1, 1, 1, 1]
     @test isapprox(kdata, data)
 end
