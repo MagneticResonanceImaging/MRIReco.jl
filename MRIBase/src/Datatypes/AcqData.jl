@@ -96,35 +96,46 @@ end
     AcquistionData(kdata::Array{T,6})
 
 Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
-    [x,y,z,channels,echoes,repetitions]
+    [x,y,z or slices,channels,echoes,repetitions]
 
 Different undersampling patterns can be handled **only** along the echo dimension.
 
 This methods assumes the data to correspond to a single volume
-encoded with a 3d Cartesian sequence.
+encoded with a 3d Cartesian sequence or in 2D multi-slice with keyword `enc2D = true`
+
+## Keywords : 
+- `enc2D=false`: if true, the 3rd dimension is supposed to store the 2D slices
+
+## Notes : 
+- The current implementation is using the same subsampling mask for all NR and Slices (only echoes can be different)
 """
-function AcquisitionData(kspace::Array{Complex{T},6}) where T
+function AcquisitionData(kspace::Array{Complex{T},6};enc2D=false) where T
     sx, sy, sz, nCh, nEchos, nReps = size(kspace)
 
-    if sz == 1
+    if sz == 1 || enc2D
+      @info "The 3rd dimension is encoded as a Multi-Slice acquisition because keyword enc2D = true"
         tr = MRIBase.CartesianTrajectory(T, sy, sx, TE=T(0), AQ=T(0))
+        kdata = [reshape(kspace[:,:,j,:,i,k],:,nCh) for i=1:nEchos, j=1:sz, k=1:nReps]
+        sl = 1; nSl = sz
     else
+      @info "The 3rd dimension is encoded as 3D acquisition. If it is a multi-slice acquisition use the keyword enc2D = true"
         tr = MRIBase.CartesianTrajectory3D(T, sy, sx, numSlices=sz, TE=T(0), AQ=T(0))
+        kdata = [reshape(kspace[:,:,:,:,i,k],:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
+        sl = Colon(); nSl = 1;
     end
 
-    kdata = [reshape(kspace[:,:,:,:,i,k],:,nCh) for i=1:nEchos, j=1:1, k=1:nReps]
     traj = [tr for i=1:nEchos]
     acq = AcquisitionData(traj, kdata, encodingSize=ntuple(d->0, ndims(tr)))
 
     acq.encodingSize = ndims(tr) == 3 ? (sx,sy,sz) : (sx,sy)
-
+ 
     for echo in 1:nEchos
-        I = findall(x->x!=0,abs.(kspace[:,:,:,1,echo,1]))
-        subsampleInd = LinearIndices((sx,sy,sz))[I]
+        I = findall(x->x!=0,abs.(kspace[:,:,sl,1,echo,1]))
+        subsampleInd = LinearIndices(acq.encodingSize)[I]
 
         acq.subsampleIndices[echo]=subsampleInd
-        for rep in 1:nReps
-            acq.kdata[echo,1,rep] = acq.kdata[echo,1,rep][subsampleInd,:]
+        for rep in 1:nReps, sl in 1:nSl
+            acq.kdata[echo,sl,rep] = acq.kdata[echo,sl,rep][subsampleInd,:]
         end
     end
     return acq
