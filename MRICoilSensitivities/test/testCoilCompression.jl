@@ -36,6 +36,51 @@ function test2DCC(N=64)
   @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 2e-4
 end
 
+function test2DMSCC(N=64,nSl = 3)
+  #image
+  img = shepp_logan(N)
+  msk = zeros(N,N)
+  msk[findall(x->x!=0,img)] .= 1
+
+  # coil sensitivites
+  smaps = birdcageSensitivity(N, 8, 1.5)
+  snorm = sqrt.(sum(abs.(smaps).^2,dims=4))
+  for i=1:8
+    smaps[:,:,1,i] .= msk .* smaps[:,:,1,i] ./ snorm[:,:,1,1]
+  end
+
+  # simulation
+  params = Dict{Symbol, Any}()
+  params[:simulation] = "fast"
+  params[:trajName] = "Cartesian"
+  params[:numProfiles] = floor(Int64, N)
+  params[:numSamplingPerProfile] = N
+  params[:senseMaps] = smaps
+
+  acqData = simulation(img, params)
+
+  acqData_MS = deepcopy(acqData)
+  acqData_MS.kdata = [acqData.kdata[1,1,1] for echo=1:1, sl=1:nSl, rep=1:1]
+
+  #reconstruction
+  params = Dict{Symbol,Any}()
+  params[:reco] = "direct"
+  params[:reconSize] = acqData_MS.encodingSize
+
+  x_ori = reconstruction(acqData_MS, params)
+  x_ori = mergeChannels(x_ori)
+
+  acqDataCC,ccMat = softwareCoilCompression(acqData_MS, 6)
+  x_cc = reconstruction(acqDataCC, params)
+  x_cc = mergeChannels(x_cc)
+  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 2e-4
+
+  acqDataCC,ccMat = geometricCoilCompression(acqData_MS, 6)
+  x_cc = reconstruction(acqDataCC, params)
+  x_cc = mergeChannels(x_cc)
+  @test (norm(vec(x_ori)-vec(x_cc))/norm(vec(x_ori))) < 2e-4
+end
+
 function test3DCC(N=64, NSl=64)
   ## 3D espirit
   type = ComplexF32
@@ -107,4 +152,5 @@ end
 @testset "CoilCompression" begin
   test2DCC()
   test3DCC()
+  test2DMSCC()
 end
