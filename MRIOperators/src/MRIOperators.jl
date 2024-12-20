@@ -13,7 +13,6 @@ using Wavelets
 using FLoops
 
 using LowRankApprox: psvd
-#using Distributions
 using StatsBase
 
 include("Shutter.jl")
