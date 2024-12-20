@@ -73,9 +73,10 @@ end
 
 function geometricCoilCompression(acq::AcquisitionData{T,D}, numVC::Int = size(acq.kdata,2); dim::Int=1,sContr::Int = 1,sRep::Int = 1) where {T,D}
     kdata = kDataCart(acq)
+    D == 2 ? enc2D = true : enc2D = false
 
     kdataCC,ccMat2 = geometricCoilCompression(kdata, numVC, dim=dim,sContr=sContr,sRep=sRep)
-    return AcquisitionData(kdataCC),ccMat2
+    return AcquisitionData(kdataCC;enc2D),ccMat2
 end
 
 """
