@@ -1,45 +1,41 @@
-using PyPlot
+using CairoMakie
 using MRIReco
 
 #### trajectories ####
 
 trajectories = ["Spiral", "Radial", "Cartesian", "EPI", "SpiralVarDens"]
 
-figure(1)
-clf()
+f = Figure()
 
-tr = trajectory("Spiral", 1, 600, windings=10)
-subplot(2,2,1)
+T=Float32
+
+tr = trajectory(Float32,"Spiral", 1, 600, windings=10)
 nodes = kspaceNodes(tr)
-plot(nodes[1,:], nodes[2,:],"b.",lw=2)
-title("Spiral")
+ax=Axis(f[1,1],title="Spiral")
+plot!(ax,nodes[1,:], nodes[2,:])
 
-tr = trajectory("Cartesian", 13, 50, EPI_factor=1)
-subplot(2,2,2)
+
+tr = trajectory(T,"Cartesian", 13, 50, EPI_factor=1)
 nodes = kspaceNodes(tr)
-plot(nodes[1,:], nodes[2,:],"b.",lw=2)
-title("Cartesian")
+ax=Axis(f[1,2],title="Cartesian")
+plot!(ax,nodes[1,:], nodes[2,:])
 
 
-tr = trajectory("Radial", 13, 50)
-subplot(2,2,3)
+
+tr = trajectory(T,"Radial", 13, 50)
 nodes = kspaceNodes(tr)
-plot(nodes[1,:], nodes[2,:],"b.",lw=2)
-title("Radial")
+ax=Axis(f[2,1],title="Radial")
+plot!(ax,nodes[1,:], nodes[2,:])
 
 
-tr = trajectory("SpiralVarDens", 3, 200)
-subplot(2,2,4)
+
+
+tr = trajectory(T,"SpiralVarDens", 3, 200)
 nodes = kspaceNodes(tr)
-plot(nodes[1,:], nodes[2,:],"b.",lw=2)
-title("SpiralVarDens")
+ax=Axis(f[2,2],title="SpiralVarDens")
+plot!(ax,nodes[1,:], nodes[2,:])
+f
 
-subplots_adjust(top=0.95,
-       bottom=0.05,
-       left=0.09,
-       right=0.95,
-       hspace=0.3,
-       wspace=0.2)
 
 filename = joinpath(dirname(pathof(MRIReco)),"../docs/src/assets/trajectories.png")
-savefig(filename, dpi=200)
+save(filename,f)

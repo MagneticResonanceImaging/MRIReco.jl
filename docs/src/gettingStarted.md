@@ -1,12 +1,10 @@
 # Getting Started
 
 Throughout the entire documentation we assume that you have loaded `MRIReco`
-as well as `PyPlot` via
+as well as `CairoMakie` via
 ```julia
-using PyPlot, MRIReco
+using CairoMakie, MRIReco
 ```
-Its important to load these packages in that order, since otherwise `PyPlot`
-will not work correctly on some systems.
 
 All examples discussed in the documentation can be found in the package source
 code in the folder
@@ -71,7 +69,7 @@ Ireco = reconstruction(acqData, params)
 The resulting image is of type `AxisArray` and has 5 dimensions. One can
 display the image object by calling
 ```julia
-imshow(abs.(Ireco[:,:,1,1,1]))
+heatmap(abs.(Ireco[:,:,1,1,1]))
 ```
 Alternatively one can store the image into a file, which will be discussed in
 the section on [Images](@ref).
