@@ -4,7 +4,7 @@
 creates an axes array with properly characterized axis from the image `I`.
 For this, it uses the information in `acqData`.
 The axies respectively describe the following coordinates:
-x, y, z, acqData.numEchoes, acqData.numCoils
+x, y, z, acqData.numEchoes, acqData.numCoils, acqData.numRepetitions
 """
 function makeAxisArray(I::AbstractArray{Complex{T},6}, acqData::AcquisitionData{T,D}) where {T,D}
 
