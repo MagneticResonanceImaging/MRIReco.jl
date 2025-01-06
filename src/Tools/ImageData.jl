@@ -1,5 +1,5 @@
 """
-    makeAxisArray(I::AbstractArray{T,5}, acqData::AcquisitionData) where T
+    makeAxisArray(I::AbstractArray{T,6}, acqData::AcquisitionData) where T
 
 creates an axes array with properly characterized axis from the image `I`.
 For this, it uses the information in `acqData`.
