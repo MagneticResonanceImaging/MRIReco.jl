@@ -12,6 +12,7 @@ using NFFT.FFTW
 using Wavelets
 using FLoops
 
+using TSVD: tsvd
 using StatsBase
 
 include("Shutter.jl")

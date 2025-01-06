@@ -308,7 +308,7 @@ function get_A_coefficients_svd(K::Int64, times::Vector, z_p::Vector{Complex{T}}
   end
 
   # compute SVD
-  U,S,V = svd(A)
+  U,S,V = tsvd(A,K)
   # estimate accuracy of the approximation and determine rank threshold
   acc = sqrt.(cumsum(S.^2)./sum(S.^2))
   K0 = findfirst(x->x>=(1-K_tol-1e-14), acc)
