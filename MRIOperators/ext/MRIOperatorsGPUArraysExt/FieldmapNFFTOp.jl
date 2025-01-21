@@ -1,15 +1,18 @@
 function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, s::vecT, sp, plan, idx, x_::vecT, p::Vector{arrT}) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
+  
+  @kernel inbounds = true cpu = false function produ_inner_kernel!(indices, d, A, s)
+    k = @index(Global, Linear)
+    # Assumption: l is unique per idx[κ]
+    l = indices[k]
+    s[l] += d[k]*A[l]
+  end
+  kernel! = produ_inner_kernel!(get_backend(C))
+
   for κ=1:K
     if !isempty(idx[κ])
       p[κ][:] .= C[κ,:] .* x_
-      mul!(d[κ], plan[κ], p[κ])  
-      # Assumption: l is unique per idx[κ]
-      gpu_call(idx[κ], d[κ], view(A, :, κ), s) do ctx, indices, d_, A_, s_
-        k = @linearidx(indices)
-        l = indices[k]
-        s_[l] += d_[k]*A_[l]
-        return nothing
-      end
+      mul!(d[κ], plan[κ], p[κ])
+      kernel!(idx[κ], d[κ], view(A, :, κ), s; ndrange = length(idx[κ]))
     end
   end
   
@@ -19,21 +22,26 @@ end
 
 function MRIOperators.ctprodu_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, y::vecT, sp, plan, idx, x::vecT, p::Vector{arrT}) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
 
+  
+  @kernel inbounds = true cpu = false function ctprodu_inner_1!(indices, d, A, x)
+    k = @index(Global, Linear)
+    l = indices[k]
+    d[k] = conj(A[l]) * x[l]
+  end
+  kernel1! = ctprodu_inner_1!(get_backend(C))
+
+  @kernel inbounds = true cpu = false function ctprodu_inner_2!(p, C, y)
+    k = @index(Global, Linear)
+    y[k] += conj(C[k]) * p[k]
+  end
+  kernel2! = ctprodu_inner_2!(get_backend(C))
+
+
   for κ=1:K
     if !isempty(idx[κ])
-      gpu_call(idx[κ], d[κ], view(A, :, κ), x) do ctx, indices, d_, A_, x_
-        k = @linearidx(indices)
-        l = indices[k]
-        d_[k] = conj(A_[l]) * x_[l]
-        return nothing
-      end
+      kernel1!(idx[κ], d[κ], view(A, :, κ), x; ndrange = length(idx[κ]))
       mul!(p[κ], adjoint(plan[κ]), d[κ])
-
-      gpu_call(p[κ], view(C, κ, :), y) do ctx, p_, C_, y_
-        k = @linearidx(p_)
-        y_[k] += conj(C_[k]) * p_[k]
-        return nothing
-      end
+      kernel2!(p[κ], view(C, κ, :), y; ndrange = length(p[κ]))
     end
   end
     

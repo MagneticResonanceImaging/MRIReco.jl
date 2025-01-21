@@ -4,11 +4,12 @@ function MRIOperators.prod_smap!(y::vecT, smaps::matT, x::vecT, numVox, numChan,
 
   @assert size(smaps) == (size(y_,1), size(y_,2))
 
-  gpu_call(y_, x_, smaps) do ctx, ygpu, xgpu, smapsgpu
-    cart = @cartesianidx(ygpu)
-    ygpu[cart] = xgpu[cart[1],cart[3]] * smapsgpu[cart[1],cart[2]]
-    return nothing
+  @kernel inbounds = true cpu = false function smap_kernel!(y, x, smaps)
+    cart = @index(Global, Cartesian)
+    y[cart] = x[cart[1], cart[3]] * smaps[cart[1], cart[2]]
   end
+  kernel! = smap_kernel!(get_backend(y))
+  kernel!(y, x, smaps; ndrange = size(y))
   return y
 end
 
@@ -20,12 +21,13 @@ function MRIOperators.ctprod_smap!(y::vecT, smapsC::matT, x::vecT, numVox, numCh
 
   y_ .= 0
   # Inner loop to avoid race condition
-  gpu_call(y_, x_, smapsC, numChan) do ctx, ygpu, xgpu, smapsCgpu, limit
-    cart = @cartesianidx(ygpu)
+  @kernel inbounds = true cpu = false function smap_kernel_adjoint!(y, x, smapsC, limit)
+    cart = @index(Global, Cartesian)
     for i = 1:limit
-      ygpu[cart] += xgpu[cart[1], i, cart[2]] * smapsCgpu[cart[1],i]
+      y[cart] += x[cart[1], i, cart[2]] * smapsC[cart[1],i]
     end
-    return nothing
   end
+  kernel! = smap_kernel_adjoint!(get_backend(y))
+  kernel!(y, x, smapsC, numChan; ndrange = size(y))
   return y
 end
