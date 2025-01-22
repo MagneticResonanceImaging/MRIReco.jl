@@ -32,7 +32,7 @@ ProgressMeter = "1.2"
 Reexport = "0.2, 1"
 RegularizedLeastSquares = "0.16"
 Unitful = "1.2"
-julia = "1.6"
+julia = "1.10"
 
 [extras]
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
