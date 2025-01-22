@@ -9,7 +9,7 @@ function MRIOperators.prod_smap!(y::vecT, smaps::matT, x::vecT, numVox, numChan,
     y[cart] = x[cart[1], cart[3]] * smaps[cart[1], cart[2]]
   end
   kernel! = smap_kernel!(get_backend(y))
-  kernel!(y, x, smaps; ndrange = size(y))
+  kernel!(y_, x_, smaps; ndrange = size(y_))
   return y
 end
 
@@ -28,6 +28,6 @@ function MRIOperators.ctprod_smap!(y::vecT, smapsC::matT, x::vecT, numVox, numCh
     end
   end
   kernel! = smap_kernel_adjoint!(get_backend(y))
-  kernel!(y, x, smapsC, numChan; ndrange = size(y))
+  kernel!(y_, x_, smapsC, numChan; ndrange = size(y_))
   return y
 end

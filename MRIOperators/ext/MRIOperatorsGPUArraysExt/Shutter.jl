@@ -9,7 +9,7 @@ function MRIOperators.circularShutter!(I::AbstractGPUArray, radiusFactor::Number
   imgSize = size(I)
   center = imgSize./2.0
   radius = maximum(center) * radiusFactor
-  kernel!= circularShutterKernel(get_backend(I))
+  kernel! = circularShutterKernel(get_backend(I))
   kernel!(I, center, radius; ndrange = imgSize)
   return I
 end
@@ -21,7 +21,7 @@ function MRIOperators.circularShutterFreq!(I::AbstractGPUArray, radiusFactor::T=
   fftI = fftshift(fft(I))
   center = imgSize./2.0
   radius = maximum(center) * radiusFactor
-  kernel!= circularShutterKernel(get_backend(I))
+  kernel! = circularShutterKernel(get_backend(I))
   kernel!(fftI, center, radius; ndrange = size(fftI))
   return MRIOperators.preserveType(I, ifft(ifftshift(fftI)))
 end
