@@ -21,9 +21,6 @@ Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 
-[extensions]
-MRIOperatorsGPUArraysExt = "GPUArrays"
-
 [compat]
 Adapt = "3, 4"
 StatsBase = "0.33, 0.34"
