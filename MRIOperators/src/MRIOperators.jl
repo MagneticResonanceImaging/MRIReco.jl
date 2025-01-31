@@ -12,7 +12,7 @@ using NFFT.FFTW
 using Wavelets
 using FLoops
 
-using LowRankApprox: psvd
+using TSVD: tsvd
 using StatsBase
 
 include("Shutter.jl")
