@@ -1,4 +1,6 @@
-using MRIReco, MRIReco.RegularizedLeastSquares
+using MRIReco, MRIReco.RegularizedLeastSquares, MRISimulation
+using ImageUtils: shepp_logan
+include(joinpath(@__DIR__,"exampleUtils.jl"))
 
 ##### simple example ####
 
