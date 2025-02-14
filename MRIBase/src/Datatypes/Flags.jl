@@ -81,20 +81,22 @@ create_flag_bitmask(2)                           # 0x0000000000000002
 ```
 """
 create_flag_bitmask(flag::T) where T  = error("Unexpected type for bitmask, expected String or positive Integer, found $T")
+
 create_flag_bitmask(flag::AbstractString) = create_flag_bitmask(FLAGS[flag])
 function create_flag_bitmask(flag::Integer)
-  flag > 0 || throw(DomainError(flag, "Bitmask can only be created for positive integers"))
+  (flag > 0 && flag <= 64)|| throw(DomainError(flag, "Bitmask can only be created for  integers from 1 to 64"))
   b = UInt64(flag)
   return bitshift(UInt64(1),  b - 1)
 end
 
 """
     flag_is_set(obj::Profile, flag) -> Bool
+    flag_is_set(head::AcquisitionHeader, flag) -> Bool
 
-Checks whether a specific flag is set in the given `Profile` object.
+Checks whether a specific flag is set in the given `Profile` or `AcquisitionHeader` object.
 
 # Arguments
-- `obj`: A `Profile` object with a `head` field containing a `flags` attribute (as a bitmask).
+- `obj`: A `Profile` or `AcquisitionHeader` object field containing a `flags` attribute (as a bitmask).
 - `flag`: A string (flag name) or an integer (bit position).
 
 # Returns
@@ -103,76 +105,115 @@ Checks whether a specific flag is set in the given `Profile` object.
 # Example
 ```julia
 flag_is_set(profile, "ACQ_FIRST_IN_ENCODE_STEP1")  # true or false
+flag_is_set(head, "ACQ_FIRST_IN_ENCODE_STEP1")  # true or false
 ```
 """
 function flag_is_set(obj::Profile, flag)
+  return flag_is_set(obj.head, flag)
+end
+
+function flag_is_set(head::AcquisitionHeader, flag)
   bitmask = create_flag_bitmask(flag)
-  ret = obj.head.flags & bitmask > 0
-  return ret
+  return head.flags & bitmask > 0
 end
 
 """
     flag_set!(obj::Profile, flag)
+    flag_set!(head::AcquisitionHeader, flag)
 
-Sets the specified flag in the given `Profile` object.
+Sets the specified flag in the given `Profile` or `AcquisitionHeader` object.
 
 # Arguments
 - `obj`: A `Profile` object with a `head` field containing a `flags` attribute (as a bitmask).
-- `flag`: A string (flag name) or an integer (bit position).
+- `head`: An `AcquisitionHeader` object containing a `flags` attribute (as a bitmask).
+- `flag`: A string (flag name) or an integer (bit position), or a vector of such values.
 
 # Modifies
-- `obj.head.flags` by setting the bit corresponding to the flag.
+- `obj.head.flags` or `head.flags` by setting the bit corresponding to the flag.
 
 # Example
 ```julia
 flag_set!(profile, "ACQ_FIRST_IN_SLICE")
+flag_set!(profile, ["ACQ_LAST_IN_PHASE","ACQ_USER8"])
+
+head = AcquisitionHeader()
+flag_set!(head, "ACQ_FIRST_IN_SLICE")
 ```
 """
-function flag_set!(obj::Profile, flag)
-  bitmask = create_flag_bitmask(flag)
-  obj.head.flags = obj.head.flags | bitmask
+function flag_set!(obj::Profile, flag::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
+  flag_set!.(Ref(obj.head), flag)
+end
+
+function flag_set!(head::AcquisitionHeader, flag::Vector{T}) where T <: Union{Int, AbstractString}
+  flag_set!.(Ref(head), flag)
+end
+
+function flag_set!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
+    bitmask = create_flag_bitmask(flag)
+    head.flags = head.flags | bitmask
 end
 
 """
     flag_remove!(obj::Profile, flag)
+    flag_remove!(head::AcquisitionHeader, flag)
 
-Removes (clears) the specified flag in the given `Profile` object.
+Removes (clears) the specified flag in the given `Profile` or `AcquisitionHeader` object.
 
 # Arguments
 - `obj`: A `Profile` object with a `head` field containing a `flags` attribute (as a bitmask).
-- `flag`: A string (flag name) or an integer (bit position).
+- `head`: An `AcquisitionHeader` object containing a `flags` attribute (as a bitmask).
+- `flag`: A string (flag name) or an integer (bit position), or a vector of such values.
 
 # Modifies
-- `obj.head.flags` by clearing the bit corresponding to the flag.
+- `obj.head.flags` or `head.flags` by clearing the bit corresponding to the flag.
 
 # Example
 ```julia
 flag_remove!(profile, "ACQ_LAST_IN_PHASE")
+flag_remove!(profile, ["ACQ_LAST_IN_PHASE","ACQ_USER8"])
+
+head = AcquisitionHeader()
+flag_remove!(head, "ACQ_LAST_IN_PHASE")
 ```
 """
-function flag_remove!(obj::Profile, flag)
+function flag_remove!(obj::Profile, flag::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
+  flag_remove!.(Ref(obj.head), flag)
+end
+
+function flag_remove!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
+  flag_remove!.(Ref(head), flag)
+end
+
+function flag_remove!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
   bitmask = create_flag_bitmask(flag)
-  obj.head.flags = obj.head.flags & ~bitmask
+  head.flags = head.flags & ~bitmask
 end
 
 """
     flag_remove_all!(obj::Profile)
+    flag_remove_all!(head::AcquisitionHeader)
 
-Clears all flags in the given `Profile` object.
+Clears all flags in the given `Profile` object or `AcquisitionHeader` object.
 
 # Arguments
 - `obj`: A `Profile` object with a `head` field containing a `flags` attribute (as a bitmask).
+- `head`: An `AcquisitionHeader` object containing a `flags` attribute (as a bitmask).
 
 # Modifies
-- `obj.head.flags`, setting it to `0` (all flags cleared).
+- `obj.head.flags` or `head.flags`, setting it to `0` (all flags cleared).
 
 # Example
 ```julia
 flag_remove_all!(profile)
+flag_remove_all!(head)
 ```
 """
 function flag_remove_all!(obj::Profile)
-    obj.head.flags = UInt64(0);
+    flag_remove_all!(obj.head)
+end
+
+function flag_remove_all!(head::AcquisitionHeader)
+  head.flags = UInt64(0);
 end
 
 """
@@ -192,9 +233,13 @@ flags = flags_of(profile)  # ["ACQ_FIRST_IN_ENCODE_STEP1", "ACQ_LAST_IN_SLICE"]
 ```
 """
 function flags_of(obj::Profile)
+  return flags_of(obj.head)
+end
+
+function flags_of(head::AcquisitionHeader)
   flags_ = String[]
   for f in FLAGS
-    flag_is_set(obj::Profile, f.first) ? push!(flags_,f.first) : nothing
+    flag_is_set(head::AcquisitionHeader, f.first) ? push!(flags_,f.first) : nothing
   end
   return flags_
 end
