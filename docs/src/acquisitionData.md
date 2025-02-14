@@ -87,10 +87,19 @@ FLAGS = Dict(
 )
 ```
 
-You can check the flags of a profile with `flags_of(p:Profile)` or `flag_is_set` and manipulate them with thus functions :
+You can check the flags of a profile with `flags_of(p:Profile OR head::AcquisitionHeader)` or `flag_is_set` and manipulate them with thus functions :
 - `flag_set!(obj::Profile, flag)`
 - `flag_remove!(obj::Profile, flag)`
 - `flag_remove_all!(obj::Profile)`
+
+
+Thus functions can also been directly applied to the `AcquisitionHeader` and you can set! or remove! multiple flags at once :
+
+```julia
+flag_set!(head::AcquisitionHeader, ["ACQ_USER8","ACQ_IS_REVERSE"])
+# OR
+flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"],FLAGS["ACQ_IS_REVERSE"]])
+```
 
 ### idx
 
