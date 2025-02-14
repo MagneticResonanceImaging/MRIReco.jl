@@ -1,9 +1,100 @@
 export FLAGS, create_flag_bitmask, flag_is_set, flag_set!, flag_remove!, flag_remove_all!, flags_of
 
+export b64,
+       ACQ_FIRST_IN_ENCODE_STEP1,
+       ACQ_LAST_IN_ENCODE_STEP1,
+       ACQ_FIRST_IN_ENCODE_STEP2,
+       ACQ_LAST_IN_ENCODE_STEP2,
+       ACQ_FIRST_IN_AVERAGE,
+       ACQ_LAST_IN_AVERAGE,
+       ACQ_FIRST_IN_SLICE,
+       ACQ_LAST_IN_SLICE,
+       ACQ_FIRST_IN_CONTRAST,
+       ACQ_LAST_IN_CONTRAST,
+       ACQ_FIRST_IN_PHASE,
+       ACQ_LAST_IN_PHASE,
+       ACQ_FIRST_IN_REPETITION,
+       ACQ_LAST_IN_REPETITION,
+       ACQ_FIRST_IN_SET,
+       ACQ_LAST_IN_SET,
+       ACQ_FIRST_IN_SEGMENT,
+       ACQ_LAST_IN_SEGMENT,
+       ACQ_IS_NOISE_MEASUREMENT,
+       ACQ_IS_PARALLEL_CALIBRATION,
+       ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING,
+       ACQ_IS_REVERSE,
+       ACQ_IS_NAVIGATION_DATA,
+       ACQ_IS_PHASECORR_DATA,
+       ACQ_LAST_IN_MEASUREMENT,
+       ACQ_IS_HPFEEDBACK_DATA,
+       ACQ_IS_DUMMYSCAN_DATA,
+       ACQ_IS_RTFEEDBACK_DATA,
+       ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA,
+       ACQ_IS_PHASE_STABILIZATION_REFERENCE,
+       ACQ_IS_PHASE_STABILIZATION,
+       ACQ_COMPRESSION1,
+       ACQ_COMPRESSION2,
+       ACQ_COMPRESSION3,
+       ACQ_COMPRESSION4,
+       ACQ_USER1,
+       ACQ_USER2,
+       ACQ_USER3,
+       ACQ_USER4,
+       ACQ_USER5,
+       ACQ_USER6,
+       ACQ_USER7,
+       ACQ_USER8
+
+
+const b64 = UInt64(1)
+const ACQ_FIRST_IN_ENCODE_STEP1               = 1b64 << ( 01 - 1 )
+const ACQ_LAST_IN_ENCODE_STEP1                = 1b64 << ( 02 - 1 )
+const ACQ_FIRST_IN_ENCODE_STEP2               = 1b64 << ( 03 - 1 )
+const ACQ_LAST_IN_ENCODE_STEP2                = 1b64 << ( 04 - 1 )
+const ACQ_FIRST_IN_AVERAGE                    = 1b64 << ( 05 - 1 )
+const ACQ_LAST_IN_AVERAGE                     = 1b64 << ( 06 - 1 )
+const ACQ_FIRST_IN_SLICE                      = 1b64 << ( 07 - 1 )
+const ACQ_LAST_IN_SLICE                       = 1b64 << ( 08 - 1 )
+const ACQ_FIRST_IN_CONTRAST                   = 1b64 << ( 09 - 1 )
+const ACQ_LAST_IN_CONTRAST                    = 1b64 << ( 10 - 1 )
+const ACQ_FIRST_IN_PHASE                      = 1b64 << ( 11 - 1 )
+const ACQ_LAST_IN_PHASE                       = 1b64 << ( 12 - 1 )
+const ACQ_FIRST_IN_REPETITION                 = 1b64 << ( 13 - 1 )
+const ACQ_LAST_IN_REPETITION                  = 1b64 << ( 14 - 1 )
+const ACQ_FIRST_IN_SET                        = 1b64 << ( 15 - 1 )
+const ACQ_LAST_IN_SET                         = 1b64 << ( 16 - 1 )
+const ACQ_FIRST_IN_SEGMENT                    = 1b64 << ( 17 - 1 )
+const ACQ_LAST_IN_SEGMENT                     = 1b64 << ( 18 - 1 )
+const ACQ_IS_NOISE_MEASUREMENT                = 1b64 << ( 19 - 1 )
+const ACQ_IS_PARALLEL_CALIBRATION             = 1b64 << ( 20 - 1 )
+const ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING = 1b64 << ( 21 - 1 )
+const ACQ_IS_REVERSE                          = 1b64 << ( 22 - 1 )
+const ACQ_IS_NAVIGATION_DATA                  = 1b64 << ( 23 - 1 )
+const ACQ_IS_PHASECORR_DATA                   = 1b64 << ( 24 - 1 )
+const ACQ_LAST_IN_MEASUREMENT                 = 1b64 << ( 25 - 1 )
+const ACQ_IS_HPFEEDBACK_DATA                  = 1b64 << ( 26 - 1 )
+const ACQ_IS_DUMMYSCAN_DATA                   = 1b64 << ( 27 - 1 )
+const ACQ_IS_RTFEEDBACK_DATA                  = 1b64 << ( 28 - 1 )
+const ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA   = 1b64 << ( 29 - 1 )
+const ACQ_IS_PHASE_STABILIZATION_REFERENCE    = 1b64 << ( 30 - 1 )
+const ACQ_IS_PHASE_STABILIZATION              = 1b64 << ( 31 - 1 )
+const ACQ_COMPRESSION1                        = 1b64 << ( 53 - 1 )
+const ACQ_COMPRESSION2                        = 1b64 << ( 54 - 1 )
+const ACQ_COMPRESSION3                        = 1b64 << ( 55 - 1 )
+const ACQ_COMPRESSION4                        = 1b64 << ( 56 - 1 )
+const ACQ_USER1                               = 1b64 << ( 57 - 1 )
+const ACQ_USER2                               = 1b64 << ( 58 - 1 )
+const ACQ_USER3                               = 1b64 << ( 59 - 1 )
+const ACQ_USER4                               = 1b64 << ( 60 - 1 )
+const ACQ_USER5                               = 1b64 << ( 61 - 1 )
+const ACQ_USER6                               = 1b64 << ( 62 - 1 )
+const ACQ_USER7                               = 1b64 << ( 63 - 1 )
+const ACQ_USER8                               = 1b64 << ( 64 - 1 )
+
 """
     FLAGS::Dict{String, Int}
 
-A dictionary mapping string keys (representing flag names) to bitmask values. 
+A dictionary mapping string keys (representing flag names) to bitmask values.
 Flags are used to indicate specific attributes of the corresponding Profile. Example flag names include "ACQ_FIRST_IN_ENCODE_STEP1", "ACQ_LAST_IN_SLICE", etc.
 """
 FLAGS = Dict(
@@ -218,11 +309,13 @@ end
 
 """
     flags_of(obj::Profile) -> Vector{String}
+    flags_of(head::AcquisitionHeader) -> Vector{String}
 
-Returns a list of all flags that are set in the given `Profile` object.
+Returns a list of all flags that are set in the given `Profile` object or `AcquisitionHeader` object.
 
 # Arguments
 - `obj`: A `Profile` object with a `head` field containing a `flags` attribute (as a bitmask).
+- `head`: An `AcquisitionHeader` object containing a `flags` attribute (as a bitmask).
 
 # Returns
 - An array of strings representing the names of the flags that are currently set.
