@@ -101,6 +101,15 @@ flag_set!(head::AcquisitionHeader, ["ACQ_USER8","ACQ_IS_REVERSE"])
 flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"],FLAGS["ACQ_IS_REVERSE"]])
 ```
 
+Alternatively, you can set the flags directly with specific const variable :
+```julia
+h = AcquisitionHeader()
+h.flags = ACQ_IS_PARALLEL_CALIBRATION + ACQ_IS_NOISE_MEASUREMENT
+flags_of(h)
+h.flags += - ACQ_IS_NOISE_MEASUREMENT
+flags_of(h)
+```
+
 ### idx
 
 MR acquisitions often loop through a set of counters (e.g. phase encodes) in a complete experiment. The following encoding counters are referred to by the idx field in the AcquisitionHeader ([See the ISMRMRD documentation](https://ismrmrd.readthedocs.io/en/latest/mrd_raw_data.html#mrd-encodingcounters))
