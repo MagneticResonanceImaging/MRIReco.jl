@@ -336,3 +336,18 @@ function flags_of(head::AcquisitionHeader)
   end
   return flags_
 end
+
+## SANITY Check for head.flags -> should be updated by a UInt64
+function Base.setproperty!(header::AcquisitionHeader, name::Symbol, val)
+  if name == :flags
+    return throw(DomainError("Flags can only be updated with UInt64 found $(typeof(val)) \n \n Use the dedicated interface `h.flags = ACQ_IS_REVERSE + ACQ_IS_NAVIGATION_DATA` or the function flag_set!(h,\"ACQ_IS_REVERSE\")"))
+  end
+  ty = fieldtype(typeof(header), name)
+  tmp = val isa ty ? val : convert(ty, val)
+  return setfield!(header, name, tmp)
+end
+function Base.setproperty!(header::AcquisitionHeader, name::Symbol, val::UInt64)
+  ty = fieldtype(typeof(header), name)
+  tmp = val isa ty ? val : convert(ty, val)
+  return setfield!(header, name, tmp)
+end

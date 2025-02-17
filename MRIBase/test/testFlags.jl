@@ -1,5 +1,5 @@
 
-@testset "Flags matlab-like interface" begin
+@testset "Flags" begin
   @testset "Flags one by one" begin
   head = AcquisitionHeader()
   traj = Matrix{Float32}(undef,0,0)
@@ -68,6 +68,21 @@
     @test p.head.flags == p2.head.flags
   end
 
+  @testset "Test all flags" begin
+    for (key, val) in FLAGS
+      # Initialize profiles
+      head = AcquisitionHeader()
+      traj = Matrix{Float32}(undef,0,0)
+      dat =  Matrix{ComplexF32}(undef,0,0)
+      p1 = Profile(head,traj,dat)
+      p2 = deepcopy(p1) 
+      # Setting flags
+      flag_set!(p1, val)
+      p2.head.flags = 1b64 << ( val - 1 )
+      @test p1.head.flags == p2.head.flags
+  end
+  end
+
   @testset "Flags errors" begin
     head = AcquisitionHeader()
     traj = Matrix{Float32}(undef,0,0)
@@ -81,5 +96,7 @@
     @test_throws Exception flag_remove!(p, "NOT_A_VALID_FLAG")
     @test_throws Exception flag_remove!(p,UInt64(0))
     @test_throws Exception flag_remove!(p,ACQ_IS_REVERSE)
+    @test_throws DomainError p.head.flags = "test"
   end
   end
+
