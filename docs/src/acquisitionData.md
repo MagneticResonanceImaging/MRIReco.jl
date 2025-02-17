@@ -87,10 +87,28 @@ FLAGS = Dict(
 )
 ```
 
-You can check the flags of a profile with `flags_of(p:Profile)` or `flag_is_set` and manipulate them with thus functions :
+You can check the flags of a profile with `flags_of(p:Profile OR head::AcquisitionHeader)` or `flag_is_set` and manipulate them with thus functions :
 - `flag_set!(obj::Profile, flag)`
 - `flag_remove!(obj::Profile, flag)`
 - `flag_remove_all!(obj::Profile)`
+
+
+Thus functions can also been directly applied to the `AcquisitionHeader` and you can set! or remove! multiple flags at once :
+
+```julia
+flag_set!(head::AcquisitionHeader, ["ACQ_USER8","ACQ_IS_REVERSE"])
+# OR
+flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"],FLAGS["ACQ_IS_REVERSE"]])
+```
+
+Alternatively, you can set the flags directly with specific Const variable :
+```julia
+h = AcquisitionHeader()
+h.flags = ACQ_IS_PARALLEL_CALIBRATION | ACQ_IS_NOISE_MEASUREMENT
+flags_of(h)
+h.flags = h.flags & ~ACQ_IS_NOISE_MEASUREMENT # remove the flag ACQ_IS_NOISE_MEASUREMENT
+flags_of(h)
+```
 
 ### idx
 
