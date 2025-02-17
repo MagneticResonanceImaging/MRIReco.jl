@@ -101,12 +101,12 @@ flag_set!(head::AcquisitionHeader, ["ACQ_USER8","ACQ_IS_REVERSE"])
 flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"],FLAGS["ACQ_IS_REVERSE"]])
 ```
 
-Alternatively, you can set the flags directly with specific const variable :
+Alternatively, you can set the flags directly with specific Const variable :
 ```julia
 h = AcquisitionHeader()
-h.flags = ACQ_IS_PARALLEL_CALIBRATION + ACQ_IS_NOISE_MEASUREMENT
+h.flags = ACQ_IS_PARALLEL_CALIBRATION | ACQ_IS_NOISE_MEASUREMENT
 flags_of(h)
-h.flags += - ACQ_IS_NOISE_MEASUREMENT
+h.flags = h.flags & ~ACQ_IS_NOISE_MEASUREMENT # remove the flag ACQ_IS_NOISE_MEASUREMENT
 flags_of(h)
 ```
 
