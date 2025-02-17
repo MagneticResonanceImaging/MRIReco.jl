@@ -231,17 +231,15 @@ head = AcquisitionHeader()
 flag_set!(head, "ACQ_FIRST_IN_SLICE")
 ```
 """
-function flag_set!(obj::Profile, flag::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
-  flag_set!.(Ref(obj.head), flag)
+function flag_set!(obj::Profile, flags)
+  flag_set!(obj.head, flags)
 end
 
-function flag_set!(head::AcquisitionHeader, flag::Vector{T}) where T <: Union{Int, AbstractString}
-  flag_set!.(Ref(head), flag)
-end
-
-function flag_set!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
-    bitmask = create_flag_bitmask(flag)
-    head.flags = head.flags | bitmask
+function flag_set!(head::AcquisitionHeader, flags::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
+    broadcast(flags) do flag
+      bitmask = create_flag_bitmask(flag)
+      head.flags = head.flags | bitmask
+    end
 end
 
 """
@@ -267,17 +265,15 @@ head = AcquisitionHeader()
 flag_remove!(head, "ACQ_LAST_IN_PHASE")
 ```
 """
-function flag_remove!(obj::Profile, flag::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
-  flag_remove!.(Ref(obj.head), flag)
+function flag_remove!(obj::Profile, flag)
+  flag_remove!(obj.head, flag)
 end
 
-function flag_remove!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
-  flag_remove!.(Ref(head), flag)
-end
-
-function flag_remove!(head::AcquisitionHeader, flag::T) where T <: Union{Int, AbstractString}
-  bitmask = create_flag_bitmask(flag)
-  head.flags = head.flags & ~bitmask
+function flag_remove!(head::AcquisitionHeader, flags::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
+  broadcast(flags) do flag
+    bitmask = create_flag_bitmask(flag)
+    head.flags = head.flags & ~bitmask
+  end
 end
 
 """
