@@ -173,7 +173,9 @@ create_flag_bitmask(2)                           # 0x0000000000000002
 """
 create_flag_bitmask(flag::T) where T  = error("Unexpected type for bitmask, expected String or positive Integer, found $T")
 
-create_flag_bitmask(flag::AbstractString) = create_flag_bitmask(FLAGS[flag])
+function create_flag_bitmask(flag::AbstractString) 
+  flag in keys(FLAGS) ? create_flag_bitmask(FLAGS[flag]) : @error "Flag name is not in the list of ISMRMRD flags"
+end
 function create_flag_bitmask(flag::Integer)
   (flag > 0 && flag <= 64)|| throw(DomainError(flag, "Bitmask can only be created for  integers from 1 to 64"))
   b = UInt64(flag)
