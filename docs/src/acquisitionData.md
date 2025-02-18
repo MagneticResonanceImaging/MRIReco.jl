@@ -25,7 +25,7 @@ mutable struct Profile
   data::Array{Complex{Float32},2}
 end
 ```
-The `params` member of `RawAcquisitionData` is basically the a flattened dictionary
+The `params` member of `RawAcquisitionData` is basically a flattened dictionary
 derived from the XML part of an ISMRMRD file. A `Profile` describes the data
 measured after a single excitation during an MRI experiment. It has members
 `head`, `traj`, and `data`, which exactly resemble the structures specified
@@ -146,3 +146,25 @@ The encoded space is stored in the field `encodingSize`. It is especially releva
 for non-Cartesian trajectories where it is not clear upfront, how large the grid
 size for reconstruction should be chosen. Finally `fov` describes the physical lengths
 of the encoding grid.
+
+## Manipulating rawData
+
+### Extract a subset of profiles with flags
+
+A subset of rawData can be extracted according to the flags using the function `filter_raw_by_flags`. For example this function can be used to extract :
+- Noise : `raw_noise = filter_raw_by_flags(raw,"ACQ_IS_NOISE_MEASUREMENT")`
+- Extract calibration data : `raw_noise = filter_raw_by_flags(raw,["ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING","ACQ_IS_PARALLEL_CALIBRATION"])`
+
+If you want to retrieve the data without the noise and calibration data you can use the following command :
+
+`raw = remove_raw_by_flags(raw,["ACQ_IS_NOISE_MEASUREMENT","ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING","ACQ_IS_PARALLEL_CALIBRATION"])`
+
+by default the following flags are removed :
+```
+"ACQ_IS_NOISE_MEASUREMENT", 
+"ACQ_IS_PARALLEL_CALIBRATION", 
+"ACQ_IS_NAVIGATION_DATA", 
+"ACQ_IS_PHASECORR_DATA", 
+"ACQ_IS_DUMMYSCAN_DATA", 
+"ACQ_IS_PHASE_STABILIZATION_REFERENCE", "ACQ_IS_PHASE_STABILIZATION"
+```
