@@ -5,21 +5,18 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  gpu_call(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; elements = size(nodes, 2)) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
-    k = linear_index(ctx)
-    if !(1 <= k <= limit)
-      return nothing
-    end
-
-    for nx = 1:shape_[1]
-      for ny = 1:shape_[2]
-        phi = (nodes_[1, k] * (nx - shape_[1] / 2 - 1) + nodes_[2, k] * (ny - shape_[2] / 2 - 1))
-        e = exp(factor * phi - (times_[k] - echoOffset_) * disturbanceTerm_[nx, ny])
-        out_[k] += x_[nx, ny] * e
+  @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+    k = @index(Global, Linear)
+    for nx = 1:shape[1]
+      for ny = 1:shape[2]
+        phi = (nodes[1, k] * (nx - shape[1] / 2 - 1) + nodes[2, k] * (ny - shape[2] / 2 - 1))
+        e = exp(factor * phi - (times[k] - echoOffset) * disturbanceTerm[nx, ny])
+        out[k] += x[nx, ny] * e
       end
     end
-    return nothing
   end
+  kernel! = produ_kernel!(get_backend(out))
+  kernel!(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; ndrange = limit)
 
   return out
 end
@@ -31,23 +28,20 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  gpu_call(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; elements = size(nodes, 2)) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
-    k = linear_index(ctx)
-    if !(1 <= k <= limit)
-      return nothing
-    end
-
-    for nx = 1:shape_[1]
-      for ny = 1:shape_[2]
-        for nz = 1:shape_[3]
-          phi = (nodes_[1, k] * (nx - shape_[1] / 2 - 1) + nodes_[2, k] * (ny - shape_[2] / 2 - 1) + nodes_[3, k] * (nz - shape_[3] / 2 - 1))
-          e = exp(factor * phi - (times_[k] - echoOffset_) * disturbanceTerm_[nx, ny, nz])
-          out_[k] += x_[nx, ny, nz] * e
+  @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+    k = @index(Global, Linear)
+    for nx = 1:shape[1]
+      for ny = 1:shape[2]
+        for nz = 1:shape[3]
+          phi = (nodes[1, k] * (nx - shape[1] / 2 - 1) + nodes[2, k] * (ny - shape[2] / 2 - 1) + nodes[3, k] * (nz - shape[3] / 2 - 1))
+          e = exp(factor * phi - (times[k] - echoOffset) * disturbanceTerm[nx, ny, nz])
+          out[k] += x[nx, ny, nz] * e
         end
       end
     end
-    return nothing
   end
+  kernel! = produ_kernel!(get_backend(out))
+  kernel!(out, reshape(x, shape), shape, nodes, times, echoOffset, disturbanceTerm; ndrange = limit)
 
   return out
 end
@@ -59,23 +53,21 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  gpu_call(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; elements = limit) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
-    linearIndex = linear_index(ctx)
-    if !(1 <= linearIndex <= limit)
-      return nothing
-    end
+  @kernel inbounds = true cpu = false function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+    linearIndex = @index(Global, Linear)
 
     cartIndex = CartesianIndices(shape)[linearIndex]
 
     nx = cartIndex[1]
     ny = cartIndex[2]
-    for k = 1:size(nodes_, 2)
-      phi = (nodes_[1,k]*(nx-shape_[1]/2-1)+nodes_[2,k]*(ny-shape_[2]/2-1))
-      e = exp(factor * phi - (times_[k]-echoOffset_)*disturbanceTerm_[cartIndex])
-      out_[cartIndex] += x_[k] * conj(e)
+    for k = 1:size(nodes, 2)
+      phi = (nodes[1,k]*(nx-shape[1]/2-1)+nodes[2,k]*(ny-shape[2]/2-1))
+      e = exp(factor * phi - (times[k]-echoOffset)*disturbanceTerm[cartIndex])
+      out[cartIndex] += x[k] * conj(e)
     end
-    return nothing
   end
+  kernel! = ctprodu_kernel!(get_backend(out))
+  kernel!(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; ndrange = limit)
 
   return out
 end
@@ -87,24 +79,22 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  gpu_call(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; elements = limit) do ctx, out_, x_, shape_, nodes_, times_, echoOffset_, disturbanceTerm_
-    linearIndex = linear_index(ctx)
-    if !(1 <= linearIndex <= limit)
-      return nothing
-    end
+  @kernel inbounds = true cpu = false function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+    linearIndex = @index(Global, Linear)
 
     cartIndex = CartesianIndices(shape)[linearIndex]
 
     nx = cartIndex[1]
     ny = cartIndex[2]
     nz = cartIndex[3]
-    for k = 1:size(nodes_, 2)
-      phi = (nodes_[1,k]*(nx-shape_[1]/2-1)+nodes_[2,k]*(ny-shape_[2]/2-1)+nodes_[3,k]*(nz-shape_[3]/2-1))
-      e = exp(factor * phi - (times_[k]-echoOffset_)*disturbanceTerm_[cartIndex])
-      out_[cartIndex] += x_[k] * conj(e)
+    for k = 1:size(nodes, 2)
+      phi = (nodes[1,k]*(nx-shape[1]/2-1)+nodes[2,k]*(ny-shape[2]/2-1)+nodes[3,k]*(nz-shape[3]/2-1))
+      e = exp(factor * phi - (times[k]-echoOffset)*disturbanceTerm[cartIndex])
+      out[cartIndex] += x[k] * conj(e)
     end
-    return nothing
   end
+  kernel! = ctprodu_kernel!(get_backend(out))
+  kernel!(reshape(out, shape), x, shape, nodes, times, echoOffset, disturbanceTerm; ndrange = limit)
     
   return out
 end

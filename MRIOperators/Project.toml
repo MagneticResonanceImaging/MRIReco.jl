@@ -5,45 +5,43 @@ version = "0.3.0"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
 FLoops = "cc61a311-1640-44b5-9fba-1b764f453329"
-LowRankApprox = "898213cb-b102-5a47-900c-97e73b919f73"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearOperatorCollection = "a4a2c56f-fead-462a-a3ab-85921a5f2575"
+LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
+MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
+NFFT = "efe261a4-0d2b-5849-be55-fc731d526b0d"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+TSVD = "9449cd9e-2762-5aa3-a617-5413e99d722e"
 Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 
 [weakdeps]
 GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 
 [compat]
 Adapt = "3, 4"
 StatsBase = "0.33, 0.34"
-Distributions = "0.25"
-GPUArrays = "8, 9, 10"
-JLArrays = "0.1"
-julia = "1.6"
+GPUArrays = "11"
+JLArrays = "0.2"
+KernelAbstractions = "0.9"
 MRIBase = "0.4"
 Reexport = "1"
-LinearOperators = "2.3.3"
+LinearOperators = "2.3"
 LinearOperatorCollection = "2"
 NFFT = "0.13"
-FLoops = "0.2"
-LowRankApprox = "0.5"
 Wavelets = "0.9, 0.10"
+julia = "1.6"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-MRISimulation = "8988da37-ea20-4fa6-9af7-8a6f6f9a8970"
 JLArrays = "27aeb0d3-9eb9-45fb-866b-73c2ecf80fcb"
+MRISimulation = "8988da37-ea20-4fa6-9af7-8a6f6f9a8970"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "MRISimulation", "JLArrays"]
 
 [extensions]
-MRIOperatorsGPUArraysExt = "GPUArrays"
+MRIOperatorsGPUArraysExt = ["GPUArrays", "KernelAbstractions"]
