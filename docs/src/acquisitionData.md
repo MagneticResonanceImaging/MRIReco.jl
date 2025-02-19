@@ -96,7 +96,7 @@ You can check the flags of a profile with `flags_of(p:Profile OR head::Acquisiti
 Thus functions can also been directly applied to the `AcquisitionHeader` and you can set! or remove! multiple flags at once :
 
 ```julia
-flag_set!(head::AcquisitionHeader, ["ACQ_USER8","ACQ_IS_REVERSE"])
+flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"], FLAGS["ACQ_IS_REVERSE"]])
 # OR
 flag_set!(head::AcquisitionHeader, [FLAGS["ACQ_USER8"],FLAGS["ACQ_IS_REVERSE"]])
 ```
@@ -167,4 +167,20 @@ by default the following flags are removed :
 "ACQ_IS_PHASECORR_DATA", 
 "ACQ_IS_DUMMYSCAN_DATA", 
 "ACQ_IS_PHASE_STABILIZATION_REFERENCE", "ACQ_IS_PHASE_STABILIZATION"
+```
+
+## Pre-processing tools
+
+### Remove readout oversampling
+
+On clinical MR scanners, the raw data are often oversampled in the readout direction. This oversampling is not necessary for image reconstruction and can be removed to save memory and computation time. This step is generally applied right after the acquisition of each line.
+The current implementation is performed on the `RawAcquisitionData` (before conversion to `AcquisitionData`) and is based on the following parameters:
+- `rawData.params["encodedFOV"][1]`
+- `rawData.params["reconFOV"][1]`
+
+If an oversampling factor of 2 is applied during acquisition, the `encodedFOV` will be 2 times larger than `reconFOV` along the readout dimension.
+
+```
+!!! note
+    Be careful to remove all the profiles from a `RawAcquisitionData` that are not supposed to be of the same size; like noise acquisition or navigators. You can use the function `raw = remove_raw_by_flags(raw)`.
 ```
