@@ -67,6 +67,17 @@ params[:reconSize] = (nx,ny)
 # load the dictionary
 D = ComplexF32.(readdlm(joinpath(@__DIR__,"data/brainDict98.tsv")))
 
+begin
+D2 = reshape(D,6,6,:)# check patch
+f=Figure()
+for i in 1:6, j in 1:6
+  ax=Axis(f[i,j],aspect=1)
+  heatmap!(ax,abs.(D2[:,:,(i-1)*6+j]))
+  hidedecorations!(ax)
+end
+f
+end
+
 # some parameters
 px, py = (6,6)  # patch size
 K = px*py       # number of atoms
@@ -76,7 +87,7 @@ params = Dict{Symbol,Any}()
 params[:reco] = "standard"
 params[:reconSize] = (nx,ny)
 params[:iterations] = 50
-params[:reg] = L1Regularization(2.e-2)
+params[:reg] = L1Regularization(0.0)
 params[:sparseTrafo] = dictOp(D,(nx,ny),(px,py),2e-2)
 params[:rho] = 0.1
 params[:solver] = ADMM
