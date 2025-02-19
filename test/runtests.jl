@@ -12,6 +12,7 @@ const tmpdir  = @get_scratch!("tmp")
 areTypesDefined = @isdefined arrayTypes
 arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
 @testset "MRIReco" begin
+  include("testTools.jl")
   include("testIO.jl")
   include("testReconstruction.jl")
   include("testSpecificApplications.jl")
