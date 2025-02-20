@@ -3,14 +3,14 @@ using Pkg
 isinstalled(pkg::String) = any(x -> x.name == pkg && x.is_direct_dep, values(Pkg.dependencies()))
 
 # Install required packages
-for P in ["HTTP", "PyPlot", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
+for P in ["HTTP", "CairoMakie", "MRIReco", "MRIFiles", "MRICoilSensitivities"]
   !isinstalled(P) && Pkg.add(P)
 end
 
 # Download data
 include("downloadData.jl")
 
-using PyPlot, MRIReco, MRIFiles, MRICoilSensitivities, MRIReco.RegularizedLeastSquares, FFTW
+using CairoMakie, MRIReco, MRIFiles, MRICoilSensitivities, MRIReco.RegularizedLeastSquares, MRIReco.MRIOperators.FFTW
 
 ##################
 ## Data Loading ##
@@ -67,13 +67,11 @@ params[:normalizeReg] = MeasurementBasedNormalization()
 ## Visualize the results ##
 ###########################
 
-figure(1, figsize=(6,1.9))
-
-for s in [1,2,3,4]
-  subplot(1,4,s)
-  imshow(abs.(img[:,:,s,1,1]))
-  title("slice $(sl[s])")
-  axis("off")
+f = Figure(size = (190, 600))
+for (i, s) in enumerate([1, 2, 3, 4])
+  ax = Axis(f[i, 1:4], title = "slice $(sl[s])")
+  heatmap!(ax, abs.(img[:, :, s, 1, 1]))
+  hidedecorations!(ax)
+  hidespines!(ax)
 end
-
-subplots_adjust(left=0.01,bottom=0.01,wspace=0.3,hspace=0.2,right=0.99,top=0.92)
+f
