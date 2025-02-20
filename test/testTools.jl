@@ -13,6 +13,6 @@ using MRIBase
     params["reconFOV"] = (250.,250.,250.)
     rawData = RawAcquisitionData(params, [p])
     rawData2 = remove_oversampling(rawData)
-    @test size(rawData2[1].data,1) == NRead
+    @test size(rawData2.profiles[1].data,1) == NRead
   end
 end
