@@ -1,4 +1,5 @@
-export FLAGS, create_flag_bitmask, flag_is_set, flag_set!, flag_remove!, flag_remove_all!, flags_of
+export FLAGS, create_flag_bitmask, flag_is_set, flag_set!, flag_remove!, flag_remove_all!, flags_of, filter_raw_by_flags, remove_raw_by_flags
+
 
 export b64,
        ACQ_FIRST_IN_ENCODE_STEP1,
@@ -127,6 +128,8 @@ FLAGS = Dict(
     "ACQ_IS_DUMMYSCAN_DATA"                    => 27,
     "ACQ_IS_RTFEEDBACK_DATA"                   => 28,
     "ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA"    => 29,
+    "ACQ_IS_PHASE_STABILIZATION_REFERENCE"     => 30,
+    "ACQ_IS_PHASE_STABILIZATION"               => 31,
     "ACQ_COMPRESSION1"                         => 53,
     "ACQ_COMPRESSION2"                         => 54,
     "ACQ_COMPRESSION3"                         => 55,
@@ -173,7 +176,9 @@ create_flag_bitmask(2)                           # 0x0000000000000002
 """
 create_flag_bitmask(flag::T) where T  = error("Unexpected type for bitmask, expected String or positive Integer, found $T")
 
-create_flag_bitmask(flag::AbstractString) = create_flag_bitmask(FLAGS[flag])
+function create_flag_bitmask(flag::AbstractString) 
+  flag in keys(FLAGS) ? create_flag_bitmask(FLAGS[flag]) : @error "Flag name \"$flag\" is not in the list of ISMRMRD flags"
+end
 function create_flag_bitmask(flag::Integer)
   (flag > 0 && flag <= 64)|| throw(DomainError(flag, "Bitmask can only be created for  integers from 1 to 64"))
   b = UInt64(flag)
@@ -346,4 +351,60 @@ function Base.setproperty!(header::AcquisitionHeader, name::Symbol, val::UInt64)
   ty = fieldtype(typeof(header), name)
   tmp = val isa ty ? val : convert(ty, val)
   return setfield!(header, name, tmp)
+end
+
+
+"""
+    filter_raw_by_flags(rawData::RawAcquisitionData, flags::Vector{String})
+
+Filters the profiles in a `RawAcquisitionData` object based on specified flags.
+
+# Arguments
+- `rawData::RawAcquisitionData`: The `RawAcquisitionData` object to filter.
+- `flags::Vector{String}`: A vector of flag names to filter the profiles by.
+
+# Returns
+- `RawAcquisitionData`: A new `RawAcquisitionData` object containing only the profiles that have all the specified flags set.
+
+# Examples
+```julia
+# Assuming `rawData` is a RawAcquisitionData object and `flags` is a vector of flag names
+filteredData = filter_raw_by_flags(rawData, ["ACQ_IS_PHASECORR", "ACQ_IS_NOISEADJSCAN"])
+"""
+function filter_raw_by_flags(rawData::RawAcquisitionData, flags::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
+  filteredProfiles = Profile[]
+  for profile in rawData.profiles
+    if all(broadcast(flags) do flag; flag_is_set(profile, flag);end)
+      push!(filteredProfiles, profile)
+    end
+  end
+  return RawAcquisitionData(rawData.params, filteredProfiles)
+end
+
+"""
+    remove_raw_by_flags(rawData::RawAcquisitionData, flags::Vector{String} = ["ACQ_IS_NOISE_MEASUREMENT", "ACQ_IS_PARALLEL_CALIBRATION", "ACQ_IS_NAVIGATION_DATA", "ACQ_IS_PHASECORR_DATA", "ACQ_IS_DUMMYSCAN_DATA", "ACQ_IS_PHASE_STABILIZATION_REFERENCE", "ACQ_IS_PHASE_STABILIZATION"])
+
+Removes profiles from a `RawAcquisitionData` object based on specified flags.
+
+# Arguments
+- `rawData::RawAcquisitionData`: The `RawAcquisitionData` object to filter.
+- `flags::Vector{String}`: A vector of flag names to filter the profiles by. Defaults to a list of common flags indicating non-imaging data.
+
+# Returns
+- `RawAcquisitionData`: A new `RawAcquisitionData` object containing only the profiles that do not have any of the specified flags set.
+
+# Examples
+```julia
+# Assuming `rawData` is a RawAcquisitionData object
+filteredData = remove_raw_by_flags(rawData)
+```
+"""
+function remove_raw_by_flags(rawData::RawAcquisitionData, flags= ["ACQ_IS_NOISE_MEASUREMENT", "ACQ_IS_PARALLEL_CALIBRATION", "ACQ_IS_NAVIGATION_DATA", "ACQ_IS_PHASECORR_DATA", "ACQ_IS_DUMMYSCAN_DATA", "ACQ_IS_PHASE_STABILIZATION_REFERENCE", "ACQ_IS_PHASE_STABILIZATION"])
+  
+    filtered_profiles = filter(profile -> all(
+      broadcast(flags) do flag
+         ~flag_is_set(profile, flag)
+        end)
+        ,rawData.profiles)
+    return RawAcquisitionData(rawData.params, filtered_profiles)
 end
