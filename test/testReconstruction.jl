@@ -25,11 +25,8 @@ function testGriddingReco(N=32;arrayType = Array)
   raw = RawAcquisitionData(acqData)
   raw_shuffle = deepcopy(raw)
   raw_shuffle.profiles = shuffle(raw.profiles)
-
-  raw_shuffle.profiles[1].traj == raw.profiles[1].traj
   acqData_shuffle = AcquisitionData(raw_shuffle)
-  acqData_shuffle.profiles[1].traj
-
+ 
   params[:reco] = "direct"
   params[:reconSize] = (N,N)
   params[:arrayType] = arrayType
