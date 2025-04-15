@@ -178,6 +178,8 @@ repetitions(f::RawAcquisitionData) =
    [f.profiles[l].head.idx.repetition+1 for l=1:length(f.profiles)]
 contrasts(f::RawAcquisitionData) =
   [f.profiles[l].head.idx.contrast+1 for l=1:length(f.profiles)]
+averages(f::RawAcquisitionData) =
+  [f.profiles[l].head.idx.average+1 for l=1:length(f.profiles)]
 
   """
     subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1)
@@ -219,20 +221,23 @@ end
 returns the rawdata contained `RawAcquisitionData` object.
 The output is an `Array{Matrix{ComplexF64},3}`, which can be stored in a `AcquisitionData` object.
 """
-function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetition::Int=1)
+function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetition::Int=1, average::Int=1)
 
   # find profiles corresponding to the given slice contrast and repitiion
   sl = slices(f)
   rep = repetitions(f)
   contr = contrasts(f)
+  avg = averages(f)
   idx_sl = findall(x->x==slice,sl)
   idx_contr = findall(x->x==contrast,contr)
   idx_rep = findall(x->x==repetition,rep)
-  idx = intersect(idx_sl,idx_contr,idx_rep)
+  idx_avg = findall(x->x==average,avg)
+  idx = intersect(idx_sl,idx_contr,idx_rep, idx_avg)
 
   numSl = length(unique(sl))
   numRep = length(unique(rep))
   numContr = length(unique(contr))
+  numAvg = length(unique(avg))
 
   # number of unique combination of encoding statuses
   encSt1 = encSteps1(f)[idx]
@@ -288,6 +293,7 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
   numContr = length(unique(contrasts(f)))
   numSl = length(unique(slices(f)))
   numRep = length(unique(repetitions(f)))
+  numAvg = length(unique(averages(f)))
   # tr = [trajectory(f,contrast=contr) for contr=1:numContr]
   # subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=1:numContr]
   # kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=1:numContr, j=1:numSl, k=1:numRep]
@@ -295,7 +301,8 @@ function AcquisitionData(f::RawAcquisitionData; estimateProfileCenter::Bool=fals
 
   tr = [trajectory(f,contrast=contr) for contr=contrs]
   subsampleIdx = [subsampleIndices(f,contrast=contr,estimateProfileCenter=estimateProfileCenter) for contr=contrs]
-  kdata = [rawdata(f; contrast=i, slice=j, repetition=k) for i=contrs, j=sls, k=reps]
+  kdata = [[rawdata(f; contrast=i, slice=j, repetition=k, average=avg) for i=contrs, j=sls, k=reps] for avg=1:numAvg]
+  kdata = sum(kdata) ./ numAvg
 
   acq = AcquisitionData(tr, kdata,
                           idx = subsampleIdx,
