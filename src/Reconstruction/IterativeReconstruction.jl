@@ -18,10 +18,11 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
-                              , params...) where {D, T <: AbstractFloat}
+                              , arrayType = Array
+                              , params...) where {D, T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -30,7 +31,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
 
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
@@ -44,9 +45,9 @@ function reconstruction_simple( acqData::AcquisitionData{T}
   end
   reg = identity.(temp)
 
-  # reconstruction
+  # reconstructiond
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
-  #@floop
+  #@floop executor(arrayType) 
   for l = 1:numRep, k = 1:numSl
     if encodingOps!=nothing
       F = encodingOps[:,k]
@@ -56,18 +57,17 @@ function reconstruction_simple( acqData::AcquisitionData{T}
     for j = 1:numContr
       W = WeightingOp(Complex{T}; weights=weights[j])
       for i = 1:numChan
-        kdata = kData(acqData,j,i,k,rep=l).* weights[j]
-        EFull = ∘(W, F[j])#, isWeighting=true)
-        EFullᴴEFull = normalOperator(EFull)
-        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+        kdata = arrayType(kData(acqData,j,i,k,rep=l)).* weights[j]
+        EFull = ProdOp(W, F[j])#, isWeighting=true)
+        EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+        solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
-        I = solve(solv, kdata, startVector=get(params,:startVector,Complex{T}[]),
-                              solverInfo=get(params,:solverInfo,nothing))
+        I = solve!(solv, kdata, x0=get(params,:startVector,0))
 
         if isCircular( trajectory(acqData, j) )
           circularShutter!(reshape(I, reconSize), 1.0)
         end
-        Ireco[:,k,j,i,l] = I
+        Ireco[:,k,j,i,l] = Array(I)
       end
     end
   end
@@ -94,10 +94,11 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
-                              , params...) where {D , T <: AbstractFloat}
+                              , arrayType = Array
+                              , params...) where {D , T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -105,7 +106,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
@@ -123,19 +124,19 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       F = encodingOps[i]
     else
       F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
     end
     for j = 1:numChan
-      kdata = multiEchoData(acqData, j, i,rep=l) .* vcat(weights...)
+      kdata = arrayType(multiEchoData(acqData, j, i,rep=l)) .* vcat(weights...)
       EFull = ∘(W, F)#, isWeighting=true)
-      EFullᴴEFull = normalOperator(EFull)
-      solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+      EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
-      Ireco[:,j,i,l] = solve(solv,kdata; params...)
+      Ireco[:,j,i,l] = Array(solve!(solv,kdata))
       # TODO circular shutter
     end
   end
@@ -164,7 +165,7 @@ are reconstructed independently.
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -172,12 +173,13 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
-                              , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
+                              , weights::Vector{vecTc}
+                              , L_inv::Union{LowerTriangular{Complex{T}, <:AbstractMatrix{Complex{T}}}, Nothing}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D , T}
+                              , arrayType = Array
+                              , params...) where {D , T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -185,7 +187,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # noise decorrelation
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
@@ -206,30 +208,28 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
   let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
-    @floop for l = 1:numRep, k = 1:numSl
+    @floop executor(arrayType) for l = 1:numRep, k = 1:numSl,  j = 1:numContr
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
         E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
       end
 
-      for j = 1:numContr
-        W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
-        kdata = multiCoilData(acqData, j, k, rep=l) .* repeat(weights[j], numChan)
-        if !isnothing(L_inv)
-          kdata = vec(reshape(kdata, :, numChan) * L_inv')
-        end
-
-        EFull = ∘(W, E[j], isWeighting=true)
-        EFullᴴEFull = normalOperator(EFull)
-        solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
-        I = solve(solv, kdata; params...)
-
-        if isCircular( trajectory(acqData, j) )
-          circularShutter!(reshape(I, reconSize), 1.0)
-        end
-        Ireco[:,k,j,l] = I
+      W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
+      kdata = arrayType((multiCoilData(acqData, j, k, rep=l))) .* repeat(weights[j], numChan)
+      if !isnothing(L_inv)
+        kdata = vec(reshape(kdata, :, numChan) * L_inv')
       end
+
+      EFull = ∘(W, E[j])
+      EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+      I = solve!(solv, kdata)
+
+      if isCircular( trajectory(acqData, j) )
+        circularShutter!(reshape(I, reconSize), 1.0)
+      end
+      Ireco[:,k,j,l] = Array(I)
     end
   end
   Ireco_ = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, 1,numRep)
@@ -249,7 +249,7 @@ Different slices are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -257,12 +257,13 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , L_inv::Union{LowerTriangular{Complex{T}, Matrix{Complex{T}}}, Nothing}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D, T}
+                              , arrayType = Array
+                              , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -270,7 +271,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   end
 
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # noise decorrelation
   senseMapsUnCorr = decorrelateSenseMaps(L_inv, senseMaps, numChan)
@@ -290,23 +291,23 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       E = encodingOps[i]
     else
       E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMapsUnCorr; slice=i, encParams...)
     end
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+    kdata = arrayType(multiCoilMultiEchoData(acqData, i)) .* repeat(vcat(weights...), numChan)
     if !isnothing(L_inv)
-      kdata = vec(reshape(kdata, :, numChan) * L_inv')
+      kdata = arrayType(vec(reshape(kdata, :, numChan) * L_inv'))
     end
 
     EFull = ∘(W, E)#, isWeighting=true)
-    EFullᴴEFull = normalOperator(EFull)
-    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
-    Ireco[:,i,l] = solve(solv, kdata; params...)
+    Ireco[:,i,l] = Array(solve!(solv, kdata))
   end
 
 
@@ -335,7 +336,7 @@ Different slices are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
-* `senseMaps::Array{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -343,11 +344,12 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               ; reconSize::NTuple{D,Int64}
                               , reg::Vector{<:AbstractRegularization}
                               , sparseTrafo
-                              , weights::Vector{Vector{Complex{T}}}
+                              , weights::Vector{vecTc}
                               , solver::Type{<:AbstractLinearSolver}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
-                              , params...) where {D, T}
+                              , arrayType = Array
+                              , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
@@ -357,7 +359,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   numBasis = size(params[:basis],2)
    
-  encParams = getEncodingOperatorParams(;params...)
+  encParams = getEncodingOperatorParams(;arrayType, params...)
 
   # set sparse trafo in reg
   temp = []
@@ -366,7 +368,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
     if isnothing(trafo)
       trafo = SparseOp(Complex{T},"nothing", reconSize; params...)
     end
-    trafo = DiagOp( repeat([trafo],numContr)... )
+    trafo = DiagOp( repeat([trafo],numBasis)... )
     push!(temp, TransformedRegularization(r, trafo))
   end
   reg = identity.(temp)
@@ -374,7 +376,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
-  @floop for l = 1:numRep, i = 1:numSl
+  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
     if encodingOps != nothing
       E = encodingOps[i]
     else
@@ -383,13 +385,13 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
       E = ∘(E,subOp)
     end
 
-    kdata = multiCoilMultiEchoData(acqData, i) .* repeat(vcat(weights...), numChan)
+    kdata = arrayType(multiCoilMultiEchoData(acqData, i)) .* repeat(vcat(weights...), numChan)
 
     EFull = ∘(W, E)#, isWeighting=true)
-    EFullᴴEFull = normalOperator(EFull)
-    solv = createLinearSolver(solver, EFull; AᴴA=EFullᴴEFull, reg=reg, params...)
+    EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
 
-    Ireco[:,i,l] = solve(solv, kdata; params...)
+    Ireco[:,i,l] = Array(solve!(solv, kdata))
   end
 
 

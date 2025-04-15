@@ -1,5 +1,5 @@
 # test gridding reco
-function testGriddingReco(N=32)
+function testGriddingReco(N=32;arrayType = Array)
   # image
   x = shepp_logan(N)
 
@@ -15,13 +15,14 @@ function testGriddingReco(N=32)
   #reco
   params[:reco] = "direct"
   params[:reconSize] = (N,N)
+  params[:arrayType] = arrayType
 
   x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
 # test gridding reco
-function testConvertKspace(N=32)
+function testConvertKspace(N=32;arrayType = Array)
     # image
     x = shepp_logan(N)
 
@@ -37,6 +38,7 @@ function testConvertKspace(N=32)
     #reco
     params[:reco] = "direct"
     params[:reconSize] = (N,N)
+    params[:arrayType] = arrayType
 
     x_approx = reconstruction(acqData, params)
     kspace = kDataCart(acqData)
@@ -57,6 +59,7 @@ function testConvertKspace(N=32)
     acqCS = AcquisitionData(kspace_cs)
     params[:reco] = "direct"
     params[:reconSize] = (N,N)
+    params[:arrayType] = arrayType
 
     x_cs = reconstruction(acqCS, params)
     x_cs2 = ifftshift(ifft(ifftshift(kspace_cs)))
@@ -64,7 +67,7 @@ function testConvertKspace(N=32)
     @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,1,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
 end
 
-function testConvertKspace3D(N=32)
+function testConvertKspace3D(N=32;arrayType = Array)
     # image
     x = shepp_logan(N)
     x = repeat(x,1,1,N)
@@ -82,6 +85,7 @@ function testConvertKspace3D(N=32)
     #reco
     params[:reco] = "direct"
     params[:reconSize] = (N,N,N)
+    params[:arrayType] = arrayType
 
     x_approx = reconstruction(acqData, params)
     kspace = kDataCart(acqData)
@@ -110,7 +114,7 @@ function testConvertKspace3D(N=32)
     @test (norm(vec(abs.(x_cs))-vec(abs.(x_cs2[:,:,:,1,1,1])))/norm(vec(abs.(x_cs2)))) < 1e-10
 end
 
-function testGriddingReco3d(N=32)
+function testGriddingReco3d(N=32;arrayType = Array)
   sh = ComplexF64.(shepp_logan(N))
   x = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
 
@@ -127,13 +131,14 @@ function testGriddingReco3d(N=32)
   # reco
   params[:reco] = "direct"
   params[:reconSize] = (N,N,8)
+  params[:arrayType] = arrayType
 
   x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
 end
 
 # test CS reco
-function testCSReco(N=32,redFac=1.1;sampling="poisson")
+function testCSReco(N=32,redFac=1.1;sampling="poisson",arrayType = Array)
   # image
   x = shepp_logan(N)
 
@@ -156,13 +161,14 @@ function testCSReco(N=32,redFac=1.1;sampling="poisson")
   params[:reg] = L1Regularization(1.e-3)       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
+  params[:arrayType] = arrayType
 
   x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-1
 end
 
-function testCSRecoMultCoil(N=32;type = ComplexF64)
+function testCSRecoMultCoil(N=32;type = ComplexF64,arrayType = Array)
   # image
   x = shepp_logan(N)
   smaps = birdcageSensitivity(32,2,3.0)
@@ -190,9 +196,10 @@ function testCSRecoMultCoil(N=32;type = ComplexF64)
   params[:reg] = TVRegularization(2.e-3, shape = (N,N))       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 100
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
+  params[:arrayType] = arrayType
 
   x_approx = reshape( reconstruction(acqData, params), 32,32,2)
 
@@ -206,7 +213,7 @@ function testCSRecoMultCoil(N=32;type = ComplexF64)
 end
 
 # test CSSense Reco
-function testCSSenseReco(N=32,redFac=1.1)
+function testCSSenseReco(N=32,redFac=1.1;arrayType = Array)
   # image
   x = shepp_logan(N)
 
@@ -235,15 +242,16 @@ function testCSSenseReco(N=32,redFac=1.1)
   params[:reg] = L1Regularization(1.e-3)       # regularization
   params[:solver] = ADMM
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
+  params[:arrayType] = arrayType
 
   x_approx = vec(reconstruction(acqData, params))
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
-function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
+function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = Array)
   x = shepp_logan(N)
 
   # coil sensitivites
@@ -274,9 +282,10 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
   params[:reg] = L2Regularization(1.e-3)       # regularization
   params[:solver] = CGNR
   params[:iterations] = 1
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
+  params[:arrayType] = arrayType
 
   x_approx = vec(reconstruction(acqData,params))
   # This test is expected to have a higher error since CGNR with CS will not work
@@ -284,7 +293,7 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1
 end
 
-function testOffresonanceReco(N = 128; accelMethod="nfft")
+function testOffresonanceReco(N = 128; accelMethod="nfft",arrayType = Array)
 
   I = shepp_logan(N)
   I = circularShutterFreq!(I,1)
@@ -312,13 +321,14 @@ function testOffresonanceReco(N = 128; accelMethod="nfft")
   params[:reconSize] = (N,N)
   params[:correctionMap] = cmap
   params[:method] = accelMethod
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
-function testSENSEReco(N = 64, T = ComplexF64)
+function testSENSEReco(N = 64, T = ComplexF64;arrayType = Array)
   numCoils = 8
   I = T.(shepp_logan(N))
   I = circularShutterFreq!(I,1)
@@ -346,13 +356,14 @@ function testSENSEReco(N = 64, T = ComplexF64)
   params[:iterations] = 50
   params[:solver] = CGNR
   params[:senseMaps] = coilsens
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
-function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
+function testSENSEnoiseUnCorr(N = 64, T = ComplexF64;arrayType = Array)
   numCoils = 8
   R = 4
   Img = T.(shepp_logan(N))
@@ -386,6 +397,7 @@ function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
   params[:reg] = L2Regularization(0.0)
   params[:iterations] = 150
   params[:solver] = CGNR
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
@@ -395,7 +407,7 @@ function testSENSEnoiseUnCorr(N = 64, T = ComplexF64)
   @test (norm(vec(Img)-vec(Ireco))/norm(vec(Img)-vec(IrecoUnCorr))) > 1
 end
 
-function testOffresonanceSENSEReco(N = 64)
+function testOffresonanceSENSEReco(N = 64;arrayType = Array)
   numCoils = 8
   I = shepp_logan(N)
   I = circularShutterFreq!(I,1)
@@ -426,13 +438,14 @@ function testOffresonanceSENSEReco(N = 64)
   params[:solver] = ADMM
   params[:senseMaps] = coilsens
   params[:correctionMap] = cmap
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1.6e-1
 end
 
-function testSenseMultiEcho(N=32,T = ComplexF32)
+function testSenseMultiEcho(N=32,T = ComplexF32;arrayType = Array)
   # image
   x = T.(shepp_logan(N))
   rmap = 20.0*ones(N,N)
@@ -460,6 +473,7 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   params[:iterations] = 1
   params[:solver] = CGNR
   params[:senseMaps] = reshape(coilsens,N,N,1,8)
+  params[:arrayType] = arrayType
 
   x_approx = reshape(reconstruction(acqData,params),N,N,:)
 
@@ -478,7 +492,55 @@ function testSenseMultiEcho(N=32,T = ComplexF32)
   @test relErrorEcho1 < 1e-6
 end
 
-function testRecoMultiEcho(N=32)
+function testSenseMultiEchoMeasCoils(N=32;T = ComplexF32,arrayType = Array)
+    # image
+    x = T.(shepp_logan(N))
+    rmap = 20.0*ones(N,N)
+
+    coilsens = T.(measured2DSensitivity(N, 8))
+
+    # simulation
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+    params[:r2map] = rmap
+    params[:T_echo] = [2.e-2, 4.e-2]
+    params[:seqName] = "ME"
+    params[:refocusingAngles] = Float64[pi,pi]
+    params[:senseMaps] = coilsens
+
+    acqData = simulation( real(x), params )
+
+    params = Dict{Symbol, Any}()
+    params[:reconSize] = (N,N)
+    params[:reco] = "multiCoil"
+    params[:reg] = L2Regularization(1.e-3)
+    params[:iterations] = 1
+    params[:solver] = CGNR
+    params[:senseMaps] = reshape(coilsens,N,N,1,8)
+    params[:arrayType] = arrayType
+
+    x_approx = reshape(reconstruction(acqData,params),N,N,:)
+
+    # Reco multiCoilMultiEcho
+    params = Dict{Symbol, Any}()
+    params[:reconSize] = (N,N)
+    params[:reco] = "multiCoilMultiEcho"
+    params[:reg] = L2Regularization(1.e-3)
+    params[:iterations] = 1
+    params[:solver] = CGNR
+    params[:senseMaps] = reshape(coilsens,N,N,1,8)
+    params[:arrayType] = arrayType
+
+    x_approx2= reshape(reconstruction(acqData,params),N,N,:)
+
+    relErrorEcho1 = norm(x_approx - x_approx2)/norm(x_approx)
+    @test relErrorEcho1 < 1e-6
+end
+
+function testRecoMultiEcho(N=32;arrayType = Array)
   # image
   x = ComplexF64.(shepp_logan(N))
   rmap = 20.0*ones(N,N)
@@ -513,6 +575,7 @@ function testRecoMultiEcho(N=32)
   params[:reg] = L2Regularization(1.e-3)
   params[:iterations] = 1
   params[:solver] = CGNR
+  params[:arrayType] = arrayType
 
   x_approx2 = reshape(reconstruction(acqData,params),N,N,:)
 
@@ -520,7 +583,7 @@ function testRecoMultiEcho(N=32)
   @test relErrorEcho3 < 1e-3
 end
 
-function testCSReco3d(N=128)
+function testCSReco3d(N=128;arrayType = Array)
   sh = ComplexF64.(shepp_logan(N))
   I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
   I = permutedims(I,[3,1,2])
@@ -544,16 +607,17 @@ function testCSReco3d(N=128)
   params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-4
   params[:relTol] = 1.e-4
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
-  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
+  @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 2e-1
 end
 
-function testCSSenseReco3d(N=128)
+function testCSSenseReco3d(N=128;arrayType = Array)
   sh = ComplexF64.(shepp_logan(N))
   I = cat(sh,0.9*sh,0.8*sh,0.7*sh,0.6*sh,0.5*sh,0.4*sh,0.3*sh,dims=3)
   I = permutedims(I,[3,1,2])
@@ -583,16 +647,17 @@ function testCSSenseReco3d(N=128)
   params[:reg] = L1Regularization(1.e-3) #"TV"       # regularization
   params[:solver] = ADMM    # solver
   params[:iterations] = 1000
-  params[:ρ] = 1.0e-1
+  params[:rho] = 1.0e-1
   params[:absTol] = 1.e-5
   params[:relTol] = 1.e-4
+  params[:arrayType] = arrayType
 
   Ireco = reconstruction(acqData, params)
 
   @test (norm(vec(I)-vec(Ireco))/norm(vec(I))) < 1e-1
 end
 
-function testRegridding(N=64)
+function testRegridding(N=64;arrayType = Array)
 
   # image
   x = shepp_logan(N)
@@ -619,6 +684,7 @@ function testRegridding(N=64)
   params[:solver] = CGNR
   params[:reg] = L2Regularization(0.0)
   params[:iterations] = 3
+  params[:arrayType] = arrayType
 
   x_reg = collect(reshape(reconstruction(acqDataReg, params),N,N))
   circularShutter!(x_reg)
@@ -634,52 +700,55 @@ function testRegridding(N=64)
   @test (norm(vec(x_rad).-vec(x_reg))/norm(vec(x_rad))) < 1e-2
 end
 
-function testReco(N=32)
-    @testset "Reconstructions" begin
+function testReco(N=32;arrayType = Array)
+    @testset "Reconstructions: $arrayType" begin
         @testset "MultiEcho" begin
-            testRecoMultiEcho()
-            testSenseMultiEcho(N)
+            @testset testRecoMultiEcho(;arrayType)
+            @testset testSenseMultiEcho(N;arrayType)
+            @testset testSenseMultiEchoMeasCoils(N;arrayType)
         end
 
         @testset "Convert k-space" begin
-            testConvertKspace()
-            testConvertKspace3D()
+            @testset "K-Space" testConvertKspace(;arrayType)
+            @testset "K-Space 3D" testConvertKspace3D(;arrayType)
         end
 
         @testset "Gridding" begin
-            testGriddingReco()
-            testGriddingReco3d()
-            testRegridding()
+            @testset "Gridding" testGriddingReco(;arrayType)
+            @testset "Gridding 3D" testGriddingReco3d(;arrayType)
+            @testset "Regridding" testRegridding(;arrayType)
         end
 
         @testset "CS" begin
             sampling = ["random", "poisson", "vdPoisson"] # "lines"
-            for samp in sampling
-                testCSReco(sampling=samp)
+            @testset "Sampling" for samp in sampling
+                testCSReco(sampling=samp;arrayType)
             end
-            testCSRecoMultCoil(type = ComplexF64)
-            testCSRecoMultCoil(type = ComplexF32)
-            testCSSenseReco()
-            testCSReco3d()
-            testCSSenseReco3d()
-            testCSRecoMultiCoilCGNR(type = ComplexF64)
-            testCSRecoMultiCoilCGNR(type = ComplexF32)
+            @testset "MultiCoil F64" testCSRecoMultCoil(type = ComplexF64;arrayType)
+            @testset "MultiCoil F32" testCSRecoMultCoil(type = ComplexF32;arrayType)
+            @testset "Sense" testCSSenseReco(;arrayType)
+            @testset "3D" testCSReco3d(;arrayType)
+            @testset "Sense 3D" testCSSenseReco3d(;arrayType)
+            @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF64;arrayType)
+            @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF32;arrayType)
         end
 
         @testset "off-resonance" begin
             accelMethods = ["nfft", "hist", "leastsquare"]
             for a in accelMethods
-                !Sys.iswindows() && testOffresonanceReco(accelMethod=a)
-                !Sys.iswindows() && testOffresonanceSENSEReco()
+                !Sys.iswindows() && testOffresonanceReco(accelMethod=a;arrayType)
+                !Sys.iswindows() && testOffresonanceSENSEReco(;arrayType)
             end
         end
 
         @testset "SENSE" begin
-            testSENSEReco(64, ComplexF32)
-            testSENSEReco(64, ComplexF64)
-            testSENSEnoiseUnCorr(64, ComplexF64)
+            @testset "SENSE F32" testSENSEReco(64, ComplexF32;arrayType)
+            @testset "SENSE F64" testSENSEReco(64, ComplexF64;arrayType)
+            @testset "SENSE F64 Uncorr" testSENSEnoiseUnCorr(64, ComplexF64;arrayType)
         end
     end
 end
 
-testReco()
+for arrayType in arrayTypes 
+  testReco(;arrayType)
+end

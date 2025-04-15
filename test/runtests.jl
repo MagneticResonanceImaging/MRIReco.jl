@@ -9,6 +9,11 @@ using Scratch
 const tmpdir  = @get_scratch!("tmp")
 @info "If you want to check the output of the tests, please head to $tmpdir."
 
-include("testIO.jl")
-include("testReconstruction.jl")
-include("testSpecificApplications.jl")
+areTypesDefined = @isdefined arrayTypes
+arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
+@testset "MRIReco" begin
+  include("testTools.jl")
+  include("testIO.jl")
+  include("testReconstruction.jl")
+  include("testSpecificApplications.jl")
+end

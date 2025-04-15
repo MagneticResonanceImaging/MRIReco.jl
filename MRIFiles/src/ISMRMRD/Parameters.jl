@@ -1,4 +1,3 @@
-export Limit, MeasurementDependency, CoilDescription
 
 function GeneralParameters(str::String)
   return GeneralParameters( parse_string(str) )
@@ -20,21 +19,6 @@ function addToDict!(params::Dict, e::XMLElement, paramName::String, ::Type{T},
   end
 end
 
-struct Limit
-  minimum::Int
-  maximum::Int
-  center::Int
-end
-
-struct MeasurementDependency
-  dependencyType::String
-  measurementID::String
-end
-
-struct CoilDescription
-  number::Int
-  name::String
-end
 
 customParse(::Type{T}, node) where T = parse(T,content(node))
 customParse(::Type{String}, node) = content(node)
@@ -310,7 +294,7 @@ function insertNode(xs, paramName::String, param::Limit)
 end
 
 function insertNode(xs, paramName::String, param_::Dict{String,Any})
-  xsp = new_child(xs, paramName)
+  xsp = paramName == "userParameters" ? xs : new_child(xs, paramName)
   param = deepcopy(param_)
   if haskey(param, "comment")
     insertNode(xsp, "comment", param["comment"])

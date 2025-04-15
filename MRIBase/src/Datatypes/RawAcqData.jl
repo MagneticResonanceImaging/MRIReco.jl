@@ -1,4 +1,6 @@
 export RawAcquisitionData, EncodingCounters, AcquisitionHeader, Profile, minimalHeader, profileIdx
+export Limit, MeasurementDependency, CoilDescription
+
 
 """
 Encoding counters used in each Profile of a RawAcquisitionData object.
@@ -206,7 +208,7 @@ function subsampleIndices(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, 
     i1 = tr_center_idx - center_sample + 1 + f.profiles[i].head.discard_pre
     i2 = tr_center_idx - center_sample + numSamp - f.profiles[i].head.discard_post
     # convert to linear index
-    lineIdx = collect(i1:i2) .+ numSamp*((encSt2[i]-1)*numProf + (encSt1[i]-1))
+    lineIdx = collect(i1:i2) .+ numEncSamp *((encSt2[i]-1)*numProf + (encSt1[i]-1))
     append!(idx, lineIdx)
   end
 
@@ -267,6 +269,10 @@ function rawdata(f::RawAcquisitionData; slice::Int=1, contrast::Int=1, repetitio
     i1 = f.profiles[l].head.discard_pre + 1
     i2 = i1+numSampPerProfile-1
     kdata[:,cnt,:] .= f.profiles[l].data[i1:i2, :]
+    if flag_is_set(f.profiles[l],"ACQ_IS_REVERSE")
+      kdata[:,cnt,:] .= reverse(kdata[:,cnt,:], dims=1)
+      flag_remove!(f.profiles[l],"ACQ_IS_REVERSE")
+    end
     cnt += 1
   end
 
@@ -414,6 +420,25 @@ function minimalHeader(encodingSize, fov::NTuple{3,AbstractFloat};
   params["receiverChannels"] = numChannels
 
   return params
+end
+
+# The following three structs will be contained in the parameter dictionary when reading a full
+# ISMRMRD file
+
+struct Limit
+  minimum::Int
+  maximum::Int
+  center::Int
+end
+
+struct MeasurementDependency
+  dependencyType::String
+  measurementID::String
+end
+
+struct CoilDescription
+  number::Int
+  name::String
 end
 
 function profileIdx(acqData::AcquisitionData, contr::Int)

@@ -9,27 +9,20 @@ Operators are implemented as subtypes of `AbstractLinearOperator`, which is defi
 
 
 ```@docs
-MRIReco.encodingOps2d_simple
-MRIReco.encodingOps3d_simple
-MRIReco.encodingOps2d_parallel
-MRIReco.encodingOps3d_parallel
-MRIReco.encodingOp2d_multiEcho
-MRIReco.encodingOp3d_multiEcho
-MRIReco.encodingOp2d_multiEcho_parallel
-MRIReco.encodingOp3d_multiEcho_parallel
-MRIReco.fourierEncodingOp2d
-MRIReco.fourierEncodingOp3d
-MRIReco.ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}; MRIReco.echoImage::Bool=false, kargs...) where D
-RegularizedLeastSquares.FFTOp(T::Type, shape::Tuple, shift=true)
-MRIReco.NFFTOp(shape::Tuple, tr::Trajectory; nodes=nothing, kargs...)
-MRIReco.FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
-                        correctionmap::Array{ComplexF64,D};
-                        method::String="nfft",
-                        echoImage::Bool=true,
-                        alpha::Float64=1.75,
-                        m::Float64=3.0,
-                        K=20,
-                        kargs...) where D
+MRIReco.EncodingOp
+MRIReco.lrEncodingOp
+MRIReco.fourierEncodingOp
+MRIReco.encodingOps_simple
+MRIReco.encodingOps_parallel
+MRIReco.encodingOp_multiEcho
+MRIReco.encodingOp_multiEcho_parallel
+MRIReco.fourierEncodingOp
+MRIReco.ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Tc,D}
+                        ; echoImage::Bool=false, S = storage_type(correctionmap), kargs...) where {T, Tc <: Union{Complex{T}, T}, D}
+MRIReco.SubspaceOp
+MRIReco.FFTop                   
+MRIReco.NFFTOp
+MRIReco.FieldmapNFFTOp
 MRIReco.SamplingOp
 MRIReco.SensitivityOp
 MRIReco.SparseOp
@@ -147,6 +140,7 @@ MRIReco.addNoise(x::Vector, snr::Float64, complex= true)
 MRIReco.addNoise(acqData::AcquisitionData, snr::Float64)
 MRIReco.addNoise!(acqData::AcquisitionData, snr::Float64)
 MRIReco.birdcageSensitivity
+MRIReco.measured2DSensitivity
 MRIReco.quadraticFieldmap
 ```
 

@@ -1,5 +1,11 @@
-using Test, MRIBase, MRIOperators, MRISimulation, NFFT.FFTW
-using LinearAlgebra, LinearOperatorCollection
+using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT.FFTW
+using LinearAlgebra, MRIOperators.LinearOperatorCollection
+using JLArrays
 
 
-include("testOperators.jl")
+areTypesDefined = @isdefined arrayTypes
+arrayTypes = areTypesDefined ? arrayTypes : [Array, JLArray]
+
+@testset "MRIOperators" begin
+  include("testOperators.jl")
+end

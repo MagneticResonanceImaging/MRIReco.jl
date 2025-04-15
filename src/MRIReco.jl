@@ -4,10 +4,10 @@ using Reexport
 
 @reexport using MRIBase
 @reexport using MRIOperators
+@reexport using RegularizedLeastSquares
 
 using ProgressMeter
 using AxisArrays
-using RegularizedLeastSquares
 using LinearAlgebra
 using Random
 using FLoops

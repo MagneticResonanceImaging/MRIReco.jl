@@ -1,8 +1,8 @@
 export circularShutter!, circularShutterFreq!, getCircularMask
 
-preserveType(orig::Array{T}, data::Array{U}) where {T<:Real, U<:Complex} = real(data)
+preserveType(orig::AbstractArray{T}, data::AbstractArray{U}) where {T<:Real, U<:Complex} = real(data)
 
-preserveType(orig::Array{T}, data::Array{U}) where {T, U} = data
+preserveType(orig::AbstractArray{T}, data::AbstractArray{U}) where {T, U} = data
 
 function circularShutter!(I::AbstractMatrix, radiusFactor::Number=1.0)
     imgSize = size(I)
@@ -40,7 +40,7 @@ function getCircularMask(shape::Tuple, radiusFactor::Number=1.0)
   return A
 end
 
-function circularShutterFreq!(I::Matrix, radiusFactor::T=1.0) where T<:Number
+function circularShutterFreq!(I::AbstractMatrix, radiusFactor::T=1.0) where T<:Number
     imgSize = size(I)
     fftI = fftshift(fft(I))
     center = (imgSize[1]/2.0, imgSize[2]/2.0)
@@ -56,7 +56,7 @@ function circularShutterFreq!(I::Matrix, radiusFactor::T=1.0) where T<:Number
     return preserveType(I, ifft(ifftshift(fftI)))
 end
 
-function circularShutterFreq!(I::Array{T,3}, radiusFactor::T=1.0) where T<:Number
+function circularShutterFreq!(I::AbstractArray{T,3}, radiusFactor::T=1.0) where T<:Number
     imgSize = size(I)
     fftI = fftshift(fft(I))
     center = (imgSize[1]/2.0, imgSize[2]/2.0, imgSize[3]/2.0)

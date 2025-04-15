@@ -77,7 +77,7 @@ function read(file::JcampdxFile, stream::IO, keylist::Vector=String[]; maxEntrie
           if val[1] != '('
             file.dict[key] = val
           else
-            if val[2] != ' '
+            if val[2] != ' ' || val[3] == '<'
               file.dict[key] = val
               if val[end] == ')' 
                 file.dict[key] = val

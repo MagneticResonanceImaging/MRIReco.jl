@@ -13,7 +13,9 @@ input:
 function reconstruction_direct(acqData::AcquisitionData{T}
                                   , reconSize::NTuple{D,Int64}
                                   , weights::Vector{Vector{Complex{T}}}
-                                  , correctionMap::Array{Complex{T}}=Complex{T}[]) where {D,T}
+                                  , correctionMap::Array{Complex{T}}=Complex{T}[]
+                                  , arrayType = Array
+                                  , S = Vector{Complex{T}}) where {D,T}
 
   encDims = ndims(trajectory(acqData))
   if encDims!=D
@@ -26,17 +28,17 @@ function reconstruction_direct(acqData::AcquisitionData{T}
   p = Progress(numSl*numChan*numContr*numRep, dt=1, desc="Direct Reconstruction...")
 
   for i = 1:numSl
-    F = encodingOps_simple(acqData, reconSize, slice=i, correctionMap=correctionMap)
+    F = encodingOps_simple(acqData, reconSize, slice=i, correctionMap=correctionMap, S = S)
     for k = 1:numContr
       for j = 1:numChan
         for l = 1:numRep
-            kdata = kData(acqData,k,j,i,rep=l) .* (weights[k].^2)
+            kdata = arrayType(kData(acqData,k,j,i,rep=l)) .* arrayType((weights[k].^2))
             I = adjoint(F[k]) * kdata
 
             if isCircular( trajectory(acqData, k) )
               circularShutter!(reshape(I, reconSize), 1.0)
             end
-            Ireco[:,i,k,j,l] = I
+            Ireco[:,i,k,j,l] = Array(I)
 
             next!(p)
         end
