@@ -162,9 +162,11 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
     @views kernel_k[CartesianIndices(ksize), :] .= kernel[CartesianIndices(ksize), iv, :]
     mul!(kernel_i, fftplan, kernel_k)
 
-    @floop for j ∈ axes(kernel_i, ndims(kernel_i)), ix ∈ CartesianIndices(sizePadded)
-      @inbounds @simd for i ∈ axes(kernel_i, ndims(kernel_i))
-        kern2_[i, j, ix] += conj(kernel_i[ix, i]) * kernel_i[ix, j]
+    @tasks for ix ∈ CartesianIndices(sizePadded)
+      for j ∈ axes(kernel_i, ndims(kernel_i))
+        @inbounds @simd for i ∈ axes(kernel_i, ndims(kernel_i))
+          kern2_[i, j, ix] += conj(kernel_i[ix, i]) * kernel_i[ix, j]
+        end
       end
     end
   end
