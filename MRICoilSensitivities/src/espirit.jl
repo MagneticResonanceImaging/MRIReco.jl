@@ -192,15 +192,17 @@ function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations
   nblas = BLAS.get_num_threads()
   try
     BLAS.set_num_threads(1)
-    b = [randn(T, nc) for _ = 1:Threads.nthreads()]
-    bᵒˡᵈ = [similar(b[1]) for _ = 1:Threads.nthreads()]
+    @tasks for n ∈ CartesianIndices(imsize)
+      @local begin
+        b = randn(T, nc)
+        bᵒˡᵈ = Vector{T}(undef, nc)
+      end
 
-    @floop for n ∈ CartesianIndices(imsize)
       if use_poweriterations && nmaps == 1
-        S, U = power_iterations!(view(kern2, :, :, n), b=b[Threads.threadid()], bᵒˡᵈ=bᵒˡᵈ[Threads.threadid()])
+        S, U = power_iterations!(view(kern2, :, :, n); b, bᵒˡᵈ)
         # The following uses the method from IterativeSolvers.jl but is currently slower and allocating more
         # this is probably because we pre-allocate bᵒˡᵈ
-        #S, U = RegularizedLeastSquares.IterativeSolvers.powm!(view(kern2, :, :, n), b[Threads.threadid()], maxiter=5)
+        # S, U = RegularizedLeastSquares.IterativeSolvers.powm!(view(kern2, :, :, n), b, maxiter=5)
 
         U .*= transpose(exp.(-1im .* angle.(U[1])))
         @views eigenVals[n, 1, :] .= real.(S)

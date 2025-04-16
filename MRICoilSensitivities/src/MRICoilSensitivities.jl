@@ -4,6 +4,7 @@ export estimateCoilSensitivities, mergeChannels, espirit, geometricCoilCompressi
 
 using MRIBase
 using FLoops
+using OhMyThreads: @tasks, @local
 using LinearAlgebra
 using FFTW
 
