@@ -6,6 +6,8 @@ on:
     paths:
       - 'ext/**'
       - 'src/**'
+      - 'Project.toml'
+      - 'docs'
   push:
     branches:
       - master
@@ -14,6 +16,8 @@ on:
     paths:
       - 'ext/**'
       - 'src/**'
+      - 'Project.toml'
+      - 'docs'
 
 jobs:
   test:
