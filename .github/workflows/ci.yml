@@ -1,4 +1,4 @@
-name: CI
+name: MRIReco_All
 on:
   pull_request:
     branches:

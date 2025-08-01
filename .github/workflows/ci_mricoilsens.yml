@@ -1,4 +1,4 @@
-name: CI
+name: MRICoilSensitivities
 on:
   pull_request:
     branches:
