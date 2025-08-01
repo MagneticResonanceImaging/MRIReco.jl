@@ -80,7 +80,7 @@ jobs:
           - MRICoilSensitivities
           - MRISampling
           - MRIFiles
-          - MRIReco
+          - '.' # MRIReco
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
@@ -94,7 +94,7 @@ jobs:
           repository: MagneticResonanceImaging/MRIReco.jl
           path: breakage
       - name: Test Breakage
-        shell: julia --color=yes --project=breakage {0}
+        shell: julia --color=yes --project=breakage/${{ matrix.package }} {0}
         run: |
           using Pkg
           try
