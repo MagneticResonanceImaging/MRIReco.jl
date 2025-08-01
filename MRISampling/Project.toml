@@ -1,7 +1,7 @@
 name = "MRISampling"
 uuid = "9be66c26-f988-4649-80fc-f4721a4a33f2"
 author = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.1.3"
+version = "0.1.2"
 
 [deps]
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
