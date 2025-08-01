@@ -50,6 +50,10 @@ jobs:
         run: |
           using Pkg
           Pkg.develop([PackageSpec(path=pwd(), subdir="MRIOperators")])
+          # Hack, MRIOperators tests depend on MRISimulation
+          # And MRISimulation depends on MRIOperators
+          # Can't checkout out latest release if compat breaks
+          Pkg.develop([PackageSpec(path=pwd(), subdir="MRISimulation")])
       - uses: julia-actions/julia-buildpkg@v1
       - name: Run MRIOperators tests
         shell: julia --color=yes --project=. {0}
