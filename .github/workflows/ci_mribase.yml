@@ -4,14 +4,14 @@ on:
     branches:
       - master
     paths:
-      - 'MRIBase'
+      - 'MRIBase/**'
   push:
     branches:
       - master
       - '*'
     tags: '*'
     paths:
-      - 'MRIBase'
+      - 'MRIBase/**'
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}

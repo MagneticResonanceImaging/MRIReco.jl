@@ -4,16 +4,16 @@ on:
     branches:
       - master
     paths:
-      - 'ext'
-      - 'src'
+      - 'ext/**'
+      - 'src/**'
   push:
     branches:
       - master
       - '*'
     tags: '*'
     paths:
-      - 'ext'
-      - 'src'
+      - 'ext/**'
+      - 'src/**'
 
 jobs:
   test:
