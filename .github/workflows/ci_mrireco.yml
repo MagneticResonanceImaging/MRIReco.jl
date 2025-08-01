@@ -3,14 +3,17 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - 'ext'
+      - 'src'
   push:
     branches:
       - master
       - '*'
     tags: '*'
-  paths:
-    - 'ext'
-    - 'src'
+    paths:
+      - 'ext'
+      - 'src'
 
 jobs:
   test:

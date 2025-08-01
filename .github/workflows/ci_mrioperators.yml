@@ -3,13 +3,15 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - 'MRIOperators'
   push:
     branches:
       - master
       - '*'
     tags: '*'
-  paths:
-    - 'MRIOperators'
+    paths:
+      - 'MRIOperators'
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}

@@ -3,13 +3,16 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+    - 'MRISimulation'
+
   push:
     branches:
       - master
       - '*'
     tags: '*'
-  paths:
-    - 'MRISimulation'
+    paths:
+      - 'MRISimulation'
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
