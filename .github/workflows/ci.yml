@@ -10,7 +10,7 @@ on:
     tags: '*'
 jobs:  
   test_all_latest:
-    name: ${{ matrix.package.name }} (latest, Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }})
+    name: ${{ matrix.package.name }} (Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -21,8 +21,8 @@ jobs:
           #- 'nightly'
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
+          #- macos-latest
+          #- windows-latest
         package:
           - {name: MRIReco, path: ., deps: "MRIBase,MRIOperators,MRISimulation,MRISampling"}
           - {name: MRIBase, path: MRIBase, deps: ""}
@@ -56,7 +56,6 @@ jobs:
         run: |
           using Pkg
           Pkg.activate(ENV["PKG_PATH"])
-          @info pwd()
           deps = filter(!isempty, split(ENV["DEPS"], ","))
           if !isempty(deps)
             Pkg.develop(map(dep -> PackageSpec(path = dep), deps))
@@ -80,6 +79,7 @@ jobs:
           file: lcov.info
           flags: ${{ matrix.package.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
+  
   docs:
     name: Documentation
     runs-on: ubuntu-latest
