@@ -10,7 +10,7 @@ on:
     tags: '*'
 jobs:  
   test_all_latest:
-    name: ${{ matrix.package.name }} (latest, ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }})
+    name: ${{ matrix.package.name }} (latest, Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -38,7 +38,6 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
       - uses: actions/cache@v3
         env:
           cache-name: cache-artifacts
@@ -60,7 +59,7 @@ jobs:
           if !isempty(deps)
             Pkg.develop(map(dep -> PackageSpec(path = dep), deps))
           end
-      - uses: julia-actions/julia-buildpkg@v1
+          Pkg.instantiate()
       - name: Run ${{ matrix.package.name }} tests
         env:
           PKG_PATH: ${{ matrix.package.path }}
@@ -68,6 +67,7 @@ jobs:
         shell: julia --color=yes --project=$PKG_PATH {0}
         run: |
           using Pkg
+          Pkg.status()
           Pkg.test(ENV["PKG_NAME"])
       - uses: julia-actions/julia-processcoverage@v1
         with:
