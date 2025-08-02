@@ -57,7 +57,7 @@ jobs:
         run: |
           using Pkg
           deps = split(ENV["DEPS"], ",")
-          if !isemtpy(deps)
+          if !isempty(deps)
             Pkg.develop(map(dep -> PackageSpec(path = dep), deps))
           end
       - uses: julia-actions/julia-buildpkg@v1
