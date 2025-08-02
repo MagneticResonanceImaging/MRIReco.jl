@@ -55,7 +55,8 @@ jobs:
         shell: julia --color=yes --project=$PKG_PATH {0}
         run: |
           using Pkg
-          deps = split(ENV["DEPS"], ",")
+          @info pwd()
+          deps = filter(!isempty, split(ENV["DEPS"], ","))
           if !isempty(deps)
             Pkg.develop(map(dep -> PackageSpec(path = dep), deps))
           end
