@@ -60,6 +60,8 @@ jobs:
       - uses: julia-actions/julia-processcoverage@v1
         with:
           directories: MRIFiles/src
-      - uses: codecov/codecov-action@v4.4.0
+      - uses: codecov/codecov-action@v4
         with:
+          file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: MRIFiles
