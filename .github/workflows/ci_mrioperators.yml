@@ -68,3 +68,39 @@ jobs:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: MRIOperators
+
+  # Based on https://github.com/SciML/OrdinaryDiffEq.jl/blob/master/.github/workflows/Downstream.yml
+  breakage:
+    name: Breakage ${{ matrix.package }} (Julia ${{ matrix.julia-version}})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version:
+          - '1.10'
+        os:
+          - ubuntu-latest
+        package:
+          - MRISimulation
+          - MRIReco
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+          arch: x64
+      - name: Test Breakage ${{ matrix.package }}
+        env:
+          BREAK_PKG: ${{ matrix.package }}
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          try
+            Pkg.add(ENV["BREAK_PKG"]) # Add for release version
+            Pkg.develop([PackageSpec(path=pwd(), subdir="MRIOperators")])
+            Pkg.test(ENV["BREAK_PKG"], coverage=true)  # resolver may fail with test time depsAdd commentMore actions
+          catch err
+            err isa Pkg.Resolve.ResolverError || rethrow()
+            @info "Not compatible with this release. No need to check for breakage" exception=err
+            exit(0)
+          end
