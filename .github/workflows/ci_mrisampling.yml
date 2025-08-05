@@ -55,7 +55,7 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          Pkg.test("MRISampling")
+          Pkg.test("MRISampling", coverage = true)
       - uses: julia-actions/julia-processcoverage@v1
         with:
           directories: MRISampling/src

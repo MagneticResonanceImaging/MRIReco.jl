@@ -70,7 +70,7 @@ jobs:
           using Pkg
           Pkg.activate(ENV["PKG_PATH"])
           Pkg.status()
-          Pkg.test(ENV["PKG_NAME"])
+          Pkg.test(ENV["PKG_NAME"], coverage=true)
       - uses: julia-actions/julia-processcoverage@v1
         with:
           directories: ${{ matrix.package.path }}
