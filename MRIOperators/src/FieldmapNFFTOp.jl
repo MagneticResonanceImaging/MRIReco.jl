@@ -96,7 +96,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
     posIndices = findall(x->x!=0.0, cparam.A_k[:,κ])
     if !isempty(posIndices)
       push!(idx, posIndices)
-      push!(plans, plan_nfft(baseArrayType, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL))
+      push!(plans, plan_nfft(baseArrayType, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = AbstractNFFTs.POLYNOMIAL))
     end
   end
   plans = identity.(plans) # This gives the vectors (more) concrete types

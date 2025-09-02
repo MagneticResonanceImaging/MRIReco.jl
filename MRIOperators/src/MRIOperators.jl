@@ -8,6 +8,7 @@ using MRIBase
 @reexport using LinearOperatorCollection
 using LinearAlgebra
 using NFFT
+using NFFT.AbstractNFFTs
 using NFFT.FFTW
 using Wavelets
 using FLoops
