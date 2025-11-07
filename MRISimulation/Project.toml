@@ -15,7 +15,7 @@ MRIOperators = "fb1137e3-90a6-46ce-a672-6e1e53d120f2"
 [compat]
 julia = "1.6"
 MRIBase = "0.3, 0.4"
-MRIOperators = "0.2, 0.3"
+MRIOperators = "0.2, 0.3, 0.4"
 Reexport = "1"
 ImageUtils = "0.2.5"
 StatsBase = "0.33, 0.34"
