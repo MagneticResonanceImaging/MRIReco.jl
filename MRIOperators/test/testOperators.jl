@@ -194,7 +194,7 @@ function testCopySizes(N=16; arrayType = Array)
 
   # Operators
   xop = arrayType(vec(xop))
-  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false, S = typeof(xop))
+  F_nfft = NFFTOp(tr; shape=(N,N), S = typeof(xop))
   F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop))
 
   # Copy the FieldmapNFFTOp operator and change the plans field of the new operator to empty 
