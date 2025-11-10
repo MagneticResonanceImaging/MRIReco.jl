@@ -83,7 +83,7 @@ function Base.copy(S::LinearOperator{T}) where T
   deepcopy(S)
 end
 
-fftParams(T::Type{<:AbstractArray}) = fftParams(NFFT.active_backend(), T)
+fftParams(T::Type{<:AbstractArray}) = fftParams(AbstractNFFTs.active_backend(), T)
 fftParams(::AbstractNFFTBackend, ::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
 
 
