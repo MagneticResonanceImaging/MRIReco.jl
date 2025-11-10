@@ -1,7 +1,7 @@
 name = "MRIReco"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.9.0"
+version = "0.9.1"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
@@ -26,7 +26,7 @@ FLoops = "0.2"
 GPUArrays = "8, 9, 10, 11"
 ImageUtils = "0.2.8"
 MRIBase = "0.3, 0.4"
-MRIOperators = "0.3"
+MRIOperators = "0.3, 0.4"
 PrecompileTools = "1"
 ProgressMeter = "1.2"
 Reexport = "0.2, 1"

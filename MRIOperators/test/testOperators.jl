@@ -15,7 +15,7 @@ function testFT(N=16; arrayType = Array)
   # Operators
   xop = arrayType(vec(x))
   tr = CartesianTrajectory(Float64,N,N)
-  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N), symmetrize=false, S = typeof(xop))
+  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N), S = typeof(xop))
   F_exp = ExplicitOp((N,N),tr,zeros(ComplexF64,N,N),symmetrize=false, S = typeof(xop))
 
   # test agains FourierOperators
@@ -52,7 +52,7 @@ function testFT(N=16; arrayType = Array)
   # test type stability;
   # TODO: Ensure type stability for Trajectory objects and test here
   nodes = Float32.(tr.nodes)
-  F_nfft = NFFTOp(ComplexF32; shape=(N,N), nodes,symmetrize=false,  S = typeof(ComplexF32.(xop)))
+  F_nfft = NFFTOp(ComplexF32; shape=(N,N), nodes,  S = typeof(ComplexF32.(xop)))
 
   y_nfft = F_nfft * ComplexF32.(xop)
   y_adj_nfft = adjoint(F_nfft) * ComplexF32.(xop)
@@ -76,7 +76,7 @@ function testFT3d(N=12; arrayType = Array)
   # Operators
   xop = arrayType(vec(x))
   tr = CartesianTrajectory3D(Float64,N,N,numSlices=N)
-  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N,N), symmetrize=false, S = typeof(xop))
+  F_nfft = NFFTOp(ComplexF64; nodes = kspaceNodes(tr), shape=(N,N,N), S = typeof(xop))
   F_exp = ExplicitOp((N,N,N),tr,zeros(ComplexF64,N,N,N),symmetrize=false, S = typeof(xop))
 
   # test agains FourierOperators
@@ -194,7 +194,7 @@ function testCopySizes(N=16; arrayType = Array)
 
   # Operators
   xop = arrayType(vec(xop))
-  F_nfft = NFFTOp(tr; shape=(N,N), symmetrize=false, S = typeof(xop))
+  F_nfft = NFFTOp(tr; shape=(N,N), S = typeof(xop))
   F_fmap_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop))
 
   # Copy the FieldmapNFFTOp operator and change the plans field of the new operator to empty 

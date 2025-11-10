@@ -1,4 +1,4 @@
-using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT.FFTW
+using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT, MRIOperators.NFFT.FFTW
 using LinearAlgebra, MRIOperators.LinearOperatorCollection
 using JLArrays
 
