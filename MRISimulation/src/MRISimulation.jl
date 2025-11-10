@@ -198,7 +198,7 @@ function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
     p = Progress(nc, dt=1, desc="Simulating data...")
   end
 
-  E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,symmetrize=false)
+  E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false)
   for c = 1:nc
     # kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
     kdata[1,1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
