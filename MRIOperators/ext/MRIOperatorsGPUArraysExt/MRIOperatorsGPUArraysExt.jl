@@ -9,6 +9,8 @@ include("Shutter.jl")
 include("SensitivityOp.jl")
 include("FieldmapNFFTOp.jl")
 
+# Flags for GPUs seem to break dispatch
+MRIOperators.fftParams(::Type{<:AbstractGPUArray}) = (;)
 MRIOperators.nfftParams(::NFFT.NFFTBackend, ::Type{<:AbstractGPUArray}) = (;)
 
 end # module
