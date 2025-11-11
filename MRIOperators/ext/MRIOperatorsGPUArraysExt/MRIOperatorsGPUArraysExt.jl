@@ -9,6 +9,6 @@ include("Shutter.jl")
 include("SensitivityOp.jl")
 include("FieldmapNFFTOp.jl")
 
-nfftParams(::NFFT.NFFTBackend, ::Type{<:AbstractGPUArray}) = (;)
+MRIOperators.nfftParams(::NFFT.NFFTBackend, ::Type{<:AbstractGPUArray}) = (;)
 
 end # module
