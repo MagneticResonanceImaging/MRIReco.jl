@@ -83,8 +83,9 @@ function Base.copy(S::LinearOperator{T}) where T
   deepcopy(S)
 end
 
-fftParams(T::Type{<:AbstractArray}) = fftParams(AbstractNFFTs.active_backend(), T)
-fftParams(::AbstractNFFTBackend, ::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+fftParams(T::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+nfftParams(T::Type{<:AbstractArray}) = nfftParams(AbstractNFFTs.active_backend(), T)
+nfftParams(::AbstractNFFTBackend, ::Type{<:AbstractArray}) = (;:fftflags => FFTW.MEASURE)
 
 
 # https://github.com/JuliaLang/julia/issues/35543

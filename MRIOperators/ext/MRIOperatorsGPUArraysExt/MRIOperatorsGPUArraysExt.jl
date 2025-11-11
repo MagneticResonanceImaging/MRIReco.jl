@@ -9,6 +9,6 @@ include("Shutter.jl")
 include("SensitivityOp.jl")
 include("FieldmapNFFTOp.jl")
 
-fftParams(::NFFT.NFFTBackend, ::Type{<:AbstractGPUArray}) = (;)
+nfftParams(::NFFT.NFFTBackend, ::Type{<:AbstractGPUArray}) = (;)
 
 end # module
