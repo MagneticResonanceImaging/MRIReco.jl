@@ -181,7 +181,8 @@ volumeSize(reconSize::NTuple{3,Int}, numSlice::Int) = reconSize
 
 executor(::Type{<:AbstractArray}) = nothing
 copyOpsFn(::Type{<:AbstractArray}) = copy
-normalOpParams(::Type{aT}) where aT <: AbstractArray = (; :copyOpsFn => copyOpsFn(aT), MRIOperators.fftParams(aT)..., MRIOperators.nfftParams(aT)...)
+# TODO also set nfftParams with new lower bound to MRIOperators 0.4.2
+normalOpParams(::Type{aT}) where aT <: AbstractArray = (; :copyOpsFn => copyOpsFn(aT), MRIOperators.fftParams(aT)...)
 
 executor(f::Function) = executor(f{Complex{Float32}}(undef, 0))
 copyOpsFn(f::Function) = copyOpsFn(f{Complex{Float32}}(undef, 0))
