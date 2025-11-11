@@ -83,7 +83,10 @@ function Base.copy(S::LinearOperator{T}) where T
   deepcopy(S)
 end
 
-fftParams(::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+fftParams(T::Type{<:AbstractArray}) = (;:flags => FFTW.MEASURE)
+nfftParams(T::Type{<:AbstractArray}) = nfftParams(AbstractNFFTs.active_backend(), T)
+nfftParams(::AbstractNFFTBackend, ::Type{<:AbstractArray}) = (;:fftflags => FFTW.MEASURE)
+
 
 # https://github.com/JuliaLang/julia/issues/35543
 stripParameters(arrT::Type{<:AbstractArray}) = Base.typename(arrT).wrapper
