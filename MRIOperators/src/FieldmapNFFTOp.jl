@@ -14,7 +14,7 @@ end
 
 Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
 
-mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR} <:AbstractLinearOperator{Complex{T}}
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <:AbstractLinearOperator{Complex{T}}
   nrow :: Int
   ncol :: Int
   symmetric :: Bool
@@ -35,6 +35,7 @@ mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vec
   circTraj::Bool
   shape::NTuple{D,Int64}
   cparam::InhomogeneityData{T, matT, vecTR}
+  scheduler::S
 end
 
 LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
@@ -75,6 +76,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         K_tol::Float64=1.e-3,
                         step::Int64=10,
                         S = Vector{Complex{T}},
+                        scheduler = DynamicScheduler(),
                         kargs...) where {T,D}
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   if echoImage
@@ -119,11 +121,11 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   circTraj = isCircular(tr)
 
-  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(nrow, ncol, false, false
-            , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
+  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(nrow, ncol, false, false
+            , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p), 0, 0, 0, false, false, false, tmp, tmp 
-            , plans, idx, circTraj, shape, cparam)
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler), 0, 0, 0, false, false, false, tmp, tmp 
+            , plans, idx, circTraj, shape, cparam, scheduler)
 end
 
 function Base.copy(cparam::InhomogeneityData{T}) where T
@@ -150,19 +152,21 @@ function Base.copy(S::FieldmapNFFTOp{T}) where {T}
   D_ = length(shape)
   circTraj = S.circTraj
 
-  mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p)
-  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p)
+  scheduler = S.scheduler
 
-  return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times)}(S.nrow, S.ncol, false, false
+  mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p, scheduler)
+  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p, scheduler)
+
+  return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
             , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
-            , plans, idx, circTraj, shape, cparam)
+            , plans, idx, circTraj, shape, cparam, scheduler)
 end
 
 function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVector{T},shape::Tuple, plan,
                idx, cparam::InhomogeneityData,
-               shutter::Bool, d, p) where {T}
+               shutter::Bool, d, p, scheduler::Scheduler = DynamicScheduler()) where {T}
 
   s .= zero(T)
   K=length(plan)
@@ -178,7 +182,7 @@ function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVecto
   end
 
   sp = Threads.SpinLock()
-  produ_inner!(K,cparam.C_k, cparam.A_k, shape, d, s, sp, plan, idx, x_tmp, p)
+  produ_inner!(K,cparam.C_k, cparam.A_k, shape, d, s, sp, plan, idx, x_tmp, p, scheduler)
 
   # Postprocessing step when time and correctionMap are centered
   if cparam.method == "nfft"
@@ -186,8 +190,9 @@ function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVecto
   end
 end
 
-function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p)
-  @floop for κ=1:K
+function produ_inner!(K, C, A, shape, d, s, sp, plan, idx, x_, p, scheduler::Scheduler = DynamicScheduler())
+  @tasks for κ=1:K
+    @set scheduler = scheduler
     p[κ][:] .= C[κ,:] .* x_
     mul!(d[κ], plan[κ], p[κ])
     
@@ -204,7 +209,7 @@ end
 
 
 function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, x_tmp::AbstractVector{Complex{T}}, shape::Tuple, plan, idx,
-                 cparam::InhomogeneityData{T}, shutter::Bool, d, p) where {T}
+                 cparam::InhomogeneityData{T}, shutter::Bool, d, p, scheduler::Scheduler = DynamicScheduler()) where {T}
 
   y .= zero(Complex{T})
   K=length(plan)
@@ -217,7 +222,7 @@ function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, 
   end
 
   sp = Threads.SpinLock()
-  ctprodu_inner!(K,cparam.C_k, cparam.A_k, shape, d, y, sp, plan, idx, x_tmp, p)
+  ctprodu_inner!(K,cparam.C_k, cparam.A_k, shape, d, y, sp, plan, idx, x_tmp, p, scheduler)
 
   if cparam.method == "nfft"
     y .*=  conj(exp.(-vec(cparam.Cmap) * cparam.t_hat))
@@ -229,9 +234,10 @@ function ctprodu!(y::AbstractVector{Complex{T}}, x::AbstractVector{Complex{T}}, 
 
 end
 
-function ctprodu_inner!(K, C, A, shape, d, y, sp, plan, idx, x_, p)
+function ctprodu_inner!(K, C, A, shape, d, y, sp, plan, idx, x_, p, scheduler::Scheduler = DynamicScheduler())
 
-  @floop for κ=1:K
+  @tasks for κ=1:K
+    @set scheduler = scheduler
      for k=1:length(idx[κ])
        d[κ][k] = conj.(A[idx[κ][k],κ]) * x_[idx[κ][k]]
      end

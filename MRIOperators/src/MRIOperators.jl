@@ -11,7 +11,7 @@ using NFFT
 using NFFT.AbstractNFFTs
 using NFFT.FFTW
 using Wavelets
-using FLoops
+using OhMyThreads
 
 using TSVD: tsvd
 using StatsBase
