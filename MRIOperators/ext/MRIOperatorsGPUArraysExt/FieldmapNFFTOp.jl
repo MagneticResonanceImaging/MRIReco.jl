@@ -1,4 +1,4 @@
-function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, s::vecT, sp, plan, idx, x_::vecT, p::Vector{arrT}) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
+function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, s::vecT, sp, plan, idx, x_::vecT, p::Vector{arrT}, ::Scheduler) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
   
   @kernel inbounds = true cpu = false function produ_inner_kernel!(indices, d, A, s)
     k = @index(Global, Linear)
@@ -20,7 +20,7 @@ function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, 
 end
 
 
-function MRIOperators.ctprodu_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, y::vecT, sp, plan, idx, x::vecT, p::Vector{arrT}) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
+function MRIOperators.ctprodu_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, y::vecT, sp, plan, idx, x::vecT, p::Vector{arrT}, ::Scheduler) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
 
   
   @kernel inbounds = true cpu = false function ctprodu_inner_1!(indices, d, A, x)
