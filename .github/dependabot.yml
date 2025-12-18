@@ -1,0 +1,46 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  # MRIReco
+  - package-ecosystem: "julia"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  #MRIBase
+  - package-ecosystem: "julia"
+    directory: "/MRIBase" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  # MRICoilSensitivities
+  - package-ecosystem: "julia"
+    directory: "/MRICoilSensitivities" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  # MRIFIles
+  - package-ecosystem: "julia"
+    directory: "/MRIFiles" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  # MRIOperators
+  - package-ecosystem: "julia"
+    directory: "/MRIOperators" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    # MRISampling
+  - package-ecosystem: "julia"
+    directory: "/MRISampling" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    # MRISimulation
+  - package-ecosystem: "julia"
+    directory: "/MRISimulation" # Location of package manifests
+    schedule:
+      interval: "weekly"
