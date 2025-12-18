@@ -9,37 +9,44 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+      
   # MRIReco
   - package-ecosystem: "julia"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-  #MRIBase
+      
+  # MRIBase
   - package-ecosystem: "julia"
     directory: "/MRIBase" # Location of package manifests
     schedule:
       interval: "weekly"
+      
   # MRICoilSensitivities
   - package-ecosystem: "julia"
     directory: "/MRICoilSensitivities" # Location of package manifests
     schedule:
       interval: "weekly"
+      
   # MRIFIles
   - package-ecosystem: "julia"
     directory: "/MRIFiles" # Location of package manifests
     schedule:
       interval: "weekly"
+      
   # MRIOperators
   - package-ecosystem: "julia"
     directory: "/MRIOperators" # Location of package manifests
     schedule:
       interval: "weekly"
-    # MRISampling
+      
+  # MRISampling
   - package-ecosystem: "julia"
     directory: "/MRISampling" # Location of package manifests
     schedule:
       interval: "weekly"
-    # MRISimulation
+      
+  # MRISimulation
   - package-ecosystem: "julia"
     directory: "/MRISimulation" # Location of package manifests
     schedule:
