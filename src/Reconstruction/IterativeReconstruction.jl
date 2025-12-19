@@ -11,6 +11,8 @@ contrasts and slices
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
+* `arrayType`             - array type to use for the reconstruction, defaults to Array (CPU execution)
+* `scheduler`             - (OhMyThreads) scheduler to use during reconstruction, defaults to dynamic/parallel on CPU, sequential/serial on GPU
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -22,6 +24,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
                               , arrayType = Array
+                              , scheduler = scheduler(arrayType)
                               , params...) where {D, T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
@@ -47,8 +50,10 @@ function reconstruction_simple( acqData::AcquisitionData{T}
 
   # reconstructiond
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
-  #@floop executor(arrayType) 
-  for l = 1:numRep, k = 1:numSl
+  # @tasks
+  for index in CartesianIndices((1:numRep, 1:numSl))
+    # @set scheduler = scheduler(arrayType)
+    l, k = index[1], index[2]
     if encodingOps!=nothing
       F = encodingOps[:,k]
     else
@@ -87,6 +92,8 @@ are reconstructed independently.
 * `sparseTrafo::AbstractLinearOperator` - sparsifying transformation
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
+* `arrayType`             - array type to use for the reconstruction, defaults to Array (CPU execution)
+* `scheduler`             - (OhMyThreads) scheduler to use during reconstruction, defaults to dynamic/parallel on CPU, sequential/serial on GPU
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -98,6 +105,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , solver::Type{<:AbstractLinearSolver}
                               , encodingOps=nothing
                               , arrayType = Array
+                              , scheduler = scheduler(arrayType)
                               , params...) where {D , T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
@@ -124,7 +132,9 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
 
   # reconstruction
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numChan, numSl, numRep)
-  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
+  @tasks for index in CartesianIndices((1:numRep, 1:numSl))
+    @set scheduler = scheduler
+    l, i = index[1], index[2]
     if encodingOps != nothing
       F = encodingOps[i]
     else
@@ -166,6 +176,8 @@ are reconstructed independently.
 * `L_inv::Array{Complex{<:AbstractFloat}}`        - noise decorrelation matrix
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `arrayType`             - array type to use for the reconstruction, defaults to Array (CPU execution)
+* `scheduler`             - (OhMyThreads) scheduler to use during reconstruction, defaults to dynamic/parallel on CPU, sequential/serial on GPU
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -179,6 +191,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
+                              , scheduler = scheduler(arrayType)
                               , params...) where {D , T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
@@ -208,7 +221,9 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
   # solve optimization problem
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numRep)
   let reg = reg # Fix @floop warning due to conditional/multiple assignment to reg
-    @floop executor(arrayType) for l = 1:numRep, k = 1:numSl,  j = 1:numContr
+    @tasks for index in CartesianIndices((1:numRep, 1:numSl,  1:numContr))
+      @set scheduler = scheduler
+      l, k, j = index[1], index[2], index[3]
       if encodingOps != nothing
         E = encodingOps[:,k]
       else
@@ -250,6 +265,8 @@ Different slices are reconstructed independently.
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `arrayType`             - array type to use for the reconstruction, defaults to Array (CPU execution)
+* `scheduler`             - (OhMyThreads) scheduler to use during reconstruction, defaults to dynamic/parallel on CPU, sequential/serial on GPU
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -263,6 +280,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
+                              , scheduler = scheduler(arrayType)
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
@@ -291,7 +309,9 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numContr, numSl, numRep)
-  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
+  @tasks for index in CartesianIndices((1:numRep, 1:numSl))
+    @set scheduler = scheduler
+    l, i = index[1], index[2]
     if encodingOps != nothing
       E = encodingOps[i]
     else
@@ -337,6 +357,8 @@ Different slices are reconstructed independently.
 * `weights::Vector{Vector{Complex{<:AbstractFloat}}}` - sampling density of the trajectories in acqData
 * `solver::Type{<:AbstractLinearSolver}`                  - name of the solver to use
 * `senseMaps::AbstractArray{Complex{<:AbstractFloat}}`        - coil sensitivities
+* `arrayType`             - array type to use for the reconstruction, defaults to Array (CPU execution)
+* `scheduler`             - (OhMyThreads) scheduler to use during reconstruction, defaults to dynamic/parallel on CPU, sequential/serial on GPU
 * (`normalize::Bool=false`)             - adjust regularization parameter according to the size of k-space data
 * (`params::Dict{Symbol,Any}`)          - Dict with additional parameters
 """
@@ -349,6 +371,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               , senseMaps::AbstractArray{Complex{T}}
                               , encodingOps=nothing
                               , arrayType = Array
+                              , scheduler = scheduler(arrayType)
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
   encDims = ndims(trajectory(acqData))
@@ -376,7 +399,9 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
   W = WeightingOp(Complex{T}; weights=vcat(weights...), rep=numChan )
 
   Ireco = zeros(Complex{T}, prod(reconSize)*numBasis, numSl, numRep)
-  @floop executor(arrayType) for l = 1:numRep, i = 1:numSl
+  @tasks for index in CartesianIndices((1:numRep, 1:numSl))
+    @set scheduler = scheduler
+    l, i = index[1], index[2]
     if encodingOps != nothing
       E = encodingOps[i]
     else

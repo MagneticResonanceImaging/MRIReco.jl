@@ -3,6 +3,7 @@ module MRIOperatorsGPUArraysExt
 using MRIOperators, GPUArrays, KernelAbstractions
 using MRIOperators.FFTW, MRIOperators.LinearAlgebra
 using MRIOperators.NFFT
+using MRIOperators.OhMyThreads
 
 include("ExplicitOp.jl")
 include("Shutter.jl")
