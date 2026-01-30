@@ -130,7 +130,7 @@ function testUndersampledFourierOp(N=16; arrayType = Array)
 end
 
 ## test FieldmapNFFTOp
-function testFieldmapFT(N=16; arrayType = Array)
+function testFieldmapFT(N=16; arrayType = Array, scheduler = DynamicScheduler())
   # random image
   x = zeros(ComplexF64,N,N)
   for i=1:N,j=1:N
@@ -149,7 +149,7 @@ function testFieldmapFT(N=16; arrayType = Array)
 
   # Operators
   xop = arrayType(vec(x))
-  F_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop))
+  F_nfft = FieldmapNFFTOp((N,N),tr,cmap,symmetrize=false, S = typeof(xop), scheduler = scheduler)
 
   # test agains FourierOperators
   y = F*vec(x)
@@ -209,7 +209,9 @@ function testOperators(arrayType = Array)
   @testset "MRI Linear Operator: $arrayType" begin
     arrayType == JLArray || @testset "FT" testFT(;arrayType)
     arrayType == JLArray || @testset "FT3d" testFT3d(;arrayType)
-    arrayType == JLArray || @testset "FieldmapFT" testFieldmapFT(;arrayType)
+    for scheduler in [DynamicScheduler(), StaticScheduler(), SerialScheduler()]
+      arrayType == JLArray || @testset "FieldmapFT" testFieldmapFT(;arrayType,scheduler)
+    end
     arrayType == JLArray || @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
     @testset "Sparse Op F32 2D" testSparseOp(Float32,(128,80,1);arrayType)
     @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)

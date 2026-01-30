@@ -11,7 +11,7 @@ using NFFT
 using NFFT.AbstractNFFTs
 using NFFT.FFTW
 using Wavelets
-using FLoops
+using OhMyThreads
 
 using TSVD: tsvd
 using StatsBase
@@ -49,34 +49,6 @@ function LinearOperators.vcat(A::AbstractLinearOperator, n::Int)
     op = LinearOperators.vcat(op, A)
   end
   return op
-end
-
-function LinearOperatorCollection.diagOpProd(y::Vector{T}, x::Vector{T}, nrow::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @floop for i=1:length(ops)
-    mul!(view(y,yIdx[i]:yIdx[i+1]-1), ops[i], view(x,xIdx[i]:xIdx[i+1]-1))
-  end
-  return y
-end
-
-function LinearOperatorCollection.diagOpTProd(y::Vector{T}, x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @floop for i=1:length(ops)
-    mul!(view(y,yIdx[i]:yIdx[i+1]-1), transpose(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
-  end
-  return y
-end
-
-function LinearOperatorCollection.diagOpCTProd(y::Vector{T}, x::Vector{T}, ncol::Int, xIdx, yIdx, ops :: AbstractLinearOperator...) where T
-  @floop for i=1:length(ops)
-    mul!(view(y,yIdx[i]:yIdx[i+1]-1), adjoint(ops[i]), view(x,xIdx[i]:xIdx[i+1]-1))
-  end
-  return y
-end
-
-function LinearOperatorCollection.diagNormOpProd!(y::Vector{T}, normalOps, idx, x::Vector{T}) where T
-  @floop for i=1:length(normalOps)
-    mul!(view(y,idx[i]:idx[i+1]-1), normalOps[i], view(x,idx[i]:idx[i+1]-1))
- end
- return y
 end
 
 function Base.copy(S::LinearOperator{T}) where T

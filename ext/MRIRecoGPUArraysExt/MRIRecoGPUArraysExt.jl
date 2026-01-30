@@ -1,8 +1,8 @@
 module MRIRecoGPUArraysExt
 
-using MRIReco, GPUArrays, MRIReco.FLoops
+using MRIReco, GPUArrays, MRIReco.OhMyThreads
 
-MRIReco.executor(::Type{<:AbstractGPUArray}) = SequentialEx()
+MRIReco.scheduler(::Type{<:AbstractGPUArray}) = SerialScheduler()
 MRIReco.copyOpsFn(::Type{<:AbstractGPUArray}) = identity
 
 end
