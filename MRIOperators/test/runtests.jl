@@ -1,6 +1,7 @@
 using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT, MRIOperators.NFFT.FFTW
 using NonuniformFFTs
 using LinearAlgebra, MRIOperators.LinearOperatorCollection
+using MRIOperators.OhMyThreads
 using JLArrays
 
 

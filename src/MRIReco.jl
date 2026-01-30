@@ -10,7 +10,7 @@ using ProgressMeter
 using AxisArrays
 using LinearAlgebra
 using Random
-using FLoops
+using OhMyThreads
 using Unitful
 
 
