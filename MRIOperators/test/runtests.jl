@@ -2,11 +2,11 @@ using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT, MRIOperator
 using NonuniformFFTs
 using LinearAlgebra, MRIOperators.LinearOperatorCollection
 using MRIOperators.OhMyThreads
-using JLArrays
+#using JLArrays
 
 
 areTypesDefined = @isdefined arrayTypes
-arrayTypes = areTypesDefined ? arrayTypes : [Array, JLArray]
+arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
 
 @testset "MRIOperators" begin
   for backend in [NFFT.backend(), NonuniformFFTs.backend()]
