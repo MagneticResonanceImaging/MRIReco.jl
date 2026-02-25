@@ -1,24 +1,21 @@
 export ExplicitOp
 
 mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractLinearOperator{T}
-  nrow :: Int
-  ncol :: Int
-  symmetric :: Bool
-  hermitian :: Bool
-  prod! :: Function
-  tprod! :: F1
-  ctprod! :: F2
+  const nrow :: Int
+  const ncol :: Int
+  const symmetric :: Bool
+  const hermitian :: Bool
+  const prod! :: Function
+  const tprod! :: F1
+  const ctprod! :: F2
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
-  args5 :: Bool
-  use_prod5! :: Bool
-  allocated5 :: Bool
-  Mv5 :: vecT
-  Mtu5 :: vecT
+  Mv :: vecT
+  Mtu :: vecT
 end
 
-LinearOperators.storage_type(op::ExplicitOp) = typeof(op.Mv5)
+LinearOperators.storage_type(::ExplicitOp{T, vecT}) where {T, vecT} = vecT
 
 """
     ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
@@ -65,7 +62,7 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::Ab
             , (res,x)->(produ!(res, x, shape, nodes, times, echoOffset, disturbanceTerm))
             , nothing
             , (res,y)->(ctprodu!(res, y, shape, nodes, times, echoOffset, disturbanceTerm))
-            , 0,0,0, false, false, false, tmp, tmp)
+            , 0,0,0, tmp, tmp)
 end
 
 function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
