@@ -14,31 +14,28 @@ end
 
 Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
 
-mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <:AbstractLinearOperator{Complex{T}}
-  nrow :: Int
-  ncol :: Int
-  symmetric :: Bool
-  hermitian :: Bool
-  prod! :: Function
-  tprod! :: F1
-  ctprod! :: F2
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <: AbstractMRIOperator{Complex{T}}
+  const nrow :: Int
+  const ncol :: Int
+  const symmetric :: Bool
+  const hermitian :: Bool
+  const prod! :: Function
+  const tprod! :: F1
+  const ctprod! :: F2
   nprod :: Int
   ntprod :: Int
   nctprod :: Int
-  args5 :: Bool
-  use_prod5! :: Bool
-  allocated5 :: Bool
-  Mv5 :: vecT
-  Mtu5 :: vecT
-  plans
-  idx::Vector{vecI}
+  Mv :: vecT
+  Mtu :: vecT
+  const plans
+  const idx::Vector{vecI}
   circTraj::Bool
-  shape::NTuple{D,Int64}
+  const shape::NTuple{D,Int64}
   cparam::InhomogeneityData{T, matT, vecTR}
-  scheduler::S
+  const scheduler::S
 end
 
-LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
+LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
 
 """
     FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
@@ -124,7 +121,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler)
             , nothing
-            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler), 0, 0, 0, false, false, false, tmp, tmp 
+            , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler), 0, 0, 0, tmp, tmp 
             , plans, idx, circTraj, shape, cparam, scheduler)
 end
 
@@ -142,12 +139,12 @@ function Base.copy(S::FieldmapNFFTOp{T}) where {T}
   plans = [copy(S.plans[i]) for i=1:K]
   idx = copy(S.idx)
 
-  x_tmp = fill!(similar(S.Mv5, Complex{T}, S.ncol), zero(Complex{T}))
-  y_tmp = fill!(similar(S.Mv5, Complex{T}, S.nrow), zero(Complex{T}))
+  x_tmp = fill!(similar(S.Mv, Complex{T}, S.ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(S.Mv, Complex{T}, S.nrow), zero(Complex{T}))
 
   cparam = copy(S.cparam)
-  d = [fill!(similar(S.Mv5, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
-  p = [fill!(similar(S.Mv5, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
+  d = [fill!(similar(S.Mv, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(S.Mv, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   D_ = length(shape)
   circTraj = S.circTraj
@@ -160,7 +157,7 @@ function Base.copy(S::FieldmapNFFTOp{T}) where {T}
   return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
-            , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , ctmul!, 0, 0, 0, similar(x_tmp, 0), similar(x_tmp, 0)
             , plans, idx, circTraj, shape, cparam, scheduler)
 end
 

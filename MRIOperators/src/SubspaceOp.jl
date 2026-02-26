@@ -24,15 +24,17 @@ basis correspond to svd_object.V cropped to a certain level
 
 basis type should correspond to the type of the rawdata
 """
-function SubspaceOp(basis::AbstractMatrix{T},shape::NTuple{D,Int64},numContr, S = LinearOperators.storage_type(basis)) where {T,D}
-    numVox = prod(shape)
-    numBasis = size(basis,2)
-
-    return LinearOperator{T}(numVox*numContr, numVox*numBasis, false, false,
-                         (res,x) -> prod_subspace!(res,basis,x,numVox,numContr,numBasis),
-                         nothing,
-                         (res,x) -> ctprod_subspace!(res,basis,x,numVox,numContr,numBasis),
-                         S = S)
+struct SubspaceOp{T, O} <: WrappedMRIOperator{T, O}
+  op::O
+  function SubspaceOp(basis::AbstractMatrix{T},shape::NTuple{D,Int64},numContr, S = LinearOperators.storage_type(basis)) where {T,D}
+      numVox = prod(shape)
+      numBasis = size(basis,2)
+      op = LinearOperator{T}(numVox*numContr, numVox*numBasis, false, false,
+                           (res,x) -> prod_subspace!(res,basis,x,numVox,numContr,numBasis),
+                           nothing,
+                           (res,x) -> ctprod_subspace!(res,basis,x,numVox,numContr,numBasis),
+                           S = S)
+      return new{T, typeof(op)}(op)
+  end
 end
-
-
+parent(op::SubspaceOp) = getfield(op, :op)

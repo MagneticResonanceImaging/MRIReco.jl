@@ -19,10 +19,15 @@ generates an operator that applies `trafo` to each slice of dimension `dim` of a
 * `size2`           - size of the resulting Array of applying trafo to all slices
 * (`T=ComplexF64`)  - type of the transformation
 """
-function MapSliceOp(trafo, dim::Int64, size1::Tuple, size2::Tuple; T=ComplexF64, S = LinearOperators.storage_type(trafo))
-  return LinearOperator(prod(size2), prod(size1), false, false
-            , (res,x) -> ( res .= mapSliceForeward(trafo, x, size1, dim) )
-            , nothing
-            , (res,y) -> ( res .= mapSliceBackward(trafo, y, size2, dim) )
-            , S = S)
+struct MapSliceOp{T, O} <: WrappedMRIOperator{T, O}
+  op::O
+  function MapSliceOp(trafo, dim::Int64, size1::Tuple, size2::Tuple; T=ComplexF64, S = LinearOperators.storage_type(trafo))
+    op = LinearOperator(prod(size2), prod(size1), false, false
+              , (res,x) -> ( res .= mapSliceForeward(trafo, x, size1, dim) )
+              , nothing
+              , (res,y) -> ( res .= mapSliceBackward(trafo, y, size2, dim) )
+              , S = S)
+    return new{T, typeof(op)}(op)
+  end
 end
+parent(op::MapSliceOp) = getfield(op, :op)

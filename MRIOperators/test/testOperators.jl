@@ -207,12 +207,12 @@ end
 
 function testOperators(arrayType = Array)
   @testset "MRI Linear Operator: $arrayType" begin
-    arrayType == JLArray || @testset "FT" testFT(;arrayType)
-    arrayType == JLArray || @testset "FT3d" testFT3d(;arrayType)
+    @testset "FT" testFT(;arrayType)
+    @testset "FT3d" testFT3d(;arrayType)
     for scheduler in [DynamicScheduler(), StaticScheduler(), SerialScheduler()]
-      arrayType == JLArray || @testset "FieldmapFT" testFieldmapFT(;arrayType,scheduler)
+      @testset "FieldmapFT" testFieldmapFT(;arrayType,scheduler)
     end
-    arrayType == JLArray || @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
+    @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
     @testset "Sparse Op F32 2D" testSparseOp(Float32,(128,80,1);arrayType)
     @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)
     @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
