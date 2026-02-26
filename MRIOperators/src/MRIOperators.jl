@@ -2,10 +2,13 @@ module MRIOperators
 
 using Base: hcat, vcat, \
 
+import Base: ∘, parent, getproperty, setproperty!
+
 using Adapt
 using Reexport
 using MRIBase
 @reexport using LinearOperatorCollection
+using LinearOperatorCollection.LinearOperators
 using LinearAlgebra
 using NFFT
 using NFFT.AbstractNFFTs
@@ -15,6 +18,15 @@ using OhMyThreads
 
 using TSVD: tsvd
 using StatsBase
+
+export AbstractMRIOperator
+abstract type AbstractMRIOperator{T} <: AbstractLinearOperatorFromCollection{T} end
+
+abstract type WrappedMRIOperator{T, O} <: AbstractMRIOperator{T} end
+parent(op::WrappedMRIOperator) = throw(error("$(typeof(op)) must implement `parent`"))
+getproperty(op::WrappedMRIOperator, f::Symbol) = getproperty(parent(op), f)
+setproperty!(op::WrappedMRIOperator, f::Symbol, v) = setproperty!(parent(op), f, v)
+LinearOperators.storage_type(op::WrappedMRIOperator) = LinearOperators.storage_type(parent(op))
 
 include("Shutter.jl")
 include("ExplicitOp.jl")
