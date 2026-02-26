@@ -35,15 +35,20 @@ the coil sensitivities specified in `sensMaps`
 * `sensMaps`    - sensitivity maps ( 1. dim -> voxels, 2. dim-> coils)
 * `numEchoes`   - number of contrasts to which the operator will be applied
 """
-function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1) where T
-    numVox, numChan = size(sensMaps)
-    sensMapsC = conj.(sensMaps)
-    return LinearOperator{T}(numVox*numContr*numChan, numVox*numContr, false, false,
-                         (res,x) -> prod_smap!(res,sensMaps,x,numVox,numChan,numContr),
-                         nothing,
-                         (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr),
-                         S = typeof(similar(sensMaps, 0)))
+struct SensitivityOp{T, O} <: WrappedMRIOperator{T, O}
+  op::O
+  function SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1) where T
+      numVox, numChan = size(sensMaps)
+      sensMapsC = conj.(sensMaps)
+      op = LinearOperator{T}(numVox*numContr*numChan, numVox*numContr, false, false,
+                           (res,x) -> prod_smap!(res,sensMaps,x,numVox,numChan,numContr),
+                           nothing,
+                           (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr),
+                           S = typeof(similar(sensMaps, 0)))
+      return new{T, typeof(op)}(op)
+  end
 end
+parent(op::SensitivityOp) = getfield(op, :op)
 
 """
   SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)

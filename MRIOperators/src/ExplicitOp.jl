@@ -1,6 +1,6 @@
 export ExplicitOp
 
-mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractLinearOperator{T}
+mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractMRIOperator{T}
   const nrow :: Int
   const ncol :: Int
   const symmetric :: Bool
