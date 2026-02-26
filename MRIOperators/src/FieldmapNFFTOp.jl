@@ -157,7 +157,7 @@ function Base.copy(S::FieldmapNFFTOp{T}) where {T}
   return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(S.nrow, S.ncol, false, false
             , mul!
             , nothing
-            , ctmul!, 0, 0, 0, false, false, false, Complex{T}[], Complex{T}[]
+            , ctmul!, 0, 0, 0, similar(x_tmp, 0), similar(x_tmp, 0)
             , plans, idx, circTraj, shape, cparam, scheduler)
 end
 
