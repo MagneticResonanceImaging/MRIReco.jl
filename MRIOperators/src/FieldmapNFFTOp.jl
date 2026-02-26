@@ -139,12 +139,12 @@ function Base.copy(S::FieldmapNFFTOp{T}) where {T}
   plans = [copy(S.plans[i]) for i=1:K]
   idx = copy(S.idx)
 
-  x_tmp = fill!(similar(S.Mv5, Complex{T}, S.ncol), zero(Complex{T}))
-  y_tmp = fill!(similar(S.Mv5, Complex{T}, S.nrow), zero(Complex{T}))
+  x_tmp = fill!(similar(S.Mv, Complex{T}, S.ncol), zero(Complex{T}))
+  y_tmp = fill!(similar(S.Mv, Complex{T}, S.nrow), zero(Complex{T}))
 
   cparam = copy(S.cparam)
-  d = [fill!(similar(S.Mv5, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
-  p = [fill!(similar(S.Mv5, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
+  d = [fill!(similar(S.Mv, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
+  p = [fill!(similar(S.Mv, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
   D_ = length(shape)
   circTraj = S.circTraj
