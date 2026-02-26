@@ -14,7 +14,7 @@ end
 
 Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
 
-mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <:AbstractLinearOperator{Complex{T}}
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <: AbstractMRIOperator{Complex{T}}
   const nrow :: Int
   const ncol :: Int
   const symmetric :: Bool
@@ -35,7 +35,7 @@ mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vec
   const scheduler::S
 end
 
-LinearOperators.storage_type(op::FieldmapNFFTOp) = typeof(op.Mv5)
+LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
 
 """
     FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
