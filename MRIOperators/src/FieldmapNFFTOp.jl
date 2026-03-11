@@ -73,6 +73,8 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         K=20,
                         K_tol::Float64=1.e-3,
                         step::Int64=10,
+                        nfft_m::Int64=3,
+                        nfft_σ::Float64=1.25,
                         kargs...) where {T,D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
@@ -95,7 +97,7 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   idx = Vector{Vector{Int64}}(undef,K)
   for κ=1:K
     idx[κ] = findall(x->x!=0.0, cparam.A_k[:,κ])
-    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = NFFT.POLYNOMIAL)
+    plans[κ] = plan_nfft(nodes[:,idx[κ]], shape, m=nfft_m, σ=nfft_σ, precompute = NFFT.POLYNOMIAL)
   end
   
   d = [zeros(Complex{T}, length(idx[κ])) for κ=1:K ]
