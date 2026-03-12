@@ -109,14 +109,7 @@ function dat2Kernel(data::Array{T,M}, ksize::NTuple{D,Int64}) where {T,D,M}
 
   A = im2row(data, ksize)
   A = reshape(A, size(A, 1), :)
-
-  nblas = BLAS.get_num_threads()
-  usv = try
-    BLAS.set_num_threads(Threads.nthreads())
-    svd!(A)
-  finally
-    BLAS.set_num_threads(nblas)
-  end
+  usv = svd!(A)
 
   kernel = reshape(usv.V, ksize..., nc, size(usv.V, 2))
   return kernel, usv.S
@@ -133,7 +126,6 @@ end
 #         eigenvecs: images representing the eigenvectors (sx,sy,numChan,numChan)
 #         eigenvals: images representing the eigenvalues (sx,sy,numChan)
 function kernelEig(kernel::Array{T}, imsize::Tuple, nmaps=1; use_poweriterations=true) where {T}
-
   kern_size = size(kernel)
   ksize = kern_size[1:end-2]
   sizePadded = 2 .* ksize
