@@ -34,11 +34,11 @@ jobs:
         arch:
           - x64
     steps:
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
         with:
           version: ${{ matrix.version }}
-      - uses: actions/cache@v5
+      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         env:
           cache-name: cache-artifacts
         with:
@@ -71,10 +71,10 @@ jobs:
           Pkg.activate(ENV["PKG_PATH"])
           Pkg.status()
           Pkg.test(ENV["PKG_NAME"], coverage=true)
-      - uses: julia-actions/julia-processcoverage@v1
+      - uses: julia-actions/julia-processcoverage@03114f09f119417c3242a9fb6e0b722676aedf38 # v1.2.2
         with:
           directories: ${{ matrix.package.path }}
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           file: lcov.info
           flags: ${{ matrix.package.name }}
@@ -84,8 +84,8 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
         with:
           version: '1'
       - name: Install subpackages
