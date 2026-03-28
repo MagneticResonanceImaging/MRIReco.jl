@@ -4,7 +4,7 @@ export SimpleSparsityParameters, CustomSparsityParameters
 """
     AbstractSparsityParameters
 
-Abstract base type for sparsity/transformation parameters used in regularized reconstruction.
+Abstract base type for sparsity/transformation operators used in regularized reconstruction.
 """
 abstract type AbstractSparsityParameters <: AbstractMRIRecoParameters end
 
@@ -175,11 +175,11 @@ Parameters specifying regularization terms and their sparsity transforms.
 
 # Callable Interface
 ```julia
-(params::RegularizationParameters)(::Type{<:AbstractLinearSolver}, reconSize, T) -> (reg, regTrafo)
+(params::RegularizationParameters)(::Type{<:AbstractLinearSolver}, reconSize, T) -> reg | (reg, regTrafo)
 ```
 
 Transforms the regularization for a specific solver. Returns either:
-- A `TransformedRegularization` (for proximal gradient solvers like FISTA)
+- A `regularization term` or a `TransformedRegularization` (for proximal gradient solvers like FISTA)
 - A tuple `(reg, regTrafo)` (for primal-dual solvers like ADMM)
 
 # Examples
@@ -200,18 +200,16 @@ RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)],
   sparsity::S
 end
 RegularizationParameters(; reg = nothing, sparsity = "") = RegularizationParameters(reg, sparsity)
-RegularizationParameters(reg::AbstractRegularization, sparsity::String) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
-RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::String) = RegularizationParameters(reg, [sparsity])
-RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::Vector{String}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
+RegularizationParameters(reg, sparsity::Union{String, Nothing}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
+RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::Vector{<:Union{String, Nothing}}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
 
 """
-    (params::RegularizationParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}, T) -> reg | (reg, regTrafo)
+    (params::RegularizationParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}) -> reg | (reg, regTrafo)
 
 Transform the regularization parameters for a specific solver type.
 
 # Arguments
 - `::Type{<:AbstractLinearSolver}` - The solver type (e.g., ADMM, FISTA)
-- `T::Type{<:Complex}` - Complex number type
 
 # Returns
 - For proximal gradient solvers (FISTA, POGM, OptISTA): `TransformedRegularization` or raw regularization
@@ -227,19 +225,19 @@ Transform the regularization parameters for a specific solver type.
 function (params::RegularizationParameters)(
     algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
     ::Type{SL}, 
-    T::Type{<:Complex}
 ) where SL <: AbstractLinearSolver
   reg = params.reg
+  T = real(eltype(ctx_storageType()))
 
   reg_vec = if isnothing(reg)
-    [L1Regularization(zero(real(T)))]
+    [L1Regularization(zero(T))]
   elseif reg isa AbstractRegularization
     [reg]
   else
     reg
   end
 
-  trafos = params.sparsity(algoT, length(reg))
+  trafos = params.sparsity(algoT, length(reg_vec))
   return params(algoT, reg_vec, trafos, SL)
 end
 
@@ -248,14 +246,8 @@ function (params::RegularizationParameters)(
     reg::Vector{<:AbstractRegularization}, 
     trafos::Vector, 
     ::Type{SL}
-) where SL <: Union{CGNR, FISTA, POGM, OptISTA}
-  if length(reg) != 1
-    error("$(SL) supports only a single regularization term, got $(length(reg))")
-  end
-  r = reg[1]
-  t = trafos[1]
-  # return just reg, either transformed or direct
-  return isnothing(t) ? r : TransformedRegularization(r, t)
+) where SL
+  return [isnothing(t) ? r : TransformedRegularization(r, t) for (r, t) in zip(reg, trafos)]
 end
 
 

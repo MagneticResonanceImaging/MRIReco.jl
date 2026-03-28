@@ -1,5 +1,5 @@
-function testSparsityOperators(arrayType=Array, T=ComplexF64)
-  @testset "SolverParameters $arrayType, $T" begin
+function testSparsityParameters(arrayType=Array, T=Float64)
+  @testset "Sparsity Parameters $arrayType, $T" begin
 
     @testset "SimpleSparsityParameters" begin
       # Default construction
@@ -120,8 +120,150 @@ function testSparsityOperators(arrayType=Array, T=ComplexF64)
   end
 end
 
+
+function testRegularizationParameters(arrayType=Array, T=Float64)
+
+  @testset "RegularizationParameters $arrayType, $T" begin
+    shape = (8, 8, 8)
+    ctx = MRIRecoContext(shape, T, arrayType)
+    algoT = AbstractIterativeMRIRecoAlgorithm
+
+    with(MRIRECO_CONTEXT => ctx) do
+      S = ctx_storageType()
+
+      @testset "Construction" begin
+        # Default
+        rp = RegularizationParameters()
+        @test rp.reg === nothing
+        @test rp.sparsity isa SimpleSparsityParameters
+
+        # With single regularization
+        reg = L1Regularization(1e-3)
+        rp = RegularizationParameters(reg=reg)
+        @test rp.reg === reg
+
+        # With vector of regularizations
+        regs = [L1Regularization(1e-3), L2Regularization(1e-4)]
+        rp = RegularizationParameters(reg=regs)
+        @test rp.reg == regs
+
+        # With SimpleSparsityParameters
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity="Wavelet")
+        @test rp.reg isa L1Regularization
+        @test rp.sparsity.sparsity == "Wavelet"
+        @test rp.sparsity isa SimpleSparsityParameters
+
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L1Regularization(1e-3)], sparsity=["Wavelet", "Wavelet"])
+        @test rp.reg isa Vector
+        @test rp.sparsity.sparsity == ["Wavelet", "Wavelet"]
+        @test rp.sparsity isa SimpleSparsityParameters
+
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L1Regularization(1e-3)], sparsity=["Wavelet", nothing])
+        @test rp.reg isa Vector
+        @test rp.sparsity.sparsity == ["Wavelet", nothing]
+        @test rp.sparsity isa SimpleSparsityParameters
+
+        # With CustomSparsityParameters
+        op = opEye(T, prod(shape); S=S)
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity=CustomSparsityParameters(op))
+        @test rp.sparsity.trafo === op
+      end
+
+      @testset "Callable - simple reg" begin
+        # No reg -> default L1(0)
+        rp = RegularizationParameters()
+        result = rp(algoT, FISTA)
+        @test first(result) isa L1Regularization
+        @test iszero(first(result).λ)
+
+        # Single reg, nothing trafo -> returns reg directly
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity=nothing)
+        result = rp(algoT, FISTA)
+        @test first(result) isa L1Regularization
+        @test length(result) == 1
+
+        # Single reg with trafo -> returns TransformedRegularization
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity="Wavelet")
+        result = rp(algoT, FISTA)
+        @test first(result) isa TransformedRegularization
+        @test RegularizedLeastSquares.innerreg(first(result)) isa L1Regularization
+        @test length(result) == 1
+
+        # Multiple regs -> returns vector of reg
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)])
+        result = rp(algoT, FISTA)
+        @test result isa Vector
+        @test result[1] isa L1Regularization
+        @test result[2] isa L2Regularization
+        @test length(result) == 2
+
+        # Multiple regs with nothing trafo -> returns vector of reg
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)], sparsity = [nothing, nothing])
+        result = rp(algoT, FISTA)
+        @test result isa Vector
+        @test result[1] isa L1Regularization
+        @test result[2] isa L2Regularization
+        @test length(result) == 2
+
+        # Multiple regs with trafo-> returns vector of reg
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)], sparsity = ["Wavelet", "Wavelet"])
+        result = rp(algoT, FISTA)
+        @test result isa Vector
+        @test result[1] isa TransformedRegularization
+        @test RegularizedLeastSquares.innerreg(result[1]) isa L1Regularization
+        @test result[2] isa TransformedRegularization
+        @test RegularizedLeastSquares.innerreg(result[2]) isa L2Regularization
+        @test length(result) == 2
+
+        # Multiple regs with mixed trafo-> returns vector of reg
+        rp = RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)], sparsity = ["Wavelet", nothing])
+        result = rp(algoT, FISTA)
+        @test result isa Vector
+        @test result[1] isa TransformedRegularization
+        @test RegularizedLeastSquares.innerreg(result[1]) isa L1Regularization
+        @test result[2] isa L2Regularization
+        @test length(result) == 2
+      end
+
+      @testset "Callable - reg, reg trafo" begin
+        # No reg -> returns default reg and filled trafos (opEye)
+        rp = RegularizationParameters()
+        reg, trafos = rp(algoT, ADMM)
+        @test length(reg) == 1
+        @test length(trafos) == 1
+
+        # Single reg, nothing trafo -> reg stays, trafo filled with opEye
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity=nothing)
+        reg, trafos = rp(algoT, ADMM)
+        @test length(reg) == 1
+        @test reg[1] isa L1Regularization
+        @test length(trafos) == 1
+
+        # Single reg with trafo -> TransformedRegularization in reg
+        rp = RegularizationParameters(reg=L1Regularization(1e-3), sparsity="Wavelet")
+        reg, trafos = rp(algoT, ADMM)
+        @test length(reg) == 1
+        @test reg[1] isa L1Regularization
+        @test length(trafos) == 1
+
+        # Multiple regs with mixed trafos
+        rp = RegularizationParameters(
+          reg=[L1Regularization(1e-3), L2Regularization(1e-4)],
+          sparsity=["Wavelet", nothing]
+        )
+        reg, trafos = rp(algoT, ADMM)
+        @test length(reg) == 2
+        @test reg[1] isa L1Regularization
+        @test reg[2] isa L2Regularization
+        @test length(trafos) == 2
+      end
+    end
+  end
+end
+
 for arrayType in arrayTypes
   for T in [Float32, Float64]
-    testSparsityOperators(arrayType, T)
+    testSparsityParameters(arrayType, T)
+    testRegularizationParameters(arrayType, T)
   end
 end
