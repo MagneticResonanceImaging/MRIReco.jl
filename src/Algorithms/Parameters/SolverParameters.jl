@@ -6,7 +6,7 @@ export SimpleSparsityParameters, CustomSparsityParameters
 
 Abstract base type for sparsity/transformation parameters used in regularized reconstruction.
 """
-abstract type AbstractSparsityParameters end
+abstract type AbstractSparsityParameters <: AbstractMRIRecoParameters end
 
 """
     SolverParameters <: AbstractImageReconstructionParameters
@@ -14,7 +14,7 @@ abstract type AbstractSparsityParameters end
 Abstract base type for solver parameters in MRIReco. Subtypes define how linear solvers
 are configured for iterative reconstruction.
 """
-abstract type SolverParameters <: AbstractImageReconstructionParameters end
+abstract type SolverParameters <: AbstractMRIRecoParameters end
 
 """
     SimpleSparsityParameters{S <: Union{Nothing, String, Vector{String}}} <: AbstractSparsityParameters
@@ -32,7 +32,7 @@ SimpleSparsityParameters(["Wavelet", "nothing"])  # two transforms
 SimpleSparsityParameters("")                  # identity (no transform)
 ```
 """
-@parameter struct SimpleSparsityParameters{S <: Union{Nothing, String, Vector{String}}} <: AbstractSparsityParameters
+@parameter struct SimpleSparsityParameters{S <: Union{Nothing, String, Vector{<:Union{String, Nothing}}}} <: AbstractSparsityParameters
   sparsity::S = ""
 end
 
@@ -61,14 +61,23 @@ function (sparsity::SimpleSparsityParameters)(::Type{<:AbstractMRIRecoAlgorithm}
   S = ctx_storageType()
   T = eltype(S)
   sp = sparsity.sparsity
-  # TODO fill up misisng terms with nothing
-  if isempty(sp) || sp == ""
-    return [opEye(T, prod(reconSize); S = S) for i in 1:numTerms]
+  
+  # Normalize to vector
+  if isnothing(sp) || isempty(sp)
+    sp_vec = fill(nothing, numTerms)
   elseif sp isa String
-    return [SparseOp(T, sp, reconSize; S = S)]
+    sp_vec = [sp]
   else
-    return [SparseOp(T, s, reconSize; S = S) for s in sp]
+    sp_vec = collect(sp)
   end
+  
+  # Fill up with nothing to match numTerms
+  if length(sp_vec) < numTerms
+    sp_vec = vcat(sp_vec, fill(nothing, numTerms - length(sp_vec)))
+  end
+  
+  # Build operators: nothing stays nothing, non-nothing strings get converted
+  return [isnothing(s) ? nothing : SparseOp(T, s, reconSize; S = S) for s in sp_vec[1:numTerms]]
 end
 
 """
@@ -103,9 +112,11 @@ Build transformation operators from custom sparsity specification.
 Vector of transformation operators
 
 # Behavior
-- nothing returns identity operator (`opEye`)
+- nothing returns nothing (to be filled later)
 - Single operator returns single-element vector
+- String gets converted to SparseOp
 - Iterable of operators returns collected vector
+- Supports mixed vectors like [op, nothing, op]
 
 # Note
 - Gets reconSize from MRIRECO_CONTEXT ScopedValue
@@ -114,15 +125,39 @@ Vector of transformation operators
 function (sparsity::CustomSparsityParameters{L})(::Type{<:AbstractIterativeMRIRecoAlgorithm}, numTerms::Int64) where L
   reconSize = ctx_reconSize()
   S = ctx_storageType()
+  T = eltype(S)
   trafo = sparsity.trafo
-  # TODO: same as SimpleSparsityParameters, but also if element is a string fallback to SparseOp
-  if trafo === nothing
-    return [opEye(T, prod(reconSize); S = S)]
+  
+  # Normalize to vector
+  trafo_vec = if isnothing(trafo)
+    fill(nothing, numTerms)
   elseif trafo isa AbstractLinearOperator
-    return [trafo]
+    [trafo]
+  elseif trafo isa String
+    [trafo]
   else
-    return collect(trafo)
+    collect(trafo)
   end
+  
+  # Fill up with nothing to match numTerms
+  if length(trafo_vec) < numTerms
+    trafo_vec = vcat(trafo_vec, fill(nothing, numTerms - length(trafo_vec)))
+  end
+  
+  # Build operators: nothing stays nothing
+  result = []
+  for t in trafo_vec[1:numTerms]
+    if isnothing(t)
+      push!(result, nothing)
+    elseif t isa String
+      push!(result, SparseOp(T, t, reconSize; S = S))
+    elseif t isa AbstractLinearOperator
+      push!(result, t)
+    else
+      push!(result, t)
+    end
+  end
+  return result
 end
 
 """
@@ -170,7 +205,7 @@ RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::String
 RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::Vector{String}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
 
 """
-    (params::RegularizationParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}, T) -> (reg, regTrafo)
+    (params::RegularizationParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}, T) -> reg | (reg, regTrafo)
 
 Transform the regularization parameters for a specific solver type.
 
@@ -204,12 +239,12 @@ function (params::RegularizationParameters)(
     reg
   end
 
-  trafos = params.sparsity(algo.T, length(reg))
+  trafos = params.sparsity(algoT, length(reg))
   return params(algoT, reg_vec, trafos, SL)
 end
 
 function (params::RegularizationParameters)(
-    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
+    ::Type{<:AbstractIterativeMRIRecoAlgorithm},
     reg::Vector{<:AbstractRegularization}, 
     trafos::Vector, 
     ::Type{SL}
@@ -219,6 +254,7 @@ function (params::RegularizationParameters)(
   end
   r = reg[1]
   t = trafos[1]
+  # return just reg, either transformed or direct
   return isnothing(t) ? r : TransformedRegularization(r, t)
 end
 
@@ -228,9 +264,23 @@ function (params::RegularizationParameters)(
     reg::Vector{<:AbstractRegularization}, 
     trafos::Vector, 
     ::Type{SL}
-) where SL <: Union{ADMM, SplitBregman}
-  # TODO: fill up nothing trafos with opEyes
-  return (reg, trafos)
+  ) where SL <: Union{ADMM, SplitBregman}
+  # Fill up nothing trafos with opEyes
+  reconSize = ctx_reconSize()
+  S = ctx_storageType()
+  T = eltype(S)
+  
+  filled_trafos = []
+  for t in trafos
+    if isnothing(t)
+      push!(filled_trafos, opEye(T, prod(reconSize); S = S))
+    else
+      push!(filled_trafos, t)
+    end
+  end
+  
+  # return reg and reg_trafo
+  return (reg, filled_trafos)
 end
 
 
@@ -293,7 +343,7 @@ params = LeastSquaresSolverParameter(solver = ADMM
 )
 ```
 """
-@parameter struct LeastSquaresSolverParameter{SL <: AbstractLinearSolver, R <: RegularizationParameters} <: LeastSquaresSolverParameter
+@parameter struct LeastSquaresSolverParameter{SL <: AbstractLinearSolver, R <: RegularizationParameters} <: SolverParameters
   solver::Type{SL} = ADMM
   regularization::R = RegularizationParameters()
   normalizeReg::AbstractRegularizationNormalization = NoNormalization()

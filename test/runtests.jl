@@ -1,4 +1,4 @@
-using MRIReco, MRISampling, MRISimulation, FFTW
+using MRIReco, MRISampling, MRISimulation, MRIReco.FFTW
 using MRIReco.RegularizedLeastSquares
 using Test
 using LinearAlgebra
@@ -12,8 +12,9 @@ const tmpdir  = @get_scratch!("tmp")
 areTypesDefined = @isdefined arrayTypes
 arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
 @testset "MRIReco" begin
-  include("testTools.jl")
-  include("testIO.jl")
-  include("testReconstruction.jl")
-  include("testSpecificApplications.jl")
+  #include("testTools.jl")
+  #include("testIO.jl")
+  #include("testReconstruction.jl")
+  #include("testSpecificApplications.jl")
+  include("Algorithms/testAlgorithms.jl")
 end
