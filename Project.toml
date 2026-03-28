@@ -24,7 +24,7 @@ GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 MRIRecoGPUArraysExt = "GPUArrays"
 
 [compat]
-AbstractImageReconstruction = "0.6.2"
+AbstractImageReconstruction = "0.6.4"
 AxisArrays = "0.4.6"
 FFTW = "1.0"
 GPUArrays = "8, 9, 10, 11"

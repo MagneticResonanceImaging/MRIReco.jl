@@ -6,7 +6,9 @@ using Reexport
 @reexport using MRIOperators
 @reexport using RegularizedLeastSquares
 @reexport using AbstractImageReconstruction
-using AbstractImageReconstruction.StructUtils
+@reexport using AbstractImageReconstruction.StructUtils
+@reexport using AbstractImageReconstruction.ScopedValues
+
 
 using ProgressMeter
 using AxisArrays

@@ -38,23 +38,26 @@ function (params::AbstractDirectMRIRecoParameters)(algo::AbstractDirectMRIRecoAl
   numContr, numChan, numSl, numRep = numContrasts(acqData), numChannels(acqData), numSlices(acqData), numRepetitions(acqData)
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
 
-  Ireco = params(algo, Ireco, acqData, reconSize)
+  Ireco = with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
+    return params(algo, Ireco, acqData)
+  end
 
   Ireco = reshape(Ireco, volumeSize(reconSize, numSl)..., numContr, numChan, numRep)
   return makeAxisArray(Ireco, acqData)
 end
 
 # Reconstruction loop
-function (params::DirectMRIRecoParameter)(::Type{<:AbstractDirectMRIRecoAlgorithm}, Ireco::Array{Complex{T}, 5}, acqData::AcquisitionData{T}, reconSize) where T
+function (params::DirectMRIRecoParameter)(::Type{<:AbstractDirectMRIRecoAlgorithm}, Ireco::Array{Complex{T}, 5}, acqData::AcquisitionData{T}) where T
   numSl = size(Ireco, 2)
   numContr = size(Ireco, 3)
   numChan = size(Ireco, 4)
   numRep = size(Ireco, 5)
 
   correctionMap = isnothing(params.cmap) ? similar(Ireco, 0) : params.cmap
+  reconSize = ctx_reconSize()
   weights = isnothing(params.weights) ? samplingDensity(acqData, reconSize) : params.weights
-  arrayType = params.arrayType
-  S = typeof(arrayType{Complex{T}}(undef, 0))
+  arrayType = ctx_arrayType()
+  S = ctx_storageType()
 
   for i = 1:numSl
     F = encodingOps_simple(acqData, reconSize, slice=i, correctionMap=correctionMap, S = S)
