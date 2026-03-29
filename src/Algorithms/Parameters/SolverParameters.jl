@@ -393,13 +393,12 @@ function LeastSquaresSolverParameter(;
   return params
 end
 """
-    (params::LeastSquaresSolverParameter)(algoT, ::Type{SL}, b::AbstractVector, A, AHA=normalOperator(A)) where SL
+    (params::LeastSquaresSolverParameter)(algoT, b::AbstractVector, A, AHA=normalOperator(A))
 
 Solve an inverse problem using the configured solver.
 
 # Arguments
 - `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
-- `::Type{SL}` - Solver type (must match the param's solver type)
 - `b::AbstractVector` - k-space data
 - `A` - Forward operator
 - `AHA` - Normal operator (optional, computed from A if not provided)
@@ -410,17 +409,16 @@ Reconstructed image vector
 # Example
 ```julia
 params = LeastSquaresSolverParameter(ADMM; iterations=50)
-x = params(IterativeMRIReco, ADMM, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
+x = params(IterativeMRIReco, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
 ```
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
     algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
-    ::Type{SL}, 
     b::AbstractVector, 
     A, 
     AHA = normalOperator(A)
 ) where {SL <: AbstractLinearSolver, R, T}
-  solver = params(algoT, SL, A, AHA)
+  solver = params(algoT, A, AHA)
   return solve!(solver, b)
 end
 
@@ -444,7 +442,7 @@ A configured `AbstractLinearSolver` ready for use with `solve!`
 # Example
 ```julia
 params = LeastSquaresSolverParameter(ADMM; iterations=50)
-solver = params(IterativeMRIReco, ADMM, A, AHA)
+solver = params(IterativeMRIReco, A, AHA)
 x = solve!(solver, kdata)
 
 # Reuse solver for different data
@@ -453,12 +451,12 @@ x2 = solve!(solver, kdata2)
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
     algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
-    ::Type{SL}, 
     A, 
     AHA = normalOperator(A)
 ) where {SL <: AbstractLinearSolver, R, T}
   
   # Get regularization - returns reg or (reg, regTrafo)
+  SL = params.solver  # Use the solver type from params
   reg_result = params.regularization(algoT, SL)
   if reg_result isa Tuple
     reg, regTrafo = reg_result
