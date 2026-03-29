@@ -1,4 +1,5 @@
 include("SolverParameters.jl")
+include("WeightingParameters.jl")
 
 export AbstractIterativeRecoParameters
 abstract type AbstractIterativeRecoParameters <: AbstractMRIRecoParameters end
