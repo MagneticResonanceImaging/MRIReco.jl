@@ -335,36 +335,70 @@ params = LeastSquaresSolverParameter(solver = ADMM
 )
 ```
 """
-@parameter struct LeastSquaresSolverParameter{SL <: AbstractLinearSolver, R <: RegularizationParameters} <: SolverParameters
-  solver::Type{SL} = ADMM
-  regularization::R = RegularizationParameters()
-  normalizeReg::AbstractRegularizationNormalization = NoNormalization()
-  
-  iterations::Int = 30
-  iterationsInner::Int = 10
-  iterationsCG::Int = 10
-  rho::Real = 5e-2
-  absTol::Real = eps(Float64)
-  relTol::Real = eps(Float64)
-  tolInner::Real = 1e-5
-  verbose::Bool = false
-  restart::Symbol = :none
-  vary_rho::Symbol = :none
+@parameter constructor = false struct LeastSquaresSolverParameter{SL <: AbstractLinearSolver, R <: RegularizationParameters, T <: AbstractFloat} <: SolverParameters
+  solver::Type{SL} 
+  regularization::R 
+  normalizeReg::AbstractRegularizationNormalization 
+  iterations::Int 
+  rho::T
+  iterationsInner::Union{Int, Nothing} 
+  iterationsCG::Union{Int, Nothing} 
+  absTol::Union{T, Nothing} 
+  relTol::Union{T, Nothing} 
+  tolInner::Union{T, Nothing} 
+  verbose::Bool
+  restart::Symbol 
+  vary_rho::Symbol
   
   @validate begin
     @assert iterations > 0 "iterations must be positive"
     @assert rho >= 0 "rho must be positive"
+    @assert isnothing(iterationsInner) || iterationsInner > 0 "iterationsInner must be positive"
+    @assert isnothing(iterationsCG) || iterationsCG > 0 "iterationsCG must be positive"
+    @assert isnothing(absTol) || absTol > 0 "absTol must be positive"
+    @assert isnothing(relTol) || relTol > 0 "relTol must be positive"
+    @assert isnothing(tolInner) || tolInner > 0 "tolInner must be positive"
     @assert restart in (:none, :gradient) "restart must be :none or :gradient"
     @assert vary_rho in (:none, :balance, :PnP) "vary_rho must be :none, :balance, or :PnP"
   end
 end
-
+function LeastSquaresSolverParameter(;
+    solver::Type{SL} = ADMM,
+    regularization::R = RegularizationParameters(),
+    normalizeReg::AbstractRegularizationNormalization = NoNormalization(),
+    iterations::Int = 30,
+    rho::Real = 5e-2,
+    iterationsInner::Union{Int, Nothing} = nothing,
+    iterationsCG::Union{Int, Nothing} = nothing,
+    absTol = nothing,
+    relTol = nothing,
+    tolInner = nothing,
+    verbose::Bool = false,
+    restart::Symbol = :none,
+    vary_rho::Symbol = :none
+) where {SL <: AbstractLinearSolver, R <: RegularizationParameters}
+  # Convert T-typed fields
+  T = typeof(rho)
+  rho_T = rho
+  absTol_T = isnothing(absTol) ? nothing : T(absTol)
+  relTol_T = isnothing(relTol) ? nothing : T(relTol)
+  tolInner_T = isnothing(tolInner) ? nothing : T(tolInner)
+  
+  params = LeastSquaresSolverParameter{SL, R, T}(
+    solver, regularization, normalizeReg, iterations, rho_T,
+    iterationsInner, iterationsCG, absTol_T, relTol_T, tolInner_T,
+    verbose, restart, vary_rho
+  )
+  validate!(params)
+  return params
+end
 """
-    (params::LeastSquaresSolverParameter)(::Type{SL}, b::AbstractVector, A, AHA=normalOperator(A)) where SL
+    (params::LeastSquaresSolverParameter)(algoT, ::Type{SL}, b::AbstractVector, A, AHA=normalOperator(A)) where SL
 
 Solve an inverse problem using the configured solver.
 
 # Arguments
+- `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
 - `::Type{SL}` - Solver type (must match the param's solver type)
 - `b::AbstractVector` - k-space data
 - `A` - Forward operator
@@ -373,32 +407,31 @@ Solve an inverse problem using the configured solver.
 # Returns
 Reconstructed image vector
 
-# Throws
-Error if reconSize is not provided. Use the signature with reconSize instead.
-
 # Example
 ```julia
 params = LeastSquaresSolverParameter(ADMM; iterations=50)
-x = params(ADMM, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
+x = params(IterativeMRIReco, ADMM, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
 ```
 """
-function (params::LeastSquaresSolverParameter{SL, R})(
-    algo::Type{<:AbstractIterativeMRIRecoAlgorithm},
+function (params::LeastSquaresSolverParameter{SL, R, T})(
+    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
+    ::Type{SL}, 
     b::AbstractVector, 
     A, 
     AHA = normalOperator(A)
-) where {SL <: AbstractLinearSolver, R}
-  solver = params(A, AHA)
+) where {SL <: AbstractLinearSolver, R, T}
+  solver = params(algoT, SL, A, AHA)
   return solve!(solver, b)
 end
 
 """
-    (params::LeastSquaresSolverParameter)(::Type{SL}, A, AHA=normalOperator(A)) where SL
+    (params::LeastSquaresSolverParameter)(algoT, ::Type{SL}, A, AHA=normalOperator(A)) where SL
 
 Create a configured solver for the given problem.
 
 # Arguments
-- `::Type{SL}` - Solver type (must match the param's solver type)
+- `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
+- `::Type{SL}` - Solver type
 - `A` - Forward operator
 - `AHA` - Normal operator (optional, computed from A if not provided)
 
@@ -411,109 +444,57 @@ A configured `AbstractLinearSolver` ready for use with `solve!`
 # Example
 ```julia
 params = LeastSquaresSolverParameter(ADMM; iterations=50)
-solver = params(ADMM, A, AHA)
+solver = params(IterativeMRIReco, ADMM, A, AHA)
 x = solve!(solver, kdata)
 
 # Reuse solver for different data
 x2 = solve!(solver, kdata2)
 ```
 """
-function (params::LeastSquaresSolverParameter{SL, R})(
+function (params::LeastSquaresSolverParameter{SL, R, T})(
+    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
     ::Type{SL}, 
     A, 
     AHA = normalOperator(A)
-) where {SL <: AbstractLinearSolver, R}
-  return solver_from_params(params, A, AHA)
-end
-
-"""
-    solver_from_params(params, A, AHA) -> AbstractLinearSolver
-
-Create a solver from parameters.
-
-# Arguments
-- `params::LeastSquaresSolverParameter` - Configuration parameters
-- `A` - Forward operator
-- `AHA` - Normal operator
-
-# Note
-- Gets reconSize from MRIRECO_CONTEXT ScopedValue
-
-# Returns
-Configured solver instance
-"""
-function solver_from_params(params, A, AHA)
-  T = eltype(AHA)
-  reg, regTrafo = params.regularization(params.solver, Complex{T})
-  kwargs = build_solver_kwargs(params, reg, regTrafo)
-  return createLinearSolver(params.solver, A; AHA=AHA, kwargs...)
-end
-
-"""
-    build_solver_kwargs(params, reg, regTrafo) -> NamedTuple
-
-Build common keyword arguments for solver configuration.
-
-# Arguments
-- `params::LeastSquaresSolverParameter` - Configuration parameters
-- `reg` - Regularization terms
-- `regTrafo` - Regularization transformations
-
-# Returns
-NamedTuple with common solver kwargs
-"""
-function build_solver_kwargs(params, reg, regTrafo)
-  (;
+) where {SL <: AbstractLinearSolver, R, T}
+  
+  # Get regularization - returns reg or (reg, regTrafo)
+  reg_result = params.regularization(algoT, SL)
+  if reg_result isa Tuple
+    reg, regTrafo = reg_result
+  else
+    reg = reg_result
+    regTrafo = nothing
+  end
+  
+  # Get solver's accepted kwargs
+  solver_kw = union(Base.kwarg_decl.(methods(SL))...)
+  
+  # Build kwargs dict
+  kwargs = (;
     reg = reg,
-    regTrafo = regTrafo,
     normalizeReg = params.normalizeReg,
     iterations = params.iterations,
-    absTol = params.absTol,
-    relTol = params.relTol,
-    verbose = params.verbose
   )
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{FISTA, R}, reg, regTrafo) where R
-  merge(build_solver_kwargs(params, reg, regTrafo), (;
-    restart = params.restart,
-    rho = params.rho
-  ))
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{ADMM, R}, reg, regTrafo) where R
-  merge(build_solver_kwargs(params, reg, regTrafo), (;
-    iterationsInner = params.iterationsInner,
-    iterationsCG = params.iterationsCG,
-    tolInner = params.tolInner,
-    rho = params.rho,
-    vary_rho = params.vary_rho
-  ))
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{SplitBregman, R}, reg, regTrafo) where R
-  merge(build_solver_kwargs(params, reg, regTrafo), (;
-    iterationsInner = params.iterationsInner,
-    iterationsCG = params.iterationsCG,
-    tolInner = params.tolInner,
-    rho = params.rho
-  ))
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{POGM, R}, reg, regTrafo) where R
-  merge(build_solver_kwargs(params, reg, regTrafo), (;
-    restart = params.restart,
-    rho = params.rho
-  ))
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{OptISTA, R}, reg, regTrafo) where R
-  merge(build_solver_kwargs(params, reg, regTrafo), (;
-    restart = params.restart,
-    rho = params.rho
-  ))
-end
-
-function build_solver_kwargs(params::LeastSquaresSolverParameter{CGNR, R}, reg, regTrafo) where R
-  build_solver_kwargs(params, reg, regTrafo)
+  
+  # Conditionally add params
+  for (sym, val) in [
+    :regTrafo => regTrafo,
+    :iterationsInner => params.iterationsInner,
+    :iterationsCG => params.iterationsCG,
+    :absTol => params.absTol,
+    :relTol => params.relTol,
+    :tolInner => params.tolInner,
+    :verbose => params.verbose,
+    :rho => params.rho,
+    :restart => params.restart,
+    :vary_rho => params.vary_rho
+  ]
+    if !isnothing(val) && sym in solver_kw
+      kwargs = merge(kwargs, (; sym => val))
+    end
+  end
+  
+  # Create solver
+  return createLinearSolver(SL, A; AHA=AHA, kwargs...)
 end

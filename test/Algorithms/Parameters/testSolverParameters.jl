@@ -261,9 +261,281 @@ function testRegularizationParameters(arrayType=Array, T=Float64)
   end
 end
 
+function testLeastSquaresSolverParameters(arrayType=Array, T=Float64)
+  @testset "LeastSquaresSolverParameter $arrayType, $T" begin
+    shape = (8, 8, 8)
+    ctx = MRIRecoContext(shape, T, arrayType)
+    algoT = AbstractIterativeMRIRecoAlgorithm
+
+    with(MRIRECO_CONTEXT => ctx) do
+      
+      @testset "Construction" begin
+        # Default construction
+        lsp = LeastSquaresSolverParameter()
+        @test lsp.solver == ADMM
+        @test lsp.iterations == 30
+        @test lsp.rho == 5e-2
+        @test lsp.verbose == false
+        @test lsp.restart == :none
+        @test lsp.vary_rho == :none
+        @test isnothing(lsp.iterationsInner)
+        @test isnothing(lsp.iterationsCG)
+        @test isnothing(lsp.absTol)
+        @test isnothing(lsp.relTol)
+        @test isnothing(lsp.tolInner)
+
+        # With explicit solver type
+        lsp = LeastSquaresSolverParameter(solver = FISTA)
+        @test lsp.solver == FISTA
+
+        # With custom iterations
+        lsp = LeastSquaresSolverParameter(; iterations=50)
+        @test lsp.iterations == 50
+
+        # With custom rho
+        lsp = LeastSquaresSolverParameter(; rho=T(1e-1))
+        @test lsp.rho == T(1e-1)
+      end
+
+      @testset "Validation" begin
+        # Valid parameters should pass
+        lsp = LeastSquaresSolverParameter(; iterations=10, rho=T(1e-2))
+        @test lsp.iterations == 10
+
+        # Invalid parameters should throw
+        @test_throws AssertionError LeastSquaresSolverParameter(; iterations=-1)
+        @test_throws AssertionError LeastSquaresSolverParameter(; rho=T(-1))
+        @test_throws AssertionError LeastSquaresSolverParameter(; iterationsInner=-1)
+        @test_throws AssertionError LeastSquaresSolverParameter(; iterationsCG=-1)
+        @test_throws AssertionError LeastSquaresSolverParameter(; absTol=T(-1))
+        @test_throws AssertionError LeastSquaresSolverParameter(; relTol=T(-1))
+        @test_throws AssertionError LeastSquaresSolverParameter(; tolInner=T(-1))
+        @test_throws AssertionError LeastSquaresSolverParameter(; restart=:invalid)
+        @test_throws AssertionError LeastSquaresSolverParameter(; vary_rho=:invalid)
+      end
+
+      @testset "Solver construction" begin
+        n = prod(shape)
+        A = rand(Complex{T}, n, n)
+        AHA = A' * A
+        x = rand(Complex{T}, n)
+        b = A * x
+
+        @testset "ADMM" begin
+          params = LeastSquaresSolverParameter(;
+            solver = ADMM,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 5,
+            rho = T(1e-1)
+          )
+          solver = params(algoT, ADMM, A, AHA)
+          @test solver isa ADMM
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "SplitBregman" begin
+          params = LeastSquaresSolverParameter(;
+            solver = SplitBregman,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 5,
+            iterationsInner = 3,
+            rho = T(1e-1)
+          )
+          solver = params(algoT, SplitBregman, A, AHA)
+          @test solver isa SplitBregman
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "FISTA" begin
+          params = LeastSquaresSolverParameter(;
+            solver = FISTA,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 5,
+            rho = T(0.95)
+          )
+          solver = params(algoT, FISTA, A, AHA)
+          @test solver isa FISTA
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "POGM" begin
+          params = LeastSquaresSolverParameter(;
+            solver = POGM,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 5,
+            rho = T(0.95)
+          )
+          solver = params(algoT, POGM, A, AHA)
+          @test solver isa POGM
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "OptISTA" begin
+          params = LeastSquaresSolverParameter(;
+            solver = OptISTA,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 5,
+            rho = T(0.95)
+          )
+          solver = params(algoT, OptISTA, A, AHA)
+          @test solver isa OptISTA
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "CGNR" begin
+          params = LeastSquaresSolverParameter(;
+            solver = CGNR,
+            regularization = RegularizationParameters(
+              reg = L2Regularization(T(1e-3))
+            ),
+            iterations = 5
+          )
+          solver = params(algoT, CGNR, A, AHA)
+          @test solver isa CGNR
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+      end
+
+      @testset "Multiple regularization terms" begin
+        n = prod(shape)
+        A = rand(Complex{T}, n, n)
+        AHA = A' * A
+        x = rand(Complex{T}, n)
+        b = A * x
+
+        @testset "ADMM multiple reg" begin
+          params = LeastSquaresSolverParameter(;
+            solver = ADMM,
+            regularization = RegularizationParameters(
+              reg = [L1Regularization(T(1e-3)), L2Regularization(T(1e-4))],
+              sparsity = ["Wavelet", "nothing"]
+            ),
+            iterations = 5,
+            rho = T(1e-1)
+          )
+          solver = params(algoT, ADMM, A, AHA)
+          @test solver isa ADMM
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+
+        @testset "SplitBregman multiple reg" begin
+          params = LeastSquaresSolverParameter(;
+            solver = SplitBregman,
+            regularization = RegularizationParameters(
+              reg = [L1Regularization(T(1e-3)), L2Regularization(T(1e-4))],
+              sparsity = ["Wavelet", "nothing"]
+            ),
+            iterations = 5,
+            rho = T(1e-1)
+          )
+          solver = params(algoT, SplitBregman, A, AHA)
+          @test solver isa SplitBregman
+          result = solve!(solver, b)
+          @test length(result) == n
+        end
+      end
+
+      @testset "Optional parameters" begin
+        n = prod(shape)
+        A = rand(Complex{T}, n, n)
+        AHA = A' * A
+        x = rand(Complex{T}, n)
+        b = A * x
+
+        @testset "With custom tolerances" begin
+          params = LeastSquaresSolverParameter(;
+            solver = ADMM,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = nothing
+            ),
+            iterations = 10,
+            iterationsInner = 5,
+            iterationsCG = 5,
+            absTol = T(1e-8),
+            relTol = T(1e-8),
+            tolInner = T(1e-6),
+            verbose = false
+          )
+          solver = params(algoT, ADMM, A, AHA)
+          @test solver isa ADMM
+        end
+
+        @testset "With solver defaults" begin
+          params = LeastSquaresSolverParameter(;
+            solver = ADMM,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = nothing
+            ),
+            iterations = 10,
+            absTol = nothing,
+            relTol = nothing,
+            tolInner = nothing
+          )
+          solver = params(algoT, ADMM, A, AHA)
+          @test solver isa ADMM
+        end
+
+        @testset "FISTA with restart" begin
+          params = LeastSquaresSolverParameter(;
+            solver = FISTA,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 10,
+            restart = :gradient,
+            relTol = T(1e-6)
+          )
+          solver = params(algoT, FISTA, A, AHA)
+          @test solver isa FISTA
+        end
+
+        @testset "ADMM with vary_rho" begin
+          params = LeastSquaresSolverParameter(;
+            solver = ADMM,
+            regularization = RegularizationParameters(
+              reg = L1Regularization(T(1e-3)),
+              sparsity = "Wavelet"
+            ),
+            iterations = 10,
+            vary_rho = :balance
+          )
+          solver = params(algoT, ADMM, A, AHA)
+          @test solver isa ADMM
+        end
+      end
+    end
+  end
+end
+
 for arrayType in arrayTypes
   for T in [Float32, Float64]
     testSparsityParameters(arrayType, T)
     testRegularizationParameters(arrayType, T)
+    testLeastSquaresSolverParameters(arrayType, T)
   end
 end
