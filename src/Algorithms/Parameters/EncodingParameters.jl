@@ -9,7 +9,7 @@ Abstract base type for encoding operator parameters used in MRI reconstruction.
 abstract type AbstractMRIRecoEncodingParameters <: AbstractMRIRecoParameters end
 
 """
-    EncodingParameters{C} <: AbstractMRIRecoEncodingParameters
+    EncodingParameters{T} <: AbstractMRIRecoEncodingParameters
 
 Parameters for computing encoding operators from acquisition data.
 
