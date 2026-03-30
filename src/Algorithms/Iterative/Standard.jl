@@ -6,8 +6,8 @@ export AbstractStandardParameters
 
 abstract type AbstractStandardParameters <: AbstractIterativeRecoParameters end
 
-@reconstruction mutable struct StandardReconstruction{P<:AbstractStandardParameters} <: AbstractIterativeMRIRecoAlgorithm
-    @parameter parameter::P
+@reconstruction mutable struct StandardReconstruction{P<:AbstractStandardParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
+  @parameter parameter::C
 end
 
 """
@@ -61,29 +61,20 @@ image = reco(acqData)
     W <: AbstractMRIRecoWeightingParameters,
     S <: LeastSquaresSolverParameter
 } <: AbstractStandardParameters
-  encoding::E
-  weighting::W
-  solver::S
-end
-
-function StandardIterativeParameters(;
-  encoding = EncodingParameters(),
-  weighting = DensityWeightingParameters(),
-  solver = LeastSquaresSolverParameter()
-)
-  StandardIterativeParameters(encoding, weighting, solver)
+  encodingParams::E
+  weightingParams::W
+  solverParams::S
 end
 
 # Accessor for weighting parameter
-getWeighting(params::StandardIterativeParameters) = params.weighting
+getWeighting(params::StandardIterativeParameters) = params.weightingParams
 
-# Level 1: Allocation - allocates the output array and returns indices for iteration
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}, 
+  algoT::Type{<:StandardReconstruction}, 
   reconSize::NTuple{D, Int64}
 ) where D
   acqData = ctx_acqData()
-  T = real(eltype(acqData))
+  T = real(eltype(ctx_storageType()))
   
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
@@ -96,15 +87,11 @@ function (params::StandardIterativeParameters)(
   return (Ireco, indices)
 end
 
-# Level 2: Loop body - called once per index (slice/rep combination)
-# The index is a CartesianIndex (rep, slice)
-# Weights are pre-computed and passed in
-# Ireco is the output array to write to
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}, 
+  algoT::Type{<:StandardReconstruction}, 
+  Ireco::Array{Complex{T}, 5},
   index::CartesianIndex{2}, 
-  weights,
-  Ireco::Array{Complex{T}, 5}
+  weights
 ) where T
   reconSize = ctx_reconSize()
   acqData = ctx_acqData()
@@ -115,7 +102,7 @@ function (params::StandardIterativeParameters)(
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
   
-  F = params.encoding(algoT, k)
+  F = params.encodingParams(algoT, k)
   
   for j in 1:numContr
     W = WeightingOp(Complex{T}; weights=weights[j])
@@ -124,7 +111,7 @@ function (params::StandardIterativeParameters)(
       EFull = ProdOp(W, F[j])
       EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
       
-      I = params.solver(algoT, kdata, EFull, EFullᴴEFull)
+      I = params.solverParams(algoT, kdata, EFull, EFullᴴEFull)
       
       if isCircular(trajectory(acqData, j))
         circularShutter!(reshape(I, reconSize), 1.0)
@@ -135,9 +122,8 @@ function (params::StandardIterativeParameters)(
   end
 end
 
-# Level 3: Finalization - reshapes and wraps result in AxisArray
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}, 
+  algoT::Type{<:StandardReconstruction}, 
   Ireco::Array{Complex{T}, 5}
 ) where T
   acqData = ctx_acqData()

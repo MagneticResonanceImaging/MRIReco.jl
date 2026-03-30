@@ -69,7 +69,6 @@ Uses `@tasks` for parallel execution.
   parameter::P
 end
 
-# Helper function for reconSize
 function setupIterativeReconSize(acqData::AcquisitionData, reconSize::Nothing)
   rs = encodingSize(acqData)
   return setupIterativeReconSize(acqData, rs)
@@ -90,10 +89,7 @@ function setupIterativeReconSize(acqData::AcquisitionData, reconSize::NTuple)
   return reconSize
 end
 
-function get_scheduler(scheduler::Nothing, arrayType)
-  scheduler(arrayType)
-end
-
+get_scheduler(::Nothing, arrayType) = scheduler(arrayType)
 get_scheduler(scheduler, arrayType) = scheduler
 
 # Serial implementation
@@ -115,7 +111,7 @@ function (params::SerialIterativeMRIRecoContextParameter{P})(algo::AbstractItera
     
     # Loop over indices
     for index in indices
-      params.parameter(algo, index, weights, Ireco)
+      params.parameter(algo, Ireco, index, weights)
     end
     
     # Finalization - call algorithm parameter
@@ -145,7 +141,7 @@ function (params::ThreadedIterativeMRIRecoContextParameter{P})(algo::AbstractIte
     # Loop over indices with @tasks
     @tasks for index in indices
       @set scheduler = sched
-      params.parameter(algo, index, weights, Ireco)
+      params.parameter(algo, Ireco, index, weights)
     end
     
     # Finalization - call algorithm parameter

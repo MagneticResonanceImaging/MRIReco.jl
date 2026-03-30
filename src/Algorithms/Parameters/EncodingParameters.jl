@@ -42,7 +42,7 @@ encOps = ep(AbstractIterativeMRIRecoAlgorithm, 1)
 ```
 """
 @parameter struct EncodingParameters{C <: Union{AbstractArray{Complex}, Nothing}} <: AbstractMRIRecoEncodingParameters
-  correctionMap::C
+  correctionMap::C = nothing
   
   method::Union{String, Nothing} = nothing
   toeplitz::Union{Bool, Nothing} = nothing

@@ -33,7 +33,7 @@ SimpleSparsityParameters("")                  # identity (no transform)
 ```
 """
 @parameter struct SimpleSparsityParameters{S <: Union{Nothing, String, Vector{<:Union{String, Nothing}}}} <: AbstractSparsityParameters
-  sparsity::S = ""
+  sparseTrafo::S = ""
 end
 
 """
@@ -60,7 +60,7 @@ function (sparsity::SimpleSparsityParameters)(::Type{<:AbstractMRIRecoAlgorithm}
   reconSize = ctx_reconSize()
   S = ctx_storageType()
   T = eltype(S)
-  sp = sparsity.sparsity
+  sp = sparsity.sparseTrafo
   
   # Normalize to vector
   if isnothing(sp) || isempty(sp)
@@ -97,7 +97,7 @@ CustomSparsityParameters(some_matrix)             # matrix as transform
 ```
 """
 @parameter struct CustomSparsityParameters{L} <: AbstractSparsityParameters
-  trafo::L = nothing
+  sparseTrafo::L = nothing
 end
 
 """
@@ -126,7 +126,7 @@ function (sparsity::CustomSparsityParameters{L})(::Type{<:AbstractIterativeMRIRe
   reconSize = ctx_reconSize()
   S = ctx_storageType()
   T = eltype(S)
-  trafo = sparsity.trafo
+  trafo = sparsity.sparseTrafo
   
   # Normalize to vector
   trafo_vec = if isnothing(trafo)
@@ -197,9 +197,9 @@ RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)],
     S <: AbstractSparsityParameters
 } <: AbstractImageReconstructionParameters
   reg::R
-  sparsity::S
+  sparsityParams::S
 end
-RegularizationParameters(; reg = nothing, sparsity = "") = RegularizationParameters(reg, sparsity)
+RegularizationParameters(; reg = nothing, sparsityParams = "") = RegularizationParameters(reg, sparsityParams)
 RegularizationParameters(reg, sparsity::Union{String, Nothing}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
 RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::Vector{<:Union{String, Nothing}}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
 
@@ -237,7 +237,7 @@ function (params::RegularizationParameters)(
     reg
   end
 
-  trafos = params.sparsity(algoT, length(reg_vec))
+  trafos = params.sparsityParams(algoT, length(reg_vec))
   return params(algoT, reg_vec, trafos, SL)
 end
 
@@ -337,7 +337,7 @@ params = LeastSquaresSolverParameter(solver = ADMM
 """
 @parameter constructor = false struct LeastSquaresSolverParameter{SL <: AbstractLinearSolver, R <: RegularizationParameters, T <: AbstractFloat} <: SolverParameters
   solver::Type{SL} 
-  regularization::R 
+  regParams::R 
   normalizeReg::AbstractRegularizationNormalization 
   iterations::Int 
   rho::T
@@ -364,7 +364,7 @@ params = LeastSquaresSolverParameter(solver = ADMM
 end
 function LeastSquaresSolverParameter(;
     solver::Type{SL} = ADMM,
-    regularization::R = RegularizationParameters(),
+    regParams::R = RegularizationParameters(),
     normalizeReg::AbstractRegularizationNormalization = NoNormalization(),
     iterations::Int = 30,
     rho::Real = 5e-2,
@@ -385,7 +385,7 @@ function LeastSquaresSolverParameter(;
   tolInner_T = isnothing(tolInner) ? nothing : T(tolInner)
   
   params = LeastSquaresSolverParameter{SL, R, T}(
-    solver, regularization, normalizeReg, iterations, rho_T,
+    solver, regParams, normalizeReg, iterations, rho_T,
     iterationsInner, iterationsCG, absTol_T, relTol_T, tolInner_T,
     verbose, restart, vary_rho
   )
@@ -423,13 +423,12 @@ function (params::LeastSquaresSolverParameter{SL, R, T})(
 end
 
 """
-    (params::LeastSquaresSolverParameter)(algoT, ::Type{SL}, A, AHA=normalOperator(A)) where SL
+    (params::LeastSquaresSolverParameter)(algoT, A, AHA=normalOperator(A)) where SL
 
 Create a configured solver for the given problem.
 
 # Arguments
 - `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
-- `::Type{SL}` - Solver type
 - `A` - Forward operator
 - `AHA` - Normal operator (optional, computed from A if not provided)
 
@@ -456,8 +455,8 @@ function (params::LeastSquaresSolverParameter{SL, R, T})(
 ) where {SL <: AbstractLinearSolver, R, T}
   
   # Get regularization - returns reg or (reg, regTrafo)
-  SL = params.solver  # Use the solver type from params
-  reg_result = params.regularization(algoT, SL)
+  solver = params.solver
+  reg_result = params.regParams(algoT, solver)
   if reg_result isa Tuple
     reg, regTrafo = reg_result
   else
