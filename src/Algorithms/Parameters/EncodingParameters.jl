@@ -1,5 +1,5 @@
 export AbstractMRIRecoEncodingParameters
-export EncodingParameters, CustomEncodingParameters
+export EncodingParameters, CustomEncodingParameters, SubspaceEncodingParameters
 
 """
     AbstractMRIRecoEncodingParameters <: AbstractMRIRecoParameters
@@ -104,4 +104,46 @@ end
 
 function (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int)
   return ep.encodingOps[:, slice]
+end
+
+"""
+    SubspaceEncodingParameters{E, B} <: AbstractMRIRecoEncodingParameters
+
+Encoding parameters with subspace projection for dimensionality reduction.
+
+# Type Parameters
+- `E` - The inner encoding parameters type
+- `B` - The basis matrix type
+
+# Fields
+- `inner::E` - Inner encoding parameters
+- `basis::B` - Subspace basis matrix
+
+# Callable Interface
+    (ep::SubspaceEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
+
+# Returns
+- Encoding operator composed with SubspaceOp
+
+# Example
+```julia
+ep = SubspaceEncodingParameters(; inner=EncodingParameters(), basis=basisMatrix)
+encOp = ep(MultiCoilMultiEchoSubspaceReconstruction, 1, senseMaps)
+```
+"""
+@parameter struct SubspaceEncodingParameters{
+    E <: AbstractMRIRecoEncodingParameters,
+    B <: AbstractMatrix
+} <: AbstractMRIRecoEncodingParameters
+  inner::E
+  basis::B
+end
+
+function (ep::SubspaceEncodingParameters)(algoT::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
+  acqData = ctx_acqData()
+  numContr = numContrasts(acqData)
+  
+  E = ep.inner(algoT, slice, args...)
+  subOp = SubspaceOp(ep.basis, acqData.encodingSize, numContr)
+  return ∘(E, subOp)
 end
