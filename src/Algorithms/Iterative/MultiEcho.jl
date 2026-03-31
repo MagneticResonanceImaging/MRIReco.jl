@@ -43,15 +43,10 @@ end
 """
     MultiEchoIterativeParameters{E, W, S} <: AbstractMultiEchoParameters
 
-Parameters for multi-echo iterative MRI reconstruction.
-Reconstructs all echoes jointly using a combined operator.
+Performs a iterative image reconstruction jointly for all contrasts. Different slices and coil images
+are reconstructed independently.
 
-# Type Parameters
-- `E` - Encoding parameters type
-- `W` - Weighting parameters type  
-- `S` - Solver parameters type
-
-# Fields
+# Arguments
 - `encodingParams::E` - Encoding operator parameters
 - `weightingParams::W` - Sampling weighting parameters
 - `solverParams::S` - Least squares solver parameters
@@ -66,21 +61,6 @@ Reconstructs all echoes jointly using a combined operator.
 
     # Finalization - reshapes and wraps result
     (params::MultiEchoIterativeParameters)(algo, Ireco) -> AxisArray
-
-# Usage
-```julia
-# Create the algorithm parameter
-algoParams = MultiEchoIterativeParameters(
-  encoding = EncodingParameters(),
-  weighting = DensityWeightingParameters(),
-  solver = LeastSquaresSolverParameter(solver=FISTA)
-)
-
-# Wrap in context (serial or threaded)
-reco = SerialIterativeMRIRecoContextParameter(; parameter=algoParams)
-# or
-reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, scheduler=DynamicScheduler())
-```
 """
 @parameter struct MultiEchoIterativeParameters{
     E <: AbstractMRIRecoEncodingParameters,
@@ -93,7 +73,7 @@ reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, schedule
 end
 
 function (params::MultiEchoIterativeParameters)(
-  ::MultiEchoReconstruction, 
+  algo::MultiEchoReconstruction, 
   reconSize::NTuple{D, Int64}
 ) where D
   acqData = ctx_acqData()
@@ -107,13 +87,13 @@ function (params::MultiEchoIterativeParameters)(
   Ireco = zeros(Complex{T}, prod(reconSize) * numContr, numChan, numSl, numRep)
   indices = CartesianIndices((numRep, numSl))
   
-  weights = params.weightingParams(MultiEchoReconstruction)
+  weights = params.weightingParams(algo)
   
   return (Ireco, indices, weights)
 end
 
 function (params::MultiEchoIterativeParameters)(
-  algoT::MultiEchoReconstruction, 
+  algo::MultiEchoReconstruction, 
   Ireco::Array{Complex{T}, 4},
   index::CartesianIndex{2}, 
   weights::AbstractVector
@@ -126,7 +106,7 @@ function (params::MultiEchoIterativeParameters)(
   
   numChan = numChannels(acqData)
   
-  F = params.encodingParams(algoT, i)
+  F = params.encodingParams(algo, i)
   
   W = WeightingOp(Complex{T}; weights=weights)
   
@@ -135,7 +115,7 @@ function (params::MultiEchoIterativeParameters)(
     EFull = ProdOp(W, F)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
     
-    I = params.solverParams(algoT, kdata, EFull, EFullᴴEFull)
+    I = params.solverParams(algo, kdata, EFull, EFullᴴEFull)
     
     Ireco[:, j, i, l] = Array(I)
   end

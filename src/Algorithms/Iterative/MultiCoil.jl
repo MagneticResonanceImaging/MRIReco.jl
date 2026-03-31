@@ -75,7 +75,7 @@ function (params::MultiCoilIterativeParameters)(
 end
 
 function (params::MultiCoilIterativeParameters)(
-  algoT::Type{<:MultiCoilReconstruction},
+  algo::MultiCoilReconstruction,
   Ireco::Array{Complex{T}, 4},
   index::CartesianIndex{3}, 
   weights::AbstractVector,
@@ -90,7 +90,7 @@ function (params::MultiCoilIterativeParameters)(
   
   numChan = numChannels(acqData)
   
-  E = params.encodingParams(algoT, k, decorrelatedSenseMaps)
+  E = params.encodingParams(algo, k, decorrelatedSenseMaps)
   
   W = WeightingOp(Complex{T}; weights=weights[j], rep=numChan)
   kdata = arrayType(multiCoilData(acqData, j, k, rep=l)) .* repeat(weights[j], numChan)
@@ -102,7 +102,7 @@ function (params::MultiCoilIterativeParameters)(
   EFull = ∘(W, E[j])
   EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
   
-  I = params.solverParams(algoT, kdata, EFull, EFullᴴEFull)
+  I = params.solverParams(algo, kdata, EFull, EFullᴴEFull)
   
   if isCircular(trajectory(acqData, j))
     circularShutter!(reshape(I, reconSize), 1.0)

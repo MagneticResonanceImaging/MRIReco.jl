@@ -90,7 +90,7 @@ function (params::MultiCoilIterativeParameters)(
 end
 
 function (params::MultiCoilIterativeParameters)(
-  algoT::Type{<:MultiCoilMultiEchoSubspaceReconstruction},
+  algo::MultiCoilMultiEchoSubspaceReconstruction,
   Ireco::Array{Complex{T}, 3},
   index::CartesianIndex{2}, 
   weights::AbstractVector,
@@ -105,7 +105,7 @@ function (params::MultiCoilIterativeParameters)(
   
   numChan = numChannels(acqData)
   
-  E = params.encodingParams(algoT, i, decorrelatedSenseMaps)
+  E = params.encodingParams(algo, i, decorrelatedSenseMaps)
   
   W = WeightingOp(Complex{T}; weights=weights, rep=numChan)
   kdata = arrayType(multiCoilMultiEchoData(acqData, i)) .* repeat(weights, numChan)
@@ -117,7 +117,7 @@ function (params::MultiCoilIterativeParameters)(
   EFull = ∘(W, E)
   EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
   
-  I = params.solverParams(algoT, kdata, EFull, EFullᴴEFull)
+  I = params.solverParams(algo, kdata, EFull, EFullᴴEFull)
   
   Ireco[:, i, l] = Array(I)
 end
