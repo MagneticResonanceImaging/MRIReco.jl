@@ -50,6 +50,7 @@ function MRIRecoContext(reconSize::NTuple{D, Int64}, eltype::Type{T}, arrayType:
   storageType = typeof(arrayType{Complex{T}}(undef, 0))  
   return MRIRecoContext(reconSize, arrayType, storageType, nothing)
 end
+MRIRecoContext(acqData::AcquisitionData{T}, arrayType::Type{arrT} = Array) where {T, arrT} = MRIRecoContext(encodingSize(acqData), acqData, arrayType)
 
 const MRIRECO_CONTEXT = ScopedValue{MRIRecoContext}()
 
