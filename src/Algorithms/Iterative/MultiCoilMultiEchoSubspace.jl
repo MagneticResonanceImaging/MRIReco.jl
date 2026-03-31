@@ -1,8 +1,23 @@
 export MultiCoilMultiEchoSubspaceReconstruction
 
 export AbstractSubspaceParameters
+
+"""
+    AbstractSubspaceParameters <: AbstractIterativeRecoParameters
+
+Abstract type for subspace-based reconstruction parameters.
+Subspace methods reconstruct images in a lower-dimensional subspace basis
+"""
 abstract type AbstractSubspaceParameters <: AbstractIterativeRecoParameters end
 
+"""
+    MultiCoilMultiEchoSubspaceReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
+
+Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly
+using a subspace basis. Different slices are reconstructed independently.
+
+Requires `SubspaceEncodingParameters` with the `basis` field set.
+"""
 @reconstruction mutable struct MultiCoilMultiEchoSubspaceReconstruction{
     P<:AbstractMultiCoilParameters, 
     C<:AbstractIterativeMRIRecoContextParameter{P}

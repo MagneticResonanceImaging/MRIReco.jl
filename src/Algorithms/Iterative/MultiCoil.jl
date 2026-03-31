@@ -22,16 +22,10 @@ end
 """
     MultiCoilIterativeParameters{E, W, S, C} <: AbstractMultiCoilParameters
 
-Parameters for multi-coil (SENSE) iterative MRI reconstruction.
-Reconstructs coil images jointly using sensitivity encoding.
+Performs a SENSE-type iterative image reconstruction. Different slices and contrasts images
+are reconstructed independently.
 
-# Type Parameters
-- `E` - Encoding parameters type
-- `W` - Weighting parameters type  
-- `S` - Solver parameters type
-- `C` - Coil parameters type
-
-# Fields
+# Arguments
 - `encodingParams::E` - Encoding operator parameters
 - `weightingParams::W` - Sampling weighting parameters
 - `solverParams::S` - Least squares solver parameters
@@ -47,22 +41,6 @@ Reconstructs coil images jointly using sensitivity encoding.
 
     # Finalization - reshapes and wraps result
     (params::MultiCoilIterativeParameters)(algo, Ireco) -> AxisArray
-
-# Usage
-```julia
-# Create the algorithm parameter
-algoParams = MultiCoilIterativeParameters(
-  encoding = EncodingParameters(),
-  weighting = DensityWeightingParameters(),
-  solver = LeastSquaresSolverParameter(solver=FISTA),
-  coilParams = CoilParameters(; senseMaps=smaps, noiseData=noiseData)
-)
-
-# Wrap in context (serial or threaded)
-reco = SerialIterativeMRIRecoContextParameter(; parameter=algoParams)
-# or
-reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, scheduler=DynamicScheduler())
-```
 """
 @parameter struct MultiCoilIterativeParameters{
     E <: AbstractMRIRecoEncodingParameters,

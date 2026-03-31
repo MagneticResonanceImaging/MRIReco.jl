@@ -1,5 +1,13 @@
 export MultiCoilMultiEchoReconstruction
 
+"""
+    MultiCoilMultiEchoReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
+
+Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly.
+Different slices are reconstructed independently.
+
+Uses `MultiCoilIterativeParameters` for parameters.
+"""
 @reconstruction mutable struct MultiCoilMultiEchoReconstruction{P<:AbstractMultiCoilParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
 end

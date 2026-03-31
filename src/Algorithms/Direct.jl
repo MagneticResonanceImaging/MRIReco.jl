@@ -1,7 +1,10 @@
 export AbstractDirectMRIRecoParameters
-"""
-    (params::AbstractDirectMRIRecoParameters)(algo::AbstractDirectMRIAlgorithm, image, acq, reconSize)
 
+"""
+    AbstractDirectMRIRecoParameters <: AbstractMRIRecoParameters
+
+Abstract type for direct (non-iterative) MRI reconstruction parameters.
+Performs a direct Fourier-based image reconstruction.
 """
 abstract type AbstractDirectMRIRecoParameters <: AbstractMRIRecoParameters end
 
@@ -11,6 +14,18 @@ export DirectMRIReco
 end
 
 export DirectMRIRecoParameter
+
+"""
+    DirectMRIRecoParameter{S, C, W, arrT} <: AbstractDirectMRIRecoParameters
+
+Performs a direct Fourier-based image reconstruction of AcquisitionData.
+
+# Arguments
+- `reconSize::S` - Size of image to reconstruct (defaults to encoding size if nothing)
+- `cmap::C` - Fieldmap for correction of off-resonance effects (optional)
+- `weights::W` - Sampling density of the trajectories in acqData (optional)
+- `arrayType::Type{arrT}` - Array type to use for reconstruction (defaults to Array)
+"""
 @parameter struct DirectMRIRecoParameter{
     S <: Union{Nothing, NTuple{D, Int64} where D},   # User supplied or default recon size
     C <: Union{Nothing, <:AbstractArray{<:Complex}}, # User supplied or no correction map

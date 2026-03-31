@@ -12,19 +12,13 @@ end
 """
     StandardIterativeParameters{E, W, S} <: AbstractStandardParameters
 
-Parameters for standard iterative MRI reconstruction.
-Only implements the algorithm-specific loop body - context is handled by 
-SerialIterativeMRIRecoContextParameter or ThreadedIterativeMRIRecoContextParameter.
+Performs iterative image reconstruction independently for the data of all coils,
+contrasts and slices.
 
-# Type Parameters
-- `E` - Encoding parameters type
-- `W` - Weighting parameters type  
-- `S` - Solver parameters type
-
-# Fields
-- `encoding::E` - Encoding operator parameters
-- `weighting::W` - Sampling weighting parameters
-- `solver::S` - Least squares solver parameters
+# Arguments
+- `encodingParams::E` - Encoding operator parameters
+- `weightingParams::W` - Sampling weighting parameters
+- `solverParams::S` - Least squares solver parameters
 
 # Callable Interface
 
@@ -36,21 +30,6 @@ SerialIterativeMRIRecoContextParameter or ThreadedIterativeMRIRecoContextParamet
 
     # Finalization - reshapes and wraps result
     (params::StandardIterativeParameters)(algo, Ireco) -> AxisArray
-
-# Usage
-```julia
-# Create the algorithm parameter
-algoParams = StandardIterativeParameters(
-  encoding = EncodingParameters(),
-  weighting = DensityWeightingParameters(),
-  solver = LeastSquaresSolverParameter(solver=FISTA)
-)
-
-# Wrap in context (serial or threaded)
-reco = SerialIterativeMRIRecoContextParameter(; parameter=algoParams)
-# or
-reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, scheduler=DynamicScheduler())
-```
 """
 @parameter struct StandardIterativeParameters{
     E <: AbstractMRIRecoEncodingParameters,
