@@ -8,6 +8,7 @@ using Reexport
 @reexport using AbstractImageReconstruction
 @reexport using AbstractImageReconstruction.StructUtils
 @reexport using AbstractImageReconstruction.ScopedValues
+using RelocatableFolders
 
 
 using ProgressMeter

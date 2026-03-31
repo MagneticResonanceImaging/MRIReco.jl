@@ -1,0 +1,34 @@
+_module = "MRIReco"
+_type = "RecoPlan{MultiCoilMultiEchoReconstruction}"
+
+[parameter]
+_module = "MRIReco"
+_type = "RecoPlan{ThreadedIterativeMRIRecoContextParameter}"
+
+    [parameter.parameter]
+    _module = "MRIReco"
+    _type = "RecoPlan{MultiCoilIterativeParameters}"
+
+        [parameter.parameter.weightingParams]
+        _module = "MRIReco"
+        _type = "RecoPlan{DensityWeightingParameters}"
+
+        [parameter.parameter.encodingParams]
+        _module = "MRIReco"
+        _type = "RecoPlan{EncodingParameters}"
+
+        [parameter.parameter.coilParams]
+        _module = "MRIReco"
+        _type = "RecoPlan{CoilParameters}"
+
+        [parameter.parameter.solverParams]
+        _module = "MRIReco"
+        _type = "RecoPlan{LeastSquaresSolverParameter}"
+
+            [parameter.parameter.solverParams.regParams]
+            _module = "MRIReco"
+            _type = "RecoPlan{RegularizationParameters}"
+
+                [parameter.parameter.solverParams.regParams.sparsityParams]
+                _module = "MRIReco"
+                _type = "RecoPlan{SimpleSparsityParameters}"
