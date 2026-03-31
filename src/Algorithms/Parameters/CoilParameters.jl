@@ -14,6 +14,7 @@ end
 CoilParameters(; senseMaps = nothing, noiseData = nothing) = CoilParameters(senseMaps, noiseData)
 CoilParameters(senseMaps::AbstractArray{T}, noiseData::Nothing) where T = CoilParameters(senseMaps, T[])
 CoilParameters(senseMaps::Nothing, noiseData::AbstractArray{T}) where T = CoilParameters(T[], noiseData)
+CoilParameters(::Nothing, ::Nothing) = throw(ArgumentError("Cannot construct CoilParameters with no senseMaps and no noiseData"))
 
 function (params::CoilParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm})
   acqData = ctx_acqData()
