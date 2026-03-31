@@ -41,7 +41,7 @@ ep = EncodingParameters(; correctionMap=fieldmap)
 encOps = ep(AbstractIterativeMRIRecoAlgorithm, 1)
 ```
 """
-@parameter struct EncodingParameters{C <: Union{AbstractArray{Complex}, Nothing}} <: AbstractMRIRecoEncodingParameters
+@parameter struct EncodingParameters{C <: Union{AbstractArray{<:Complex}, Nothing}} <: AbstractMRIRecoEncodingParameters
   correctionMap::C = nothing
   
   method::Union{String, Nothing} = nothing

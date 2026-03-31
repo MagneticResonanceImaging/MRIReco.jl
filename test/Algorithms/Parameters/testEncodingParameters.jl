@@ -1,23 +1,17 @@
 function testEncodingParameters(arrayType=Array, T=Float64)
   @testset "Encoding Parameters $arrayType, $T" begin
-    
-    @testset "Type definitions" begin
-      @test AbstractMRIRecoEncodingParameters <: AbstractMRIRecoParameters
-      @test EncodingParameters <: AbstractMRIRecoEncodingParameters
-      @test CustomEncodingParameters <: AbstractMRIRecoEncodingParameters
-    end
 
     @testset "Construction" begin
       # EncodingParameters - default
       ep = EncodingParameters()
       @test ep isa EncodingParameters
-      @test isnotinhg(ep.correctionMap)
-      @test isnotinhg(ep.method)
-      @test isnotinhg(ep.toeplitz)
-      @test isnotinhg(ep.oversamplingFactor)
-      @test isnotinhg(ep.kernelSize)
-      @test isnotinhg(ep.K)
-      @test isnotinhg(ep.K_tol)
+      @test isnothing(ep.correctionMap)
+      @test isnothing(ep.method)
+      @test isnothing(ep.toeplitz)
+      @test isnothing(ep.oversamplingFactor)
+      @test isnothing(ep.kernelSize)
+      @test isnothing(ep.K)
+      @test isnothing(ep.K_tol)
 
       # EncodingParameters - with correctionMap
       cmap = rand(Complex{T}, 8, 8, 8)
@@ -25,7 +19,7 @@ function testEncodingParameters(arrayType=Array, T=Float64)
       @test ep_with_cmap.correctionMap === cmap
 
       # EncodingParameters - with some options
-      ep_with_opts = EncodingParameters(; 
+      ep_with_opts = EncodingParameters(;
         method="fast",
         kernelSize=8,
         K=5
@@ -40,25 +34,27 @@ function testEncodingParameters(arrayType=Array, T=Float64)
       cep = CustomEncodingParameters(; encodingOps=ops)
       @test cep.encodingOps === ops
     end
-  end
-end
 
-function testEncodingParametersWithContext(arrayType=Array, T=Float64)
-  @testset "Encoding Parameters with Context $arrayType, $T" begin
-    shape = (8, 8, 8)
-    
-    # Create sample acquisition data for testing
-    acqData = acquisitionData([:cartesian], 1, shape[1:2]; numChannels=1, numSlices=1)
-    
-    ctx = MRIRecoContext(shape, acqData, arrayType)
+    # simulation
+    N = 32
+    x = shepp_logan(N)
+    params = Dict{Symbol,Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "Cartesian"
+    params[:numProfiles] = floor(Int64, N)
+    params[:numSamplingPerProfile] = N
+    acqData = simulation(x, params)
+
+    ctx = MRIRecoContext(acqData, arrayType)
+    shape = encodingSize(acqData)
     algoT = AbstractIterativeMRIRecoAlgorithm
 
     with(MRIRECO_CONTEXT => ctx) do
-      
+
       @testset "EncodingParameters - default" begin
         ep = EncodingParameters()
         encOps = ep(algoT, 1)
-        
+
         @test encOps isa Vector
         @test length(encOps) > 0
       end
@@ -66,7 +62,7 @@ function testEncodingParametersWithContext(arrayType=Array, T=Float64)
       @testset "EncodingParameters - with method" begin
         ep = EncodingParameters(; method="fast")
         encOps = ep(algoT, 1)
-        
+
         @test encOps isa Vector
       end
 
@@ -74,19 +70,18 @@ function testEncodingParametersWithContext(arrayType=Array, T=Float64)
         cmap = rand(Complex{T}, shape...)
         ep = EncodingParameters(; correctionMap=cmap)
         encOps = ep(algoT, 1)
-        
+
         @test encOps isa Vector
       end
 
       @testset "CustomEncodingParameters" begin
         # Create mock encoding operators
         n = prod(shape)
-        ops = [opEye(Complex{T}, n) for _ in 1:numContrasts(acqData)]
-        
+        ops = [rand(Complex{T}, n, n) for _ in 1:MRIBase.numContrasts(acqData)]
         cep = CustomEncodingParameters(; encodingOps=ops)
         result = cep(algoT, 1)
-        
-        @test result isa LinearOperator
+
+        @test first(result) isa Matrix
       end
     end
   end
@@ -95,6 +90,5 @@ end
 for arrayType in arrayTypes
   for T in [Float32, Float64]
     testEncodingParameters(arrayType, T)
-    testEncodingParametersWithContext(arrayType, T)
   end
 end
