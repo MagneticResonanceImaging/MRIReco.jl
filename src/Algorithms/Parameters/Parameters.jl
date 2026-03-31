@@ -1,6 +1,7 @@
 include("SolverParameters.jl")
 include("WeightingParameters.jl")
 include("EncodingParameters.jl")
+include("CoilParameters.jl")
 
 export AbstractIterativeRecoParameters
 
@@ -14,43 +15,34 @@ Subtypes must implement callable methods for use with
 # Required Callable Interface
 
 ## Allocation
-    (params)(algo, reconSize) -> (Ireco, indices)
+    (params)(algo, reconSize) -> (Ireco, indices, weights, extra...)
 
-Allocates the output array and returns iteration indices.
+Allocates the output array and returns iteration indices and weights.
 - `algo` - Algorithm (type)
 - `reconSize::NTuple{D, Int64}` - Reconstruction size
-- Returns a tuple of `(Ireco, indices)` where:
-  - `Ireco::Array{Complex{T}, 5}` - Output image array
+- Returns a tuple of `(Ireco, indices, extra...)` where:
+  - `Ireco::Array{Complex{T}}` - Output image array
   - `indices` - CartesianIndices for iteration
+  - `extra...` - Optional additional data (e.g., decorrelatedSenseMaps, L_inv for coil recon)
 
 ## Loop Body
-    (params)(algo, Ireco, index, weights)
-    (params)(algo, Ireco, index)
+    (params)(algo, Ireco, index, extra...)
 
 Called once per iteration index. Writes results to Ireco.
 - `algo` - Algorithm (type)
 - `Ireco` - Output array to write to
 - `index::CartesianIndex` - Current index (rep, slice)
-- `weights` - Pre-computed weights from weighting parameter, optional if getWeighting is provided
+- `extra...` - Optional additional data from allocation
 
 ## Finalization
     (params)(algo, Ireco) -> result
 
 Finalizes and returns the reconstruction result.
 - `algo` - Algorithm (type)
-- `Ireco::Array{Complex{T}, 5}` - The filled output array
+- `Ireco::Array{Complex{T}}` - The filled output array
 - Returns final result (typically AxisArray)
-
-# Optional Accessor
-
-    getWeighting(params) -> weighting::AbstractMRIRecoWeightingParameters
-
-Returns the weighting parameter used to compute weights for the loop-body.
-The context parameter calls `getWeighting(params)` to get actual weights.
 """
 abstract type AbstractIterativeRecoParameters <: AbstractMRIRecoParameters end
-
-getWeighting(params::AbstractIterativeRecoParameters) = nothing
 
 include("IterativeContextParameters.jl")
 

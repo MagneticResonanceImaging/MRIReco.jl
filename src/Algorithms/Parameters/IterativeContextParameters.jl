@@ -102,16 +102,12 @@ function (params::SerialIterativeMRIRecoContextParameter{P})(algo::AbstractItera
   end
   
   with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
-    # Allocation - call algorithm parameter (returns Ireco, indices)
-    Ireco, indices = params.parameter(algo, reconSize)
-    
-    # Get weights using getWeighting accessor
-    weighting = getWeighting(params.parameter)
-    weights = weighting(algo)
+    # Allocation - call algorithm parameter (returns Ireco, indices, weights, extra...)
+    Ireco, indices, weights, extra... = params.parameter(algo, reconSize)
     
     # Loop over indices
     for index in indices
-      params.parameter(algo, Ireco, index, weights)
+      params.parameter(algo, Ireco, index, weights, extra...)
     end
     
     # Finalization - call algorithm parameter
@@ -131,17 +127,13 @@ function (params::ThreadedIterativeMRIRecoContextParameter{P})(algo::AbstractIte
   sched = get_scheduler(params.scheduler, params.arrayType)
   
   with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
-    # Allocation - call algorithm parameter (returns Ireco, indices)
-    Ireco, indices = params.parameter(algo, reconSize)
-    
-    # Get weights using getWeighting accessor
-    weighting = getWeighting(params.parameter)
-    weights = weighting(algo)
+    # Allocation - call algorithm parameter (returns Ireco, indices, weights, extra...)
+    Ireco, indices, weights, extra... = params.parameter(algo, reconSize)
     
     # Loop over indices with @tasks
     @tasks for index in indices
       @set scheduler = sched
-      params.parameter(algo, Ireco, index, weights)
+      params.parameter(algo, Ireco, index, weights, extra...)
     end
     
     # Finalization - call algorithm parameter

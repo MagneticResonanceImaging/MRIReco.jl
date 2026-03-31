@@ -58,11 +58,11 @@ Reconstructs all echoes jointly using a combined operator.
 
 # Callable Interface
 
-    # Allocation - allocates output array and returns iteration indices
-    (params::MultiEchoIterativeParameters)(algo, reconSize) -> (Ireco, indices)
+    # Allocation - allocates output array and returns iteration indices and weights
+    (params::MultiEchoIterativeParameters)(algo, reconSize) -> (Ireco, indices, weights)
 
     # Loop body - called per index with weights and output array
-    (params::MultiEchoIterativeParameters)(algo, index, weights, Ireco)
+    (params::MultiEchoIterativeParameters)(algo, Ireco, index, weights)
 
     # Finalization - reshapes and wraps result
     (params::MultiEchoIterativeParameters)(algo, Ireco) -> AxisArray
@@ -80,9 +80,6 @@ algoParams = MultiEchoIterativeParameters(
 reco = SerialIterativeMRIRecoContextParameter(; parameter=algoParams)
 # or
 reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, scheduler=DynamicScheduler())
-
-# Run reconstruction
-image = reco(acqData)
 ```
 """
 @parameter struct MultiEchoIterativeParameters{
@@ -94,8 +91,6 @@ image = reco(acqData)
   weightingParams::W
   solverParams::S
 end
-
-getWeighting(params::MultiEchoIterativeParameters) = params.weightingParams
 
 function (params::MultiEchoIterativeParameters)(
   ::MultiEchoReconstruction, 
@@ -112,7 +107,9 @@ function (params::MultiEchoIterativeParameters)(
   Ireco = zeros(Complex{T}, prod(reconSize) * numContr, numChan, numSl, numRep)
   indices = CartesianIndices((numRep, numSl))
   
-  return (Ireco, indices)
+  weights = params.weightingParams(MultiEchoReconstruction)
+  
+  return (Ireco, indices, weights)
 end
 
 function (params::MultiEchoIterativeParameters)(

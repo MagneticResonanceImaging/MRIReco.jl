@@ -1,6 +1,5 @@
 export StandardReconstruction
 export StandardIterativeParameters
-export getWeighting
 
 export AbstractStandardParameters
 
@@ -29,11 +28,11 @@ SerialIterativeMRIRecoContextParameter or ThreadedIterativeMRIRecoContextParamet
 
 # Callable Interface
 
-    # Allocation - allocates output array and returns iteration indices
-    (params::StandardIterativeParameters)(algo, reconSize) -> (Ireco, indices)
+    # Allocation - allocates output array and returns iteration indices and weights
+    (params::StandardIterativeParameters)(algo, reconSize) -> (Ireco, indices, weights)
 
     # Loop body - called per index with weights and output array
-    (params::StandardIterativeParameters)(algo, index, weights, Ireco)
+    (params::StandardIterativeParameters)(algo, Ireco, index, weights)
 
     # Finalization - reshapes and wraps result
     (params::StandardIterativeParameters)(algo, Ireco) -> AxisArray
@@ -51,9 +50,6 @@ algoParams = StandardIterativeParameters(
 reco = SerialIterativeMRIRecoContextParameter(; parameter=algoParams)
 # or
 reco = ThreadedIterativeMRIRecoContextParameter(; parameter=algoParams, scheduler=DynamicScheduler())
-
-# Run reconstruction
-image = reco(acqData)
 ```
 """
 @parameter struct StandardIterativeParameters{
@@ -65,9 +61,6 @@ image = reco(acqData)
   weightingParams::W
   solverParams::S
 end
-
-# Accessor for weighting parameter
-getWeighting(params::StandardIterativeParameters) = params.weightingParams
 
 function (params::StandardIterativeParameters)(
   algoT::Type{<:StandardReconstruction}, 
@@ -84,7 +77,9 @@ function (params::StandardIterativeParameters)(
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
   indices = CartesianIndices((numRep, numSl))
   
-  return (Ireco, indices)
+  weights = params.weightingParams(algoT)
+  
+  return (Ireco, indices, weights)
 end
 
 function (params::StandardIterativeParameters)(
