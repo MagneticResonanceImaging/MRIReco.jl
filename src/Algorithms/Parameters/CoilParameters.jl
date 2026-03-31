@@ -3,14 +3,17 @@ export CoilParameters
 
 abstract type AbstractCoilParameters <: AbstractMRIRecoParameters end
 
-@parameter struct CoilParameters{
+@parameter constructor = false struct CoilParameters{
     T,
     S <: AbstractArray{Complex{T}},
     N <: AbstractArray{Complex{T}}
   } <: AbstractCoilParameters
-  senseMaps::S = ComplexF64[]
-  noiseData::N = ComplexF64[]
+  senseMaps::S
+  noiseData::N
 end
+CoilParameters(; senseMaps = nothing, noiseData = nothing) = CoilParameters(senseMaps, noiseData)
+CoilParameters(senseMaps::AbstractArray{T}, noiseData::Nothing) where T = CoilParameters(senseMaps, T[])
+CoilParameters(senseMaps::Nothing, noiseData::AbstractArray{T}) where T = CoilParameters(T[], noiseData)
 
 function (params::CoilParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm})
   acqData = ctx_acqData()
