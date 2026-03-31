@@ -6,7 +6,7 @@ export MultiCoilIterativeParameters
 abstract type AbstractMultiCoilParameters <: AbstractIterativeRecoParameters end
 
 @reconstruction mutable struct MultiCoilReconstruction{P<:AbstractMultiCoilParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
-    @parameter parameter::C
+  @parameter parameter::C
 end
 
 function (ep::EncodingParameters)(::Type{<:MultiCoilReconstruction}, slice::Int, decorrelatedSenseMaps)
