@@ -43,7 +43,6 @@ end
 function (sparsity::AbstractSparsityParameters)(algo::MultiCoilMultiEchoSubspaceReconstruction, numTerms::Int64)
   trafos = sparsity(AbstractIterativeMRIRecoAlgorithm, numTerms)
   acqData = ctx_acqData()
-  numContr = numContrasts(acqData)
   
   numBasis = algo.numBasis
   

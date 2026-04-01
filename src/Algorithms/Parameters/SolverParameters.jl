@@ -192,19 +192,16 @@ RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)],
                          sparsity=["Wavelet", "nothing"])
 ```
 """
-@parameter constructor = false struct RegularizationParameters{
+@parameter struct RegularizationParameters{
     R <: Union{Nothing, AbstractRegularization, Vector{<:AbstractRegularization}},
     S <: AbstractSparsityParameters
 } <: AbstractImageReconstructionParameters
-  reg::R
-  sparsityParams::S
+  reg::R = nothing
+  sparsityParams::S = SimpleSparsityParameters()
 end
-RegularizationParameters(; reg = nothing, sparsityParams = "") = RegularizationParameters(reg, sparsityParams)
-RegularizationParameters(reg, sparsity::Union{String, Nothing}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
-RegularizationParameters(reg::Vector{<:AbstractRegularization}, sparsity::Vector{<:Union{String, Nothing}}) = RegularizationParameters(reg, SimpleSparsityParameters(sparsity))
 
 """
-    (params::RegularizationParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}) -> reg | (reg, regTrafo)
+    (params::RegularizationParameters)(::AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}) -> reg | (reg, regTrafo)
 
 Transform the regularization parameters for a specific solver type.
 
@@ -223,7 +220,7 @@ Transform the regularization parameters for a specific solver type.
 - Gets reconSize from MRIRECO_CONTEXT ScopedValue
 """
 function (params::RegularizationParameters)(
-    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
+    algo::AbstractIterativeMRIRecoAlgorithm,
     ::Type{SL}, 
 ) where SL <: AbstractLinearSolver
   reg = params.reg
@@ -237,8 +234,8 @@ function (params::RegularizationParameters)(
     reg
   end
 
-  trafos = params.sparsityParams(algoT, length(reg_vec))
-  return params(algoT, reg_vec, trafos, SL)
+  trafos = params.sparsityParams(algo, length(reg_vec))
+  return params(algo, reg_vec, trafos, SL)
 end
 
 function (params::RegularizationParameters)(
@@ -413,12 +410,12 @@ x = params(IterativeMRIReco, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
 ```
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
-    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
+    algo::AbstractIterativeMRIRecoAlgorithm,
     b::AbstractVector, 
     A, 
     AHA = normalOperator(A)
 ) where {SL <: AbstractLinearSolver, R, T}
-  solver = params(algoT, A, AHA)
+  solver = params(algo, A, AHA)
   return solve!(solver, b)
 end
 
@@ -449,14 +446,14 @@ x2 = solve!(solver, kdata2)
 ```
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
-    algoT::Type{<:AbstractIterativeMRIRecoAlgorithm},
+    algo::AbstractIterativeMRIRecoAlgorithm,
     A, 
     AHA = normalOperator(A)
 ) where {SL <: AbstractLinearSolver, R, T}
   
   # Get regularization - returns reg or (reg, regTrafo)
   solver = params.solver
-  reg_result = params.regParams(algoT, solver)
+  reg_result = params.regParams(algo, solver)
   if reg_result isa Tuple
     reg, regTrafo = reg_result
   else
