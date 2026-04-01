@@ -103,11 +103,11 @@ function (params::SerialIterativeMRIRecoContextParameter{P})(algo::AbstractItera
   
   with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
     # Allocation - call algorithm parameter (returns Ireco, indices, weights, extra...)
-    Ireco, indices, weights, extra... = params.parameter(algo, reconSize)
+    Ireco, indices, extra... = params.parameter(algo, reconSize)
     
     # Loop over indices
     for index in indices
-      params.parameter(algo, Ireco, index, weights, extra...)
+      params.parameter(algo, Ireco, index, extra...)
     end
     
     # Finalization - call algorithm parameter
