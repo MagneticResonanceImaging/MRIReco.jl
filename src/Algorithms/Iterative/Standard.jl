@@ -42,7 +42,7 @@ contrasts and slices.
 end
 
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:StandardReconstruction}, 
+  algo::StandardReconstruction, 
   reconSize::NTuple{D, Int64}
 ) where D
   acqData = ctx_acqData()
@@ -56,13 +56,13 @@ function (params::StandardIterativeParameters)(
   Ireco = zeros(Complex{T}, prod(reconSize), numSl, numContr, numChan, numRep)
   indices = CartesianIndices((numRep, numSl))
   
-  weights = params.weightingParams(algoT)
+  weights = params.weightingParams(algo)
   
   return (Ireco, indices, weights)
 end
 
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:StandardReconstruction}, 
+  algo::StandardReconstruction, 
   Ireco::Array{Complex{T}, 5},
   index::CartesianIndex{2}, 
   weights
@@ -76,7 +76,7 @@ function (params::StandardIterativeParameters)(
   numContr = numContrasts(acqData)
   numChan = numChannels(acqData)
   
-  F = params.encodingParams(algoT, k)
+  F = params.encodingParams(algo, k)
   
   for j in 1:numContr
     W = WeightingOp(Complex{T}; weights=weights[j])
@@ -85,7 +85,7 @@ function (params::StandardIterativeParameters)(
       EFull = ProdOp(W, F[j])
       EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
       
-      I = params.solverParams(algoT, kdata, EFull, EFullᴴEFull)
+      I = params.solverParams(algo, kdata, EFull, EFullᴴEFull)
       
       if isCircular(trajectory(acqData, j))
         circularShutter!(reshape(I, reconSize), 1.0)
@@ -97,7 +97,7 @@ function (params::StandardIterativeParameters)(
 end
 
 function (params::StandardIterativeParameters)(
-  algoT::Type{<:StandardReconstruction}, 
+  algo::StandardReconstruction, 
   Ireco::Array{Complex{T}, 5}
 ) where T
   acqData = ctx_acqData()
