@@ -9,7 +9,7 @@ function defaultRecoParams()
   params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
-  params[:kwargWarning] = false
+  #params[:kwargWarning] = false
 
   return params
 end

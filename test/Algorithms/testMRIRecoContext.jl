@@ -31,6 +31,15 @@
       @test ctx_storageType() == Vector{ComplexF64}
       @test ctx_acqData() === acqData
     end
+
+    # 2-arg version
+    ctx = MRIRecoContext(acqData, Array)
+    with(MRIRECO_CONTEXT => ctx) do
+      @test ctx_reconSize() == encodingSize(acqData)
+      @test ctx_arrayType() == Array
+      @test ctx_storageType() == Vector{ComplexF64}
+      @test ctx_acqData() === acqData
+    end
   end
 
   @testset "Default values" begin

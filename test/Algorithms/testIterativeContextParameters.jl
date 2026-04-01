@@ -77,7 +77,8 @@ end
 function testIterativeContextParametersSerial()
   @testset "Serial Iterative Context" begin
     # Create acquisition data
-    x = shepp_logan(32)
+    N = 32
+    x = shepp_logan(N)
 
     # simulation
     params = Dict{Symbol, Any}()
@@ -89,6 +90,7 @@ function testIterativeContextParametersSerial()
     acqData = simulation(x, params)
     numSl = numSlices(acqData)
     numRep = numRepetitions(acqData)
+    shape = encodingSize(acqData)
     
     # Create test parameters
     params = TestIterativeParameters()
@@ -128,7 +130,8 @@ end
 function testIterativeContextParametersThreaded()
   @testset "Threaded Iterative Context" begin
     # Create acquisition data
-    x = shepp_logan(32)
+    N = 32
+    x = shepp_logan(N)
 
     # simulation
     params = Dict{Symbol, Any}()
@@ -140,6 +143,7 @@ function testIterativeContextParametersThreaded()
     acqData = simulation(x, params)
     numSl = numSlices(acqData)
     numRep = numRepetitions(acqData)
+    shape = encodingSize(acqData)
 
     # Test different schedulers
     schedulers = [
