@@ -11,7 +11,7 @@ jobs:
     # NOTHING BELOW HAS CHANGED
     runs-on: ubuntu-latest
     steps:
-      - uses: JuliaRegistries/TagBot@bdfeaa1ff40e0ea449f9539aa21b2e587431ed49 # v1.24.6
+      - uses: JuliaRegistries/TagBot@204066965d6267cb476105b71fedfb3442b2e85d # v1.25.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ssh: ${{ secrets.DOCUMENTER_KEY }}
