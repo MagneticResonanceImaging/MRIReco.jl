@@ -59,7 +59,8 @@ function testCoilParameters(arrayType=Array, T=Float64)
           L_inv, senseMapsUnCorr = cp(AbstractIterativeMRIRecoAlgorithm)
 
           @test isnothing(L_inv)
-          @test senseMapsUnCorr === smaps
+          @test isapprox(senseMapsUnCorr, arrayType(smaps))
+          @test senseMapsUnCorr isa arrayType
         end
 
         @testset "With noiseData only - creates decorrelation" begin
@@ -87,6 +88,7 @@ function testCoilParameters(arrayType=Array, T=Float64)
           @test L_inv !== nothing
           @test !isempty(senseMapsUnCorr)
           @test size(senseMapsUnCorr) == size(smaps)
+          @test senseMapsUnCorr isa arrayType
         end
       end
     end

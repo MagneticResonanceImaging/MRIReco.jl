@@ -23,7 +23,7 @@ function (params::CoilParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm})
 
   red3d = ndims(trajectory(acqData, 1)) == 2 && length(reconSize) == 3
 
-  senseMaps = params.senseMaps
+  senseMaps = arrayType(params.senseMaps)
   if red3d && !isempty(senseMaps)
     senseMaps = permutedims(senseMaps, [2, 3, 1, 4])
   end
