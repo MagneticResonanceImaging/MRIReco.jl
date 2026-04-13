@@ -1,5 +1,5 @@
 export AbstractIterativeMRIRecoContextParameter
-export SerialIterativeMRIRecoContextParameter, ThreadedIterativeMRIRecoContextParameter
+export SerialIterativeMRIRecoContextParameter, ThreadedIterativeMRIRecoContextParameter, MultiGPUIterativeMRIRecoContextParameter
 
 """
     AbstractIterativeMRIRecoContextParameter{P} <: AbstractMRIRecoParameters
@@ -152,7 +152,6 @@ Uses `@tasks` for parallel execution.
     P <: AbstractIterativeRecoParameters,
     RS <: Union{Nothing, NTuple{D, Int64} where D},
     AT <: AbstractArray,
-    S <: Union{Nothing, Symbol, OhMyThreads.Scheduler}
 } <: AbstractIterativeMRIRecoContextParameter{P}
   reconSize::RS = nothing
   arrayType::Type{AT}
