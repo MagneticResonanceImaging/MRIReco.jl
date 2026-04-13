@@ -19,17 +19,27 @@ RelocatableFolders = "05181044-ff0b-4ac5-8273-598c1e38db00"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
 
 [extensions]
 MRIRecoGPUArraysExt = "GPUArrays"
+MRIRecoAMDGPUExt = "AMDGPU"
+MRIRecoCUDAExt = "CUDA"
+MRIRecoMetalExt = "Metal"
+
 
 [compat]
 AbstractImageReconstruction = "0.6.5"
+AMDGPU = "0.9, 1, 2"
 AxisArrays = "0.4.6"
+CUDA = "3, 4, 5"
 FFTW = "1.0"
 GPUArrays = "8, 9, 10, 11"
 ImageUtils = "0.2.8"
+Metal = "1"
 MRIBase = "0.3, 0.4"
 MRIOperators = "0.3, 0.4"
 OhMyThreads = "0.8"

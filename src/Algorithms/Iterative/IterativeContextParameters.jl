@@ -140,3 +140,50 @@ function (params::ThreadedIterativeMRIRecoContextParameter{P})(algo::AbstractIte
     return params.parameter(algo, Ireco)
   end
 end
+
+
+"""
+    ThreadedIterativeMRIRecoContextParameter(; reconSize, arrayType, deviceIDs, parameter) <: AbstractIterativeMRIRecoContextParameter{P}
+
+Threaded iterative reconstruction context parameter using OhMyThreads.
+Uses `@tasks` for parallel execution.
+"""
+@parameter struct MultiGPUIterativeMRIRecoContextParameter{
+    P <: AbstractIterativeRecoParameters,
+    RS <: Union{Nothing, NTuple{D, Int64} where D},
+    AT <: AbstractArray,
+    S <: Union{Nothing, Symbol, OhMyThreads.Scheduler}
+} <: AbstractIterativeMRIRecoContextParameter{P}
+  reconSize::RS = nothing
+  arrayType::Type{AT}
+  deviceIDs::Vector{Int64}
+  parameter::P
+end
+
+set_device!(T::Type{<:AbstractArray}, index) = error("MultiGPU reconstructions are not implemented for arrayType $T")
+
+# MultiGPU implementation
+function (params::MultiGPUIterativeMRIRecoContextParameter{P})(algo::AbstractIterativeMRIRecoAlgorithm, acqData::AcquisitionData) where P <: AbstractIterativeRecoParameters
+  reconSize = setupIterativeReconSize(acqData, params.reconSize)
+  
+  encDims = ndims(trajectory(acqData))
+  if encDims != length(reconSize)
+    error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
+  end
+  
+  sched = DynamicScheduler()
+  
+  with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
+    Ireco, indices, weights, extra... = params.parameter(algo, reconSize)
+    
+    pairs = zip(indices, Iterators.cycle(params.deviceIDs))
+
+    @tasks for (index, deviceID) in pairs
+      @set scheduler = sched
+      set_device!(params.arrayType, deviceID)
+      params.parameter(algo, Ireco, index, weights, extra...)
+    end
+    
+    return params.parameter(algo, Ireco)
+  end
+end
