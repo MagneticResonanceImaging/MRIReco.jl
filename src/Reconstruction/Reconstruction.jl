@@ -34,27 +34,8 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   # load reconstruction parameters
   recoParams = merge(defaultRecoParams(), recoParams)
 
-  # iterative reco
-  if recoParams[:reco] == "direct"
-    reconSize, weights, cmap, arrayType, S = setupDirectReco(acqData, recoParams)
-    return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap, arrayType, S)
-  else
-    setupIterativeReco!(acqData, recoParams)
-    recoParams[:reconSize] = recoParams[:reconSize][1:encodingDims]
-    if recoParams[:reco] == "standard"
-        return reconstruction_simple(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiEcho"
-        return reconstruction_multiEcho(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoil"
-        return reconstruction_multiCoil(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoilMultiEcho"
-        return reconstruction_multiCoilMultiEcho(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoilMultiEchoSubspace"
-      return reconstruction_multiCoilMultiEcho_subspace(acqData; recoParams...)
-    else
-        @error "reco model $(recoParams[:reco]) not found"
-    end
-  end
+  plan = setupPlanReco!(acqData, recoParams)
+  return reconstruct(build(plan), acqData)
 end
 
 """
