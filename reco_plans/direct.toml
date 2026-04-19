@@ -1,0 +1,6 @@
+_module = "MRIReco"
+_type = "RecoPlan{DirectMRIReco}"
+
+[parameter]
+_module = "MRIReco"
+_type = "RecoPlan{DirectMRIRecoParameter}"
