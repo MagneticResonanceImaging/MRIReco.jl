@@ -190,8 +190,8 @@ function GeneralParameters(xdoc::XMLDocument)
     # waveformInformation
     e = get_elements_by_tagname(LightXML.root(xdoc),"waveformInformation")
     if !isempty(e)
-      addToDict!(params, e[1], "waveformName", Float64)
-      addToDict!(params, e[1], "waveformType", Float64)
+      addToDict!(params, e[1], "waveformName", String)
+      addToDict!(params, e[1], "waveformType", String)
 
       if !isempty(e[1]["userParameters"])
           d = e[1]["userParameters"]

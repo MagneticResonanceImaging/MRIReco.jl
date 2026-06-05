@@ -49,6 +49,21 @@ h5open(filenameCopy) do fd
   end
 end
 
+# Test header with waveform
+
+let xml = """<?xml version="1.0"?>
+<ismrmrdHeader xmlns="http://www.ismrm.org/ISMRMRD/xsd"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <waveformInformation>
+    <waveformName>ecg_trigger</waveformName>
+    <waveformType>ECG</waveformType>
+  </waveformInformation>
+</ismrmrdHeader>"""
+  p = MRIFiles.GeneralParameters(xml)
+  @test p["waveformName"] == "ecg_trigger"
+  @test p["waveformType"] == "ECG"
+end
+
 # test reconstructing the data
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
@@ -81,10 +96,12 @@ save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
 io = IOBuffer()
-write(IOBuffer(), acq.profiles[1].head)
+write(io, acq.profiles[1].head)
 ioCopy = IOBuffer()
-write(IOBuffer(), acqCopy.profiles[1].head)
-@test io.data == ioCopy.data
+write(ioCopy, acqCopy.profiles[1].head)
+seekstart(io)
+seekstart(ioCopy)
+@test read(io) == read(ioCopy)
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
