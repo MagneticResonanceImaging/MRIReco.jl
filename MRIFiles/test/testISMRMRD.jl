@@ -49,19 +49,30 @@ h5open(filenameCopy) do fd
   end
 end
 
-# Test header with waveform
+# Test waveformInformation: single entry, multiple entries, and round-trip
 
 let xml = """<?xml version="1.0"?>
 <ismrmrdHeader xmlns="http://www.ismrm.org/ISMRMRD/xsd"
                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <waveformInformation>
     <waveformName>ecg_trigger</waveformName>
-    <waveformType>ECG</waveformType>
+    <waveformType>ecg</waveformType>
+  </waveformInformation>
+  <waveformInformation>
+    <waveformName>resp</waveformName>
+    <waveformType>respiratory</waveformType>
   </waveformInformation>
 </ismrmrdHeader>"""
   p = MRIFiles.GeneralParameters(xml)
-  @test p["waveformName"] == "ecg_trigger"
-  @test p["waveformType"] == "ECG"
+  @test length(p["waveformInformation"]) == 2
+  @test p["waveformInformation"][1]["waveformName"] == "ecg_trigger"
+  @test p["waveformInformation"][1]["waveformType"] == "ecg"
+  @test p["waveformInformation"][2]["waveformName"] == "resp"
+  @test p["waveformInformation"][2]["waveformType"] == "respiratory"
+  # round-trip through XML serialisation
+  xml2 = MRIFiles.GeneralParametersToXML(p)
+  p2 = MRIFiles.GeneralParameters(xml2)
+  @test p2["waveformInformation"] == p["waveformInformation"]
 end
 
 # test reconstructing the data
