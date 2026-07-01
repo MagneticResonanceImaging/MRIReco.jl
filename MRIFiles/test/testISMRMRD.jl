@@ -49,6 +49,32 @@ h5open(filenameCopy) do fd
   end
 end
 
+# Test waveformInformation: single entry, multiple entries, and round-trip
+
+let xml = """<?xml version="1.0"?>
+<ismrmrdHeader xmlns="http://www.ismrm.org/ISMRMRD/xsd"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <waveformInformation>
+    <waveformName>ecg_trigger</waveformName>
+    <waveformType>ecg</waveformType>
+  </waveformInformation>
+  <waveformInformation>
+    <waveformName>resp</waveformName>
+    <waveformType>respiratory</waveformType>
+  </waveformInformation>
+</ismrmrdHeader>"""
+  p = MRIFiles.GeneralParameters(xml)
+  @test length(p["waveformInformation"]) == 2
+  @test p["waveformInformation"][1]["waveformName"] == "ecg_trigger"
+  @test p["waveformInformation"][1]["waveformType"] == "ecg"
+  @test p["waveformInformation"][2]["waveformName"] == "resp"
+  @test p["waveformInformation"][2]["waveformType"] == "respiratory"
+  # round-trip through XML serialisation
+  xml2 = MRIFiles.GeneralParametersToXML(p)
+  p2 = MRIFiles.GeneralParameters(xml2)
+  @test p2["waveformInformation"] == p["waveformInformation"]
+end
+
 # test reconstructing the data
 IrecoCopy = reconstruction(AcquisitionData(acqCopy), params)
 
@@ -81,10 +107,12 @@ save(fCopy, acq)
 acqCopy = RawAcquisitionData(f)
 
 io = IOBuffer()
-write(IOBuffer(), acq.profiles[1].head)
+write(io, acq.profiles[1].head)
 ioCopy = IOBuffer()
-write(IOBuffer(), acqCopy.profiles[1].head)
-@test io.data == ioCopy.data
+write(ioCopy, acqCopy.profiles[1].head)
+seekstart(io)
+seekstart(ioCopy)
+@test read(io) == read(ioCopy)
 @test acqCopy.profiles[1].traj == acq.profiles[1].traj
 @test acqCopy.profiles[1].data == acq.profiles[1].data
 
