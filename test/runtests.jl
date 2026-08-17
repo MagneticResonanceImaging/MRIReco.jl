@@ -1,4 +1,4 @@
-using MRIReco, MRISampling, MRISimulation, FFTW
+using MRIReco, MRISampling, MRISimulation, MRIReco.FFTW
 using MRIReco.RegularizedLeastSquares
 using Test
 using LinearAlgebra
@@ -16,4 +16,5 @@ arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
   include("testIO.jl")
   include("testReconstruction.jl")
   include("testSpecificApplications.jl")
+  include("Algorithms/testAlgorithms.jl")
 end
