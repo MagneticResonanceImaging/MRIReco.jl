@@ -27,6 +27,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
                               , scheduler = scheduler(arrayType)
                               , params...) where {D, T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_simple)
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
@@ -108,6 +109,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
                               , scheduler = scheduler(arrayType)
                               , params...) where {D , T <: AbstractFloat, vecTc <: AbstractVector{Complex{T}}}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_multiEcho)
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
@@ -194,6 +196,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
                               , scheduler = scheduler(arrayType)
                               , params...) where {D , T, vecTc <: AbstractVector{Complex{T}}}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_multiCoil)
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
@@ -283,6 +286,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
                               , scheduler = scheduler(arrayType)
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_multiCoilMultiEcho)
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
@@ -374,6 +378,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
                               , scheduler = scheduler(arrayType)
                               , params...) where {D, T, vecTc <: AbstractVector{Complex{T}}}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_multiCoilMultiEcho_subspace)
   encDims = ndims(trajectory(acqData))
   if encDims!=length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
