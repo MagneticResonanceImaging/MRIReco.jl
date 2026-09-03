@@ -11,7 +11,7 @@ NFFTTools = "7424e34d-94f7-41d6-98a0-85abaf1b6c91"
 [compat]
 julia = "1.6"
 AbstractNFFTs = "0.8, 0.9"
-NFFTTools = "0.2.4"
+NFFTTools = "0.2.4, 0.3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
