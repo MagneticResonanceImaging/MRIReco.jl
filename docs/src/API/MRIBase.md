@@ -4,9 +4,19 @@ MRIBase defines the data types that the other packages build on: raw data organi
 
 ## Raw Data
 
+```@docs
+MRIBase.RawAcquisitionData
+MRIBase.Profile
+MRIBase.AcquisitionHeader
+MRIBase.EncodingCounters
+MRIBase.RawAcquisitionData(::AcquisitionData)
+MRIBase.AcquisitionData(::RawAcquisitionData)
+```
+
 ```@autodocs
 Modules = [MRIBase]
 Pages = ["Datatypes/RawAcqData.jl"]
+Order = [:function]
 Private = false
 ```
 

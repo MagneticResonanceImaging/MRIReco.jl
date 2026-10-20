@@ -4,20 +4,19 @@ MRIReco provides the image reconstruction of the framework. `using MRIReco` also
 
 ## Reconstruction
 
-```@autodocs
-Modules = [MRIReco]
-Pages = ["Reconstruction/Reconstruction.jl"]
-Private = false
+```@docs
+MRIReco.reconstruction
 ```
 
 ## Lower-Level Reconstruction Functions
 
 For the reconstruction types `"standard"`, `"multiEcho"`, `"multiCoil"` and `"multiCoilMultiEcho"`, `reconstruction` calls one of the following functions.
 
-```@autodocs
-Modules = [MRIReco]
-Pages = ["Reconstruction/IterativeReconstruction.jl"]
-Private = false
+```@docs
+MRIReco.reconstruction_simple
+MRIReco.reconstruction_multiEcho
+MRIReco.reconstruction_multiCoil
+MRIReco.reconstruction_multiCoilMultiEcho
 ```
 
 ## Tools

@@ -4,10 +4,11 @@ MRISimulation simulates MRI data from images, including coil sensitivities, fiel
 
 ## Simulation
 
-```@autodocs
-Modules = [MRISimulation]
-Pages = ["src/MRISimulation.jl"]
-Private = false
+```@docs
+MRISimulation.simulation
+MRISimulation.addNoise
+MRISimulation.simulation_fast
+MRISimulation.simulation_explicit
 ```
 
 ## Coil Sensitivities, Field Maps and Relaxation
