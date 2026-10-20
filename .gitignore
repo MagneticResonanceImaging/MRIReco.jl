@@ -7,3 +7,4 @@ test/*.nii
 test/brukerfileCart
 Manifest.toml
 .vscode
+docs/src/generated/
