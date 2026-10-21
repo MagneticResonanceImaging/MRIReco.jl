@@ -1,6 +1,6 @@
 # Contributing to MRIReco.jl
 
-Thanks for helping to improve MRIReco.jl! This guide explains how to ask for help, how to report problems and how to set up the repository for development. Everyone taking part in this project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Thanks for helping to improve MRIReco.jl! This guide explains how to ask for help, how to report problems and how to contribute changes. Everyone taking part in this project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Questions and Bug Reports
 
@@ -39,7 +39,7 @@ The subpackages are registered as separate packages, but all of them except MRIB
 ## Development Setup
 
 1. Fork the repository on GitHub and clone your fork.
-2. Start Julia in the repository root and activate the package you want to work on, for example `MRISampling`.
+2. Start Julia 1.10 or newer in the repository root and activate the package you want to work on, for example `MRISampling`.
 3. Develop the local copies of the packages it needs and install the remaining dependencies:
 
 ```julia
@@ -73,7 +73,13 @@ With the environment of a package activated as above, run its tests with
 Pkg.test("MRISampling")
 ```
 
-The CI runs the tests of every package on the latest Julia release and on Julia 1.10. Each package also has its own workflow, which runs its tests on Linux, macOS and Windows when the package changes. Changes to MRIBase and MRIOperators are additionally tested against the released versions of the packages that depend on them. GPU tests run on Buildkite with NVIDIA and AMD GPUs; the commands are in `.buildkite/pipeline.yml`, and the tests are in `test/gpu/` and `MRIOperators/test/gpu/`.
+The CI tests a pull request in three ways:
+
+- The "All Packages (latest)" workflow tests every package with the local copies from the table above, on the latest Julia release and on Julia 1.10. It shows whether the packages work together in their current state.
+- Each package also has its own workflow, which runs when the package changes. It tests the package on Linux, macOS and Windows with the released versions of its dependencies, which shows whether the package can be released on its own.
+- Changes to MRIBase and MRIOperators are also tested against the released versions of the packages that depend on them, which shows whether the changes would break them.
+
+The steps of these workflows are in `.github/workflows/`, so you can also run them locally. GPU tests run on Buildkite with NVIDIA and AMD GPUs; the commands are in `.buildkite/pipeline.yml`, and the tests are in `test/gpu/` and `MRIOperators/test/gpu/`.
 
 ## Building the Documentation
 
@@ -90,6 +96,25 @@ Pkg.instantiate()
 
 Then run `julia --project=docs docs/make.jl` from the repository root and open `docs/build/index.html`. The build runs all examples, so it takes several minutes. Don't commit the changes that `Pkg.develop` makes to `docs/Project.toml`.
 
+## Changing Several Packages
+
+Some changes affect more than one package, for example a new function in MRIBase that MRIFiles uses. Work in the environment of the package that depends on the other one, here MRIFiles. MRIBase is developed in this environment (see the table above), so MRIFiles uses your local copy of MRIBase, and the tests of MRIFiles run with your changes to both packages. Then run the tests of MRIBase in its own environment:
+
+```julia
+using Pkg
+Pkg.activate("MRIFiles")
+Pkg.develop([PackageSpec(path = "."), PackageSpec(path = "MRIBase"),
+             PackageSpec(path = "MRICoilSensitivities")])
+Pkg.instantiate()
+Pkg.test("MRIFiles")
+
+Pkg.activate("MRIBase")
+Pkg.instantiate()
+Pkg.test("MRIBase")
+```
+
+The documentation build also uses the local copies of all packages, so it includes both changes. In the CI, the workflow of MRIFiles tests it with the released version of MRIBase, so it fails until the changes in MRIBase are released. Please mention in the pull request that MRIFiles needs a new release of MRIBase, so the packages can be released in the right order.
+
 ## Pull Requests
 
 If you are looking for something to work on, the issues labeled [good first issue](https://github.com/MagneticResonanceImaging/MRIReco.jl/labels/good%20first%20issue) are a good place to start.
@@ -100,7 +125,7 @@ If you are looking for something to work on, the issues labeled [good first issu
 - There is no enforced code formatter. Please follow the style of the surrounding code.
 - Mention the issue that the pull request addresses, e.g. `Fixes #123`.
 
-Please make sure that the CI passes.
+Please make sure that the CI passes, or explain in the pull request why a check fails.
 
 ## License
 
