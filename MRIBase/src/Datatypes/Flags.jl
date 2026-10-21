@@ -319,7 +319,7 @@ Returns a list of all flags that are set in the given `Profile` object or `Acqui
 - `head`: An `AcquisitionHeader` object containing a `flags` attribute (as a bitmask).
 
 # Returns
-- An array of strings representing the names of the flags that are currently set.
+- An array of strings representing the names of the flags that are currently set, ordered by bit position.
 
 # Example
 ```julia
@@ -332,7 +332,7 @@ end
 
 function flags_of(head::AcquisitionHeader)
   flags_ = String[]
-  for f in FLAGS
+  for f in sort!(collect(FLAGS), by = last)
     flag_is_set(head::AcquisitionHeader, f.first) ? push!(flags_,f.first) : nothing
   end
   return flags_
