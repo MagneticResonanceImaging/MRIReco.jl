@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# # [Extract k-space](@id 01-extractKspace)
+# # [Extract Cartesian k-Space](@id extract-kspace)
 #---------------------------------------------------------
 
 

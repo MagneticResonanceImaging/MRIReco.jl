@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# # [Subspace](@id 03-subspaceReconstruction)
+# # [Subspace Reconstruction](@id subspace-reconstruction)
 #---------------------------------------------------------
 
 # ## Description
