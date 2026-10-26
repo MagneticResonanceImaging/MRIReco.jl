@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Subspace Reconstruction · Julia MRI Package</title><meta name="title" content="Subspace Reconstruction · Julia MRI Package"/><meta property="og:title" content="Subspace Reconstruction · Julia MRI Package"/><meta property="twitter:title" content="Subspace Reconstruction · Julia MRI Package"/><meta name="description" content="Documentation for Julia MRI Package."/><meta property="og:description" content="Documentation for Julia MRI Package."/><meta property="twitter:description" content="Documentation for Julia MRI Package."/><meta property="og:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><meta property="twitter:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><link rel="canonical" href="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Julia MRI Package logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Julia MRI Package</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../gettingStarted/">Getting Started</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Subspace Reconstruction</a><ul class="internal"><li><a class="tocitem" href="#Description"><span>Description</span></a></li><li><a class="tocitem" href="#Setup-and-define-global-variable"><span>Setup and define global variable</span></a></li><li><a class="tocitem" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom"><span>simulate MESE acquisition of a shepp logan phantom</span></a></li><li><a class="tocitem" href="#Subsampling-the-kspace"><span>Subsampling the kspace</span></a></li><li><a class="tocitem" href="#Reconstruction-of-undersampled-rawdata"><span>Reconstruction of undersampled rawdata</span></a></li><li class="toplevel"><a class="tocitem" href="#Implementation-of-a-subspace-reconstruction"><span>Implementation of a subspace reconstruction</span></a></li><li><a class="tocitem" href="#Build-the-dictionary"><span>Build the dictionary</span></a></li><li><a class="tocitem" href="#Extract-the-subspace-temporal-basis"><span>Extract the subspace temporal basis</span></a></li><li><a class="tocitem" href="#Subspace-reconstruction"><span>Subspace reconstruction</span></a></li><li><a class="tocitem" href="#Coefficient-maps"><span>Coefficient maps</span></a></li><li><a class="tocitem" href="#Virtual-echo-images"><span>Virtual echo images</span></a></li><li class="toplevel"><a class="tocitem" href="#Reproducibility"><span>Reproducibility</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">How-to Guides</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-1" type="checkbox"/><label class="tocitem" for="menuitem-4-1"><span class="docs-label">Raw Data and Files</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howto/binning/">Bin Profiles into Contrasts</a></li><li><a class="tocitem" href="../../howto/extract_kspace/">Extract Cartesian k-Space</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-5-1" type="checkbox"/><label class="tocitem" for="menuitem-5-1"><span class="docs-label">API</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../API/MRIReco/">MRIReco</a></li><li><a class="tocitem" href="../../../API/MRIBase/">MRIBase</a></li><li><a class="tocitem" href="../../../API/MRIOperators/">MRIOperators</a></li><li><a class="tocitem" href="../../../API/MRIFiles/">MRIFiles</a></li><li><a class="tocitem" href="../../../API/MRISampling/">MRISampling</a></li><li><a class="tocitem" href="../../../API/MRICoilSensitivities/">MRICoilSensitivities</a></li><li><a class="tocitem" href="../../../API/MRISimulation/">MRISimulation</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-6" type="checkbox"/><label class="tocitem" for="menuitem-6"><span class="docs-label">Legacy Pages</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../overview/">Overview</a></li><li><a class="tocitem" href="../../../acquisitionData/">Acquisition Data</a></li><li><a class="tocitem" href="../../../filehandling/">File Handling</a></li><li><a class="tocitem" href="../../../image/">Images</a></li><li><a class="tocitem" href="../../../trajectories/">Trajectory</a></li><li><a class="tocitem" href="../../../operators/">Imaging Operators</a></li><li><a class="tocitem" href="../../../offresonance/">Offresonance</a></li><li><a class="tocitem" href="../../../SENSE/">Parallel Imaging</a></li><li><a class="tocitem" href="../../../compressedSensing/">Compressed Sensing</a></li><li><a class="tocitem" href="../../../custom/">Customize</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Subspace Reconstruction</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Subspace Reconstruction</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/docs/src/literate/tutorials/subspace.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="subspace-reconstruction"><a class="docs-heading-anchor" href="#subspace-reconstruction">Subspace Reconstruction</a><a id="subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#subspace-reconstruction" title="Permalink"></a></h1><h2 id="Description"><a class="docs-heading-anchor" href="#Description">Description</a><a id="Description-1"></a><a class="docs-heading-anchor-permalink" href="#Description" title="Permalink"></a></h2><p>This example described how to perform a subspace reconstruction for <span>$T_2$</span> mapping acceleration.</p><h2 id="Setup-and-define-global-variable"><a class="docs-heading-anchor" href="#Setup-and-define-global-variable">Setup and define global variable</a><a id="Setup-and-define-global-variable-1"></a><a class="docs-heading-anchor-permalink" href="#Setup-and-define-global-variable" title="Permalink"></a></h2><pre><code class="language-julia hljs">using CairoMakie
+using ImageUtils: shepp_logan
+using LinearAlgebra
+using  Random
+using MRIReco, MRISimulation, MRICoilSensitivities, MRISampling,MRIOperators
+using MRIReco.RegularizedLeastSquares
+color=Makie.wong_colors() # color for plots
+
+N = 128
+T = ComplexF32
+nCh = 4
+nEchos = 10
+TE = 7.0
+
+
+
+x = T.(shepp_logan(N))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">128×128 Matrix{ComplexF32}:
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+    ⋮                             ⋱     ⋮                  
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
+ 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im</code></pre><h2 id="simulate-MESE-acquisition-of-a-shepp-logan-phantom"><a class="docs-heading-anchor" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom">simulate MESE acquisition of a shepp logan phantom</a><a id="simulate-MESE-acquisition-of-a-shepp-logan-phantom-1"></a><a class="docs-heading-anchor-permalink" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom" title="Permalink"></a></h2><p>First we need to simulate a multi-echo spin-echo phantom. The R₂ maps is based on the value of each voxel the shepp logan phantom. For the T2 we use</p><pre><code class="language-julia hljs">rmap = 0.05*abs.(x)
+TEnum = Float64.(collect(TE:TE:TE*nEchos))
+
+coilsens = T.(birdcageSensitivity(N, nCh, 4.))
+params = Dict{Symbol,Any}()
+params[:simulation] = &quot;fast&quot;
+params[:trajName] = &quot;Cartesian&quot;
+params[:numProfiles] = floor(Int64, N)
+params[:numSamplingPerProfile] = N
+params[:r2map] = rmap
+params[:T_echo] = TEnum
+params[:seqName] = &quot;ME&quot;
+params[:refocusingAngles] = Float64.(repeat([pi], length(TEnum)))
+params[:senseMaps] = coilsens
+
+acqData = simulation(real(x), params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AcquisitionData{Float32, 2}(Dict{Symbol, Any}(), Trajectory{Float32}[Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false)], Matrix{ComplexF32}[[-0.061319664f0 + 0.017328978f0im -0.060168564f0 - 0.08990121f0im 0.15327841f0 - 0.0001885891f0im -0.044200927f0 + 0.1044693f0im; 0.1391058f0 - 0.33278483f0im 0.3295169f0 - 0.06908631f0im 0.08607823f0 + 0.24484196f0im -0.25467986f0 - 0.11161168f0im; … ; -0.24694112f0 - 2.0783782f0im -0.19207802f0 - 1.8354933f0im -0.50140816f0 - 1.7342792f0im -0.55042034f0 - 2.0933356f0im; -0.39968485f0 - 1.7166488f0im -0.22616377f0 - 1.8982656f0im -0.11623366f0 - 1.6665897f0im -0.2668298f0 - 1.6083895f0im]; [-0.03628423f0 + 0.002153933f0im -0.047774702f0 - 0.07336438f0im 0.10886579f0 - 0.014143705f0im -0.032712057f0 + 0.05882424f0im; 0.11176956f0 - 0.26732105f0im 0.25885123f0 - 0.074523866f0im 0.07931793f0 + 0.15332328f0im -0.16305709f0 - 0.10037932f0im; … ; -0.16288713f0 - 1.3709396f0im -0.12984443f0 - 1.2005955f0im -0.35099703f0 - 1.1324832f0im -0.3768804f0 - 1.3907238f0im; -0.25053945f0 - 1.313555f0im -0.13692132f0 - 1.4281363f0im -0.07011461f0 - 1.2801172f0im -0.16514444f0 - 1.2434536f0im]; … ; [0.012780843f0 - 0.054939546f0im -0.01557029f0 - 0.059982f0im 0.009564942f0 - 0.06516403f0im -0.0056816936f0 - 0.061399773f0im; 0.043611154f0 - 0.11495505f0im 0.08302568f0 - 0.0859666f0im 0.053073317f0 - 0.05387616f0im 0.028859705f0 - 0.07771089f0im; … ; -8.21352f-5 + 0.07946378f0im -0.007975228f0 + 0.09075491f0im -0.031785805f0 + 0.09164585f0im -0.01784575f0 + 0.059422746f0im; 0.03789642f0 - 0.34353745f0im 0.029270753f0 - 0.32176107f0im 0.0087142065f0 - 0.34047532f0im 0.023856677f0 - 0.3511287f0im]; [0.013366346f0 - 0.058309693f0im -0.013997305f0 - 0.061284862f0im 0.006546908f0 - 0.06791401f0im -0.004679367f0 - 0.06604436f0im; 0.040453255f0 - 0.10858846f0im 0.07515277f0 - 0.08527041f0im 0.050608605f0 - 0.059629403f0im 0.03289388f0 - 0.07644246f0im; … ; 0.0020980835f0 + 0.10772967f0im -0.0061231777f0 + 0.11456825f0im -0.023878347f0 + 0.11414444f0im -0.010111857f0 + 0.08896666f0im; 0.041279547f0 - 0.30421874f0im 0.030340254f0 - 0.2800823f0im 0.008398782f0 - 0.3014351f0im 0.02518792f0 - 0.3132363f0im];;;], [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384]], (128, 128), (0.0, 0.0, 0.0))</code></pre><h2 id="Subsampling-the-kspace"><a class="docs-heading-anchor" href="#Subsampling-the-kspace">Subsampling the kspace</a><a id="Subsampling-the-kspace-1"></a><a class="docs-heading-anchor-permalink" href="#Subsampling-the-kspace" title="Permalink"></a></h2><p>We need to subsample the data. We generate a sampling mask which is different for each TE.</p><pre><code class="language-julia hljs">mask = zeros(Int32,(N,N,length(TEnum)))
+for echo = 1:length(TEnum)
+  mask_tmp = zeros(Int32,(N,N))
+  cal_disk = sample_poissondisk((N,N),4.0;calsize = 14,seed=echo)
+
+  mask_tmp[cal_disk] .= 1
+  mask[:,:,echo] = mask_tmp
+end
+
+f=Figure()
+ax = Axis(f[1,1],title = &quot;mask TE n°1&quot;)
+heatmap!(ax,mask[:,:,1])
+ax = Axis(f[1,2],title = &quot;mask TE n°2&quot;)
+heatmap!(ax,mask[:,:,2])
+f</code></pre><img src="94067155.png" alt="Example block output"/><p>Let&#39;s subsample the k-space in 2 different ways :</p><ul><li>With the same mask along the temporal dimensions : <code>acqData_u</code></li><li>With different masks along the temporal dimensions : <code>acqData_u2</code></li></ul><pre><code class="language-julia hljs">mask_multi2 = repeat(mask[:,:,1],1,1,1,nCh,nEchos,1);# same first mask along TE
+
+kspace = kDataCart(acqData);
+kspace = kspace .* mask_multi2;
+acqData_u = AcquisitionData(kspace);
+
+mask_multi = repeat(mask,1,1,1,nCh,1,1);
+mask_multi = permutedims(mask_multi,(1,2,5,4,3,6));
+
+kspace = kDataCart(acqData);
+kspace = kspace .* mask_multi;
+acqData_u2 = AcquisitionData(kspace);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: The 3rd dimension is encoded as a Multi-Slice acquisition because keyword enc2D = true
+[ Info: The 3rd dimension is encoded as a Multi-Slice acquisition because keyword enc2D = true</code></pre><h2 id="Reconstruction-of-undersampled-rawdata"><a class="docs-heading-anchor" href="#Reconstruction-of-undersampled-rawdata">Reconstruction of undersampled rawdata</a><a id="Reconstruction-of-undersampled-rawdata-1"></a><a class="docs-heading-anchor-permalink" href="#Reconstruction-of-undersampled-rawdata" title="Permalink"></a></h2><pre><code class="language-julia hljs">params = Dict{Symbol,Any}()
+params[:reconSize] = (N, N)
+params[:reco] = &quot;multiCoilMultiEcho&quot;
+params[:reg] = L2Regularization(1.e-3)
+params[:iterations] = 1
+params[:solver] = CGNR
+params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
+
+im_x = reconstruction(acqData, params).data # fully reconstruction
+im_phant = abs.(im_x)
+
+im_x_u = reconstruction(acqData_u, params).data # undersampling same mask
+im_phant_u = abs.(im_x_u)
+
+im_x_u2 = reconstruction(acqData_u2, params).data # undersampling different mask along TE
+im_phant_u2 = abs.(im_x_u2)
+
+p1 = (100, 45)
+p2 = (40, 60)
+echo=1
+f = Figure()
+ax = Axis(f[1, 1], aspect=1, title=&quot;Fully&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_phant[:, :, 1, echo, 1, 1])
+scatter!(ax, p1,color=color[4])
+scatter!(ax, p2,color=color[4])
+
+ax = Axis(f[2, 1], aspect=1, title=&quot;CS same mask&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_phant_u[:, :, 1, echo, 1, 1])
+
+ax = Axis(f[3, 1], aspect=1, title=&quot;CS different masks&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_phant_u2[:, :, 1, echo, 1, 1])
+
+ax = Axis(f[:, 2],title = &quot;T2₁=$(round(1/rmap[p1...],digits=0)) | T2₂=$(round(1/rmap[p2...],digits=0)) ms&quot;,xlabel = &quot;TE [ms]&quot;,ylabel = &quot;MR signal&quot;)
+lines!(ax, im_phant[p1..., 1, :, 1, 1],color=:black,label = &quot;fully&quot;)
+lines!(ax, im_phant[p2..., 1, :, 1, 1],color=:black)
+
+lines!(ax, im_phant_u[p1..., 1, :, 1, 1],color=color[2],label = &quot;same mask&quot;)
+lines!(ax, im_phant_u[p2..., 1, :, 1, 1],color=color[2],)
+
+lines!(ax, im_phant_u2[p1..., 1, :, 1, 1],color=color[3],label = &quot;different mask&quot;)
+lines!(ax, im_phant_u2[p2..., 1, :, 1, 1],color=color[3])
+axislegend(ax)
+f</code></pre><img src="044130f5.png" alt="Example block output"/><p>When the same mask is used along the temporal dimension, we see a standard decaying exponential curve. However the rate of decrease is biased by the PSF effect of the undersampling mask, corresponding by the same sum of others weigthed pixels.</p><p>When the mask is not the same along the temporal dimension, we observed a noisy curve close to the real exponential.</p><h1 id="Implementation-of-a-subspace-reconstruction"><a class="docs-heading-anchor" href="#Implementation-of-a-subspace-reconstruction">Implementation of a subspace reconstruction</a><a id="Implementation-of-a-subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Implementation-of-a-subspace-reconstruction" title="Permalink"></a></h1><h2 id="Build-the-dictionary"><a class="docs-heading-anchor" href="#Build-the-dictionary">Build the dictionary</a><a id="Build-the-dictionary-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-dictionary" title="Permalink"></a></h2><p>We build a signal dictionary using the analytical equation :</p><p class="math-container">\[S(TE) = \frac{-TE}{T2}\]</p><p>with a range of T2 from 1:1:2000 ms</p><pre><code class="language-julia hljs">function createExpBasis(TE_vec::AbstractVector{T}, T2_vec::AbstractVector{T}) where {T&lt;:Real}
+  nTE = length(TE_vec)
+  nSimu = length(T2_vec)
+  expSignal = zeros(T, nSimu, nTE)
+
+  for (i, T2) in enumerate(T2_vec)
+    expSignal[i, :] = exp.(-TE_vec / T2_vec[i])
+  end
+
+  return expSignal
+end
+
+T2_vec = (1:1:2000)
+sDict = createExpBasis(Float32.(TEnum), Float32.(T2_vec))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2000×10 Matrix{Float32}:
+ 0.000911882  8.31529f-7   7.58256f-10  …  4.35961f-28  3.97545f-31
+ 0.0301974    0.000911882  2.75364f-5      2.08797f-14  6.30512f-16
+ 0.096972     0.00940356   0.000911882     7.58256f-10  7.35295f-11
+ 0.173774     0.0301974    0.00524752      1.44498f-7   2.511f-8
+ 0.246597     0.0608101    0.0149956       3.37201f-6   8.31529f-7
+ 0.311403     0.096972     0.0301974    …  2.75364f-5   8.57494f-6
+ 0.367879     0.135335     0.0497871       0.00012341   4.53999f-5
+ 0.416862     0.173774     0.0724398       0.000380129  0.000158461
+ 0.459426     0.211072     0.096972        0.000911882  0.000418942
+ 0.496585     0.246597     0.122456        0.0018363    0.000911882
+ ⋮                                      ⋱               
+ 0.996492     0.992997     0.989513        0.968868     0.96547
+ 0.996494     0.993        0.989518        0.968884     0.965487
+ 0.996496     0.993004     0.989524        0.968899     0.965504
+ 0.996497     0.993007     0.989529        0.968914     0.965521
+ 0.996499     0.993011     0.989534     …  0.96893      0.965538
+ 0.996501     0.993014     0.989539        0.968945     0.965555
+ 0.996503     0.993017     0.989545        0.96896      0.965572
+ 0.996504     0.993021     0.98955         0.968976     0.965589
+ 0.996506     0.993024     0.989555        0.968991     0.965605</code></pre><p>For real application with stimulated echo we have to remove the 1st echo from the dictionary and the rawdata</p><h2 id="Extract-the-subspace-temporal-basis"><a class="docs-heading-anchor" href="#Extract-the-subspace-temporal-basis">Extract the subspace temporal basis</a><a id="Extract-the-subspace-temporal-basis-1"></a><a class="docs-heading-anchor-permalink" href="#Extract-the-subspace-temporal-basis" title="Permalink"></a></h2><p>Now we can perform an svd decomposition of the signal dictionnary in order to extract the temporal basis in order to use them during the reconstruction</p><pre><code class="language-julia hljs">svd_obj = svd(sDict)
+basis = Complex.(svd_obj.V)[:, 1:5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×5 Matrix{ComplexF32}:
+ -0.333034+0.0im    0.593633+0.0im  …     0.378921+0.0im  -0.164077+0.0im
+  -0.32883+0.0im    0.390348+0.0im       -0.525306+0.0im   0.568116+0.0im
+ -0.324832+0.0im    0.227168+0.0im       -0.342704+0.0im   -0.21721+0.0im
+ -0.321005+0.0im   0.0917305+0.0im     -0.00770928+0.0im   -0.42247+0.0im
+ -0.317326+0.0im  -0.0231925+0.0im        0.235677+0.0im  -0.209906+0.0im
+ -0.313777+0.0im   -0.122277+0.0im  …     0.335603+0.0im   0.105224+0.0im
+ -0.310345+0.0im   -0.208751+0.0im        0.297942+0.0im   0.318067+0.0im
+ -0.307018+0.0im   -0.284943+0.0im        0.144373+0.0im   0.325537+0.0im
+ -0.303787+0.0im   -0.352601+0.0im       -0.101426+0.0im  0.0891638+0.0im
+ -0.300644+0.0im   -0.413064+0.0im       -0.418202+0.0im  -0.392987+0.0im</code></pre><p>In this example, we will use the 5 first basis.</p><pre><code class="language-julia hljs">f=Figure()
+ax = Axis(f[1,1])
+for i = 1:size(basis,2)
+  lines!(ax,real.(svd_obj.V[:,i]))
+end
+f</code></pre><img src="5a03528b.png" alt="Example block output"/><p>Our supposition for the subspace reconstruction is that the MESE signal can be approximated by a linear combinaison of the 5 basis corresponding to the temporal curve.</p><h2 id="Subspace-reconstruction"><a class="docs-heading-anchor" href="#Subspace-reconstruction">Subspace reconstruction</a><a id="Subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Subspace-reconstruction" title="Permalink"></a></h2><p>In order to perform the subspace reconstruction we are using a dedicated pipeline name : <code>params[:reco] = &quot;multiCoilMultiEchoSubspace&quot;</code> and we also need to pass the basis <code>params[:basis] = basis</code></p><p>Here, we also have added a Wavelet spatial regularization that will be applied on the basis coefficient maps.</p><pre><code class="language-julia hljs">params = Dict{Symbol,Any}()
+params[:reconSize] = (N, N)
+params[:reco] = &quot;multiCoilMultiEchoSubspace&quot;
+
+params[:reg] = L1Regularization(0.001)
+params[:sparseTrafo] = &quot;Wavelet&quot; #sparse trafo
+params[:solver] = ADMM
+params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
+params[:basis] = basis
+
+params[:iterations] = 1
+α = reconstruction(acqData, params)
+im_sub = abs.(applySubspace(α, basis))
+
+params[:iterations] = 100
+α = reconstruction(acqData_u, params)
+im_sub_2 = abs.(applySubspace(α, basis))
+
+α = reconstruction(acqData_u2, params)
+im_sub_3 = abs.(applySubspace(α, basis));</code></pre><h2 id="Coefficient-maps"><a class="docs-heading-anchor" href="#Coefficient-maps">Coefficient maps</a><a id="Coefficient-maps-1"></a><a class="docs-heading-anchor-permalink" href="#Coefficient-maps" title="Permalink"></a></h2><p>The reconstruction returns the coefficient maps :</p><pre><code class="language-julia hljs">f = Figure()
+for i = 1:size(basis,2)
+  ax = Axis(f[1,i],aspect=1,title = &quot;Basis n°$i&quot;)
+  heatmap!(abs.(α[:,:,1,i,1,1]),colormap=:plasma)
+  hidedecorations!(ax)
+end
+f</code></pre><img src="2b6a07ba.png" alt="Example block output"/><h2 id="Virtual-echo-images"><a class="docs-heading-anchor" href="#Virtual-echo-images">Virtual echo images</a><a id="Virtual-echo-images-1"></a><a class="docs-heading-anchor-permalink" href="#Virtual-echo-images" title="Permalink"></a></h2><p>We need to multiply the subspace basis to the coefficient maps in order to get the virtual TE images</p><p class="math-container">\[im_{TE}(i,j) = \sum_{basis=1}^{5} \alpha(i,j) \times basis&#39;\]</p><p>which gives the following results :</p><pre><code class="language-julia hljs">begin
+p1 = (100, 45)
+p2 = (40, 60)
+echo = 1
+f = Figure()
+ax = Axis(f[1, 1], aspect=1, title=&quot;Fully standard&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_phant[:, :, 1, echo, 1, 1])
+scatter!(ax, p1,color=:red)
+scatter!(ax, p2,color=:red)
+
+ax = Axis(f[1, 2], aspect=1, title=&quot;Fully with subspace reco&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_sub[:, :, 1, echo, 1, 1])
+
+ax = Axis(f[1, 3], aspect=1, title=&quot;CS same mask&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_sub_2[:, :, 1, echo, 1, 1])
+
+ax = Axis(f[1, 4], aspect=1, title=&quot;CS different masks&quot;)
+hidedecorations!(ax)
+heatmap!(ax, im_sub_3[:, :, 1, 1, 1, 1])
+
+ax = Axis(f[2, :],title = &quot;T2₁=$(round(1/rmap[p1...],digits=0)) | T2₂=$(round(1/rmap[p2...],digits=0)) ms&quot;,xlabel = &quot;TE [ms]&quot;,ylabel = &quot;MR signal&quot;)
+function scale_T2(T2vect)
+  return T2vect/T2vect[1]
+end
+lines!(ax, scale_T2(im_phant[p1..., 1, :, 1, 1]),color=:black,label = &quot;fully&quot;)
+lines!(ax, scale_T2(im_phant[p2..., 1, :, 1, 1]),color=:black)
+
+lines!(ax, scale_T2(im_sub[p1..., 1, :, 1, 1]),color=color[1],label = &quot;fully subspace&quot;)
+lines!(ax, scale_T2(im_sub[p2..., 1, :, 1, 1]),color=color[1])
+
+lines!(ax, scale_T2(im_sub_2[p1..., 1, :, 1, 1]),color=color[2],label = &quot;same mask&quot;)
+lines!(ax, scale_T2(im_sub_2[p2..., 1, :, 1, 1]),color=color[2])
+
+lines!(ax, scale_T2(im_sub_3[p1..., 1, :, 1, 1]),color=color[3],label = &quot;different mask&quot;)
+lines!(ax, scale_T2(im_sub_3[p2..., 1, :, 1, 1]),color=color[3])
+axislegend(ax)
+f
+end</code></pre><img src="975d828c.png" alt="Example block output"/><h1 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h1><p>This page was generated with the following version of Julia:</p><pre><code class="language-julia hljs">using InteractiveUtils
+io = IOBuffer();
+versioninfo(io);
+split(String(take!(io)), &#39;\n&#39;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">12-element Vector{SubString{String}}:
+ &quot;Julia Version 1.13.3&quot;
+ &quot;Commit 67ac47b9cd8 (2026-10-25 15:28 UTC)&quot;
+ &quot;Build Info:&quot;
+ &quot;  Official https://julialang.org release&quot;
+ &quot;Platform Info:&quot;
+ &quot;  OS: Linux (x86_64-linux-gnu)&quot;
+ &quot;  CPU: 4 × AMD EPYC 7763 64-Core Processor&quot;
+ &quot;  WORD_SIZE: 64&quot;
+ &quot;  LLVM: libLLVM-20.1.8 (ORCJIT, znver3)&quot;
+ &quot;  GC: Built with stock GC&quot;
+ &quot;Threads: 1 default, 1 interactive, 1 GC (on 4 virtual cores)&quot;
+ &quot;&quot;</code></pre><p>And with the following package versions</p><pre><code class="language-julia hljs">import Pkg; Pkg.status()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/MRIReco.jl/MRIReco.jl/docs/Project.toml`
+  [13f3f980] CairoMakie v0.15.16
+  [e30172f5] Documenter v1.19.0
+  [7a1cc6ca] FFTW v1.10.0
+  [cd3eb016] HTTP v2.12.3
+  [8ad4436d] ImageUtils v0.2.13
+  [98b081ad] Literate v2.21.0
+  [f7771a9a] MRIBase v0.4.6 `~/work/MRIReco.jl/MRIReco.jl/MRIBase`
+  [c57eb701] MRICoilSensitivities v0.1.5 `~/work/MRIReco.jl/MRIReco.jl/MRICoilSensitivities`
+  [5a6f062f] MRIFiles v0.3.2 `~/work/MRIReco.jl/MRIReco.jl/MRIFiles`
+  [fb1137e3] MRIOperators v0.4.3 `~/work/MRIReco.jl/MRIReco.jl/MRIOperators`
+  [bdf86e05] MRIReco v0.9.2 `~/work/MRIReco.jl/MRIReco.jl`
+  [9be66c26] MRISampling v0.1.2 `~/work/MRIReco.jl/MRIReco.jl/MRISampling`
+  [8988da37] MRISimulation v0.1.4 `~/work/MRIReco.jl/MRIReco.jl/MRISimulation`
+  [b77e0a4c] InteractiveUtils v1.11.0</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../gettingStarted/">« Getting Started</a><a class="docs-footer-nextpage" href="../../howto/binning/">Bin Profiles into Contrasts »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Monday 26 October 2026 10:44">Monday 26 October 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
