@@ -41,8 +41,9 @@ nothing #hide
 
 rawData.params["encodedSize"]
 
-# Each profile holds the samples of one readout from all coils in its field `data`, with one row per sample and one
-# column per coil:
+# Each profile holds the samples of one readout and, for non-Cartesian acquisitions, their k-space positions in its
+# field `traj`. The samples of all coils are stored in its field `data`, with one row per sample and one column per
+# coil:
 
 profile = rawData.profiles[1]
 size(profile.data)
@@ -110,8 +111,8 @@ acqData.encodingSize, acqData.fov
 
 # ## Trajectories and Undersampling
 #
-# The field `traj` contains one [`Trajectory`](@ref) for each contrast. Its most important field is `nodes`, a
-# matrix with the k-space positions of the samples, with one row per dimension and one column per node.
+# The field `traj` of `AcquisitionData` contains one [`Trajectory`](@ref) for each contrast. Its most important field
+# is `nodes`, a matrix with the k-space positions of the samples, with one row per dimension and one column per node.
 # The positions are measured in units of the inverse pixel size of the encoding grid, so that a fully sampled grid
 # covers the interval `[-0.5, 0.5)` in each dimension. [`kspaceNodes`](@ref) returns this matrix:
 
@@ -119,7 +120,8 @@ tr = trajectory(acqData, 1)
 size(kspaceNodes(tr)), extrema(kspaceNodes(tr))
 
 # The knee data was acquired on a Cartesian grid. MRIBase also provides constructors for non-Cartesian trajectories,
-# for example radial and spiral trajectories:
+# such as radial and spiral trajectories and, in 3D, kooshball and stack-of-stars trajectories. The following figure
+# compares a Cartesian, a radial and a spiral trajectory:
 
 using CairoMakie
 
