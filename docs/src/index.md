@@ -1,51 +1,40 @@
 # MRIReco.jl
 
-*Magnetic Resonance Imaging Reconstruction*
+*Magnetic Resonance Imaging Reconstruction in Julia*
 
-## Introduction
+MRIReco.jl is a framework for MRI image reconstruction written in Julia. It provides data types for raw data and for k-space data prepared for reconstruction, encoding operators, and direct as well as iterative reconstruction methods, including parallel imaging and compressed sensing. Further packages read and write raw data files, generate sampling patterns, estimate coil sensitivities and simulate data.
 
-MRIReco is a Julia packet for magnetic resonance imaging. It contains algorithms for the simulation and reconstruction of MRT data and is both easy to use and flexibly expandable.
+## Packages
 
-Both direct and iterative methods are available for image reconstruction. In particular, modern compressed sensing algorithms such as ADMM can be used.
+MRIReco.jl consists of several packages that are developed in the same repository and registered individually. `using MRIReco` also loads MRIBase and MRIOperators; the other packages are installed and loaded separately.
 
-The MRT imaging operator can be set up for a variety of scanning patterns (cartesian, spiral, radial, ...) and can take into account field inhomogeneity as well as the use of coil arrays. The operator can be quickly evaluated using NFFT-based methods.
+| Package | Purpose |
+|:---|:---|
+| [MRIReco](API/MRIReco.md) | Image reconstruction |
+| [MRIBase](API/MRIBase.md) | Data types for raw data, acquisition data and trajectories |
+| [MRIOperators](API/MRIOperators.md) | Encoding operators |
+| [MRIFiles](API/MRIFiles.md) | Reading and writing raw data files |
+| [MRISampling](API/MRISampling.md) | Undersampling patterns |
+| [MRICoilSensitivities](API/MRICoilSensitivities.md) | Coil sensitivity estimation and coil compression |
+| [MRISimulation](API/MRISimulation.md) | Simulation of MRI data |
 
-One strength of the package is that it is strongly modular and uses high quality Julia packages. These are e.g.
- * NFFT.jl and FFTW.jl for fast Fourier transformations
- * Wavelets.jl for sparsification
- * LinearOperators.jl in order to be able to divide the imaging operator modularly into individual parts
- * RegularizedLeastSquares.jl for modern algorithms for solving linear optimization problems
+## How the Documentation Is Organized
 
-This interaction allows new algorithms to be easily integrated into the software framework. It is not necessary to program in C/C++ but the advantages of the scientific high-level language Julia can be used.
+- [Getting Started](@ref) shows how to install the packages and run a first reconstruction.
+- The tutorials walk through complete reconstructions step by step.
+- The how-to guides show how to solve specific tasks, grouped by package.
+- The reference lists the API of each package.
 
+The pages under "Legacy Pages" come from the previous version of this documentation and are being rewritten.
 
-## Installation
+## Citing MRIReco.jl
 
-Start julia and open the package mode by entering `]`. Then enter
-```julia
-add MRIReco
-```
-This will install `MRIReco` and all its dependencies. If you want to develop
-`MRIReco` itself you can checkout `MRIReco` by calling
-```julia
-dev MRIReco
-```
-More information on how to develop a package can be found in the Julia documentation.
+If you use MRIReco.jl in your work, please cite
 
-## Plotting
+> T. Knopp and M. Grosser, "MRIReco.jl: An MRI reconstruction framework written in Julia", Magnetic Resonance in Medicine 86, 1633–1646 (2021), [doi:10.1002/mrm.28792](https://doi.org/10.1002/mrm.28792).
 
-On purpose `MRIReco` is not depending on a particular plotting package since there
-are various plotting packages in the Julia ecosystem. Within the examples outlined
-in the tutorial we will use `PyPlot` for plotting but you may prefer using
-the `Plots` package. You can add both packages the same way
-`MRIReco` has been added.
+A BibTeX entry is in [`MRIReco.bib`](https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/MRIReco.bib).
 
-## Tutorial
+## Getting Help
 
-There is a Jupyter-based tutorial on `MRIReco` at
-
-[https://github.com/MagneticResonanceImaging/MRIRecoTutorial](https://github.com/MagneticResonanceImaging/MRIRecoTutorial)
-
-that has been presented at the ISMRM conference in Montreal 2019. Since the API
-has slightly changed, we, however recommend that you read this documentation and
-in particular execute the example scripts as is described in the [Getting Started](@ref) section.
+Questions are welcome in [GitHub Discussions](https://github.com/MagneticResonanceImaging/MRIReco.jl/discussions), and bugs can be reported as [issues](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues).

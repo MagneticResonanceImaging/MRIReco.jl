@@ -2,8 +2,9 @@ execute = isempty(ARGS) || ARGS[1] == "run"
 
 using Literate
 
-lit = joinpath(@__DIR__, "lit")
-src = joinpath(@__DIR__, "src")
+# Literate sources in src/literate become Markdown pages and notebooks in src/generated,
+# with the same subfolders (tutorials, howto)
+lit = joinpath(@__DIR__, "src/literate")
 gen = joinpath(@__DIR__, "src/generated")
 
 for (root, _, files) in walkdir(lit), file in files
@@ -13,8 +14,3 @@ for (root, _, files) in walkdir(lit), file in files
     Literate.markdown(ipath, opath, documenter = execute)
     Literate.notebook(ipath, opath; execute = false)
 end
-
-# functions
-ismd(f) = splitext(f)[2] == ".md"
-pages(folder) =
-    [joinpath("generated/", folder, f) for f in readdir(joinpath(gen, folder)) if ismd(f)]

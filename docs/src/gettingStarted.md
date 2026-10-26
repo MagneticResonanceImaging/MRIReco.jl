@@ -1,83 +1,60 @@
 # Getting Started
 
-Throughout the entire documentation we assume that you have loaded `MRIReco`
-as well as `CairoMakie` via
+## Installation
+
+MRIReco.jl requires Julia 1.10 or newer. Install the main package with
+
 ```julia
-using CairoMakie, MRIReco
+using Pkg
+Pkg.add("MRIReco")
 ```
 
-All examples discussed in the documentation can be found in the package source
-code in the folder
-```
-    MRIReco/docs/src/examples
-```
-This folder is located in `~/.julia/packages` or `~/.julia/dev` depending if you
-have checked out `MRIReco` for development or not. You can call the first example
-by entering into the Julia REPL:
-```julia
-include(joinpath(dirname(pathof(MRIReco)),"../docs/src/examples/exampleRadial.jl"))
-```
-which should open a plotting window as is outlined in the following example.
+`using MRIReco` also loads MRIBase, MRIOperators and [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), which provides the solvers. The other packages are installed in the same way when you need them, for example `Pkg.add("MRIFiles")` to read raw data files. The examples in this documentation also use [CairoMakie](https://docs.makie.org/stable/) for plots and [ImageUtils](https://github.com/IBIResearch/ImageUtils.jl) for test images.
 
-## Basic Example
+## A First Reconstruction
 
-We will start with a very simple example and perform simple simulation and
-reconstruction based on a shepp logan phantom. The program looks like this
-```julia
-# image
+This example simulates k-space data of a Shepp-Logan phantom along a radial trajectory and reconstructs an image from it. Besides MRIReco it needs MRISimulation, ImageUtils and CairoMakie.
+
+```@example gettingstarted
+using MRIReco, MRISimulation, CairoMakie
+using ImageUtils: shepp_logan
+
 N = 256
-I = shepp_logan(N)
+phantom = shepp_logan(N)
 
-# simulation parameters
 params = Dict{Symbol, Any}()
 params[:simulation] = "fast"
 params[:trajName] = "Radial"
-params[:numProfiles] = floor(Int64, pi/2*N)
-params[:numSamplingPerProfile] = 2*N
+params[:numProfiles] = floor(Int64, pi/2 * N)
+params[:numSamplingPerProfile] = 2N
+acqData = simulation(phantom, params)
+nothing # hide
+```
 
-# do simulation
-acqData = simulation(I, params)
+`acqData` is an [`AcquisitionData`](@ref) object that holds the simulated k-space data together with the trajectory. A direct reconstruction applies the adjoint of the Fourier encoding to the density-compensated data:
 
-# reco parameters
+```@example gettingstarted
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"
-params[:reconSize] = (N,N)
-Ireco = reconstruction(acqData, params)
+params[:reconSize] = (N, N)
+image = reconstruction(acqData, params)
+size(image)
 ```
-We will go through the program step by step. First we create a 2D shepp logan
-phantom of size `N=256`. Then we setup a dictionary that defines the simulation
-parameters. Here, we chose a simple radial trajectory with 402 spokes and 512
-samples per profile. We use a gridding-based simulator by setting `params[:simulation] = "fast"`
 
-After setting up the parameter dictionary `params`, the simulation is performed
-by calling
-```julia
-acqData = simulation(I, params)
+The reconstructed image always has six dimensions: x, y, z, echoes, coils and repetitions. Here only the first two have more than one entry:
+
+```@example gettingstarted
+fig = Figure(size = (700, 350))
+for (i, (data, title)) in enumerate(((phantom, "Phantom"), (abs.(image[:, :, 1, 1, 1, 1]), "Reconstruction")))
+    ax = Axis(fig[1, i], aspect = DataAspect(), yreversed = true, title = title)
+    heatmap!(ax, data', colormap = :grays)
+    hidedecorations!(ax)
+end
+fig
 ```
-The result `simulation` function outputs an acquisition object that is discussed
-in more detail in the section [Acquisition Data](@ref).
-The acquisition data can also be stored to or loaded from a file, which will be discussed
-in section [File Handling](@ref).
 
-Using the acquisition data we can perform a reconstruction. To this end,
-again a parameter dictionary is setup and some basic configuration is done.
-In this case, for instance we specify that we want to apply a simple NFFT-based
-gridding reconstruction. The reconstruction is invoked by calling
-```julia
-Ireco = reconstruction(acqData, params)
-```
-The resulting image is of type `AxisArray` and has 5 dimensions. One can
-display the image object by calling
-```julia
-heatmap(abs.(Ireco[:,:,1,1,1]))
-```
-Alternatively one can store the image into a file, which will be discussed in
-the section on [Images](@ref).
+## Next Steps
 
-The original phantom and the reconstructed image are shown below
-
-![Phantom](./assets/phantom.png)
-![Reconstruction](./assets/simpleReco.png)
-
-We will discuss reconstruction in more detail in the sections on [Offresonance Correction](@ref),
-[Parallel Imaging](@ref), and [Compressed Sensing](@ref)
+- The tutorials walk through complete reconstructions step by step.
+- The how-to guides show how to solve specific tasks, such as binning profiles or extracting Cartesian k-space data.
+- The API reference lists the functions and types of each package.
