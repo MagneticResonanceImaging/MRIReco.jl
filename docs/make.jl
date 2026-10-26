@@ -19,6 +19,8 @@ makedocs(
         "Home" => "index.md",
         "Getting Started" => "gettingStarted.md",
         "Tutorials" => [
+            "Direct Reconstruction" => "generated/tutorials/direct.md",
+            "Iterative Reconstruction" => "generated/tutorials/iterative.md",
             "Subspace Reconstruction" => "generated/tutorials/subspace.md",
         ],
         "How-to Guides" => [
