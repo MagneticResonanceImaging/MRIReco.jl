@@ -1,4 +1,4 @@
-# Contributing to MRIReco.jl
+# Contribute to MRIReco.jl
 
 Thanks for helping to improve MRIReco.jl! This guide explains how to ask for help, how to report problems and how to contribute changes. Everyone taking part in this project is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -88,9 +88,10 @@ The documentation is built with [Documenter.jl](https://documenter.juliadocs.org
 ```julia
 using Pkg
 Pkg.activate("docs")
-Pkg.develop([PackageSpec(path = "."), PackageSpec(path = "MRIBase"), PackageSpec(path = "MRIOperators"),
-             PackageSpec(path = "MRIFiles"), PackageSpec(path = "MRISampling"),
-             PackageSpec(path = "MRICoilSensitivities"), PackageSpec(path = "MRISimulation")])
+Pkg.develop([PackageSpec(path = "."), PackageSpec(path = "MRIBase"),
+             PackageSpec(path = "MRIOperators"), PackageSpec(path = "MRIFiles"),
+             PackageSpec(path = "MRISampling"), PackageSpec(path = "MRISimulation"),
+             PackageSpec(path = "MRICoilSensitivities")])
 Pkg.instantiate()
 ```
 
