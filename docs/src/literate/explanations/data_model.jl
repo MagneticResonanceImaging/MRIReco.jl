@@ -41,9 +41,9 @@ nothing #hide
 
 rawData.params["encodedSize"]
 
-# Each profile holds the samples of one readout and, for non-Cartesian acquisitions, their k-space positions in its
-# field `traj`. The samples of all coils are stored in its field `data`, with one row per sample and one column per
-# coil:
+# Each profile holds the samples of one readout. For non-Cartesian acquisitions, its field `traj` contains their
+# k-space positions. The samples of all coils are stored in its field `data`, with one row per sample and one column
+# per coil:
 
 profile = rawData.profiles[1]
 size(profile.data)
