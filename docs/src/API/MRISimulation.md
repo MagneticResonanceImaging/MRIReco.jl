@@ -1,6 +1,6 @@
 # MRISimulation
 
-MRISimulation simulates MRI data from images, including coil sensitivities, field inhomogeneities and relaxation. MRIReco does not re-export MRISimulation, so it has to be loaded with `using MRISimulation`.
+MRISimulation simulates MRI data from images, including coil sensitivities, field inhomogeneities and relaxation. MRISimulation depends on MRIBase and MRIOperators. MRIReco does not depend on MRISimulation, so it has to be loaded with `using MRISimulation`.
 
 ## Simulation
 

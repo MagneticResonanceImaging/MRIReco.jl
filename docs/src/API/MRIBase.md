@@ -1,6 +1,6 @@
 # MRIBase
 
-MRIBase defines the data types that the other packages build on: raw data organized like an ISMRMRD file (`RawAcquisitionData`), k-space data prepared for reconstruction (`AcquisitionData`) and k-space trajectories (`Trajectory`), together with functions to access and convert them. MRIReco re-exports MRIBase, so `using MRIReco` makes all names on this page available.
+MRIBase defines the data types that the other packages build on: raw data organized like an ISMRMRD file (`RawAcquisitionData`), k-space data prepared for reconstruction (`AcquisitionData`) and k-space trajectories (`Trajectory`), together with functions to access and convert them. MRIBase does not depend on other packages of this repository. MRIReco re-exports it, so `using MRIReco` makes all names on this page available.
 
 ## Raw Data
 
