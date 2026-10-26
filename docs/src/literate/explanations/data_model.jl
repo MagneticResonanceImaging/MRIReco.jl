@@ -4,9 +4,10 @@
 # packages of the framework. This page explains what these types contain, how data flows between them and how
 # k-space data and images are laid out.
 #
-# ![Data flow: a raw data file is read into RawAcquisitionData with MRIFiles, which is converted into AcquisitionData.
-# AcquisitionData can also be simulated with MRISimulation. reconstruction from MRIReco turns AcquisitionData and a
-# dictionary of parameters into an image stored as an AxisArray.](../../assets/data-flow.svg)
+# ![Data flow: MRIFiles reads a raw data file into RawAcquisitionData and writes it back. RawAcquisitionData is
+# converted into AcquisitionData and back. AcquisitionData can also be created by simulation with MRISimulation.
+# The function reconstruction from MRIReco turns AcquisitionData and a dictionary of parameters into an image stored
+# as an AxisArray.](../../assets/data-flow.svg)
 #
 # Raw data is read from a file into a [`RawAcquisitionData`](@ref) object and converted into an
 # [`AcquisitionData`](@ref) object, which the [`reconstruction`](@ref) function turns into an image. `AcquisitionData`
@@ -98,10 +99,12 @@ size(acqData.kdata), size(acqData.kdata[1])
 # [`numContrasts`](@ref MRIBase.numContrasts), [`numSlices`](@ref), [`numRepetitions`](@ref) and
 # [`numChannels`](@ref numChannels(::AcquisitionData)) return these sizes.
 #
+# `sequenceInfo` can store additional information on the pulse sequence and is empty for the knee data.
 # `encodingSize` is the size of the image grid that the data encodes, and the reconstruction uses it as the default
 # image size. It is needed in particular for non-Cartesian trajectories, where the grid size cannot be derived from
 # the trajectory. `fov` is the size of the encoded field of view in millimeters. It always has three entries, and for
-# this knee slice, which was taken from a 3D acquisition, the third entry is the extent of the 3D volume:
+# this knee slice, which was taken from a 3D acquisition, the third entry is the extent of the 3D volume in the third
+# dimension:
 
 acqData.encodingSize, acqData.fov
 
@@ -147,7 +150,8 @@ length(acqDataUnder.subsampleIndices[1]), size(acqDataUnder.kdata[1])
 #
 # The reconstruction returns the image as an `AxisArray` from
 # [AxisArrays.jl](https://github.com/JuliaArrays/AxisArrays.jl), an array whose dimensions have names and
-# coordinates. It always has six dimensions:
+# coordinates. It always has six dimensions. Their names and coordinates can be read with the functions of
+# AxisArrays.jl, which has to be added to the environment to be loaded:
 
 params = Dict{Symbol, Any}()
 params[:reco] = "direct"

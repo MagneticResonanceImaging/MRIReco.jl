@@ -17,7 +17,7 @@ None of these packages is specific to MRI. RegularizedLeastSquares.jl and Linear
 
 The repository contains seven packages, which are registered separately. In the following diagram, each package builds on the packages below it:
 
-![Package architecture: MRIBase at the bottom; MRIOperators, MRIFiles, MRISampling and MRICoilSensitivities on top of it; MRIReco and MRISimulation on top of MRIOperators. MRIReco, MRIOperators and MRIBase are loaded with using MRIReco, the other packages are loaded separately.](../assets/package-architecture.svg)
+![Package architecture: MRIBase at the bottom; MRIOperators, MRIFiles, MRISampling and MRICoilSensitivities on top of it; MRIReco and MRISimulation on top of MRIOperators. MRIReco, MRIOperators and MRIBase are loaded with using MRIReco; the other packages are loaded separately.](../assets/package-architecture.svg)
 
 MRIBase is the foundation. It defines the data types that the other packages exchange, such as [`RawAcquisitionData`](@ref), [`AcquisitionData`](@ref) and [`Trajectory`](@ref), and does not depend on any other package of the repository. These data types are explained on the [Data Model](@ref data-model) page. All other packages build on MRIBase:
 

@@ -29,7 +29,7 @@ makedocs(
         ],
         "Explanations" => [
             "Package Architecture" => "explanations/architecture.md",
-            "Data Model" => "generated/explanations/datamodel.md",
+            "Data Model" => "generated/explanations/data_model.md",
         ],
         "Reference" => [
             "API" => [

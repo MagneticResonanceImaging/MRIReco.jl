@@ -2,7 +2,7 @@
   <title id="title">Packages of MRIReco.jl</title>
   <desc id="desc">Each package builds on the packages below it. MRIBase is at the bottom. MRIOperators, MRIFiles,
     MRISampling and MRICoilSensitivities build on MRIBase. MRIReco and MRISimulation build on MRIOperators.
-    MRIReco, MRIOperators and MRIBase are loaded with using MRIReco, the other packages are loaded separately.</desc>
+    MRIReco, MRIOperators and MRIBase are loaded with using MRIReco; the other packages are loaded separately.</desc>
   <style>
     text { font-family: "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f1f1f; }
     .pkg { font-size: 15px; font-weight: 600; text-anchor: middle; }
