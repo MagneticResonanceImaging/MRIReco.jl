@@ -3,7 +3,7 @@ execute = isempty(ARGS) || ARGS[1] == "run"
 using Literate
 
 # Literate sources in src/literate become Markdown pages and notebooks in src/generated,
-# with the same subfolders (tutorials, howto)
+# with the same subfolders (tutorials, howto, explanations)
 lit = joinpath(@__DIR__, "src/literate")
 gen = joinpath(@__DIR__, "src/generated")
 
