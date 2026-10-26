@@ -44,10 +44,12 @@ size(image)
 The reconstructed image always has six dimensions: x, y, z, echoes, coils and repetitions. Here only the first two have more than one entry:
 
 ```@example gettingstarted
+images = [phantom, abs.(image[:, :, 1, 1, 1, 1])]
+titles = ["Phantom", "Reconstruction"]
 fig = Figure(size = (700, 350))
-for (i, (data, title)) in enumerate(((phantom, "Phantom"), (abs.(image[:, :, 1, 1, 1, 1]), "Reconstruction")))
-    ax = Axis(fig[1, i], aspect = DataAspect(), yreversed = true, title = title)
-    heatmap!(ax, data', colormap = :grays)
+for i in 1:2
+    ax = Axis(fig[1, i], aspect = DataAspect(), yreversed = true, title = titles[i])
+    heatmap!(ax, images[i]', colormap = :grays)
     hidedecorations!(ax)
 end
 fig
