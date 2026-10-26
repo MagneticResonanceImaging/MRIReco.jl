@@ -25,7 +25,7 @@ end
 MRIReco.jl is a monorepo. The root directory contains the MRIReco package, and each subpackage lives in its own directory with its own `Project.toml`:
 
 | Package | Purpose |
-|---|---|
+|:---|:---|
 | MRIBase | Data types for raw data, acquisition data and trajectories |
 | MRIOperators | Encoding operators |
 | MRIFiles | Reading and writing raw data files |
@@ -52,7 +52,7 @@ Pkg.instantiate()
 The packages to develop are the ones that the CI uses (`deps` in `.github/workflows/ci.yml`). They include packages that are only needed for the tests:
 
 | Package | Path to activate | Paths to develop |
-|---|---|---|
+|:---|:---|:---|
 | MRIReco | `.` | `MRIBase`, `MRIOperators`, `MRISimulation`, `MRISampling` |
 | MRIBase | `MRIBase` | none |
 | MRIFiles | `MRIFiles` | `.`, `MRIBase`, `MRICoilSensitivities` |
@@ -83,7 +83,7 @@ The steps of these workflows are in `.github/workflows/`, so you can also run th
 
 ## Building the Documentation
 
-The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/), and the examples in `docs/lit` are generated with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
+The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/), and the tutorials and how-to guides in `docs/src/literate` are generated with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
 
 ```julia
 using Pkg

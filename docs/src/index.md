@@ -37,4 +37,4 @@ A BibTeX entry is in [`MRIReco.bib`](https://github.com/MagneticResonanceImaging
 
 ## Getting Help
 
-Questions are welcome in [GitHub Discussions](https://github.com/MagneticResonanceImaging/MRIReco.jl/discussions), and bugs can be reported as [issues](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues).
+Questions are welcome in [GitHub Discussions](https://github.com/MagneticResonanceImaging/MRIReco.jl/discussions), and bugs can be reported as [issues](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues). To contribute changes, see the [contributing guide](contributing.md).
