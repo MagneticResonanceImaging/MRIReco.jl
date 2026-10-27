@@ -67,11 +67,13 @@ extrema(Int(p.head.idx.kspace_encode_step_1) for p in rawData.profiles)
 acqData = AcquisitionData(rawData)
 nothing #hide
 
-# The conversion groups the profiles by contrast, slice and repetition, averages repeated measurements, removes
-# samples that the header marks to be discarded and reverses readouts that were acquired in reverse direction. It
-# also creates the sampling trajectory and determines the trajectory node of each sample. The conversion works in
-# the other direction as well: [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example to
-# store simulated data in an ISMRMRD file.
+# The conversion groups the profiles by contrast, slice and repetition, averages the profiles that differ only in
+# their `average` counter, removes samples that the header marks to be discarded and reverses readouts that were
+# acquired in reverse direction. It also creates the sampling trajectory and determines the trajectory node of each
+# sample. Special readouts, such as noise measurements, are not filtered out and have to be removed before the
+# conversion with [`remove_raw_by_flags`](@ref). The conversion works in the other direction as well:
+# [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example to store simulated data in an ISMRMRD
+# file.
 #
 # `AcquisitionData` is defined as
 #
@@ -163,11 +165,12 @@ image = reconstruction(acqData, params)
 using AxisArrays
 axisnames(image)
 
-# The first three dimensions are spatial, and for 2D data the slices are stored along `z`. The fourth dimension
-# holds the contrasts, the fifth the coils and the sixth the repetitions. The direct reconstruction used here
-# reconstructs each coil separately, so the coil dimension has length 8. Reconstructions that combine the coils with
-# coil sensitivities return a single image in this dimension. The spatial axes have coordinates in millimeters,
-# computed from `fov` and `encodingSize`:
+# The first three dimensions are spatial, and for 2D data the slices are stored along `z`. The fourth dimension,
+# `echos`, holds the contrasts, or the basis coefficients of a [subspace reconstruction](@ref subspace-reconstruction).
+# The fifth dimension holds the coils and the sixth the repetitions. The direct reconstruction used here reconstructs
+# each coil separately, so the coil dimension has length 8. Reconstructions that combine the coils with coil
+# sensitivities return a single image in this dimension. The spatial axes have coordinates in millimeters, computed
+# from `fov` and `encodingSize`:
 
 axisvalues(image)[1]
 
@@ -186,7 +189,8 @@ axisvalues(image)[1]
 # | reconstructed image | x, y, z or slice, contrast, coil, repetition |
 # | coil sensitivities of [`espirit`](@ref) | x, y, z or slice, coil |
 #
-# A k-space array in the layout of `kDataCart` can also be converted into `AcquisitionData`. Note that the coil and
-# contrast dimensions are in a different order in k-space arrays and in images:
+# A k-space array in the layout of `kDataCart` can also be converted into `AcquisitionData`; if its third dimension
+# holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed. Note that the coil and contrast
+# dimensions are in a different order in k-space arrays and in images:
 
 size(kDataCart(acqData)), size(image)
