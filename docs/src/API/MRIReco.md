@@ -1,6 +1,6 @@
 # MRIReco
 
-MRIReco provides the image reconstruction of the framework. `using MRIReco` also loads MRIBase, MRIOperators and [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/) and re-exports their names, so the data types, encoding operators, solvers and regularization terms are available without further imports.
+MRIReco provides the image reconstruction of the framework. Of the packages in this repository, it depends on MRIBase and MRIOperators. It re-exports both, together with [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), so the data types, encoding operators, solvers and regularization terms are available after `using MRIReco`. MRIFiles, MRISampling, MRICoilSensitivities and MRISimulation are independent of MRIReco and have to be loaded separately.
 
 ## Reconstruction
 

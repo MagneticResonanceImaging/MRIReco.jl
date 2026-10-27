@@ -6,17 +6,17 @@ MRIReco.jl is a framework for MRI image reconstruction written in Julia. It prov
 
 ## Packages
 
-MRIReco.jl consists of several packages that are developed in the same repository and registered individually. `using MRIReco` also loads MRIBase and MRIOperators; the other packages are installed and loaded separately.
+MRIReco.jl consists of several packages that are developed in the same repository and registered individually. The last column lists the packages of this repository that each package depends on. MRIReco re-exports its dependencies MRIBase and MRIOperators, so their names are available after `using MRIReco`; the other packages are independent of MRIReco and are installed and loaded separately.
 
-| Package | Purpose |
-|:---|:---|
-| [MRIReco](API/MRIReco.md) | Image reconstruction |
-| [MRIBase](API/MRIBase.md) | Data types for raw data, acquisition data and trajectories |
-| [MRIOperators](API/MRIOperators.md) | Encoding operators |
-| [MRIFiles](API/MRIFiles.md) | Reading and writing raw data files |
-| [MRISampling](API/MRISampling.md) | Undersampling patterns |
-| [MRICoilSensitivities](API/MRICoilSensitivities.md) | Coil sensitivity estimation and coil compression |
-| [MRISimulation](API/MRISimulation.md) | Simulation of MRI data |
+| Package | Purpose | Depends on |
+|:---|:---|:---|
+| [MRIReco](API/MRIReco.md) | Image reconstruction | MRIBase, MRIOperators |
+| [MRIBase](API/MRIBase.md) | Data types for raw data, acquisition data and trajectories | — |
+| [MRIOperators](API/MRIOperators.md) | Encoding operators | MRIBase |
+| [MRIFiles](API/MRIFiles.md) | Reading and writing raw data files | MRIBase |
+| [MRISampling](API/MRISampling.md) | Undersampling patterns | MRIBase |
+| [MRICoilSensitivities](API/MRICoilSensitivities.md) | Coil sensitivity estimation and coil compression | MRIBase |
+| [MRISimulation](API/MRISimulation.md) | Simulation of MRI data | MRIBase, MRIOperators |
 
 ## How the Documentation Is Organized
 
