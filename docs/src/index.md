@@ -6,7 +6,7 @@ MRIReco.jl is a framework for MRI image reconstruction written in Julia. It prov
 
 ## Packages
 
-MRIReco.jl consists of several packages that are developed in the same repository and registered individually. The last column lists the packages of this repository that each package depends on. MRIReco re-exports its dependencies MRIBase and MRIOperators, so `using MRIReco` also loads them; the other packages are independent of MRIReco and are installed and loaded separately.
+MRIReco.jl consists of several packages that are developed in the same repository and registered individually. The last column lists the packages of this repository that each package depends on. MRIReco re-exports its dependencies MRIBase and MRIOperators, so their names are available after `using MRIReco`; the other packages are independent of MRIReco and are installed and loaded separately.
 
 | Package | Purpose | Depends on |
 |:---|:---|:---|
