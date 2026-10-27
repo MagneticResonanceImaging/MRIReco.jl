@@ -8,3 +8,4 @@ test/brukerfileCart
 Manifest.toml
 .vscode
 docs/src/generated/
+docs/src/contributing.md

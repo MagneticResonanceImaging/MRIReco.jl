@@ -4,6 +4,14 @@ using MRIBase, MRIFiles, MRICoilSensitivities, MRIOperators, MRISampling, MRISim
 # Generates examples
 include("generate.jl")
 
+# The contributing guide is maintained in CONTRIBUTING.md. Copy it into the docs and point
+# its links to other files of the repository to GitHub.
+contributing = replace(read(joinpath(@__DIR__, "..", "CONTRIBUTING.md"), String), "\r\n" => "\n")
+contributing = replace(contributing, r"\]\((?!https?://|#)([^)]+)\)" =>
+    s"](https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/\1)")
+write(joinpath(@__DIR__, "src", "contributing.md"),
+      "```@meta\nEditURL = \"../../CONTRIBUTING.md\"\n```\n\n" * contributing)
+
 makedocs(
     modules = [MRIReco, MRIBase, MRIOperators, MRIFiles, MRISampling, MRICoilSensitivities, MRISimulation],
     sitename = "Julia MRI Package",
@@ -26,6 +34,7 @@ makedocs(
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
+            "Contribute to MRIReco.jl" => "contributing.md",
         ],
         "Reference" => [
             "API" => [
