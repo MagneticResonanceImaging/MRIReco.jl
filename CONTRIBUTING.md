@@ -83,7 +83,7 @@ The steps of these workflows are in `.github/workflows/`, so you can also run th
 
 ## Building the Documentation
 
-The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/), and the tutorials and how-to guides in `docs/src/literate` are generated with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
+The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/), and the scripts in `docs/src/literate` are converted into pages with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
 
 ```julia
 using Pkg
