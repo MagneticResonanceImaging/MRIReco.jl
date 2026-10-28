@@ -71,17 +71,17 @@ showimages([referenceImage, samplingMask, directImage],
 # ```
 # where $\mathbf{S}_c$ multiplies the image $\mathbf{x}$ by the sensitivity of the coil, and the encoding operator
 # $\mathbf{E}$ applies the Fourier transform and keeps the measured samples, as in
-# [Iterative Reconstruction](@ref iterative-reconstruction). This model is known as SENSE. The sensitivities are
-# usually estimated from the data. [`espirit`](@ref) uses the calibration region for this; its second and third
-# arguments are the kernel size and the size of the calibration region. It can also set the sensitivities to zero in
-# voxels without signal. With the default threshold, this removes only some patches of the background in this slice, so
-# we turn it off with `eigThresh_2 = 0`:
+# [Iterative Reconstruction](@ref iterative-reconstruction). Image reconstruction with this model is known as SENSE.
+# The sensitivities can be estimated from the data itself. [`espirit`](@ref) uses the calibration region for this; its
+# second and third arguments are the kernel size and the size of the calibration region. It can also set the
+# sensitivities to zero in voxels without signal, which makes the reconstructed image zero there. In this slice, the
+# default threshold does this only for some patches of the background, so we turn it off with `eigThresh_2 = 0`:
 
 sensitivities = espirit(acqDataSub, (6, 6), 30, eigThresh_2 = 0)
 size(sensitivities)
 
 # The dimensions are x, y, z and coils. Inside the knee, the sensitivities vary smoothly, and each coil is most
-# sensitive in a different region. Outside the knee, where there is no signal, they have no meaning:
+# sensitive in a different region. Outside the knee, where there is no signal, they are not meaningful:
 
 showimages([abs.(sensitivities[:, :, 1, c]) for c in 1:8],
            ["Coil $c" for c in 1:8], columns = 4)
@@ -115,11 +115,13 @@ showimages([referenceImage, directImage, imageSENSE],
 #
 # ## Compressed Sensing
 #
-# MR images can be approximated well by a few large coefficients of a wavelet transform $\mathbf{W}$. An $\ell_1$
-# regularization of these coefficients, $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{W}\mathbf{x} \rVert_1$,
-# favors such images, which is the idea of compressed sensing. With `params[:sparseTrafo] = "Wavelet"`, the
-# $\ell_1$ regularization applies to the wavelet coefficients. We solve the problem with ADMM and use the value
-# λ = 0.2 and the 30 iterations of the knee example in the [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792):
+# MR images can be approximated well by a few large coefficients of a wavelet transform $\mathbf{W}$. Compressed
+# sensing exploits this. Because most of the profiles are chosen at random, the undersampling artifacts are spread like
+# noise along the horizontal direction instead of forming shifted copies of the image. An $\ell_1$ regularization of
+# the wavelet coefficients, $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{W}\mathbf{x} \rVert_1$, favors images
+# with few large coefficients and thereby suppresses these artifacts. With `params[:sparseTrafo] = "Wavelet"`, the
+# $\ell_1$ regularization applies to the wavelet coefficients. As in the knee example of the
+# [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792), we use ADMM with λ = 0.2 and 30 iterations:
 
 params[:solver] = ADMM
 params[:reg] = L1Regularization(0.2)
@@ -128,14 +130,14 @@ params[:iterations] = 30
 imageWavelet = abs.(reconstruction(acqDataSub, params)[:, :, 1, 1, 1, 1])
 showimages([referenceImage, imageSENSE, imageWavelet],
            ["Fully sampled", "CG-SENSE, NRMSD $(deviation(imageSENSE))",
-            "Wavelet, NRMSD $(deviation(imageWavelet))"])
+            "ℓ1-wavelet, NRMSD $(deviation(imageWavelet))"])
 
 # The wavelet regularization removes most of the remaining stripes. The differences are easier to see in a detail of
 # the joint:
 
 detail = (100:260, 80:240)
 showimages([image[detail...] for image in (referenceImage, directImage, imageSENSE, imageWavelet)],
-           ["Fully sampled", "Direct", "CG-SENSE", "Wavelet"])
+           ["Fully sampled", "Direct", "CG-SENSE", "ℓ1-wavelet"])
 
 # ## Next Steps
 #
