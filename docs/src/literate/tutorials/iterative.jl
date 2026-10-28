@@ -130,7 +130,8 @@ showimages(images, ["λ = $λ, NRMSD $(deviation(image))"
 #
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
-# - With several coils, `"standard"` reconstructs the image of each coil separately. The reconstruction type
-#   `"multiCoil"` uses the coil sensitivities to reconstruct a single image from all coils.
+# - With several coils, `"standard"` reconstructs the image of each coil separately.
+#   [Multi-Coil Reconstruction](@ref multicoil-reconstruction) shows how the reconstruction type `"multiCoil"`
+#   uses the coil sensitivities to reconstruct a single image from all coils.
 # - The API reference describes [`reconstruction`](@ref) and
 #   [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)).
