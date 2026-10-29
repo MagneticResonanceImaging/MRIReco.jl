@@ -67,10 +67,10 @@ showimages([referenceImage, samplingMask, directImage],
 #
 # The reconstruction type `"multiCoil"` describes the data $\mathbf{b}_c$ of coil $c$ by
 # ```math
-# \mathbf{b}_c = \mathbf{E}\mathbf{S}_c\mathbf{x},
+# \mathbf{b}_c = \mathbf{F}\mathbf{S}_c\mathbf{x},
 # ```
-# where $\mathbf{S}_c$ multiplies the image $\mathbf{x}$ by the sensitivity of the coil, and the encoding operator
-# $\mathbf{E}$ applies the Fourier transform and keeps the measured samples, as in
+# where $\mathbf{S}_c$ multiplies the image $\mathbf{x}$ by the sensitivity of the coil, and $\mathbf{F}$ applies the
+# Fourier transform and keeps the measured samples, like the encoding operator in
 # [Iterative Reconstruction](@ref iterative-reconstruction). Image reconstruction with this model is known as SENSE.
 # The sensitivities can be estimated from the data itself. [`espirit`](@ref) uses the calibration region for this; its
 # second and third arguments are the kernel size and the size of the calibration region. It can also set the
@@ -91,7 +91,7 @@ showimages([abs.(sensitivities[:, :, 1, c]) for c in 1:8],
 # From the data of all coils, `"multiCoil"` reconstructs a single image by solving
 # ```math
 # \underset{\mathbf{x}}{\operatorname{argmin}} \;
-# \frac{1}{2}\sum_{c} \lVert \mathbf{E}\mathbf{S}_c\mathbf{x} - \mathbf{b}_c \rVert_2^2 + \mathrm{R}(\mathbf{x}).
+# \frac{1}{2}\sum_{c} \lVert \mathbf{F}\mathbf{S}_c\mathbf{x} - \mathbf{b}_c \rVert_2^2 + \mathrm{R}(\mathbf{x}).
 # ```
 # Solving this problem with the conjugate gradient method is known as CG-SENSE. We pass the sensitivities as
 # `params[:senseMaps]` and, as in [Iterative Reconstruction](@ref iterative-reconstruction), use CGNR with a small
@@ -115,10 +115,10 @@ showimages([referenceImage, directImage, imageSENSE],
 #
 # ## Compressed Sensing
 #
-# MR images can be approximated well by a few large coefficients of a wavelet transform $\mathbf{W}$. Compressed
+# MR images can be approximated well by a few large coefficients of a wavelet transform $\mathbf{\Phi}$. Compressed
 # sensing exploits this. Because most of the profiles are chosen at random, the undersampling artifacts are spread like
 # noise along the horizontal direction instead of forming shifted copies of the image. An $\ell_1$ regularization of
-# the wavelet coefficients, $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{W}\mathbf{x} \rVert_1$, favors images
+# the wavelet coefficients, $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{\Phi}\mathbf{x} \rVert_1$, favors images
 # with few large coefficients and thereby suppresses these artifacts. With `params[:sparseTrafo] = "Wavelet"`, the
 # $\ell_1$ regularization applies to the wavelet coefficients. As in the knee example of the
 # [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792), we use ADMM with λ = 0.2 and 30 iterations:
