@@ -3,7 +3,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
   disturbanceTerm::matTc) where {T, Tc <: Union{T, Complex{T}}, vecTc <: AbstractGPUArray{Tc}, matT <: AbstractGPUArray{T}, vecT <: AbstractGPUArray{T}, matTc <: AbstractGPUArray{Tc}}
 
   factor = Tc(-2 * 1im * pi)
-  limit = prod(shape)
+  limit = size(nodes, 2)
   fill!(out, zero(Tc))
   @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     k = @index(Global, Linear)
@@ -26,7 +26,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
   disturbanceTerm::arrTc) where {T, Tc <: Union{T, Complex{T}}, vecTc <: AbstractGPUArray{Tc}, matT <: AbstractGPUArray{T}, vecT <: AbstractGPUArray{T}, arrTc <: AbstractGPUArray{Tc, 3}}
 
   factor = Tc(-2 * 1im * pi)
-  limit = prod(shape)
+  limit = size(nodes, 2)
   fill!(out, zero(Tc))
   @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     k = @index(Global, Linear)
