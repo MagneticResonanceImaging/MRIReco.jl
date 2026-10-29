@@ -12,7 +12,7 @@ The packages that MRIReco.jl [builds on](architecture.md) are written this way: 
 
 The reconstruction parameter `arrayType` decides where a reconstruction runs. MRIReco converts the measured data, the density compensation weights and the coil sensitivities to this array type. From the array type and the precision of the data, it also derives the storage type of the operators, for example a `CuArray` with element type `ComplexF32` for single-precision data. This is why `arrayType` is given without parameters. The operators allocate their internal arrays with this storage type, so these arrays are on the GPU as well. The solvers create their state, such as the current estimate and the residual, with `similar` from the measured data, so it is stored where the data is.
 
-Everything else stays on the CPU. Reading the data, estimating coil sensitivities and computing the density compensation weights happen before the reconstruction, and at the end, MRIReco copies the image back to the CPU and stores it in an `AxisArray`, as for a reconstruction on the CPU.
+The rest runs on the CPU: reading the data and estimating the coil sensitivities before the reconstruction, and computing the density compensation weights at its start, before MRIReco converts them. At the end, MRIReco copies the image back to the CPU and stores it in an `AxisArray`, as for a reconstruction on the CPU.
 
 ## GPU Code in Package Extensions
 
@@ -22,7 +22,7 @@ This code is in [package extensions](https://pkgdocs.julialang.org/v1/creating-p
 
 ## Parallelism on the CPU and the GPU
 
-The [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792) describes multi-threading on two levels. Within an operator, the Fourier transforms of the coils in the multi-coil encoding operator are computed in parallel. Above that, the reconstruction types `"multiEcho"`, `"multiCoil"`, `"multiCoilMultiEcho"` and `"multiCoilMultiEchoSubspace"` divide the data into independent problems, for example one per slice and repetition, which can be solved in parallel. On the CPU, MRIReco copies the Fourier operator for each coil, so that the copies can be applied in parallel, and solves the independent problems with the [OhMyThreads.jl](https://juliafolds2.github.io/OhMyThreads.jl/stable/) scheduler `DynamicScheduler`.
+The [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792) describes multi-threading on two levels. Within an operator, for example the multi-coil encoding operator, several Fourier transforms are computed in parallel. Above that, the reconstruction types `"multiEcho"`, `"multiCoil"`, `"multiCoilMultiEcho"` and `"multiCoilMultiEchoSubspace"` divide the data into independent problems, for example one per slice and repetition, which can be solved in parallel. On the CPU, MRIReco copies the Fourier operator for each coil, so that the copies can be applied in parallel, and solves the independent problems with the [OhMyThreads.jl](https://juliafolds2.github.io/OhMyThreads.jl/stable/) scheduler `DynamicScheduler`.
 
 On the GPU, each operation of a single problem already runs in parallel. MRIReco therefore solves the independent problems one after another, with the `SerialScheduler`, and doesn't copy the Fourier operator, which saves GPU memory. The parameter `scheduler` changes the scheduler for the independent problems. With several Julia threads, the shared Fourier operator currently gives wrong results ([#317](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/317)).
 
