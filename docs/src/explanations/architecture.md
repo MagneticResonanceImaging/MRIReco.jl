@@ -48,4 +48,4 @@ The division into packages allows using parts of the framework without the recon
 
 ## GPU Support
 
-GPU support is implemented in package extensions of MRIOperators and MRIReco, which build on the vendor-independent packages [GPUArrays.jl](https://github.com/JuliaGPU/GPUArrays.jl) and [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl). The extensions are loaded automatically together with a GPU backend such as CUDA.jl or AMDGPU.jl and do not add to the loading time otherwise.
+GPU support is implemented in package extensions of MRIOperators and MRIReco, which build on the vendor-independent packages [GPUArrays.jl](https://github.com/JuliaGPU/GPUArrays.jl) and [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl). The extensions are loaded automatically together with a GPU backend such as CUDA.jl or AMDGPU.jl and do not add to the loading time otherwise. [GPU Acceleration](@ref gpu-acceleration) explains the approach in more detail, and [Run a Reconstruction on the GPU](@ref gpu-reconstruction) shows how to use it.
