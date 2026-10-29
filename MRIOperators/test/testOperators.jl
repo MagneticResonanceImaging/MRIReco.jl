@@ -129,6 +129,22 @@ function testUndersampledFourierOp(N=16; arrayType = Array)
   @test x1 ≈ x2   rtol = 1e-2
 end
 
+## test ExplicitOp with more samples than voxels and with the default storage type
+function testExplicitOp(N=8; arrayType = Array)
+  for (shape, tr) in [((N,N), RadialTrajectory(Float64, 2*N, 2*N)), ((N÷2,N÷2,N÷2), KooshballTrajectory(Float64, 2*N, N))]
+    x = rand(ComplexF64, shape)
+    cmap = zeros(ComplexF64, shape)
+    xop = arrayType(vec(x))
+    F_ref = ExplicitOp(shape, tr, cmap)
+    F = ExplicitOp(shape, tr, cmap; S = typeof(xop))
+    @test size(F_ref, 1) > size(F_ref, 2)
+
+    y = F_ref*vec(x)
+    @test Array(F*xop) ≈ y
+    @test Array(adjoint(F)*arrayType(y)) ≈ adjoint(F_ref)*y
+  end
+end
+
 ## test FieldmapNFFTOp
 function testFieldmapFT(N=16; arrayType = Array, scheduler = DynamicScheduler())
   # random image
@@ -213,6 +229,7 @@ function testOperators(arrayType = Array)
       @testset "FieldmapFT" testFieldmapFT(;arrayType,scheduler)
     end
     @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
+    @testset "Explicit Op" testExplicitOp(;arrayType)
     @testset "Sparse Op F32 2D" testSparseOp(Float32,(128,80,1);arrayType)
     @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)
     @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
