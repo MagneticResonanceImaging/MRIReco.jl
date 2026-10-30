@@ -150,6 +150,9 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
   # Fourier transformations
   if opName=="explicit"
     @debug "ExplicitOp"
+    if isempty(correctionMap)
+      cmap = zeros(Complex{T}, shape)
+    end
     ftOp = ExplicitOp(shape, tr, cmap, echoImage=echoImage, S = S)
   elseif opName=="fast"
     @debug "NFFT-based Op"
@@ -164,7 +167,9 @@ function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::St
         ftOp = SamplingOp(Complex{T}; pattern=idx, shape, S = S) ∘ FFTOp(Complex{T}; shape, unitary=false, S = S, fftParams(S)...)
       end
     else
-      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, nfftParams(S)..., kargs...)
+      # options of the field map approximation are only known to FieldmapNFFTOp
+      nfftKargs = filter(kv -> !(first(kv) in (:method, :alpha, :K, :K_tol, :step, :scheduler)), kargs)
+      ftOp = NFFTOp(Complex{T}; nodes = kspaceNodes(tr), shape, S = S, nfftParams(S)..., nfftKargs...)
     end
   else
     @error "opName $(opName) is not known"
