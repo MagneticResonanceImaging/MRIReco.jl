@@ -46,3 +46,17 @@ end
     kdata = reshape(acq.kdata[1, 1, 1], n_samples_per_profile, n_profiles)
     @test isapprox(kdata, data)
 end
+
+
+@testset "AcquisitionData reverses profiles without changing the raw data" begin
+    n_profiles = 10
+    n_samples_per_profile = 12
+    data = rand(ComplexF32, n_samples_per_profile, n_profiles)
+    f = get_default_cartesian_raw_acq_data_2d(n_profiles, n_samples_per_profile, data)
+    flag_set!(f.profiles[2], "ACQ_IS_REVERSE")
+    acq = AcquisitionData(f)
+    kdata = reshape(acq.kdata[1, 1, 1], n_samples_per_profile, n_profiles)
+    @test kdata[:, 2] == reverse(data[:, 2])
+    @test flag_is_set(f.profiles[2], "ACQ_IS_REVERSE")
+    @test AcquisitionData(f).kdata == acq.kdata
+end
