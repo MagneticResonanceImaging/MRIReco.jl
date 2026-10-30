@@ -205,6 +205,26 @@ function testCopySizes(N=16; arrayType = Array)
 
 end
 
+## test fourierEncodingOp without a correction map
+function testFourierEncodingOpWithoutCorrectionMap(N=16; arrayType = Array)
+  x = rand(ComplexF64,N,N)
+  xop = arrayType(vec(x))
+
+  # explicit operator, the same as with a zero correction map
+  tr = CartesianTrajectory(Float64,N,N)
+  F = fourierEncodingOp((N,N), tr, "explicit"; S = typeof(xop))
+  F_zero = fourierEncodingOp((N,N), tr, "explicit"; correctionMap = zeros(ComplexF64,N,N,1), S = typeof(xop))
+  @test Array(F*xop) ≈ Array(F_zero*xop)
+
+  # NFFT operator, which ignores the options of the field map approximation
+  tr = RadialTrajectory(Float64,N,2*N)
+  F_nfft = fourierEncodingOp((N,N), tr, "fast"; S = typeof(xop))
+  for correctionMap in (ComplexF64[], zeros(ComplexF64,N,N,1))
+    F = fourierEncodingOp((N,N), tr, "fast"; correctionMap, method = "leastsquare", K = 10, K_tol = 1.e-3, S = typeof(xop))
+    @test Array(F*xop) ≈ Array(F_nfft*xop)
+  end
+end
+
 function testOperators(arrayType = Array)
   @testset "MRI Linear Operator: $arrayType" begin
     @testset "FT" testFT(;arrayType)
@@ -217,6 +237,7 @@ function testOperators(arrayType = Array)
     @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)
     @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
     @testset "Sparse Op F64 3D" testSparseOp(Float64,(128,128,80);arrayType)
+    @testset "Fourier Encoding Op without Correction Map" testFourierEncodingOpWithoutCorrectionMap(;arrayType)
   end
 end
 
