@@ -44,7 +44,10 @@ function simulation(image::Array{Complex{T},3}, simParams::Dict) where T<:Abstra
     error("simulation $(simParams[:simulation]) is not known...")
   end
 
-  return simulation(seq, tr, image; opName=opName, r2map=real.(cmap), fmap=imag.(cmap), simParams...)
+  # :alpha is the exponent of the variable-density and the perturbed spiral here, not an option of the
+  # field map approximation
+  kargs = filter(kv -> first(kv) != :alpha, simParams)
+  return simulation(seq, tr, image; opName=opName, r2map=real.(cmap), fmap=imag.(cmap), kargs...)
 end
 
 """
@@ -80,6 +83,10 @@ end
 #####################################################################
 # low level simulation routines
 #####################################################################
+
+# options of the field map approximation, which fourierEncodingOp only uses for a correction map that isn't zero
+fieldmapKargs(correctionMap, kargs) = any(!iszero, correctionMap) ?
+  Dict{Symbol,Any}(k => v for (k, v) in kargs if k in (:method, :K, :alpha, :m)) : Dict{Symbol,Any}()
 
 """
 simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
@@ -135,7 +142,7 @@ function simulation2d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
 
   @sync for z = 1:nz
     Threads.@spawn begin
-      E = fourierEncodingOp((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false)
+      E = fourierEncodingOp((nx,ny),tr,opName;slice=z,correctionMap=disturbanceTerm,echoImage=false,fieldmapKargs(disturbanceTerm, kargs)...)
       for c = 1:nc
         kdata[1,z,1][:,c] .= E*vec(sensFac[:,:,z,c].*image[:,:,z])
         verbose && next!(p)
@@ -198,7 +205,7 @@ function simulation3d(tr::Trajectory{T}, image::Array{Complex{T},3}, correctionM
     p = Progress(nc, dt=1, desc="Simulating data...")
   end
 
-  E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false)
+  E = fourierEncodingOp((nx,ny,nz),tr,opName;correctionMap=disturbanceTerm,echoImage=false,fieldmapKargs(disturbanceTerm, kargs)...)
   for c = 1:nc
     # kdata[:,c] = E*vec(sensFac[:,:,:,c].*image)
     kdata[1,1,1][:,c] .= E*vec(sensFac[:,:,:,c].*image)
@@ -290,7 +297,7 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
       error("scaled image contains NaN")
     end
 
-    acq = simulation(tr[i], ampl[:,:,:,i].*image, correctionMap; senseMaps=senseMaps, verbose=verbose, kargs...)
+    acq = simulation(tr[i], ampl[:,:,:,i].*image, correctionMap; opName=opName, senseMaps=senseMaps, verbose=verbose, kargs...)
     
     append!(out, vec(acq.kdata))
 
@@ -339,9 +346,9 @@ function simulation(tr::Trajectory{T}
   end
 
   if ndims(tr)==2
-    acqData = simulation2d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation2d(tr, image, correctionMap;opName=opName, senseMaps=senseMaps,kargs...)
   else
-    acqData = simulation3d(tr, image, correctionMap;opName="fast", senseMaps=senseMaps,kargs...)
+    acqData = simulation3d(tr, image, correctionMap;opName=opName, senseMaps=senseMaps,kargs...)
   end
 
   return acqData
