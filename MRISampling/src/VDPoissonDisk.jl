@@ -32,7 +32,7 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64
   numSamples = floor(Int64,M*N/redFac)
   rmean = densityFac*M*N/numSamples
 
-  # srand(seed)
+  Random.seed!(seed)
   while length(chosenSamples)<numSamples
     # check if samples are available. Otherwise reduce rmean and recalculate samples
     if isempty(samples)
