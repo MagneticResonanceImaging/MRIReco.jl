@@ -7,7 +7,7 @@ function sample_random(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,k
 end
 
 """
-    sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,kargs...)
+    sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,seed::Int64=1234,kargs...)
 
 generates a random sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -15,8 +15,9 @@ generates a random sampling pattern for an Array of size `shape` with a subsampl
 * `shape::NTuple{N,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * (`calsize::Int64=0`)     - size of the fully sampled calibration area
+* (`seed=1234`)            - seed for the random number generator
 """
-function sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,kargs...)
+function sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0,seed::Int64=1234,kargs...)
   M,N = shape
   A = zeros(Int64,M,N)
   ChosenSamples = 0
@@ -26,7 +27,7 @@ function sample_random(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=
   chosen = (LinearIndices(A))[findall(x->x!=0, A)]
   B = abs.(A .- 1)
   selection = (LinearIndices(B))[findall(x->x!=0, B)]
-  #srand(1234)
+  Random.seed!(seed)
   while ChosenSamples < NumberSamples
     randnum = rand(1:length(selection))
     push!(chosen,selection[randnum])
