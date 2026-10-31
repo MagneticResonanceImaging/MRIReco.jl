@@ -96,11 +96,14 @@ showimages([referenceImage, directImage, imageL2],
 #
 # Total variation (TV) regularization, $\mathrm{R}(\mathbf{x}) = \lambda \operatorname{TV}(\mathbf{x})$, favors
 # images that consist of regions with constant intensity, like this simulated brain. We solve the problem with ADMM,
-# which is also the default solver. With `MeasurementBasedNormalization`, λ is scaled by the mean magnitude of the
+# which is also the default solver. So that ADMM converges within 50 iterations for every λ used below, we let it
+# adapt its penalty parameter `rho` with `vary_rho = :balance` and use more inner iterations for the TV term than by
+# default, `iterationsTV = 50`. With `MeasurementBasedNormalization`, λ is scaled by the mean magnitude of the
 # measured data, so that the same value works for data of different scale:
 
 params[:solver] = ADMM
-params[:reg] = TVRegularization(0.03, shape = (256, 256))
+params[:vary_rho] = :balance
+params[:reg] = TVRegularization(0.03, shape = (256, 256), iterationsTV = 50)
 params[:normalizeReg] = MeasurementBasedNormalization()
 params[:iterations] = 50
 imageTV = abs.(reconstruction(acqDataSub, params)[:, :, 1, 1, 1, 1])
@@ -112,19 +115,20 @@ showimages([referenceImage, directImage, imageTV],
 #
 # ## Choosing λ
 #
-# The weight λ balances the agreement with the measured samples against the regularization. If it is too small,
-# artifacts remain; if it is too large, details are lost:
+# The weight λ balances the agreement with the measured samples against the regularization. The larger it is, the
+# smoother the image becomes, and if it is too large, details are lost:
 
 lambdas = [0.003, 0.03, 0.3]
 images = map(lambdas) do λ
-    params[:reg] = TVRegularization(λ, shape = (256, 256))
+    params[:reg] = TVRegularization(λ, shape = (256, 256), iterationsTV = 50)
     abs.(reconstruction(acqDataSub, params)[:, :, 1, 1, 1, 1])
 end
 showimages(images, ["λ = $λ, NRMSD $(deviation(image))"
                     for (λ, image) in zip(lambdas, images)])
 
-# The best value depends on the data, its noise and the undersampling, so it is usually found by comparing several
-# reconstructions.
+# Because the simulated data contains no noise, even λ = 0.003 gives an image similar to λ = 0.03, while λ = 0.3
+# loses details. Measured data contains noise, and a small λ leaves more of it in the image. The best value depends
+# on the data, its noise and the undersampling, so it is usually found by comparing several reconstructions.
 #
 # ## Next Steps
 #
