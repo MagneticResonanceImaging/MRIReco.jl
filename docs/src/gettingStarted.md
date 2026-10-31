@@ -58,5 +58,5 @@ fig
 ## Next Steps
 
 - The tutorials walk through complete reconstructions step by step, starting with [Direct Reconstruction](@ref direct-reconstruction) and [Iterative Reconstruction](@ref iterative-reconstruction).
-- The how-to guides show how to solve specific tasks, such as binning profiles or extracting Cartesian k-space data.
+- The how-to guides show how to solve specific tasks, such as binning profiles, extracting Cartesian k-space data or [running a reconstruction on the GPU](@ref gpu-reconstruction).
 - The API reference lists the functions and types of each package.

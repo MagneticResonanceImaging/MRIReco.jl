@@ -36,7 +36,15 @@ makedocs(
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
+            "Reconstruction" => [
+                "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
+            ],
             "Contribute to MRIReco.jl" => "contributing.md",
+        ],
+        "Explanations" => [
+            "Package Architecture" => "explanations/architecture.md",
+            "Data Model" => "generated/explanations/data_model.md",
+            "GPU Acceleration" => "explanations/gpu.md",
         ],
         "Reference" => [
             "API" => [
@@ -50,10 +58,8 @@ makedocs(
             ],
         ],
         "Legacy Pages" => [
-            "Overview" => "overview.md",
             "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
-            "Images" => "image.md",
             "Trajectory" => "trajectories.md",
             "Imaging Operators" => "operators.md",
             "Offresonance" => "offresonance.md",
