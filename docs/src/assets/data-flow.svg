@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="488" height="424" viewBox="0 0 488 424" role="img" aria-labelledby="title desc">
+  <title id="title">Data flow in MRIReco.jl</title>
+  <desc id="desc">A raw data file is read into a RawAcquisitionData object with MRIFiles and can be written back.
+    RawAcquisitionData is converted into AcquisitionData and back. AcquisitionData can also be created by simulation
+    with MRISimulation. The function reconstruction of MRIReco takes AcquisitionData and a dictionary of parameters
+    and returns an image as an AxisArray.</desc>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10"
+            markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c8c8c"/>
+    </marker>
+    <marker id="tail" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="10" markerHeight="10"
+            markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#8c8c8c"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f1f1f; text-anchor: middle; }
+    .title { font-size: 15px; font-weight: 600; }
+    .sub { font-size: 13px; fill: #4d4d4d; }
+    .code { font-family: Consolas, Menlo, "DejaVu Sans Mono", monospace; }
+    .data { fill: #dce6fa; stroke: #4063d8; stroke-width: 1.5; }
+    .func { fill: #efe3f6; stroke: #9558b2; stroke-width: 1.5; }
+    .arrow { stroke: #8c8c8c; stroke-width: 2; fill: none; }
+  </style>
+
+  <!-- main flow -->
+  <rect class="data" x="8" y="8" width="220" height="56" rx="8"/>
+  <text class="title" x="118" y="29" dy=".35em">raw data file</text>
+  <text class="sub" x="118" y="48" dy=".35em">MRIFiles</text>
+
+  <rect class="data" x="8" y="96" width="220" height="56" rx="8"/>
+  <text class="title code" x="118" y="117" dy=".35em">RawAcquisitionData</text>
+  <text class="sub" x="118" y="136" dy=".35em">MRIBase</text>
+
+  <rect class="data" x="8" y="184" width="220" height="56" rx="8"/>
+  <text class="title code" x="118" y="205" dy=".35em">AcquisitionData</text>
+  <text class="sub" x="118" y="224" dy=".35em">MRIBase</text>
+
+  <rect class="func" x="8" y="272" width="220" height="56" rx="28"/>
+  <text class="title code" x="118" y="293" dy=".35em">reconstruction</text>
+  <text class="sub" x="118" y="312" dy=".35em">MRIReco</text>
+
+  <rect class="data" x="8" y="360" width="220" height="56" rx="8"/>
+  <text class="title" x="118" y="381" dy=".35em">image</text>
+  <text class="sub code" x="118" y="400" dy=".35em">AxisArray</text>
+
+  <line class="arrow" x1="118" y1="64" x2="118" y2="96" marker-start="url(#tail)" marker-end="url(#head)"/>
+  <line class="arrow" x1="118" y1="152" x2="118" y2="184" marker-start="url(#tail)" marker-end="url(#head)"/>
+  <line class="arrow" x1="118" y1="240" x2="118" y2="272" marker-end="url(#head)"/>
+  <line class="arrow" x1="118" y1="328" x2="118" y2="360" marker-end="url(#head)"/>
+
+  <!-- side inputs -->
+  <rect class="func" x="298" y="184" width="180" height="56" rx="28"/>
+  <text class="title code" x="388" y="205" dy=".35em">simulation</text>
+  <text class="sub" x="388" y="224" dy=".35em">MRISimulation</text>
+
+  <rect class="data" x="298" y="272" width="180" height="56" rx="8"/>
+  <text class="title" x="388" y="293" dy=".35em">parameters</text>
+  <text class="sub code" x="388" y="312" dy=".35em">Dict{Symbol, Any}</text>
+
+  <line class="arrow" x1="298" y1="212" x2="228" y2="212" marker-end="url(#head)"/>
+  <line class="arrow" x1="298" y1="300" x2="228" y2="300" marker-end="url(#head)"/>
+</svg>
