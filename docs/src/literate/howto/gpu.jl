@@ -54,7 +54,9 @@ nothing #hide
 # Only the reconstruction itself runs on the GPU. Reading the data and estimating the coil sensitivities with
 # [`espirit`](@ref) happen on the CPU, and `reconstruction` copies the image back to the CPU. It returns the same
 # six-dimensional `AxisArray` as without GPU, so the code after the reconstruction stays the same. Because the GPU
-# computes in a different order, its result differs from the CPU result by rounding errors.
+# computes in a different order, its result differs from the CPU result by rounding errors. With non-Cartesian data,
+# the difference is larger, because the NFFT evaluates its window function differently on the CPU and the GPU, but it
+# is still far smaller than the error of the reconstruction itself.
 #
 # ## Precision
 #
