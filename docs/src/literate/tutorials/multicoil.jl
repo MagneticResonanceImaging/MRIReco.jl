@@ -74,14 +74,14 @@ showimages([referenceImage, samplingMask, directImage],
 # [Iterative Reconstruction](@ref iterative-reconstruction). Image reconstruction with this model is known as SENSE.
 # The sensitivities can be estimated from the data itself. [`espirit`](@ref) uses the calibration region for this; its
 # second and third arguments are the kernel size and the size of the calibration region. It can also set the
-# sensitivities to zero in voxels without signal, which makes the reconstructed image zero there. In this slice, the
-# default threshold does this only for some patches of the background, so we turn it off with `eigThresh_2 = 0`:
+# sensitivities to zero in voxels without signal. In this slice, the default threshold does this only for some patches
+# of the background, so we turn it off with `eigThresh_2 = 0`:
 
 sensitivities = espirit(acqDataSub, (6, 6), 30, eigThresh_2 = 0)
 size(sensitivities)
 
-# The dimensions are x, y, z and coils. Inside the knee, the sensitivities vary smoothly, and each coil is most
-# sensitive in a different region. Outside the knee, where there is no signal, they are not meaningful:
+# The dimensions are x, y, z and coils. Inside the knee, the sensitivities vary smoothly, and the coils are most
+# sensitive in different regions. Outside the knee, where there is no signal, they are not meaningful:
 
 showimages([abs.(sensitivities[:, :, 1, c]) for c in 1:8],
            ["Coil $c" for c in 1:8], columns = 4)
@@ -132,11 +132,12 @@ showimages([referenceImage, imageSENSE, imageWavelet],
            ["Fully sampled", "CG-SENSE, NRMSD $(deviation(imageSENSE))",
             "ℓ1-wavelet, NRMSD $(deviation(imageWavelet))"])
 
-# The wavelet regularization removes most of the remaining stripes. The differences are easier to see in a detail of
-# the joint:
+# The wavelet regularization reduces the remaining stripes. The differences are easier to see in a detail of the
+# joint:
 
 detail = (100:260, 80:240)
-showimages([image[detail...] for image in (referenceImage, directImage, imageSENSE, imageWavelet)],
+images = [referenceImage, directImage, imageSENSE, imageWavelet]
+showimages([image[detail...] for image in images],
            ["Fully sampled", "Direct", "CG-SENSE", "ℓ1-wavelet"])
 
 # ## Next Steps
