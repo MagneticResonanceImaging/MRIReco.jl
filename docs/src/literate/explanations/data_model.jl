@@ -69,9 +69,11 @@ nothing #hide
 
 # The conversion groups the profiles by contrast, slice and repetition, averages the profiles that differ only in
 # their `average` counter, removes samples that the header marks to be discarded and reverses readouts that were
-# acquired in reverse direction. It also creates the sampling trajectory and determines the trajectory node of each
-# sample. For raw data whose `params["trajectory"]` is `"custom"`, the conversion currently handles only data with
-# one slice, repetition and average ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
+# acquired in reverse direction. It also creates the sampling trajectory and places each readout in it by its phase
+# encoding counters, so the readouts of one contrast, slice, repetition and average need different counters. For raw
+# data whose `params["trajectory"]` is `"custom"`, it instead uses the readouts in the order in which they are
+# stored, which currently works only for data with one slice, repetition and average
+# ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
 # Special readouts, such as noise measurements, are not filtered out and have to be removed before the conversion
 # with [`remove_raw_by_flags`](@ref). The conversion works in the other direction as well:
 # [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example from simulated data.
