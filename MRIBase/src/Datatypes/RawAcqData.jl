@@ -325,7 +325,11 @@ converts `acqData` into the equivalent `RawAcquisitionData` object.
 """
 function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
   # XML header
-  params = minimalHeader(ntuple(d->acqData.encodingSize[d],D), T.(acqData.fov), tr_name=string(trajectory(acqData,1)))
+  tr_name = string(trajectory(acqData,1))
+  # "cartesian" is the ISMRMRD name; trajectory(::RawAcquisitionData) recreates both trajectories from it
+  tr_name = tr_name in ("Cartesian", "Cartesian3D") ? "cartesian" : tr_name
+  params = minimalHeader(ntuple(d -> d <= D ? acqData.encodingSize[d] : 1, 3), T.(acqData.fov),
+                         tr_name=tr_name, numChannels=numChannels(acqData))
   # acquisition counter
   counter = 1
   # profiles
@@ -337,19 +341,17 @@ function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
         profIdx = profileIdx(acqData,contr)
         numSamp = numSamplingPerProfile(tr)
         numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
-          for prof_tr = 1:length(profIdx)
-            for slice_tr = 1:numSlices(tr)
-              head = AcquisitionHeader(acqData,rep,slice,slice_tr,contr,profIdx[prof_tr],counter)
+        kdata = reshape(multiCoilData(acqData,contr,slice;rep=rep), numSamp, numProf, :)
+          for prof = 1:length(profIdx)
+              # profIdx counts the profiles of all partitions of a 3D trajectory
+              prof_tr = mod1(profIdx[prof], numProfiles(tr))
+              slice_tr = div(profIdx[prof]-1, numProfiles(tr)) + 1
+              head = AcquisitionHeader(acqData,rep,slice,slice_tr,contr,prof_tr,counter)
               nodes = profileNodes(tr,prof_tr,slice_tr)
-              if ndims(tr)==2
-                data = profileData(acqData,contr,slice,rep,prof_tr)
-              else
-                data = profileData(acqData,contr,slice_tr,rep,prof_tr)
-              end
+              data = kdata[:,prof,:]
               profile = Profile( head, Float32.(nodes), Complex{Float32}.(data) )
               push!( profiles, profile )
               counter += 1
-            end
           end
       end
     end
@@ -360,7 +362,7 @@ end
 
 function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice_tr::Int
                             , contr::Int, prof_tr::Int, counter::Int
-                            ; phase::Int=1, set::Int=1, segment::Int=1, repetition::Int=1
+                            ; phase::Int=1, set::Int=1, segment::Int=1
                             , user::NTuple{8,Int16} = ntuple(i->Int16(0),8), kargs...)
   numChan = numChannels(acqData)
   tr = trajectory(acqData,contr)
@@ -369,16 +371,15 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
   tr_dims = ndims(tr)
   sample_time_us = acqTimePerProfile(tr)/numSamples*1.e6
 
-  idx = EncodingCounters( Int16(prof_tr-1)
-                        , Int16(slice_tr-1)
-                        , Int16(rep-1)
-                        , Int16(slice-1)
-                        , Int16(contr-1)
-                        , Int16(phase-1)
-                        , Int16(repetition-1)
-                        , Int16(set-1)
-                        , Int16(segment-1)
-                        , user )
+  idx = EncodingCounters( kspace_encode_step_1 = prof_tr-1
+                        , kspace_encode_step_2 = slice_tr-1
+                        , slice = slice-1
+                        , contrast = contr-1
+                        , phase = phase-1
+                        , repetition = rep-1
+                        , set = set-1
+                        , segment = segment-1
+                        , user = user )
 
   return AcquisitionHeader(; scan_counter=Int32(counter)
                           , number_of_samples=Int16(numSamples)

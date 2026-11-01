@@ -226,26 +226,6 @@ function multiCoilMultiEchoData(acqData::AcquisitionData{T},slice::Int64;rep=1) 
   return kdata
 end
 
-"""
-    profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
-
-returns the profile-data `prof_tr` contained in `acqData` for given `echo`, `coil`, `slice` and `rep`(etition).
-"""
-function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
-  tr = trajectory(acqData,echo)
-  numSamp, numSl = numSamplingPerProfile(tr), numSlices(tr)
-  numChan = numChannels(acqData)
-  numProf = div(length(acqData.subsampleIndices[echo]),numSamp) #numProfiles(tr)
-  if ndims(tr)==2 || numSl==1
-    kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProf,numChan)
-    prof_data = kdata[:,prof_tr,:]
-  else
-    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProf,numSl,numChan)
-    prof_data = kdata[:,prof_tr,slice,:]
-  end
-  return prof_data
-end
-
 ######################################
 # utilities to convert and edit acqData
 ######################################

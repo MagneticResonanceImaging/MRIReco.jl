@@ -60,3 +60,20 @@ end
     @test flag_is_set(f.profiles[2], "ACQ_IS_REVERSE")
     @test AcquisitionData(f).kdata == acq.kdata
 end
+
+
+@testset "RawAcquisitionData(acqData) converts back to the same AcquisitionData" begin
+    kspace = rand(ComplexF32, 8, 4, 3, 2, 1, 2)  # x, y, z or slices, coils, contrasts, repetitions
+    undersampled = copy(kspace)
+    undersampled[:, 2, 1, :, :, :] .= 0
+    for acq in (AcquisitionData(kspace; enc2D = true), AcquisitionData(kspace), AcquisitionData(undersampled))
+        raw = RawAcquisitionData(acq)
+        @test length(raw.params["encodedSize"]) == 3
+        @test raw.params["receiverChannels"] == 2
+        acq2 = AcquisitionData(raw)
+        @test isCartesian(trajectory(acq2, 1))
+        @test acq2.kdata == acq.kdata
+        @test acq2.subsampleIndices == acq.subsampleIndices
+        @test acq2.encodingSize == acq.encodingSize
+    end
+end
