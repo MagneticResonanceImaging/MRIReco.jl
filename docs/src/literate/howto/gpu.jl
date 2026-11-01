@@ -7,7 +7,7 @@
 #
 # ## Installing CUDA.jl
 #
-# MRIReco.jl loads its GPU code together with a GPU package, which has to be installed in the same environment as
+# MRIReco.jl loads its GPU code together with a GPU package, which should be installed in the same environment as
 # MRIReco.jl. For NVIDIA GPUs, this is CUDA.jl:
 # ```julia
 # using Pkg
