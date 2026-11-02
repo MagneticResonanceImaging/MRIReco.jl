@@ -28,15 +28,19 @@ getproperty(op::WrappedMRIOperator, f::Symbol) = getproperty(parent(op), f)
 setproperty!(op::WrappedMRIOperator, f::Symbol, v) = setproperty!(parent(op), f, v)
 LinearOperators.storage_type(op::WrappedMRIOperator) = LinearOperators.storage_type(parent(op))
 
-# Adapts an input array that a wrapper retains for reconstruction. Wrapped arrays (views, adjoints,
-# structured matrices, ...) are copied into a plain array on the target backend, so that the rebuilt
-# operator uses the target's kernels and storage type.
+# Adapts an input array that a wrapper retains for reconstruction, returning a plain array of the target's
+# array type. Adapt may return wrapped arrays (views, structured matrices, ...) or leave an input
+# unconverted (array adaptors keep isbits arrays such as StaticArrays' SMatrix). Such results are copied into
+# a plain array on the backend that holds them, so device data is copied on the device, and then adapted.
 function adaptRetained(to, x::AbstractArray, name)
+  target = typeof(adapt(to, Array{eltype(x)}(undef, ntuple(_ -> 0, ndims(x))))).name.wrapper
   y = adapt(to, x)
-  y isa DenseArray && return y
+  y isa target && y isa DenseArray && return y
   dense = similar(y, eltype(y), size(y))
   dense .= y
-  dense isa DenseArray || throw(ArgumentError("cannot adapt: $name of type $(typeof(x)) could not be materialized as a dense array on the target"))
+  dense = adapt(to, dense)
+  dense isa target && dense isa DenseArray ||
+    throw(ArgumentError("cannot adapt: $name of type $(typeof(x)) could not be copied into a $target array on the target"))
   return dense
 end
 

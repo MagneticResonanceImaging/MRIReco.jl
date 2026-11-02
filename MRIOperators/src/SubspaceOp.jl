@@ -29,8 +29,8 @@ basis type should correspond to the type of the rawdata
     Adapt.adapt(CuArray, op::SubspaceOp)
 
 returns a new `SubspaceOp` with a new parent operator, built from the basis adapted to the target.
-Its storage type `S` is derived from the adapted basis. A view or other wrapped basis is copied
-into a plain array on the target. On the same backend, a plain basis may be shared with
+Its storage type `S` is derived from the adapted basis. A basis that Adapt does not return as a plain
+array of the target (a view, structured or static matrix) is copied into a plain array on the target. On the same backend, a plain basis may be shared with
 `op` and is only read. `op` itself is not modified.
 `SensitivityOp` and `SubspaceOp` are the MRI operators that support `Adapt.adapt` so far.
 """

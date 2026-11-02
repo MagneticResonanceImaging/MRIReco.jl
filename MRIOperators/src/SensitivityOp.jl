@@ -45,8 +45,9 @@ at construction.
 returns a new `SensitivityOp` with a new parent operator, built from the sensitivity maps and their
 conjugates adapted to the target, so it applies the same forward and adjoint operation as `op` at the
 time of the call. In particular, the adjoint keeps using the conjugated maps computed when `op` was built.
-Views and other wrapped arrays are copied into plain arrays on the target. On the same
-backend, plain arrays may be shared with `op` and are only read. `op` itself is not modified.
+Maps that Adapt does not return as plain arrays of the target (views, structured or static matrices)
+are copied into plain arrays on the target. On the same backend, plain arrays may be shared with `op`
+and are only read. `op` itself is not modified.
 `SensitivityOp` and `SubspaceOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct SensitivityOp{T, O} <: WrappedMRIOperator{T, O}

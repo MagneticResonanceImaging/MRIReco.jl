@@ -9,6 +9,15 @@ storageType(op) = MRIOperators.LinearOperators.storage_type(op)
 testData(T, dims...) = reshape(T[T <: Real ? cos(0.3k + 0.1) : complex(cos(0.3k + 0.1), sin(0.7k) + 0.5) for k in 1:prod(dims)], dims)
 onTarget(x, to) = x isa to && x isa DenseArray
 
+# A host matrix that is isbits like StaticArrays' SMatrix: device array adaptors leave such arrays unchanged.
+struct IsbitsMatrix{T, L} <: AbstractMatrix{T}
+  data::NTuple{L, T}
+  rows::Int
+end
+IsbitsMatrix(a::AbstractMatrix) = IsbitsMatrix(Tuple(a), size(a, 1))
+Base.size(m::IsbitsMatrix{T, L}) where {T, L} = (m.rows, L ÷ m.rows)
+Base.getindex(m::IsbitsMatrix, i::Int, j::Int) = m.data[(j - 1) * m.rows + i]
+
 # Forward and adjoint results with three- and five-argument `mul!`, collected on the CPU.
 function adaptActions(op, conv, x, y)
   T = eltype(op)
@@ -119,7 +128,8 @@ end
 @testset "Adapt wrapped inputs Array -> $(nameof(to)) $T" for to in adaptTargets, T in (ComplexF32, ComplexF64)
   rtol = adaptRtol(T)
   maps, big, maps4 = testData(T, 6, 2), testData(T, 8, 2), testData(T, 3, 2, 1, 2)
-  for maps in (view(maps, :, :), view(big, 2:7, :), reshape(view(maps4, :, :, :, :), 6, 2), Diagonal(testData(T, 3)))
+  for maps in (view(maps, :, :), view(big, 2:7, :), reshape(view(maps4, :, :, :, :), 6, 2), Diagonal(testData(T, 3)),
+               IsbitsMatrix(maps))
     src = SensitivityOp(maps, 1)
     moved = adapt(to, src)
     testMovedWrapper(moved, src, to)
@@ -127,15 +137,15 @@ end
     testAdaptActions(moved, to, src, Array, rtol)
   end
   basis, bigBasis = testData(T, 3, 2), testData(T, 5, 2)
-  for basis in (view(basis, :, :), view(bigBasis, 2:4, :), Diagonal(testData(T, 3)))
+  for basis in (view(basis, :, :), view(bigBasis, 2:4, :), Diagonal(testData(T, 3)), IsbitsMatrix(basis))
     src = SubspaceOp(basis, (3, 1), 3)
     moved = adapt(to, src)
     testMovedWrapper(moved, src, to)
     testSubspaceLeaf(moved, to)
     testAdaptActions(moved, to, src, Array, rtol)
   end
-  # Structured inputs inside a product
-  src = ProdOp(SensitivityOp(Diagonal(testData(T, 3)), 1), SubspaceOp(Diagonal(testData(T, 3)), (1, 1), 3))
+  # Structured and isbits inputs inside a product
+  src = ProdOp(SensitivityOp(Diagonal(testData(T, 3)), 1), SubspaceOp(IsbitsMatrix(testData(T, 3, 3)), (1, 1), 3))
   moved = adapt(to, src)
   testSensitivityLeaves(moved.A, to)
   testSubspaceLeaf(moved.B, to)
