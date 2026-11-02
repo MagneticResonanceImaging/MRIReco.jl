@@ -76,5 +76,7 @@ showimages([combinedImage[:, :, 1, 1, 1, 1]], ["Root sum of squares"])
 # ## Next Steps
 #
 # - [Iterative Reconstruction](@ref iterative-reconstruction) shows how to reconstruct undersampled data.
+# - [Multi-Coil Reconstruction](@ref multicoil-reconstruction) uses the coil sensitivities to reconstruct a single
+#   image from the undersampled data of all coils.
 # - The API reference describes [`reconstruction`](@ref) and the functions for reading files in
 #   [MRIFiles](../../API/MRIFiles.md).
