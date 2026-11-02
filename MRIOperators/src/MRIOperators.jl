@@ -28,6 +28,18 @@ getproperty(op::WrappedMRIOperator, f::Symbol) = getproperty(parent(op), f)
 setproperty!(op::WrappedMRIOperator, f::Symbol, v) = setproperty!(parent(op), f, v)
 LinearOperators.storage_type(op::WrappedMRIOperator) = LinearOperators.storage_type(parent(op))
 
+# Adapts an input array that a wrapper retains for reconstruction. Wrapped arrays (views, adjoints,
+# structured matrices, ...) are copied into a plain array on the target backend, so that the rebuilt
+# operator uses the target's kernels and storage type.
+function adaptRetained(to, x::AbstractArray, name)
+  y = adapt(to, x)
+  y isa DenseArray && return y
+  dense = similar(y, eltype(y), size(y))
+  dense .= y
+  dense isa DenseArray || throw(ArgumentError("cannot adapt: $name of type $(typeof(x)) could not be materialized as a dense array on the target"))
+  return dense
+end
+
 include("Shutter.jl")
 include("ExplicitOp.jl")
 include("SensitivityOp.jl")

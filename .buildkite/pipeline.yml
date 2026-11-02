@@ -65,6 +65,8 @@ steps:
       Pkg.add("TestEnv")
       using TestEnv
       TestEnv.activate("MRIOperators");
+      # Temporary: LinearOperatorCollection Adapt rules are unreleased
+      Pkg.add(url="https://github.com/JuliaImageRecon/LinearOperatorCollection.jl", rev="5e781dfce8d1a02a651ab13e078308a2b7731839")
       Pkg.add("CUDA")
       Pkg.instantiate()
       include("MRIOperators/test/gpu/cuda.jl")'
@@ -90,6 +92,8 @@ steps:
       Pkg.add("TestEnv")
       using TestEnv
       TestEnv.activate("MRIOperators");
+      # Temporary: LinearOperatorCollection Adapt rules are unreleased
+      Pkg.add(url="https://github.com/JuliaImageRecon/LinearOperatorCollection.jl", rev="5e781dfce8d1a02a651ab13e078308a2b7731839")
       Pkg.add("AMDGPU")
       Pkg.instantiate()
       include("MRIOperators/test/gpu/rocm.jl")'
