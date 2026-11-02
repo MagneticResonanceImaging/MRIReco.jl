@@ -29,6 +29,7 @@ makedocs(
         "Tutorials" => [
             "Direct Reconstruction" => "generated/tutorials/direct.md",
             "Iterative Reconstruction" => "generated/tutorials/iterative.md",
+            "Multi-Coil Reconstruction" => "generated/tutorials/multicoil.md",
             "Subspace Reconstruction" => "generated/tutorials/subspace.md",
         ],
         "How-to Guides" => [
@@ -57,8 +58,6 @@ makedocs(
             "Trajectory" => "trajectories.md",
             "Imaging Operators" => "operators.md",
             "Offresonance" => "offresonance.md",
-            "Parallel Imaging" => "SENSE.md",
-            "Compressed Sensing" => "compressedSensing.md",
             "Customize" => "custom.md",
         ],
     ],
