@@ -70,10 +70,17 @@ nothing #hide
 # The conversion groups the profiles by contrast, slice and repetition, averages the profiles that differ only in
 # their `average` counter, removes samples that the header marks to be discarded and reverses readouts that were
 # acquired in reverse direction. It also creates the sampling trajectory and places each readout in it by its phase
-# encoding counters, so the readouts of one contrast, slice, repetition and average need different counters. For raw
-# data whose `params["trajectory"]` is `"custom"`, it instead uses the readouts in the order in which they are
-# stored, which currently works only for data with one slice, repetition and average
+# encoding counters, so the readouts of one contrast, slice, repetition and average need different counters. All
+# slices, repetitions and averages have to be stored in the same order, and non-Cartesian readouts also in the order
+# of their phase encoding counters. The other counters, such as `phase` and `set`, are not used
+# ([#246](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/246)).
+#
+# For non-Cartesian acquisitions that do not meet these conditions, for example because their counters do not give the
+# position of a readout in k-space, `params["trajectory"]` has to be set to `"custom"`. The conversion then takes the
+# k-space positions from the field `traj` of the profiles, in the order in which they are stored, which currently works
+# only for data with one slice, repetition and average
 # ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
+#
 # Special readouts, such as noise measurements, are not filtered out and have to be removed before the conversion
 # with [`remove_raw_by_flags`](@ref). The conversion works in the other direction as well:
 # [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example from simulated data.
@@ -101,16 +108,17 @@ typeof(acqData)
 
 size(acqData.kdata), size(acqData.kdata[1])
 
-# The knee data has one contrast, slice and repetition, and 320 × 320 = 102400 samples from 8 coils. The functions
+# The knee data has one contrast, slice and repetition, and 320 × 320 = 102400 samples from 8 coils. In 3D data, the
+# samples of all partitions are stored in one matrix, as a single slice. The functions
 # [`numContrasts`](@ref MRIBase.numContrasts), [`numSlices`](@ref), [`numRepetitions`](@ref) and
 # [`numChannels`](@ref numChannels(::AcquisitionData)) return these sizes.
 #
 # `sequenceInfo` can store additional information on the pulse sequence and is empty for the knee data.
 # `encodingSize` is the size of the image grid that the data encodes, and the reconstruction uses it as the default
 # image size. It is needed in particular for non-Cartesian trajectories, where the grid size cannot be derived from
-# the trajectory. `fov` is the size of the encoded field of view in millimeters. It always has three entries, and for
-# this knee slice, which was taken from a 3D acquisition, the third entry is the extent of the 3D volume in the third
-# dimension:
+# the trajectory. `fov` is the size of the encoded field of view in millimeters. It always has three entries, which
+# are zero for data without this information, such as simulated data. For this knee slice, which was taken from a 3D
+# acquisition, the third entry is the extent of the 3D volume in the third dimension:
 
 acqData.encodingSize, acqData.fov
 
@@ -119,7 +127,8 @@ acqData.encodingSize, acqData.fov
 # The field `traj` of `AcquisitionData` contains one [`Trajectory`](@ref) for each contrast. Its most important field
 # is `nodes`, a matrix with the k-space positions of the samples, with one row per dimension and one column per node.
 # The positions are measured in units of the inverse pixel size of the encoding grid, so that a fully sampled grid
-# covers the interval `[-0.5, 0.5)` in each dimension. [`kspaceNodes`](@ref) returns this matrix:
+# covers the interval `[-0.5, 0.5)` in each dimension. The positions in the field `traj` of raw data are used as they
+# are, so they have to be in these units as well. [`kspaceNodes`](@ref) returns `nodes`:
 
 tr = trajectory(acqData, 1)
 size(kspaceNodes(tr)), extrema(kspaceNodes(tr))
@@ -140,16 +149,42 @@ for (i, (name, numProfiles, numSamples)) in
 end
 fig
 
-# `subsampleIndices` contains, for each contrast, the indices of the trajectory nodes at which data was measured,
-# in the order of the rows of `kdata`. For fully sampled data, these are all nodes. Undersampling, for example with
-# [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)) from MRISampling, keeps the
-# trajectory and removes the samples that are not measured from `kdata` and `subsampleIndices`:
+# For Cartesian data, `subsampleIndices` contains, for each contrast, the indices of the trajectory nodes at which
+# data was measured, in the order of the rows of `kdata`. For fully sampled data, these are all nodes. Undersampling,
+# for example with [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)) from MRISampling,
+# keeps the trajectory and removes the samples that are not measured from `kdata` and `subsampleIndices`. The indices
+# then form a mask on the Cartesian grid. The following figure shows this mask for regular undersampling, as in SENSE,
+# and for Poisson-disk sampling along the phase encoding direction with a fully sampled calibration region, each with
+# a quarter of the profiles:
 
 using MRISampling
 
-acqDataUnder = sample_kspace(acqData, 2.0, "regular")
-length(acqDataUnder.subsampleIndices[1]), size(acqDataUnder.kdata[1])
+acqDataRegular = sample_kspace(acqData, 4.0, "regular")
+acqDataPoisson = sample_kspace(acqData, 4.0, "poisson", calsize = 30)
 
+fig = Figure()
+for (i, (name, data)) in
+        enumerate(["Regular" => acqDataRegular, "Poisson-disk" => acqDataPoisson])
+    mask = zeros(320, 320)
+    mask[data.subsampleIndices[1]] .= 1
+    ax = Axis(fig[1, i], title = name, width = 320, height = 320,
+              xlabel = "Sample in the readout", ylabel = "Phase encoding step")
+    heatmap!(ax, mask, colormap = :grays)
+end
+resize_to_layout!(fig)
+fig
+
+# The reconstruction uses this mask in the encoding operator: after the Fourier transform, a `SamplingOp` built from
+# `subsampleIndices` keeps only the measured samples, in the order of the rows of `kdata`. The operator therefore has
+# one row per measured sample and one column per pixel:
+
+E = encodingOps_simple(acqDataRegular, (320, 320))[1]
+length(acqDataRegular.subsampleIndices[1]), size(E)
+
+# Non-Cartesian reconstructions do not use these indices: the NFFT computes the Fourier transform directly at all
+# nodes of the trajectory. Undersampling such data therefore means using a trajectory with fewer nodes. For data from
+# `sample_kspace`, [`convertUndersampledData`](@ref) creates this trajectory.
+#
 # Since `traj` and `subsampleIndices` have one entry per contrast, the trajectory and the undersampling pattern can
 # differ between contrasts, but they are shared by all slices and repetitions.
 
@@ -179,7 +214,7 @@ axisvalues(image)[1]
 
 # `parent(image)` returns the underlying array. MRIReco does not write image files itself; images can be stored
 # with other packages, for example in the NIfTI format with `saveImage` from
-# [ImageUtils.jl](https://github.com/IBIResearch/ImageUtils.jl), which keeps the pixel spacing.
+# [ImageUtils.jl](https://github.com/IBIResearch/ImageUtils.jl).
 
 # ## Array Layouts
 #
