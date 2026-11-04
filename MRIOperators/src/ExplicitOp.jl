@@ -32,7 +32,7 @@ generates a `ExplicitOp` which explicitely evaluates the MRI Fourier signal enco
 * `kargs`                              - additional keyword arguments
 """
 function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Tc,D}
-                        ; echoImage::Bool=false, S = storage_type(correctionmap), kargs...) where {T, Tc <: Union{Complex{T}, T}, D}
+                        ; echoImage::Bool=false, S = Vector{Complex{T}}, kargs...) where {T, Tc <: Union{Complex{T}, T}, D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
   nrow = size(nodes,2)
