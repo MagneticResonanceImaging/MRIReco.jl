@@ -6,6 +6,10 @@ export sample, sample_kspace, sample_random, sample_regular, sample_lines,
 using MRIBase
 using Random
 
+# The default seed of the patterns that are reproducible by default. Any other generator than the default one is used
+# in its current state, because otherwise different generators would give the same pattern.
+defaultSeed(rng) = rng === Random.default_rng() ? 1234 : nothing
+
 include("Regular.jl")
 include("Random.jl")
 include("Lines.jl")
@@ -26,6 +30,8 @@ a reduction factor `redFac`.
 * `redFac::Float64`        - subsampling factor
 * `patFunc::String`        - name of the sampling function
                             ("random, "regular", "lines", "poisson" or "vdPoisson")
+* `kargs...`               - additional keyword arguments of the sampling function,
+                            for example `rng` and `seed`
 """
 function sample(shape::NTuple{N,Int64}, redFac, patFunc::String; kargs...) where N
   if redFac < 1
@@ -69,7 +75,7 @@ end
 """
     sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
-                seed = 1234, kargs...)
+                rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
 
 subsamples the data in `acqData` with reduction factor `redFac`
 and returns a new `AcquisitionData` object.
@@ -81,28 +87,30 @@ and returns a new `AcquisitionData` object.
                                 ("random, "regular", "lines", "poisson" or "vdPoisson")
 * (`rand=true`)               - use different patterns for the different contrasts
 * (`profiles=true`)           - sample complete profiles
-* (`seed=1234`)               - seed for the random number generator
+* (`rng=Random.default_rng()`) - random number generator
+* (`seed`)                    - seed for `rng`; with `nothing`, `rng` is used in its current state.
+                                The default is 1234 for the default generator and `nothing` for any other
 * `kargs...`                  - addional keyword arguments
 """
 function sample_kspace(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
-                       seed = 1234, kargs...)
+                       rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
   acqData2 = deepcopy(acqData)
-  sample_kspace!(acqData2,redFac,patFunc;rand=rand,profiles=profiles,seed=seed,kargs...)
+  sample_kspace!(acqData2,redFac,patFunc;rand=rand,profiles=profiles,rng=rng,seed=seed,kargs...)
   return acqData2
 end
 
 """
     sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
-                seed = 1234, kargs...)
+                rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
 
 subsamples the data in acqData object with reduction factor `redFac`. Performs the same
 subsampling as `sample_kspace` but operates in-place on acqData.
 """
 function sample_kspace!(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
-                       seed = 1234, kargs...)
+                       rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
 
   numContr, numSl, numRep = numContrasts(acqData), numSlices(acqData), numRepetitions(acqData)
 
@@ -113,18 +121,21 @@ function sample_kspace!(acqData::AcquisitionData, redFac,
     else
       samplingShape = ( numSamplingPerProfile(tr), numProfiles(tr), numSlices(tr) )
     end
+    # without a seed, the same pattern for all contrasts comes from the same state of the generator,
+    # which only the last contrast advances
+    patRng = (rand || !isnothing(seed) || echo == numContr) ? rng : copy(rng)
     # only sample full profiles
     if profiles
-      patOut = sample(samplingShape,redFac,"lines"; sampleFunc=patFunc, seed=seed, kargs...)
+      patOut = sample(samplingShape,redFac,"lines"; sampleFunc=patFunc, rng=patRng, seed=seed, kargs...)
     else
-      patOut = sample(samplingShape,redFac,patFunc; seed=seed, kargs...)
+      patOut = sample(samplingShape,redFac,patFunc; rng=patRng, seed=seed, kargs...)
     end
     patOut = sort(patOut)
     for slice=1:numSl, rep=1:numRep
       acqData.kdata[echo,slice, rep] = acqData.kdata[echo,slice,rep][patOut,:]
     end
     acqData.subsampleIndices[echo] = patOut
-    rand && (seed += 1)
+    rand && !isnothing(seed) && (seed += 1)
   end
 end
 

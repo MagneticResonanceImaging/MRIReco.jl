@@ -1,28 +1,30 @@
 """
-    sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
+    sample_vdpoisson(shape::Tuple{Int64},redFac;kargs...)
 
 generates a Poisson disk sampling pattern for an Vector of size `shape` with a subsampling factor `redFac`.
 The arguments are the same as in the 2d case with the exception that shape is of type `Tuple{Int64}`
 """
-function sample_vdpoisson(shape::Tuple{Int64},redFac;seed::Int64=1234,kargs...)
-  return sample_vdpoisson((shape[1],1),redFac,seed=seed;kargs...)
+function sample_vdpoisson(shape::Tuple{Int64},redFac;kargs...)
+  return sample_vdpoisson((shape[1],1),redFac;kargs...)
 end
 
-function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;seed::Int64=1234,kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;kargs...)
   error("Not implemented")
 end
 
 """
-    sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,kargs...)
+    sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed=defaultSeed(rng),kargs...)
 
 generates a variable density Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 
 # Arguments
 * `shape::NTuple{2,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
-* (`seed=1234`)            - seed for the random number generator
+* (`rng=Random.default_rng()`) - random number generator
+* (`seed`)                 - seed for `rng`; with `nothing`, `rng` is used in its current state.
+                             The default is 1234 for the default generator and `nothing` for any other
 """
-function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64=1234,densityFac::Float64=1/pi,kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed::Union{Nothing,Int64}=defaultSeed(rng),densityFac::Float64=1/pi,kargs...)
   M,N = shape
   samples = collect(1:M*N)
   chosenSamples = []
@@ -32,7 +34,9 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64
   numSamples = floor(Int64,M*N/redFac)
   rmean = densityFac*M*N/numSamples
 
-  Random.seed!(seed)
+  if !isnothing(seed)
+    Random.seed!(rng, seed)
+  end
   while length(chosenSamples)<numSamples
     # check if samples are available. Otherwise reduce rmean and recalculate samples
     if isempty(samples)
@@ -43,7 +47,7 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; seed::Int64
     end
 
     # pick a sample from the available samples and add them to chosen samples
-    chosen = samples[ rand(1:length(samples)) ]
+    chosen = samples[ rand(rng, 1:length(samples)) ]
     push!(chosenSamples,chosen)
 
     # calculate forbidden radius and points within
