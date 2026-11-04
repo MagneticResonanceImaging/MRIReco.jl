@@ -1,4 +1,4 @@
-using Test, MRIBase, MRISimulation, ImageUtils
+using Test, MRIBase, MRIOperators, MRISimulation, ImageUtils
 using LinearAlgebra
 
 include("testSimulation.jl")
