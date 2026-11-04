@@ -13,7 +13,7 @@ function sample_vdpoisson(shape::Tuple{Int64,Int64,Int64},redFac;kargs...)
 end
 
 """
-    sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed=defaultSeed(rng),kargs...)
+    sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed=nothing,kargs...)
 
 generates a variable density Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -21,10 +21,9 @@ generates a variable density Poisson disk sampling pattern for an Array of size 
 * `shape::NTuple{2,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * (`rng=Random.default_rng()`) - random number generator
-* (`seed`)                 - seed for `rng`; with `nothing`, `rng` is used in its current state.
-                             The default is 1234 for the default generator and `nothing` for any other
+* (`seed=nothing`)         - seed for `rng`; with `nothing`, `rng` is used in its current state
 """
-function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed::Union{Nothing,Int64}=defaultSeed(rng),densityFac::Float64=1/pi,kargs...)
+function sample_vdpoisson(shape::Tuple{Int64,Int64},redFac::Float64; rng=Random.default_rng(), seed::Union{Nothing,Int64}=nothing,densityFac::Float64=1/pi,kargs...)
   M,N = shape
   samples = collect(1:M*N)
   chosenSamples = []

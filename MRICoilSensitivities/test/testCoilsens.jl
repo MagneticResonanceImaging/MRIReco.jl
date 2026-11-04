@@ -62,7 +62,7 @@ function testESPIRiT(N=128)
   params[:senseMaps] = smaps
 
   acqData = simulation(img, params)
-  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15)
+  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15, seed=1234)
 
   ksize=(6,6) # kernel size
   ncalib = 15 # number of calibration lines
@@ -174,7 +174,7 @@ function testESPIRiT_newSize(imsize = 256)
   params[:senseMaps] = smaps
 
   acqData = simulation(img, params)
-  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15)
+  acqData = sample_kspace(acqData, 2.0, "poisson", calsize=15, seed=1234)
 
   ksize=(6,6) # kernel size
   ncalib = 15 # number of calibration lines
@@ -192,7 +192,7 @@ function testESPIRiT_newSize(imsize = 256)
   params[:senseMaps] = smaps2
 
   acqData2 = simulation(img2, params)
-  acqData2 = sample_kspace(acqData2, 2.0, "poisson", calsize=15)
+  acqData2 = sample_kspace(acqData2, 2.0, "poisson", calsize=15, seed=1234)
   emaps2 = espirit(acqData2,ksize,ncalib,(imsize,imsize),eigThresh_1=eigThresh_1,eigThresh_2=eigThresh_2)
 
   # evaluate error only on the support of smaps

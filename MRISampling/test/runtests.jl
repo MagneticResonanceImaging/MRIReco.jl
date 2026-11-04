@@ -43,32 +43,28 @@ using MRISampling, MRIBase, Random, StableRNGs, Test
 
   @testset "No seed for $pattern" for pattern in ("random", "poisson", "vdPoisson")
     for shape in ((256,), (64,64))
-      pat() = sort(sample(shape, 3.0, pattern; seed=nothing))
+      pat(; kargs...) = sort(sample(shape, 3.0, pattern; kargs...))
+      # by default, the default generator is used in its current state
       Random.seed!(3)
       idx = pat()
       @test pat() != idx
       Random.seed!(3)
       @test pat() == idx
+      Random.seed!(3)
+      @test pat(seed=nothing) == idx
     end
-  end
-
-  @testset "Default seed" begin
-    @test sample((64,64), 3.0, "poisson") == sample((64,64), 3.0, "poisson")
-    @test sample((64,64), 3.0, "vdPoisson") == sample((64,64), 3.0, "vdPoisson")
-    @test sample((64,64), 3.0, "random") != sample((64,64), 3.0, "random")
   end
 
   @testset "sample_kspace with $pattern" for pattern in ("random", "poisson", "vdPoisson"), profiles in (true, false)
     acqData = AcquisitionData(rand(ComplexF64, 64, 64, 1, 1, 2, 1))
     idx(; kargs...) = sample_kspace(acqData, 3.0, pattern; profiles=profiles, kargs...).subsampleIndices
     differ(pats) = pats[1] != pats[2]
-    # the default seed gives the same patterns, and each contrast gets its own pattern
-    @test idx() == idx()
-    @test differ(idx())
+    # a seed gives the same patterns, and each contrast gets its own pattern
     @test idx(seed=5) == idx(seed=5)
     @test idx(seed=5) != idx(seed=6)
+    @test differ(idx(seed=5))
     @test !differ(idx(seed=5, rand=false))
-    # the same with a generator, which isn't seeded by default and advances
+    # the same with a generator, which advances
     @test idx(rng=StableRNG(1)) == idx(rng=StableRNG(1))
     @test idx(rng=StableRNG(1)) != idx(rng=StableRNG(2))
     @test differ(idx(rng=StableRNG(1)))
@@ -76,20 +72,25 @@ using MRISampling, MRIBase, Random, StableRNGs, Test
     rng = StableRNG(1)
     @test idx(rng=rng, rand=false) != idx(rng=rng, rand=false)
     @test idx(rng=StableRNG(1), seed=5) == idx(rng=StableRNG(2), seed=5)
-    # the same without a seed for the default generator
-    @test idx(seed=nothing) != idx(seed=nothing)
-    @test differ(idx(seed=nothing))
-    @test !differ(idx(seed=nothing, rand=false))
+    # by default, the default generator is used in its current state
     Random.seed!(3)
-    first = idx(seed=nothing)
+    pats = idx()
+    @test differ(pats)
+    @test idx() != pats
+    @test !differ(idx(rand=false))
     Random.seed!(3)
-    @test idx(seed=nothing) == first
+    @test idx() == pats
+    # the same in place
+    inPlace = deepcopy(acqData)
+    Random.seed!(3)
+    MRISampling.sample_kspace!(inPlace, 3.0, pattern; profiles=profiles)
+    @test inPlace.subsampleIndices == pats
   end
 
   @testset "Patterns without random numbers" begin
     acqData = AcquisitionData(rand(ComplexF64, 64, 64, 1, 1, 2, 1))
     idx = sample_kspace(acqData, 2.0, "regular").subsampleIndices
     @test sample_kspace(acqData, 2.0, "regular"; rng=StableRNG(1)).subsampleIndices == idx
-    @test sample_kspace(acqData, 2.0, "regular"; seed=nothing).subsampleIndices == idx
+    @test sample_kspace(acqData, 2.0, "regular"; seed=5).subsampleIndices == idx
   end
 end

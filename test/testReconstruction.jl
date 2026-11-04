@@ -49,7 +49,7 @@ function testConvertKspace(N=32;arrayType = Array)
 
     ## undersample kspace
     T = eltype(kspace)
-    mask_idx = sample_vdpoisson((N,N),2.0)
+    mask_idx = sample_vdpoisson((N,N),2.0,seed=1234)
     mask = zeros(T,N,N,1,1,1,1)
     mask[mask_idx] .= 1
 
@@ -96,7 +96,7 @@ function testConvertKspace3D(N=32;arrayType = Array)
 
     ## undersample kspace
     T = eltype(kspace)
-    mask_idx = sample_vdpoisson((N,N),2.0)
+    mask_idx = sample_vdpoisson((N,N),2.0,seed=1234)
     mask = zeros(T,N,N)
     mask[mask_idx] .= 1
     mask = repeat(mask,1,1,N,1,1,1)

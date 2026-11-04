@@ -13,7 +13,7 @@ function sample_poissondisk(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int6
 end
 
 """
-    sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed=defaultSeed(rng),kargs...)
+    sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed=nothing,kargs...)
 
 generates a Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -22,10 +22,9 @@ generates a Poisson disk sampling pattern for an Array of size `shape` with a su
 * `redFac::Float64`        - subsampling factor
 * (`calsize::Int64=0`)     - size of the fully sampled calibration area
 * (`rng=Random.default_rng()`) - random number generator
-* (`seed`)                 - seed for `rng`; with `nothing`, `rng` is used in its current state.
-                             The default is 1234 for the default generator and `nothing` for any other
+* (`seed=nothing`)         - seed for `rng`; with `nothing`, `rng` is used in its current state
 """
-function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed::Union{Nothing,Int64}=defaultSeed(rng),densityFac::Float64=0.8,kargs...)
+function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed::Union{Nothing,Int64}=nothing,densityFac::Float64=0.8,kargs...)
   M,N = shape
   A = zeros(Int64,shape)
   ChosenSamples = 0

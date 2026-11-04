@@ -6,10 +6,6 @@ export sample, sample_kspace, sample_random, sample_regular, sample_lines,
 using MRIBase
 using Random
 
-# The default seed of the patterns that are reproducible by default. Any other generator than the default one is used
-# in its current state, because otherwise different generators would give the same pattern.
-defaultSeed(rng) = rng === Random.default_rng() ? 1234 : nothing
-
 include("Regular.jl")
 include("Random.jl")
 include("Lines.jl")
@@ -75,7 +71,7 @@ end
 """
     sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
-                rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
+                rng = Random.default_rng(), seed = nothing, kargs...)
 
 subsamples the data in `acqData` with reduction factor `redFac`
 and returns a new `AcquisitionData` object.
@@ -88,13 +84,12 @@ and returns a new `AcquisitionData` object.
 * (`rand=true`)               - use different patterns for the different contrasts
 * (`profiles=true`)           - sample complete profiles
 * (`rng=Random.default_rng()`) - random number generator
-* (`seed`)                    - seed for `rng`; with `nothing`, `rng` is used in its current state.
-                                The default is 1234 for the default generator and `nothing` for any other
+* (`seed=nothing`)            - seed for `rng`; with `nothing`, `rng` is used in its current state
 * `kargs...`                  - addional keyword arguments
 """
 function sample_kspace(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
-                       rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
+                       rng = Random.default_rng(), seed = nothing, kargs...)
   acqData2 = deepcopy(acqData)
   sample_kspace!(acqData2,redFac,patFunc;rand=rand,profiles=profiles,rng=rng,seed=seed,kargs...)
   return acqData2
@@ -103,14 +98,14 @@ end
 """
     sample_kspace(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
-                rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
+                rng = Random.default_rng(), seed = nothing, kargs...)
 
 subsamples the data in acqData object with reduction factor `redFac`. Performs the same
 subsampling as `sample_kspace` but operates in-place on acqData.
 """
 function sample_kspace!(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
-                       rng = Random.default_rng(), seed = defaultSeed(rng), kargs...)
+                       rng = Random.default_rng(), seed = nothing, kargs...)
 
   numContr, numSl, numRep = numContrasts(acqData), numSlices(acqData), numRepetitions(acqData)
 
