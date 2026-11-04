@@ -54,8 +54,6 @@ jobs:
           # And MRISimulation depends on MRIOperators
           # Can't checkout out latest release if compat breaks
           Pkg.develop([PackageSpec(path=pwd(), subdir="MRISimulation")])
-          # Temporary: LinearOperatorCollection Adapt rules are unreleased; drop once a release contains them
-          Pkg.add(url="https://github.com/JuliaImageRecon/LinearOperatorCollection.jl", rev="5e781dfce8d1a02a651ab13e078308a2b7731839")
       - uses: julia-actions/julia-buildpkg@e3eb439fad4f9aba7da2667e7510e4a46ebc46e1 # v1.7.0
       - name: Run MRIOperators tests
         shell: julia --color=yes --project=. {0}
