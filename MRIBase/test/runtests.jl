@@ -3,6 +3,7 @@ using Test, MRIBase
 include("Utils.jl")
 
 include("testTrajectories.jl")
+include("testOneLine2D.jl")
 include("testFlags.jl")
 include("testRawAcqData.jl")
 include("testAcqData.jl")
