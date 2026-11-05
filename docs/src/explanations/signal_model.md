@@ -29,9 +29,9 @@ MRIReco.jl never stores $\mathbf{E}$ as a matrix, which for an image of 256 × 2
 Without the correction map and the coil sensitivities, $\mathbf{E}$ is a Fourier transform at the sampled k-space positions. MRIOperators chooses the operator by the trajectory, using operators of LinearOperatorCollection.jl:
 
 - For Cartesian trajectories, the samples lie on a grid, and the operator is an FFT, `FFTOp`. If only some of the grid points were measured, a `SamplingOp` keeps the measured samples.
-- For non-Cartesian trajectories, such as radial and spiral ones, the operator is a non-uniform FFT, `NFFTOp`, computed by [NFFT.jl](https://juliamath.github.io/NFFT.jl/stable/). The NFFT approximates the sum with an FFT on a grid that is finer than the image grid by the oversampling factor σ and a convolution with a small window. The reconstruction parameters `:oversamplingFactor` and `:kernelSize`, with the defaults 1.25 and 3, set σ and the size of the window, and with them the balance between accuracy and speed.
+- For non-Cartesian trajectories, such as radial and spiral ones, the operator is a non-uniform FFT, `NFFTOp`, computed by [NFFT.jl](https://juliamath.github.io/NFFT.jl/stable/). The NFFT approximates the sum with an FFT on a grid that is finer than the image grid by the oversampling factor σ and a convolution with a small window. The parameters `:oversamplingFactor` and `:kernelSize` of the iterative reconstructions, with the defaults 1.25 and 3, set σ and the size of the window, and with them the balance between accuracy and speed. The direct reconstruction and reconstructions with a correction map always use the defaults.
 
-MRIOperators also provides `ExplicitOp`, which evaluates the sum directly, including the correction map. It is exact, but its cost grows with the number of samples times the number of voxels. The reconstruction therefore uses the fast operators, and `ExplicitOp` mainly serves as a reference for testing them.
+MRIOperators also provides `ExplicitOp`, which evaluates the sum directly, including the correction map. It is exact, but its cost grows with the number of samples times the number of voxels. The reconstruction therefore uses the fast operators. `ExplicitOp` mainly serves for simulations with `:simulation = "explicit"` and as a reference for testing the fast operators.
 
 ## Coil Sensitivities
 
@@ -51,9 +51,9 @@ The factor $\mathrm{e}^{-z(\mathbf{r})\, t}$ depends on both position and time, 
 \mathrm{e}^{-z(\mathbf{r}_n)\, t_j} \approx \sum_{\kappa=1}^{K} a_{j\kappa}\, c_{\kappa n},
 ```
 
-which turns the operator into a weighted sum of $K$ NFFTs. The parameter `:method` chooses how the coefficients are computed. The default `"nfft"` approximates the exponential analytically and determines $K$ from the ranges of the correction map and of the readout times, while data-driven methods such as `"leastsquare"` and `"hist"` fit the coefficients for $K$ time segments, which the parameter `:K` sets, to the correction map or to its histogram. Section 2.2 of the paper gives references for these approximations.
+which turns the operator into a weighted sum of $K$ NFFTs. The parameter `:method` of the iterative reconstructions chooses how the coefficients are computed. The default `"nfft"` approximates the exponential analytically and determines $K$ from the ranges of the correction map and of the readout times, while data-driven methods such as `"leastsquare"` fit the coefficients for $K$ time segments, which the parameter `:K` sets, to the correction map. Section 2.2 of the paper gives references for these approximations.
 
-The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the echo time, so they reconstruct the magnetization at the echo time.
+The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the field `TE` of the trajectory and so reconstruct the magnetization at that time. In MRIReco.jl, this is the time of the first sample of a readout, which for Cartesian and radial readouts comes before the center of k-space.
 
 ## The Normal Operator and the Toeplitz Approach
 

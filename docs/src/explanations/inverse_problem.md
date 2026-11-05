@@ -4,15 +4,15 @@ The function [`reconstruction`](@ref) computes an image from the measured data w
 
 ## The Inverse Problem
 
-With the encoding operator $\mathbf{E}$, the measured samples $\mathbf{b}$ and the unknown image $\mathbf{x}$ satisfy $\mathbf{b} \approx \mathbf{E}\mathbf{x}$, up to noise and model errors. Computing $\mathbf{x}$ from $\mathbf{b}$ is an inverse problem. It is usually ill-posed: for undersampled data, many images fit the data equally well, and noise in the data can be strongly amplified. The iterative reconstructions therefore solve a regularized least-squares problem, a weighted form of equation (1) in the [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792):
+With the encoding operator $\mathbf{E}$, the measured samples $\mathbf{b}$ and the unknown image $\mathbf{x}$ satisfy $\mathbf{b} \approx \mathbf{E}\mathbf{x}$, up to noise and model errors. Computing $\mathbf{x}$ from $\mathbf{b}$ is an inverse problem. It is usually ill-posed: for undersampled data, many images fit the data equally well, and noise in the data can be strongly amplified. The iterative reconstructions therefore solve a regularized least-squares problem, like equation (1) in the [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792) but with the weights $\mathbf{W}$ and a factor $\frac{1}{2}$:
 
 ```math
 \underset{\mathbf{x}}{\operatorname{argmin}} \; \frac{1}{2}\lVert \mathbf{W}(\mathbf{E}\mathbf{x} - \mathbf{b}) \rVert_2^2 + \mathrm{R}(\mathbf{x}).
 ```
 
-The regularization term $\mathrm{R}$ expresses prior knowledge about the image, for example that it consists of regions with constant intensity or has few large wavelet coefficients, and the diagonal matrix $\mathbf{W}$ weights the samples, as described below. [Iterative Reconstruction](@ref iterative-reconstruction) shows how the choice of the regularization and of its weight λ affects the image.
+The regularization term $\mathrm{R}$ expresses prior knowledge about the image, for example that it consists of regions with constant intensity or has few large wavelet coefficients, and the diagonal matrix $\mathbf{W}$ weights the samples, as described below. [Iterative Reconstruction](@ref iterative-reconstruction) shows how the choice of the regularization and of its weight λ affects the image. The same problem can also be solved on a GPU, as described in [Run a Reconstruction on the GPU](@ref gpu-reconstruction).
 
-The direct reconstruction, `"direct"`, doesn't solve this problem. It applies the adjoint of the encoding operator to the weighted data, $\mathbf{x} = \mathbf{E}^{\mathsf{H}}\mathbf{W}^2\mathbf{b}$. For fully sampled Cartesian data, this is the inverse FFT, and for non-Cartesian data, it is the gridding reconstruction.
+The direct reconstruction, `"direct"`, doesn't solve this problem. It applies the adjoint of the encoding operator to the weighted data, $\mathbf{x} = \mathbf{E}^{\mathsf{H}}\mathbf{W}^2\mathbf{b}$. For fully sampled Cartesian data, this is the inverse FFT, and for non-Cartesian data, it is the gridding reconstruction. With trajectories that cover a circular region of k-space, such as radial and spiral ones, the image is then set to zero outside a circle, or in 3D a sphere, with the diameter of its longest side.
 
 ## Density Compensation
 
@@ -22,10 +22,10 @@ Non-Cartesian trajectories sample k-space unevenly, radial trajectories for exam
 
 MRIReco.jl takes the solvers and the regularization terms from [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), as described in section 2.5 of the paper:
 
-- The parameter `:solver` selects the solver, for example `CGNR`, the conjugate gradient method applied to the normal equations, which supports an $\ell_2$ regularization, or `ADMM` and `FISTA`, which also support non-smooth terms such as the $\ell_1$ norm and total variation. The solvers only need the encoding operator, its adjoint and the normal operator.
+- The parameter `:solver` selects the solver, for example `CGNR`, the conjugate gradient method applied to the normal equations, which supports an $\ell_2$ regularization, or `ADMM` and `FISTA`, which also support non-smooth terms such as the $\ell_1$ norm and total variation. These solvers only need the encoding operator, its adjoint and the normal operator.
 - The parameter `:reg` sets the regularization term, for example `L2Regularization(λ)`, `L1Regularization(λ)` or `TVRegularization(λ; shape)`. Each term provides its proximal map, which proximal solvers such as ADMM and FISTA use.
 - The parameter `:sparseTrafo` applies the regularization to a transformed image. With `"Wavelet"`, an $\ell_1$ regularization penalizes $\lVert \mathbf{\Phi}\mathbf{x} \rVert_1$ instead of $\lVert \mathbf{x} \rVert_1$, where $\mathbf{\Phi}$ is the wavelet transform.
-- The parameter `:normalizeReg` scales λ. By default, λ is used as given, and with `MeasurementBasedNormalization`, it is scaled with the magnitude of the data, so that the same value works for data of different scale.
+- The parameter `:normalizeReg` scales λ. By default, λ is used as given, and with `MeasurementBasedNormalization`, it is scaled with the magnitude of the data, so that for terms such as the $\ell_1$ norm and total variation, the same value works for data of different scale.
 
 The examples in the paper select the solver and the regularization by name, with `params[:solver] = "admm"` and `params[:regularization] = "TV"` together with `params[:λ]`. The current version takes them as types and objects, `params[:solver] = ADMM` and `params[:reg] = TVRegularization(λ; shape)`, and the other parameters of the solvers have the names of their keyword arguments in RegularizedLeastSquares.jl, for example `:rho` instead of `:ρ` for the penalty parameter of ADMM and `:iterationsCG` instead of `:iterationsInner` for its inner CG iterations. The old names, such as `:regularization`, `:λ` and `:ρ`, are ignored.
 
@@ -46,6 +46,4 @@ The reconstruction types with coil sensitivities, which `:senseMaps` provides, c
 
 ## Noise Decorrelation
 
-The noise of different receive coils is usually correlated. If a noise measurement is given with `:noiseData`, the reconstruction types `"multiCoil"` and `"multiCoilMultiEcho"` estimate the noise covariance matrix $\mathbf{\Psi}$ from it, compute its Cholesky factorization $\mathbf{\Psi} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ and apply $\mathbf{L}^{-1}$ to the data and to the coil sensitivities. This decorrelates the noise, which the least-squares problem assumes to be uncorrelated and of equal variance in all coils.
-
-The same problem can also be solved on a GPU, as described in [Run a Reconstruction on the GPU](@ref gpu-reconstruction).
+The noise of different receive coils is usually correlated. If a noise measurement is given with `:noiseData`, the reconstruction type `"multiCoil"` estimates the noise covariance matrix $\mathbf{\Psi}$ from it, computes its Cholesky factorization $\mathbf{\Psi} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ and applies $\mathbf{L}^{-1}$ to the data and to the coil sensitivities. This decorrelates the noise, which the least-squares problem assumes to be uncorrelated and of equal variance in all coils.
