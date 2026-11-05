@@ -75,7 +75,7 @@ showimages([referenceImage, samplingMask, directImage],
 # `using MRIReco` loads.
 #
 # We first use CGNR, the conjugate gradient method applied to the normal equations, with a small $\ell_2$
-# regularization $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{x} \rVert_2^2$:
+# regularization, which penalizes $\lVert \mathbf{x} \rVert_2^2$ with a weight set by λ:
 
 params = Dict{Symbol, Any}()
 params[:reco] = "standard"
@@ -94,7 +94,7 @@ showimages([referenceImage, directImage, imageL2],
 #
 # ## Total Variation
 #
-# Total variation (TV) regularization, $\mathrm{R}(\mathbf{x}) = \lambda \operatorname{TV}(\mathbf{x})$, favors
+# Total variation (TV) regularization, which penalizes $\operatorname{TV}(\mathbf{x})$ with a weight set by λ, favors
 # images that consist of regions with constant intensity, like this simulated brain. We solve the problem with ADMM,
 # which is also the default solver. So that ADMM converges within 50 iterations for every λ used below, we let it
 # adapt its penalty parameter `rho` with `vary_rho = :balance` and use more inner iterations for the TV term than by
@@ -137,5 +137,8 @@ showimages(images, ["λ = $λ, NRMSD $(deviation(image))"
 # - With several coils, `"standard"` reconstructs the image of each coil separately.
 #   [Multi-Coil Reconstruction](@ref multicoil-reconstruction) shows how the reconstruction type `"multiCoil"`
 #   uses the coil sensitivities to reconstruct a single image from all coils.
+# - With several echoes, `"standard"` reconstructs each echo on its own.
+#   [Multi-Echo Reconstruction](@ref multiecho-reconstruction) shows how the reconstruction type `"multiEcho"`
+#   reconstructs them jointly.
 # - The API reference describes [`reconstruction`](@ref) and
 #   [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)).

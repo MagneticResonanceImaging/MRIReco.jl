@@ -30,6 +30,7 @@ makedocs(
             "Direct Reconstruction" => "generated/tutorials/direct.md",
             "Iterative Reconstruction" => "generated/tutorials/iterative.md",
             "Multi-Coil Reconstruction" => "generated/tutorials/multicoil.md",
+            "Multi-Echo Reconstruction" => "generated/tutorials/multiecho.md",
             "Subspace Reconstruction" => "generated/tutorials/subspace.md",
         ],
         "How-to Guides" => [
