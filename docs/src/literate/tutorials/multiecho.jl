@@ -116,10 +116,10 @@ showechoes(directImages, "Direct")
 #
 # The reconstruction type `"standard"` handles the contrasts independently of each other. We use it with total variation
 # regularization and the solver POGM, an accelerated proximal gradient method. The parameter `:rho` sets its step size.
-# POGM on its own would use 0.95 here, but the joint reconstruction below needs small steps, so we use 0.05, the default
-# of [`reconstruction`](@ref), and more iterations. As in [Iterative Reconstruction](@ref iterative-reconstruction), we
-# also use more inner iterations for the total variation term than by default. The regularization reduces the stripes,
-# but also smooths fine structures:
+# POGM on its own would use 0.95 here, but the joint reconstruction below needs small steps, so we use 0.05 and more
+# iterations. As in [Iterative Reconstruction](@ref iterative-reconstruction), we also scale λ with
+# `MeasurementBasedNormalization` and use more inner iterations for the total variation term than by default. The
+# regularization reduces the stripes, but also smooths fine structures:
 
 totalVariation = TVRegularization(0.1, shape = (320, 320), iterationsTV = 50)
 
@@ -230,7 +230,8 @@ fig
 #
 # - [Subspace Reconstruction](@ref subspace-reconstruction) exploits the same redundancy with a fixed temporal basis
 #   and several coils.
-# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately.
+# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately, while
+#   `"multiCoilMultiEcho"` reconstructs one image per echo from all coils.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
 # - The API reference describes [`reconstruction`](@ref) and
