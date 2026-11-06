@@ -1,19 +1,19 @@
 """
-    sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
+    sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,kargs...)
 
 generates a Poisson disk sampling pattern for an Vector of size `shape` with a subsampling factor `redFac`.
 The arguments are the same as in the 2d case with the exception that shape is of type `Tuple{Int64}`
 """
-function sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
-  sample_poissondisk((shape[1],1),redFac,calsize=calsize,seed=seed;kargs...)
+function sample_poissondisk(shape::Tuple{Int64},redFac;calsize::Int64=0,kargs...)
+  sample_poissondisk((shape[1],1),redFac,calsize=calsize;kargs...)
 end
 
-function sample_poissondisk(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,seed::Int64=1234,kargs...)
+function sample_poissondisk(shape::Tuple{Int64,Int64,Int64},redFac;calsize::Int64=0,kargs...)
   error("Not implemented")
 end
 
 """
-    sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,kargs...)
+    sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed=nothing,kargs...)
 
 generates a Poisson disk sampling pattern for an Array of size `shape` with a subsampling factor `redFac`.
 
@@ -21,9 +21,10 @@ generates a Poisson disk sampling pattern for an Array of size `shape` with a su
 * `shape::NTuple{2,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * (`calsize::Int64=0`)     - size of the fully sampled calibration area
-* (`seed=1234`)            - seed for the random number generator
+* (`rng=Random.default_rng()`) - random number generator
+* (`seed=nothing`)         - seed for `rng`; with `nothing`, `rng` is used in its current state
 """
-function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, seed::Int64=1234,densityFac::Float64=0.8,kargs...)
+function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::Int64=0, rng=Random.default_rng(), seed::Union{Nothing,Int64}=nothing,densityFac::Float64=0.8,kargs...)
   M,N = shape
   A = zeros(Int64,shape)
   ChosenSamples = 0
@@ -35,7 +36,9 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
   cal_x, cal_y = min(calsize,M), min(calsize,N)
   forbiddenradius = densityFac*sqrt((M*N-cal_x*cal_y)/(NumberSamples-ChosenSamples))
 
-  Random.seed!(seed)
+  if !isnothing(seed)
+    Random.seed!(rng, seed)
+  end
 
   while ChosenSamples < NumberSamples
     if length(selection)<1
@@ -44,7 +47,7 @@ function sample_poissondisk(shape::Tuple{Int64,Int64},redFac::Float64;calsize::I
       A = reshape(A,M,N)
       selection = (LinearIndices(abs.(A .- 1)))[findall(x->x!=0, abs.(A .- 1))]
     end
-    randnum = rand(1:length(selection))
+    randnum = rand(rng, 1:length(selection))
     push!(chosen,selection[randnum])
     ChosenSamples += 1
 
