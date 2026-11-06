@@ -4,7 +4,7 @@ function MRIOperators.prod_smap!(y::vecT, smaps::matT, x::vecT, numVox, numChan,
 
   @assert size(smaps) == (size(y_,1), size(y_,2))
 
-  @kernel inbounds = true cpu = false function smap_kernel!(y, x, smaps)
+  @kernel inbounds = true function smap_kernel!(y, x, smaps)
     cart = @index(Global, Cartesian)
     y[cart] = x[cart[1], cart[3]] * smaps[cart[1], cart[2]]
   end
@@ -21,7 +21,7 @@ function MRIOperators.ctprod_smap!(y::vecT, smapsC::matT, x::vecT, numVox, numCh
 
   y_ .= 0
   # Inner loop to avoid race condition
-  @kernel inbounds = true cpu = false function smap_kernel_adjoint!(y, x, smapsC, limit)
+  @kernel inbounds = true function smap_kernel_adjoint!(y, x, smapsC, limit)
     cart = @index(Global, Cartesian)
     for i = 1:limit
       y[cart] += x[cart[1], i, cart[2]] * smapsC[cart[1],i]
