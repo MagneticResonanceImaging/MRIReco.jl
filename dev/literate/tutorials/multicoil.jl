@@ -45,9 +45,10 @@ nothing #hide
 # We keep a quarter of the profiles.
 # [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)) chooses them by Poisson-disk
 # sampling and, with `calsize = 30`, always includes the 30 profiles in the center of k-space. These profiles form a
-# fully sampled calibration region, from which we estimate the coil sensitivities below:
+# fully sampled calibration region, from which we estimate the coil sensitivities below. The seed makes the random
+# choice reproducible:
 
-acqDataSub = sample_kspace(acqData, 4.0, "poisson", calsize = 30)
+acqDataSub = sample_kspace(acqData, 4.0, "poisson", calsize = 30, seed = 1234)
 
 samplingMask = zeros(320, 320)
 samplingMask[acqDataSub.subsampleIndices[1]] .= 1
