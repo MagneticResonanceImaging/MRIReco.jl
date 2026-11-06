@@ -41,7 +41,7 @@ function oneLine2dNodes(::Type{T}, numProfiles, numSamplingPerProfile; angle::Fl
 end
 
 function oneLine2dDensity(::Type{T}, numSamplingPerProfile::Int64, numProfiles::Int64) where T
-  density = zeros(T, tr.numSamplingPerProfile, numProfiles)
+  density = zeros(T, numSamplingPerProfile, numProfiles)
   pos = collect((0:numSamplingPerProfile-1)/numSamplingPerProfile .- 0.5)
   for l = 1:numProfiles
     for k = 1:numSamplingPerProfile
