@@ -45,6 +45,8 @@ makedocs(
         "Explanations" => [
             "Package Architecture" => "explanations/architecture.md",
             "Data Model" => "generated/explanations/data_model.md",
+            "Signal Model and Encoding Operators" => "explanations/signal_model.md",
+            "Reconstruction as an Inverse Problem" => "explanations/inverse_problem.md",
             "GPU Acceleration" => "explanations/gpu.md",
         ],
         "Reference" => [
@@ -62,7 +64,6 @@ makedocs(
             "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
-            "Imaging Operators" => "operators.md",
             "Offresonance" => "offresonance.md",
             "Customize" => "custom.md",
         ],

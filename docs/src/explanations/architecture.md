@@ -21,7 +21,7 @@ The repository contains seven packages, which are registered separately. In the 
 
 [MRIBase](../API/MRIBase.md) is the foundation. It defines the data types that the other packages exchange, such as [`RawAcquisitionData`](@ref), [`AcquisitionData`](@ref) and [`Trajectory`](@ref), and does not depend on any other package of the repository. These data types are explained on the [Data Model](@ref data-model) page. All other packages build on MRIBase:
 
-- [MRIOperators](../API/MRIOperators.md) implements the encoding operators, which map an image to k-space data. Besides Fourier operators for Cartesian and non-Cartesian trajectories, it provides operators for coil sensitivities, off-resonance, relaxation and subspace models, which are combined into the encoding operator of an acquisition. It builds on LinearOperatorCollection.jl and NFFT.jl.
+- [MRIOperators](../API/MRIOperators.md) implements the [encoding operators](@ref signal-model), which map an image to k-space data. Besides Fourier operators for Cartesian and non-Cartesian trajectories, it provides operators for coil sensitivities, off-resonance, relaxation and subspace models, which are combined into the encoding operator of an acquisition. It builds on LinearOperatorCollection.jl and NFFT.jl.
 - [MRIFiles](../API/MRIFiles.md) reads and writes ISMRMRD files and reads data from Bruker scanners.
 - [MRISampling](../API/MRISampling.md) generates undersampling patterns and applies them to acquisition data.
 - [MRICoilSensitivities](../API/MRICoilSensitivities.md) estimates coil sensitivities, for example with ESPIRiT, and compresses the data of many coils into fewer virtual coils.
