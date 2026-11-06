@@ -23,6 +23,7 @@ MRIReco.jl consists of several packages that are developed in the same repositor
 - [Getting Started](@ref) shows how to install the packages and run a first reconstruction.
 - The tutorials walk through complete reconstructions step by step.
 - The how-to guides show how to solve specific tasks, grouped by package.
+- The explanations describe the design of the packages and the concepts behind them.
 - The reference lists the API of each package.
 
 The pages under "Legacy Pages" come from the previous version of this documentation and are being rewritten.

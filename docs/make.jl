@@ -39,6 +39,10 @@ makedocs(
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
+        "Explanations" => [
+            "Package Architecture" => "explanations/architecture.md",
+            "Data Model" => "generated/explanations/data_model.md",
+        ],
         "Reference" => [
             "API" => [
                 "MRIReco" => "API/MRIReco.md",
@@ -51,10 +55,8 @@ makedocs(
             ],
         ],
         "Legacy Pages" => [
-            "Overview" => "overview.md",
             "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
-            "Images" => "image.md",
             "Trajectory" => "trajectories.md",
             "Imaging Operators" => "operators.md",
             "Offresonance" => "offresonance.md",

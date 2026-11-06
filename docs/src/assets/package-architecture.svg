@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="200" viewBox="0 0 900 200" role="img" aria-labelledby="title desc">
+  <title id="title">Packages of MRIReco.jl</title>
+  <desc id="desc">Each package builds on the packages below it. MRIBase is at the bottom. MRIOperators, MRIFiles,
+    MRISampling and MRICoilSensitivities build on MRIBase. MRIReco and MRISimulation build on MRIOperators.
+    MRIReco, MRIOperators and MRIBase are loaded with using MRIReco; the other packages are loaded separately.</desc>
+  <style>
+    text { font-family: "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f1f1f; }
+    .pkg { font-size: 15px; font-weight: 600; text-anchor: middle; }
+    .legend { font-size: 13px; }
+    .code { font-family: Consolas, Menlo, "DejaVu Sans Mono", monospace; }
+    .loaded { fill: #dce6fa; stroke: #4063d8; stroke-width: 1.5; }
+    .separate { fill: #e1f2dc; stroke: #389826; stroke-width: 1.5; }
+    .key { fill: #f5f5f5; stroke: #c8c8c8; stroke-width: 1; }
+  </style>
+
+  <!-- top layer -->
+  <rect class="loaded" x="8" y="8" width="182" height="44" rx="6"/>
+  <text class="pkg" x="99" y="30" dy=".35em">MRIReco</text>
+  <rect class="separate" x="198" y="8" width="182" height="44" rx="6"/>
+  <text class="pkg" x="289" y="30" dy=".35em">MRISimulation</text>
+
+  <!-- middle layer -->
+  <rect class="loaded" x="8" y="60" width="372" height="44" rx="6"/>
+  <text class="pkg" x="194" y="82" dy=".35em">MRIOperators</text>
+  <rect class="separate" x="388" y="60" width="128" height="44" rx="6"/>
+  <text class="pkg" x="452" y="82" dy=".35em">MRIFiles</text>
+  <rect class="separate" x="524" y="60" width="152" height="44" rx="6"/>
+  <text class="pkg" x="600" y="82" dy=".35em">MRISampling</text>
+  <rect class="separate" x="684" y="60" width="208" height="44" rx="6"/>
+  <text class="pkg" x="788" y="82" dy=".35em">MRICoilSensitivities</text>
+
+  <!-- bottom layer -->
+  <rect class="loaded" x="8" y="112" width="884" height="44" rx="6"/>
+  <text class="pkg" x="450" y="134" dy=".35em">MRIBase</text>
+
+  <!-- legend -->
+  <rect class="key" x="8" y="168" width="236" height="26" rx="13"/>
+  <rect class="loaded" x="20" y="175" width="12" height="12" rx="2"/>
+  <text class="legend" x="40" y="181" dy=".35em">Loaded with <tspan class="code">using MRIReco</tspan></text>
+  <rect class="key" x="252" y="168" width="168" height="26" rx="13"/>
+  <rect class="separate" x="264" y="175" width="12" height="12" rx="2"/>
+  <text class="legend" x="284" y="181" dy=".35em">Loaded separately</text>
+</svg>
