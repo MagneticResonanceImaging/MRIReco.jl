@@ -9,7 +9,7 @@ function defaultRecoParams()
   params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
-  params[:kwargWarning] = false
+  #params[:kwargWarning] = false
 
   return params
 end
@@ -165,6 +165,41 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   recoParams[:arrayType] = arrayType
   recoParams[:S] = S
   return recoParams
+end
+
+function setupPlanReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
+  method = pop!(recoParams, :reco)
+  # If a user provides custom inputs we need to change the underlying default plan templates
+  # for that we update the param keywords. RecoPlans are set before other keywords, i.e.
+  # if a user sets weights and we update weightingParams to be CustomWeightingParameters, the appropriate
+  # weight fields of the CustomWeightingParameters will be filled
+
+  # Weighting
+  # Custom weighting or density sampling or uniform sampling
+  if haskey(recoParams, :weights)
+    recoParams[:weightingParams] = RecoPlan(CustomWeightingParameters)
+  elseif !get(recoParams, :densityWeighting, true)
+    recoParams[:weightingParams] = RecoPlan(UniformWeightingParameters)
+  end
+
+  # Regularization needs no specific setup
+
+  # SparseTrafos: Just strings or custom ones
+  if haskey(recoParams, :sparseTrafos) && 
+    !(recoParams[:sparseTrafos] isa String || recoParams[:sparseTrafos] isa Vector{String})
+    recoParams[:sparsityParams] = RecoPlan(CustomSparsityParameters)
+  end
+
+  # EncodingOps: Custom or not
+  if haskey(recoParams, :encodingOps)
+    recoParams[:encodingParams] = RecoPlan(CustomEncodingParameters)
+  end
+
+  # Default behaviour of all other parameters from setupIterative and setupDirect should be
+  # encoded in the actual parameter behaviour
+
+  plan = MRIRecoPlan(method; recoParams...)
+  return plan
 end
 
 
