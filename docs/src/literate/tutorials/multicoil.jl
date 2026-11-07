@@ -54,8 +54,8 @@ samplingMask = zeros(320, 320)
 samplingMask[acqDataSub.subsampleIndices[1]] .= 1
 nothing #hide
 
-# The direct reconstruction of the undersampled data is blurred and shows stripes along the horizontal direction, in
-# which profiles are missing. We measure the deviation from the reference with [`nrmsd`](@ref), the normalized root
+# The direct reconstruction of the undersampled data is blurred and shows vertical stripes, because profiles are missing
+# along the horizontal direction. We measure the deviation from the reference with [`nrmsd`](@ref), the normalized root
 # mean squared deviation:
 
 directImage = rootSumOfSquares(reconstruction(acqDataSub, params))
@@ -119,8 +119,8 @@ showimages([referenceImage, directImage, imageSENSE],
 # MR images can be approximated well by a few large coefficients of a wavelet transform $\mathbf{\Phi}$. Compressed
 # sensing exploits this. Because most of the profiles are chosen at random, the undersampling artifacts are spread like
 # noise along the horizontal direction instead of forming shifted copies of the image. An $\ell_1$ regularization of
-# the wavelet coefficients, $\mathrm{R}(\mathbf{x}) = \lambda \lVert \mathbf{\Phi}\mathbf{x} \rVert_1$, favors images
-# with few large coefficients and thereby suppresses these artifacts. With `params[:sparseTrafo] = "Wavelet"`, the
+# the wavelet coefficients, which penalizes $\lVert \mathbf{\Phi}\mathbf{x} \rVert_1$ with a weight set by λ, favors
+# images with few large coefficients and thereby suppresses these artifacts. With `params[:sparseTrafo] = "Wavelet"`, the
 # $\ell_1$ regularization applies to the wavelet coefficients. As in the knee example of the
 # [MRIReco.jl paper](https://doi.org/10.1002/mrm.28792), we use ADMM with λ = 0.2 and 30 iterations:
 
