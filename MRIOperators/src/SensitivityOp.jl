@@ -42,18 +42,16 @@ at construction.
 
     Adapt.adapt(CuArray, op::SensitivityOp)
 
-returns a new `SensitivityOp` with a new parent operator, built from the sensitivity maps and their
-conjugates adapted to the target, so it applies the same forward and adjoint operation as `op` at the
-time of the call. In particular, the adjoint keeps using the conjugated maps computed when `op` was built.
-Maps that Adapt does not return as plain arrays of the target (views, structured or static matrices)
-are copied into plain arrays on the target. On the same backend, plain arrays may be shared with `op`
-and are only read. `op` itself is not modified.
+returns a new `SensitivityOp` with a new parent operator, built from `Adapt.adapt(CuArray, ...)` of the
+sensitivity maps and of their conjugates, so it applies the same forward and adjoint operation as `op` at
+the time of the call. In particular, the adjoint keeps using the conjugated maps computed when `op` was built.
+On the same backend, the maps may be shared with `op` and are only read. `op` itself is not modified.
 `SensitivityOp` and `SubspaceOp` are the MRI operators that support `Adapt.adapt` so far.
 """
-struct SensitivityOp{T, O} <: WrappedMRIOperator{T, O}
+struct SensitivityOp{T, O, M <: AbstractMatrix{T}, MC <: AbstractMatrix{T}} <: WrappedMRIOperator{T, O}
   op::O
-  sensMaps::AbstractMatrix{T}
-  sensMapsC::AbstractMatrix{T}
+  sensMaps::M
+  sensMapsC::MC
   numContr::Int
   # Builds the operator from given maps and conjugated maps; used by the public constructor and Adapt.
   function SensitivityOp{T}(sensMaps::AbstractMatrix{T}, sensMapsC::AbstractMatrix{T}, numContr) where T
@@ -63,15 +61,14 @@ struct SensitivityOp{T, O} <: WrappedMRIOperator{T, O}
                            nothing,
                            (res,x) -> ctprod_smap!(res,sensMapsC,x,numVox,numChan,numContr),
                            S = typeof(similar(sensMaps, 0)))
-      return new{T, typeof(op)}(op, sensMaps, sensMapsC, numContr)
+      return new{T, typeof(op), typeof(sensMaps), typeof(sensMapsC)}(op, sensMaps, sensMapsC, numContr)
   end
 end
 SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1) where T = SensitivityOp{T}(sensMaps, conj.(sensMaps), numContr)
 parent(op::SensitivityOp) = getfield(op, :op)
 
 Adapt.adapt_structure(to, op::SensitivityOp{T}) where T =
-  SensitivityOp{T}(adaptRetained(to, getfield(op, :sensMaps), "sensMaps"),
-                   adaptRetained(to, getfield(op, :sensMapsC), "conjugated sensMaps"), getfield(op, :numContr))
+  SensitivityOp{T}(adapt(to, getfield(op, :sensMaps)), adapt(to, getfield(op, :sensMapsC)), getfield(op, :numContr))
 
 """
   SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)

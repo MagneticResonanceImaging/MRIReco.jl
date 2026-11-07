@@ -9,15 +9,6 @@ storageType(op) = MRIOperators.LinearOperators.storage_type(op)
 testData(T, dims...) = reshape(T[T <: Real ? cos(0.3k + 0.1) : complex(cos(0.3k + 0.1), sin(0.7k) + 0.5) for k in 1:prod(dims)], dims)
 onTarget(x, to) = x isa to && x isa DenseArray
 
-# A host matrix that is isbits like StaticArrays' SMatrix: device array adaptors leave such arrays unchanged.
-struct IsbitsMatrix{T, L} <: AbstractMatrix{T}
-  data::NTuple{L, T}
-  rows::Int
-end
-IsbitsMatrix(a::AbstractMatrix) = IsbitsMatrix(Tuple(a), size(a, 1))
-Base.size(m::IsbitsMatrix{T, L}) where {T, L} = (m.rows, L ÷ m.rows)
-Base.getindex(m::IsbitsMatrix, i::Int, j::Int) = m.data[(j - 1) * m.rows + i]
-
 # Forward and adjoint results with three- and five-argument `mul!`, collected on the CPU.
 function adaptActions(op, conv, x, y)
   T = eltype(op)
@@ -44,11 +35,13 @@ function testMovedWrapper(moved, src, to)
 end
 function testSensitivityLeaves(op, to)
   @test fieldnames(typeof(op)) == (:op, :sensMaps, :sensMapsC, :numContr)
+  @test all(isconcretetype, fieldtypes(typeof(op)))
   @test onTarget(getfield(op, :sensMaps), to)
   @test onTarget(getfield(op, :sensMapsC), to)
 end
 function testSubspaceLeaf(op, to)
   @test fieldnames(typeof(op)) == (:op, :basis, :shape, :numContr)
+  @test all(isconcretetype, fieldtypes(typeof(op)))
   @test onTarget(getfield(op, :basis), to)
 end
 
@@ -122,47 +115,6 @@ workspaceState(op) = (Array(op.Mv), Array(op.Mtu), op.nprod, op.ntprod, op.nctpr
     moved = adapt(to, src)
     @test isapprox(Array(moved * to(x)), srcFwd; rtol = adaptRtol(T))
     @test isapprox(Array(adjoint(moved) * to(y)), srcAdj; rtol = adaptRtol(T))
-  end
-end
-
-@testset "Adapt wrapped inputs Array -> $(nameof(to)) $T" for to in adaptTargets, T in (ComplexF32, ComplexF64)
-  rtol = adaptRtol(T)
-  maps, big, maps4 = testData(T, 6, 2), testData(T, 8, 2), testData(T, 3, 2, 1, 2)
-  for maps in (view(maps, :, :), view(big, 2:7, :), reshape(view(maps4, :, :, :, :), 6, 2), Diagonal(testData(T, 3)),
-               IsbitsMatrix(maps))
-    src = SensitivityOp(maps, 1)
-    moved = adapt(to, src)
-    testMovedWrapper(moved, src, to)
-    testSensitivityLeaves(moved, to)
-    testAdaptActions(moved, to, src, Array, rtol)
-  end
-  basis, bigBasis = testData(T, 3, 2), testData(T, 5, 2)
-  for basis in (view(basis, :, :), view(bigBasis, 2:4, :), Diagonal(testData(T, 3)), IsbitsMatrix(basis))
-    src = SubspaceOp(basis, (3, 1), 3)
-    moved = adapt(to, src)
-    testMovedWrapper(moved, src, to)
-    testSubspaceLeaf(moved, to)
-    testAdaptActions(moved, to, src, Array, rtol)
-  end
-  # Structured and isbits inputs inside a product
-  src = ProdOp(SensitivityOp(Diagonal(testData(T, 3)), 1), SubspaceOp(IsbitsMatrix(testData(T, 3, 3)), (1, 1), 3))
-  moved = adapt(to, src)
-  testSensitivityLeaves(moved.A, to)
-  testSubspaceLeaf(moved.B, to)
-  @test storageType(moved) <: to
-  testAdaptActions(moved, to, src, Array, rtol)
-end
-
-@testset "Adapt wrapped inputs $(nameof(from)) -> Array" for from in filter(!=(Array), adaptTargets)
-  T = ComplexF32
-  maps, basis = testData(T, 6, 2), testData(T, 3, 2)
-  for (src, ref) in ((SensitivityOp(view(from(maps), :, :), 1), SensitivityOp(maps, 1)),
-                     (SensitivityOp(Diagonal(from(testData(T, 3))), 1), SensitivityOp(Matrix(Diagonal(testData(T, 3))), 1)),
-                     (SubspaceOp(view(from(basis), :, :), (3, 1), 3), SubspaceOp(basis, (3, 1), 3)))
-    moved = adapt(Array, src)
-    testMovedWrapper(moved, src, Array)
-    src isa SensitivityOp ? testSensitivityLeaves(moved, Array) : testSubspaceLeaf(moved, Array)
-    testAdaptActions(moved, Array, ref, Array, adaptRtol(T))
   end
 end
 
