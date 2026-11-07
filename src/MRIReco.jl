@@ -5,6 +5,11 @@ using Reexport
 @reexport using MRIBase
 @reexport using MRIOperators
 @reexport using RegularizedLeastSquares
+@reexport using AbstractImageReconstruction
+@reexport using AbstractImageReconstruction.StructUtils
+@reexport using AbstractImageReconstruction.ScopedValues
+using RelocatableFolders
+
 
 using ProgressMeter
 using AxisArrays
@@ -15,6 +20,7 @@ using Unitful
 
 
 include("Tools/Tools.jl")
+include("Algorithms/Algorithms.jl")
 include("Reconstruction/Reconstruction.jl")
 
 function __init__()

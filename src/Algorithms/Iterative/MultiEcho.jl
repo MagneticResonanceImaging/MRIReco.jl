@@ -1,0 +1,146 @@
+export MultiEchoReconstruction
+export AbstractMultiEchoParameters
+export MultiEchoIterativeParameters
+
+abstract type AbstractMultiEchoParameters <: AbstractIterativeRecoParameters end
+
+@reconstruction mutable struct MultiEchoReconstruction{P<:AbstractMultiEchoParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
+  @parameter parameter::C
+end
+
+function (weighting::AbstractMRIRecoWeightingParameters)(algo::MultiEchoReconstruction)
+  weights = weighting(AbstractIterativeMRIRecoAlgorithm)
+  return vcat(weights...)
+end
+
+
+function (sparsity::AbstractSparsityParameters)(algo::MultiEchoReconstruction, numTerms::Int64)
+  trafos = sparsity(AbstractIterativeMRIRecoAlgorithm, numTerms)
+  acqData = ctx_acqData()
+  numContr = numContrasts(acqData)
+  
+  result = []
+  for trafo in trafos
+    if isnothing(trafo)
+      push!(result, nothing)
+    else
+      push!(result, DiagOp(repeat([trafo], numContr)...))
+    end
+  end
+  return result
+end
+
+function (ep::EncodingParameters)(::MultiEchoReconstruction, slice::Int)
+  acqData = ctx_acqData()
+  reconSize = ctx_reconSize()
+  S = ctx_storageType()
+  
+  encParams = buildEncodingParams(ep, S)
+  return encodingOp_multiEcho(acqData, reconSize; slice=slice, encParams...)
+end
+
+
+"""
+    MultiEchoIterativeParameters{E, W, S} <: AbstractMultiEchoParameters
+
+Performs a iterative image reconstruction jointly for all contrasts. Different slices and coil images
+are reconstructed independently.
+
+# Arguments
+- `encodingParams::E` - Encoding operator parameters
+- `weightingParams::W` - Sampling weighting parameters
+- `solverParams::S` - Least squares solver parameters
+
+# Callable Interface
+
+    # Allocation - allocates output array and returns iteration indices and weights
+    (params::MultiEchoIterativeParameters)(algo, reconSize) -> (Ireco, indices, weights)
+
+    # Loop body - called per index with weights and output array
+    (params::MultiEchoIterativeParameters)(algo, Ireco, index, weights)
+
+    # Finalization - reshapes and wraps result
+    (params::MultiEchoIterativeParameters)(algo, Ireco) -> AxisArray
+"""
+@parameter struct MultiEchoIterativeParameters{
+    E <: AbstractMRIRecoEncodingParameters,
+    W <: AbstractMRIRecoWeightingParameters,
+    S <: LeastSquaresSolverParameter
+} <: AbstractMultiEchoParameters
+  encodingParams::E
+  weightingParams::W
+  solverParams::S
+end
+
+function (params::MultiEchoIterativeParameters)(
+  algo::MultiEchoReconstruction, 
+  reconSize::NTuple{D, Int64}
+) where D
+  acqData = ctx_acqData()
+  T = real(eltype(ctx_storageType()))
+  
+  numContr = numContrasts(acqData)
+  numChan = numChannels(acqData)
+  numSl = numSlices(acqData)
+  numRep = numRepetitions(acqData)
+  
+  Ireco = zeros(Complex{T}, prod(reconSize) * numContr, numChan, numSl, numRep)
+  indices = CartesianIndices((numRep, numSl))
+  
+  weights = params.weightingParams(algo)
+  
+  return (Ireco, indices, weights)
+end
+
+function (params::MultiEchoIterativeParameters)(
+  algo::MultiEchoReconstruction, 
+  Ireco::Array{Complex{T}, 4},
+  index::CartesianIndex{2}, 
+  weights::AbstractVector
+) where T
+  reconSize = ctx_reconSize()
+  acqData = ctx_acqData()
+  arrayType = ctx_arrayType()
+  
+  l, i = index[1], index[2]  # rep, slice
+  
+  numChan = numChannels(acqData)
+  
+  F = params.encodingParams(algo, i)
+  
+  W = WeightingOp(Complex{T}; weights=weights)
+  
+  for j in 1:numChan
+    kdata = arrayType(multiEchoData(acqData, j, i, rep=l)) .* weights
+    EFull = ProdOp(W, F)
+    EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
+    
+    I = params.solverParams(algo, kdata, EFull, EFullᴴEFull)
+    
+    Ireco[:, j, i, l] = Array(I)
+  end
+end
+
+function (params::MultiEchoIterativeParameters)(
+  algo::MultiEchoReconstruction, 
+  Ireco::Array{Complex{T}, 4}
+) where T
+  acqData = ctx_acqData()
+  reconSize = ctx_reconSize()
+  
+  numSl = numSlices(acqData)
+  numContr = numContrasts(acqData)
+  numChan = numChannels(acqData)
+  numRep = numRepetitions(acqData)
+  
+  encDims = ndims(trajectory(acqData))
+  
+  if encDims == 2
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], numContr, numChan, numSl, numRep)
+    Ireco_ = permutedims(Ireco_, [1, 2, 5, 3, 4, 6])
+  else
+    Ireco_ = reshape(Ireco, reconSize[1], reconSize[2], reconSize[3], numContr, numChan, numRep)
+  end
+  
+  return makeAxisArray(Ireco_, acqData)
+end
