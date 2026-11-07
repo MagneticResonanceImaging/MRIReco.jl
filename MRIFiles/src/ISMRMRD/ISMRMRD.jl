@@ -19,36 +19,46 @@ function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset";
     headerStr = read(h["/$(dataset)/xml"])
     params = GeneralParameters(headerStr[1])
 
-    M = size(h["/$(dataset)/data"]) # for some reason this is a matrix 
-
-    # In the next lines we only read the headers of the profiles such that
-    # we can later filter on them. We first read the data into a binary blob (NTuple)
-    # and the exploit the read implementation that reconstructs the struct field by field
-    dTypeHeader = get_hdf5type_acquisition_header_only()
-    headerData_ = Array{NTuple{ISMRMRD_HEADER_SIZE,UInt8}}(undef, M)
-    HDF5.API.h5d_read(h["/$(dataset)/data"], dTypeHeader, H5S_ALL, H5S_ALL, H5P_DEFAULT, headerData_)
-    headerData = [ read(IOBuffer(collect(headerData_[m])),AcquisitionHeader) for m in CartesianIndices(M)]
+    M = size(h["/$(dataset)/data"]) # for some reason this is a matrix
 
     profiles = Profile[]
+    noFilter = isnothing(repetition) && isnothing(slice) && isnothing(contrast)
 
-    for m in CartesianIndices(M)
-      if (repetition == nothing || headerData[m].idx.repetition in repetition) &&
-          (slice == nothing || headerData[m].idx.slice in slice) &&
-          (contrast == nothing || headerData[m].idx.contrast in contrast)
-         d = h["/$(dataset)/data"][m] # Here we read the header again. This could/should be avoided
-         head = read_header(d.head)
-         D = Int(head.trajectory_dimensions)
-         chan = Int(head.active_channels)
-         traj = isempty(d.traj) ? Matrix{Float32}(undef, 0, 0) : reshape(d.traj, D, :)
-
-         if !isempty(d.data)
-           dat = reshape(reinterpret(ComplexF32, d.data), :, chan)
-         else
-           dat = Matrix{ComplexF32}(undef,0,0)
-         end
-
-         push!(profiles, Profile(head, traj, dat) )
-       end
+    if noFilter
+      # Common case: read the entire dataset in one HDF5 call instead of one
+      # call per profile. The dataset uses chunk size 1, so per-element reads
+      # are O(N) separate HDF5 round-trips.
+      allData = read(h["/$(dataset)/data"])
+      for m in CartesianIndices(M)
+        d = allData[m]
+        head = read_header(d.head)
+        D = Int(head.trajectory_dimensions)
+        chan = Int(head.active_channels)
+        traj = isempty(d.traj) ? Matrix{Float32}(undef, 0, 0) : reshape(d.traj, D, :)
+        dat = isempty(d.data) ? Matrix{ComplexF32}(undef, 0, 0) :
+              reshape(reinterpret(ComplexF32, d.data), :, chan)
+        push!(profiles, Profile(head, traj, dat))
+      end
+    else
+      # Filtered case: bulk-read headers only to decide which profiles to keep,
+      # then fetch full data only for matching profiles.
+      dTypeHeader = get_hdf5type_acquisition_header_only()
+      headerData_ = Array{NTuple{ISMRMRD_HEADER_SIZE,UInt8}}(undef, M)
+      HDF5.API.h5d_read(h["/$(dataset)/data"], dTypeHeader, H5S_ALL, H5S_ALL, H5P_DEFAULT, headerData_)
+      headerData = [read(IOBuffer(collect(headerData_[m])), AcquisitionHeader) for m in CartesianIndices(M)]
+      for m in CartesianIndices(M)
+        (isnothing(repetition) || headerData[m].idx.repetition in repetition) &&
+        (isnothing(slice)      || headerData[m].idx.slice      in slice)      &&
+        (isnothing(contrast)   || headerData[m].idx.contrast   in contrast)   || continue
+        d = h["/$(dataset)/data"][m]
+        head = read_header(d.head)
+        D = Int(head.trajectory_dimensions)
+        chan = Int(head.active_channels)
+        traj = isempty(d.traj) ? Matrix{Float32}(undef, 0, 0) : reshape(d.traj, D, :)
+        dat = isempty(d.data) ? Matrix{ComplexF32}(undef, 0, 0) :
+              reshape(reinterpret(ComplexF32, d.data), :, chan)
+        push!(profiles, Profile(head, traj, dat))
+      end
     end
     return RawAcquisitionData(params, profiles)
   end
