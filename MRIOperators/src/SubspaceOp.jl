@@ -31,7 +31,7 @@ basis type should correspond to the type of the rawdata
 returns a new `SubspaceOp` with a new parent operator, built from `Adapt.adapt(CuArray, basis)`.
 Its storage type `S` is derived from the adapted basis. On the same backend, the basis may be shared with
 `op` and is only read. `op` itself is not modified.
-`SensitivityOp` and `SubspaceOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct SubspaceOp{T, O, M <: AbstractMatrix{T}, D} <: WrappedMRIOperator{T, O}
   op::O

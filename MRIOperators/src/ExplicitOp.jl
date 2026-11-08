@@ -1,6 +1,6 @@
 export ExplicitOp
 
-mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractMRIOperator{T}
+mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2, D, N, Ti, R, M} <: AbstractMRIOperator{T}
   const nrow :: Int
   const ncol :: Int
   const symmetric :: Bool
@@ -13,6 +13,12 @@ mutable struct ExplicitOp{T, vecT <: AbstractVector{T}, F1, F2} <: AbstractMRIOp
   nctprod :: Int
   Mv :: vecT
   Mtu :: vecT
+  # inputs of prod! and ctprod!, kept for Adapt
+  const shape :: NTuple{D,Int}
+  const nodes :: N
+  const times :: Ti
+  const echoOffset :: R
+  const disturbanceTerm :: M
 end
 
 LinearOperators.storage_type(::ExplicitOp{T, vecT}) where {T, vecT} = vecT
@@ -30,13 +36,21 @@ generates a `ExplicitOp` which explicitely evaluates the MRI Fourier signal enco
 * `echoImage::Bool=false`              - if true sampling times will only be considered relative to the echo time
                                          this results in complex valued image even for real-valued input.
 * `kargs`                              - additional keyword arguments
+
+# Moving to another array backend
+
+    Adapt.adapt(CuArray, op::ExplicitOp)
+
+returns a new `ExplicitOp` built from `Adapt.adapt(CuArray, ...)` of the k-space nodes, readout times and
+correction map of `op`, with the same `shape` and echo time offset; the trajectory is not used again.
+`adjoint(op)` is an `AdjointLinearOperator` with parent `op`, and adapting it adapts that parent.
+On the same backend, the arrays may be shared with `op` and are only read. `op` itself is not modified.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Tc,D}
                         ; echoImage::Bool=false, S = Vector{Complex{T}}, kargs...) where {T, Tc <: Union{Complex{T}, T}, D}
 
   nodes,times = kspaceNodes(tr), readoutTimes(tr)
-  nrow = size(nodes,2)
-  ncol = prod(shape)
 
   if isempty(correctionmap)
     disturbanceTerm = zeros(Complex{T}, shape...)
@@ -44,7 +58,6 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::Ab
     disturbanceTerm = correctionmap
   end
 
-  tmp = S(undef, 0)
   baseArrayType = stripParameters(S)
   nodes = adapt(baseArrayType, nodes)
   times = adapt(baseArrayType, times)
@@ -58,12 +71,27 @@ function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::Ab
   end
   echoOffset = T(echoOffset)
 
-  return ExplicitOp{Complex{T}, S, Nothing, Function}(nrow, ncol, false, false
+  return ExplicitOp(Complex{T}, S, shape, nodes, times, echoOffset, disturbanceTerm)
+end
+
+# Builds the operator from the inputs of prod! and ctprod!; used by the constructor above and Adapt.
+function ExplicitOp(::Type{Tc}, S, shape, nodes, times, echoOffset, disturbanceTerm) where Tc
+  tmp = S(undef, 0)
+  return ExplicitOp{Tc, S, Nothing, Function, length(shape), typeof(nodes), typeof(times), typeof(echoOffset), typeof(disturbanceTerm)}(
+              size(nodes,2), prod(shape), false, false
             , (res,x)->(produ!(res, x, shape, nodes, times, echoOffset, disturbanceTerm))
             , nothing
             , (res,y)->(ctprodu!(res, y, shape, nodes, times, echoOffset, disturbanceTerm))
-            , 0,0,0, tmp, tmp)
+            , 0,0,0, tmp, tmp, shape, nodes, times, echoOffset, disturbanceTerm)
 end
+
+Adapt.adapt_structure(to, op::ExplicitOp{T}) where T =
+  ExplicitOp(T, typeof(adapt(to, LinearOperators.storage_type(op)(undef, 0))), op.shape, adapt(to, op.nodes),
+             adapt(to, op.times), op.echoOffset, adapt(to, op.disturbanceTerm))
+
+# The adjoint of an MRI operator is adapted through its parent.
+Adapt.adapt_structure(to, op::LinearOperators.AdjointLinearOperator{T, <:AbstractMRIOperator}) where T =
+  adjoint(adapt(to, op.parent))
 
 function produ!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{2,Int64},
                     nodes::Matrix{T}, times::Vector{T}, echoOffset::T,
@@ -142,9 +170,4 @@ function ctprodu!(out::Vector{Tc}, x::Vector{Tc}, shape::NTuple{3,Int64},
       end
   end
   return out
-end
-
-function Base.adjoint(op::ExplicitOp{T}) where T
-  return LinearOperator{T}(op.ncol, op.nrow, op.symmetric, op.hermitian,
-                        op.ctprod!, nothing, op.prod!; S = LinearOperators.storage_type(op))
 end

@@ -116,6 +116,48 @@ workspaceState(op) = (Array(op.Mv), Array(op.Mtu), op.nprod, op.ntprod, op.nctpr
     @test isapprox(Array(moved * to(x)), srcFwd; rtol = adaptRtol(T))
     @test isapprox(Array(adjoint(moved) * to(y)), srcAdj; rtol = adaptRtol(T))
   end
+
+  @testset "MapSliceOp $T dim=$dim" for T in (Float32, ComplexF32), dim in (1, 2)
+    size1, size2 = dim == 1 ? ((2, 4), (3, 4)) : ((4, 2), (4, 3))
+    for trafo in (from(testData(T, 3, 2)), WeightingOp(from(testData(T, 2))))
+      src = MapSliceOp(trafo, dim, size1, trafo isa AbstractMatrix ? size2 : size1; T)
+      moved = adapt(to, src)
+      testMovedWrapper(moved, src, to)
+      @test storageType(getfield(moved, :trafo)) <: to
+      testAdaptActions(moved, to, src, from, adaptRtol(T))
+    end
+  end
+
+  @testset "ExplicitOp $(D)D echoImage=$echoImage" for D in (2, 3), echoImage in (false, true)
+    T = ComplexF32
+    tr = D == 2 ? CartesianTrajectory(Float32, 3, 3; TE = 0.001f0, AQ = 0.004f0) :
+                  CartesianTrajectory3D(Float32, 3, 3; numSlices = 3, TE = 0.001f0, AQ = 0.004f0)
+    src = ExplicitOp(ntuple(_ -> 3, D), tr, from(testData(T, ntuple(_ -> 3, D)...)); echoImage, S = typeof(from(T[])))
+    moved = adapt(to, src)
+    @test moved isa ExplicitOp && moved !== src && storageType(moved) <: to
+    @test getfield(moved, :shape) == getfield(src, :shape) && getfield(moved, :echoOffset) == getfield(src, :echoOffset)
+    @test all(f -> onTarget(getfield(moved, f), to), (:nodes, :times, :disturbanceTerm))
+    @test eltype(getfield(moved, :nodes)) == eltype(getfield(moved, :times)) == Float32
+    testAdaptActions(moved, to, src, from, adaptRtol(T))
+    # an adjoint built before adapting, alone and inside a product
+    adj = adjoint(src)
+    P = ProdOp(adj, WeightingOp(from(testData(T, size(src, 1)))))
+    movedAdj, movedP = adapt(to, adj), adapt(to, P)
+    for E in (movedAdj.parent, movedP.A.parent)
+      @test E isa ExplicitOp && storageType(E) <: to && onTarget(getfield(E, :nodes), to)
+    end
+    testAdaptActions(movedAdj, to, adj, from, adaptRtol(T))
+    testAdaptActions(movedP, to, P, from, adaptRtol(T))
+  end
+
+  @testset "MapSliceOp in a product" begin
+    T = ComplexF32
+    src = ProdOp(MapSliceOp(from(testData(T, 3, 2)), 2, (4, 2), (4, 3); T), SensitivityOp(from(testData(T, 4, 2)), 1))
+    moved = adapt(to, src)
+    @test moved.A isa MapSliceOp && moved.B isa SensitivityOp
+    @test all(op -> storageType(op) <: to, (moved, parent(moved.A), parent(moved.B)))
+    testAdaptActions(moved, to, src, from, adaptRtol(T))
+  end
 end
 
 if arrayTypes == [Array]
