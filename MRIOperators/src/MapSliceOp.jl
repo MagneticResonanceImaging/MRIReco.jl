@@ -25,8 +25,9 @@ generates an operator that applies `trafo` to each slice of dimension `dim` of a
 
 returns a new `MapSliceOp` with a new parent operator, built from `Adapt.adapt(CuArray, trafo)` and the same
 `dim`, `size1`, `size2` and `T`. An operator `trafo` is adapted by its own Adapt rule, such as those of
-LinearOperatorCollection; an operator without one is kept unchanged. On the same backend, `trafo` may be shared
-with `op` and is only read. `op` itself is not modified.
+LinearOperatorCollection; an operator without one is kept unchanged. On the same backend, an array `trafo` may be
+shared with `op` and is only read; an operator `trafo` kept unchanged is shared with `op`, including any internal
+state it updates when applied. `op` itself is not modified.
 `SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct MapSliceOp{T, O, A, S1 <: Tuple, S2 <: Tuple} <: WrappedMRIOperator{T, O}
