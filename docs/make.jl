@@ -37,6 +37,9 @@ makedocs(
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
+            "Coil Sensitivities" => [
+                "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
+            ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
         "Reference" => [
