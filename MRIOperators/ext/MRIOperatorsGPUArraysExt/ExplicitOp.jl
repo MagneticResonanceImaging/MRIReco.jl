@@ -5,7 +5,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = size(nodes, 2)
   fill!(out, zero(Tc))
-  @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+  @kernel inbounds = true function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     k = @index(Global, Linear)
     for nx = 1:shape[1]
       for ny = 1:shape[2]
@@ -28,7 +28,7 @@ function MRIOperators.produ!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = size(nodes, 2)
   fill!(out, zero(Tc))
-  @kernel inbounds = true cpu = false function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+  @kernel inbounds = true function produ_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     k = @index(Global, Linear)
     for nx = 1:shape[1]
       for ny = 1:shape[2]
@@ -53,7 +53,7 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{2,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  @kernel inbounds = true cpu = false function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+  @kernel inbounds = true function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     linearIndex = @index(Global, Linear)
 
     cartIndex = CartesianIndices(shape)[linearIndex]
@@ -79,7 +79,7 @@ function MRIOperators.ctprodu!(out::vecTc, x::vecTc, shape::NTuple{3,Int64},
   factor = Tc(-2 * 1im * pi)
   limit = prod(shape)
   fill!(out, zero(Tc))
-  @kernel inbounds = true cpu = false function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
+  @kernel inbounds = true function ctprodu_kernel!(out, x, shape, nodes, times, echoOffset, disturbanceTerm)
     linearIndex = @index(Global, Linear)
 
     cartIndex = CartesianIndices(shape)[linearIndex]
