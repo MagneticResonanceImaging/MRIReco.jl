@@ -248,6 +248,28 @@ function testFourierEncodingOpWithoutCorrectionMap(N=16; arrayType = Array)
   end
 end
 
+## test lrEncodingOp, which applies the basis with a MapSliceOp
+function testLowRankEncodingOp()
+  # K = 1: for K > 1, lrEncodingOp repeats one Fourier operator in a parallel DiagOp,
+  # which is not thread-safe (JuliaImageRecon/LinearOperatorCollection.jl#44)
+  shape, numContr, K = (4, 4), 3, 1
+  N = prod(shape)
+  tr = CartesianTrajectory(Float64, 4, 4)
+  idx = [[1, 2, 5, 7, 8, 11, 12, 16], [2, 3, 4, 6, 9, 10, 13, 15], [1, 3, 6, 8, 10, 12, 14, 16]]
+  kdata = Array{Matrix{ComplexF64}, 3}(undef, numContr, 1, 1)
+  for c in 1:numContr; kdata[c, 1, 1] = zeros(ComplexF64, length(idx[c]), 1); end
+  acqData = AcquisitionData(tr, kdata; idx, encodingSize = shape)
+  phi = reshape(rand(ComplexF64, numContr, K), numContr, K, 1)
+  E = lrEncodingOp(acqData, shape, Dict{Symbol, Any}(:phi => phi); numContr)
+
+  ft = fourierEncodingOp(shape, tr, "fast")
+  E_ref = SamplingOp(ComplexF64; pattern = hcat(idx...), shape = (N, numContr, 1)) ∘
+          (MapSliceOp(phi[:, :, 1], 2, (N, K, 1), (N, numContr, 1)) ∘ DiagOp(ft))
+  x, y = rand(ComplexF64, N * K), rand(ComplexF64, size(E_ref, 1))
+  @test E * x ≈ E_ref * x ≈ vcat([phi[c, 1, 1] .* (ft * x)[idx[c]] for c in 1:numContr]...)
+  @test adjoint(E) * y ≈ adjoint(E_ref) * y
+end
+
 function testOperators(arrayType = Array)
   @testset "MRI Linear Operator: $arrayType" begin
     @testset "FT" testFT(;arrayType)
@@ -262,6 +284,7 @@ function testOperators(arrayType = Array)
     @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
     @testset "Sparse Op F64 3D" testSparseOp(Float64,(128,128,80);arrayType)
     @testset "Fourier Encoding Op without Correction Map" testFourierEncodingOpWithoutCorrectionMap(;arrayType)
+    arrayType == Array && @testset "Low-rank Encoding Op" testLowRankEncodingOp()
   end
 end
 

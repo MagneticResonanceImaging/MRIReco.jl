@@ -32,3 +32,15 @@ end
 
 	@test isapprox(kdata, data)
 end
+
+
+@testset "profileData returns the sampled profiles of a slice or partition" begin
+    kspace = rand(ComplexF32, 8, 6, 5, 2, 2, 3)  # x, y, z or slices, coils, contrasts, repetitions
+    undersampled = copy(kspace)
+    undersampled[:, 2, 1, :, 2, :] .= 0
+    @test MRIBase.profileData(AcquisitionData(kspace; enc2D = true), 2, 4, 3, 5) == kspace[:, 5, 4, :, 2, 3]
+    @test MRIBase.profileData(AcquisitionData(kspace), 2, 4, 3, 5) == kspace[:, 5, 4, :, 2, 3]
+    # in contrast 2, partition 1 lacks profile 2, so its second sampled profile is profile 3
+    @test MRIBase.profileData(AcquisitionData(undersampled), 2, 1, 3, 2) == kspace[:, 3, 1, :, 2, 3]
+    @test MRIBase.profileData(AcquisitionData(undersampled), 2, 2, 3, 2) == kspace[:, 2, 2, :, 2, 3]
+end

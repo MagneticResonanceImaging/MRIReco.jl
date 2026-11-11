@@ -229,7 +229,10 @@ end
 """
     profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
 
-returns the profile-data `prof_tr` contained in `acqData` for given `echo`, `coil`, `slice` and `rep`(etition).
+returns the profile-data `prof_tr` contained in `acqData` for all coils and given `echo`, `slice` and `rep`(etition).
+`prof_tr` indexes the sampled profiles of the slice.
+For a 3D trajectory with several partitions, `slice` is the partition; only the first slab is read. The partition of
+a profile follows from `subsampleIndices`, so data renumbered by `convertUndersampledData` is not supported.
 """
 function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::Int, prof_tr::Int)
   tr = trajectory(acqData,echo)
@@ -240,8 +243,10 @@ function profileData(acqData::AcquisitionData, echo::Int64, slice::Int64, rep::I
     kdata = reshape(multiCoilData(acqData,echo,slice;rep=rep),numSamp,numProf,numChan)
     prof_data = kdata[:,prof_tr,:]
   else
-    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProf,numSl,numChan)
-    prof_data = kdata[:,prof_tr,slice,:]
+    # numProf counts the sampled profiles of all partitions
+    kdata = reshape(multiCoilData(acqData,echo,1,rep=rep),numSamp,numProf,numChan)
+    partition = div.(profileIdx(acqData,echo) .- 1, numProfiles(tr)) .+ 1
+    prof_data = kdata[:,findall(==(slice),partition)[prof_tr],:]
   end
   return prof_data
 end

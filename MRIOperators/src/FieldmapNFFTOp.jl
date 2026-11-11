@@ -74,7 +74,7 @@ returns a new `FieldmapNFFTOp` with the time-segmentation coefficients of `op` m
 so they are not computed again. Its NFFT plans and work arrays are new: the plans are built from k-space nodes kept
 on the CPU, with the NFFT backend that was active when `op` was constructed. `op` itself is not modified.
 With JLArrays the operator was tested with the NFFT.jl backend only; NonuniformFFTs does not create plans for them.
-`SensitivityOp`, `SubspaceOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{Complex{T},D};
