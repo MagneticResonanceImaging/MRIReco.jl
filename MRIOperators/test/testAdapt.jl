@@ -2,6 +2,8 @@ using MRIOperators.Adapt
 
 # CPU runs move between Array and JLArray; GPU runs (arrayTypes set by test/gpu/*.jl) between Array and the device array.
 adaptTargets = arrayTypes == [Array] ? [Array, JLArray] : arrayTypes
+# Element types of the tests below; test/gpu/metal.jl sets ComplexF32 only, as Metal has no Float64.
+adaptEltypes = @isdefined(adaptEltypes) ? adaptEltypes : (ComplexF32, ComplexF64)
 adaptDirections = vcat([(Array, to) for to in adaptTargets], [(to, Array) for to in adaptTargets if to !== Array])
 adaptRtol(T) = real(T) == Float32 ? 5e-5 : 1e-11
 
@@ -50,7 +52,7 @@ workspaceState(op) = (Array(op.Mv), Array(op.Mtu), op.nprod, op.ntprod, op.nctpr
                       hasfield(typeof(op), :tmp) ? Array(op.tmp) : nothing)
 
 @testset "Adapt $(nameof(from)) -> $(nameof(to))" for (from, to) in adaptDirections
-  @testset "Wrappers $T $shape numContr=$numContr" for T in (ComplexF32, ComplexF64), shape in ((3, 2), (2, 2, 2)), numContr in (1, 3)
+  @testset "Wrappers $T $shape numContr=$numContr" for T in adaptEltypes, shape in ((3, 2), (2, 2, 2)), numContr in (1, 3)
     rtol = adaptRtol(T)
     numVox, numChan = prod(shape), 2
     maps4 = testData(T, shape..., ntuple(_ -> 1, 3 - length(shape))..., numChan)
@@ -69,7 +71,7 @@ workspaceState(op) = (Array(op.Mv), Array(op.Mtu), op.nprod, op.ntprod, op.nctpr
     testAdaptActions(moved, to, src, from, rtol)
   end
 
-  @testset "Nested product and source workspaces $T" for T in (ComplexF32, ComplexF64)
+  @testset "Nested product and source workspaces $T" for T in adaptEltypes
     shape, numContr = (2, 2, 2), 3
     maps, basis = from(testData(T, prod(shape), 2)), from(testData(T, numContr, 2))
     S = SensitivityOp(maps, numContr)
