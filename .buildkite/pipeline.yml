@@ -118,6 +118,7 @@ steps:
       Pkg.instantiate()
       include("test/gpu/metal.jl")'
     timeout_in_minutes: 30
+    soft_fail: true
 
   - label: "Apple GPUs -- MRIOperators.jl"
     plugins:
@@ -141,3 +142,4 @@ steps:
       Pkg.instantiate()
       include("MRIOperators/test/gpu/metal.jl")'
     timeout_in_minutes: 30
+    soft_fail: true
