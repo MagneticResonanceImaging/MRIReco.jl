@@ -326,7 +326,7 @@ converts `acqData` into the equivalent `RawAcquisitionData` object.
 function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
   # XML header
   tr_name = string(trajectory(acqData,1))
-  # "cartesian" is the ISMRMRD name; trajectory(::RawAcquisitionData) recreates both trajectories from it
+  # "cartesian" is the ISMRMRD name; trajectory(::RawAcquisitionData) creates the 2D or 3D trajectory from it
   tr_name = tr_name in ("Cartesian", "Cartesian3D") ? "cartesian" : tr_name
   params = minimalHeader(ntuple(d -> d <= D ? acqData.encodingSize[d] : 1, 3), T.(acqData.fov),
                          tr_name=tr_name, numChannels=numChannels(acqData))
@@ -341,7 +341,7 @@ function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
         profIdx = profileIdx(acqData,contr)
         numSamp = numSamplingPerProfile(tr)
         numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
-        kdata = reshape(multiCoilData(acqData,contr,slice;rep=rep), numSamp, numProf, :)
+        kdata = reshape(multiCoilData(acqData,contr,slice;rep=rep), numSamp, numProf, numChannels(acqData))
           for prof = 1:length(profIdx)
               # profIdx counts the profiles of all partitions of a 3D trajectory
               prof_tr = mod1(profIdx[prof], numProfiles(tr))
@@ -362,7 +362,7 @@ end
 
 function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice_tr::Int
                             , contr::Int, prof_tr::Int, counter::Int
-                            ; phase::Int=1, set::Int=1, segment::Int=1
+                            ; phase::Int=1, set::Int=1, segment::Int=1, repetition::Int=rep
                             , user::NTuple{8,Int16} = ntuple(i->Int16(0),8), kargs...)
   numChan = numChannels(acqData)
   tr = trajectory(acqData,contr)
@@ -376,7 +376,7 @@ function AcquisitionHeader(acqData::AcquisitionData, rep::Int, slice::Int, slice
                         , slice = slice-1
                         , contrast = contr-1
                         , phase = phase-1
-                        , repetition = rep-1
+                        , repetition = repetition-1
                         , set = set-1
                         , segment = segment-1
                         , user = user )
@@ -445,5 +445,5 @@ function profileIdx(acqData::AcquisitionData, contr::Int)
   tr = trajectory(acqData, contr)
   numSamp = numSamplingPerProfile(tr)
   numProf = div(length(acqData.subsampleIndices[contr]), numSamp)
-  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1], numSamp)+1 for prof=1:numProf]
+  idx = [div(acqData.subsampleIndices[contr][numSamp*(prof-1)+1]-1, numSamp)+1 for prof=1:numProf]
 end

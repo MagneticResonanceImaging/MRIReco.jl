@@ -63,17 +63,34 @@ end
 
 
 @testset "RawAcquisitionData(acqData) converts back to the same AcquisitionData" begin
-    kspace = rand(ComplexF32, 8, 4, 3, 2, 1, 2)  # x, y, z or slices, coils, contrasts, repetitions
+    kspace = rand(ComplexF32, 8, 4, 3, 2, 2, 2)  # x, y, z or slices, coils, contrasts, repetitions
     undersampled = copy(kspace)
     undersampled[:, 2, 1, :, :, :] .= 0
-    for acq in (AcquisitionData(kspace; enc2D = true), AcquisitionData(kspace), AcquisitionData(undersampled))
+    single_samples = kspace[1:1, :, :, :, :, :]  # one sample per profile
+    for acq in (AcquisitionData(kspace; enc2D = true), AcquisitionData(kspace), AcquisitionData(undersampled),
+                AcquisitionData(single_samples))
         raw = RawAcquisitionData(acq)
-        @test length(raw.params["encodedSize"]) == 3
+        @test raw.params["encodedSize"] == [get(acq.encodingSize, d, 1) for d in 1:3]
         @test raw.params["receiverChannels"] == 2
+        @test raw.params["trajectory"] == "cartesian"
+        # each profile stores the nodes of its samples, the same for every contrast, slice and repetition
+        nodes = kspaceNodes(trajectory(acq, 1))[:, acq.subsampleIndices[1]]
+        @test reduce(hcat, [p.traj for p in raw.profiles]) == repeat(nodes, 1, length(acq.kdata))
         acq2 = AcquisitionData(raw)
         @test isCartesian(trajectory(acq2, 1))
         @test acq2.kdata == acq.kdata
         @test acq2.subsampleIndices == acq.subsampleIndices
         @test acq2.encodingSize == acq.encodingSize
     end
+end
+
+
+@testset "AcquisitionHeader(acqData, ...) fills the encoding counters" begin
+    acq = AcquisitionData(rand(ComplexF32, 8, 4, 1, 1, 2, 1))
+    # every argument has its own value, so that each counter can be told apart
+    idx = AcquisitionHeader(acq, 9, 3, 4, 2, 5, 20; phase = 6, set = 7, segment = 8, user = ntuple(Int16, 8)).idx
+    @test (idx.kspace_encode_step_1, idx.kspace_encode_step_2, idx.average, idx.slice) == (4, 3, 0, 2)
+    @test (idx.contrast, idx.phase, idx.repetition, idx.set, idx.segment) == (1, 5, 8, 6, 7)
+    @test idx.user == ntuple(identity, 8)
+    @test AcquisitionHeader(acq, 9, 3, 4, 2, 5, 20; repetition = 1).idx.repetition == 0
 end
