@@ -176,6 +176,13 @@ function testFieldmapFT(N=16; arrayType = Array, scheduler = DynamicScheduler())
 
   @test (norm(y-y_nfft)/norm(y)) < 1e-2
   @test (norm(y_adj-y_adj_nfft)/norm(y_adj)) < 1e-2
+
+  # copy and Adapt to Array rebuild the plans with the same NFFT backend and keep the coefficients
+  for (F, conv) in ((copy(F_nfft), arrayType), (adapt(Array, F_nfft), Array))
+    @test F.backend === F_nfft.backend && F.scheduler === F_nfft.scheduler
+    @test Array(F * conv(vec(x))) ≈ y_nfft rtol = 1e-4
+    @test Array(adjoint(F) * conv(vec(x))) ≈ y_adj_nfft rtol = 1e-4
+  end
 end
 
 function testSparseOp(T::Type,shape; arrayType = Array)
