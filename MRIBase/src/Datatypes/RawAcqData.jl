@@ -342,12 +342,17 @@ function RawAcquisitionData(acqData::AcquisitionData{T,D}) where {T,D}
         numSamp = numSamplingPerProfile(tr)
         numProf = div(length(acqData.subsampleIndices[contr]),numSamp)
         kdata = reshape(multiCoilData(acqData,contr,slice;rep=rep), numSamp, numProf, numChannels(acqData))
+        # as in the reconstruction, non-Cartesian data with as many samples as nodes is paired with the nodes in
+        # their order, e.g. binned data; otherwise the profile number is the position in the trajectory
+        inOrder = !isCartesian(tr) && size(tr,2) == length(acqData.subsampleIndices[contr])
           for prof = 1:length(profIdx)
               # profIdx counts the profiles of all partitions of a 3D trajectory
-              prof_tr = mod1(profIdx[prof], numProfiles(tr))
-              slice_tr = div(profIdx[prof]-1, numProfiles(tr)) + 1
+              pos = inOrder ? prof : profIdx[prof]
+              slice_tr = div(pos-1, numProfiles(tr)) + 1
+              # binned data keeps its profile numbers, also those beyond its trajectory
+              prof_tr = profIdx[prof] - (slice_tr-1)*numProfiles(tr)
               head = AcquisitionHeader(acqData,rep,slice,slice_tr,contr,prof_tr,counter)
-              nodes = profileNodes(tr,prof_tr,slice_tr)
+              nodes = profileNodes(tr,mod1(pos, numProfiles(tr)),slice_tr)
               data = kdata[:,prof,:]
               profile = Profile( head, Float32.(nodes), Complex{Float32}.(data) )
               push!( profiles, profile )
