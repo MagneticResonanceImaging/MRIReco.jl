@@ -35,6 +35,7 @@ makedocs(
         ],
         "How-to Guides" => [
             "Raw Data and Files" => [
+                "Load and Save Raw Data" => "generated/howto/load_save.md",
                 "Select and Prepare Profiles" => "generated/howto/prepare_profiles.md",
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
@@ -78,9 +79,6 @@ makedocs(
                 "MRICoilSensitivities" => "API/MRICoilSensitivities.md",
                 "MRISimulation" => "API/MRISimulation.md",
             ],
-        ],
-        "Legacy Pages" => [
-            "File Handling" => "filehandling.md",
         ],
     ],
     pagesonly = true,
