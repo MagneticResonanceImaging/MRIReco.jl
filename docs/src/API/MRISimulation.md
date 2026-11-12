@@ -1,6 +1,6 @@
 # MRISimulation
 
-MRISimulation simulates MRI data from images, including coil sensitivities, field inhomogeneities and relaxation. MRISimulation depends on MRIBase and MRIOperators. It has to be loaded with `using MRISimulation`, because MRIReco does not depend on it.
+MRISimulation simulates MRI data from images, including coil sensitivities, field inhomogeneities and relaxation. MRISimulation depends on MRIBase and MRIOperators. It has to be loaded with `using MRISimulation`, because MRIReco does not depend on it. The guide [Simulate k-Space Data](@ref simulate-kspace) shows how to use these functions.
 
 ## Simulation
 
