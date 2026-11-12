@@ -4,6 +4,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+ImageMagick_jll = "c73af94c-d91f-53ed-93a7-00f77d67a9d7"
 ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
@@ -16,3 +17,4 @@ MRISimulation = "8988da37-ea20-4fa6-9af7-8a6f6f9a8970"
 
 [compat]
 Documenter = "1"
+ImageMagick_jll = "7.1.2002"
