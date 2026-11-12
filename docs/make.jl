@@ -39,6 +39,7 @@ makedocs(
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
             "Reconstruction" => [
+                "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
@@ -65,7 +66,6 @@ makedocs(
             "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
-            "Offresonance" => "offresonance.md",
             "Customize" => "custom.md",
         ],
     ],
