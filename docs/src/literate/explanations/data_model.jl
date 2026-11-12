@@ -134,8 +134,9 @@ tr = trajectory(acqData, 1)
 size(kspaceNodes(tr)), extrema(kspaceNodes(tr))
 
 # The knee data was acquired on a Cartesian grid. MRIBase also provides constructors for non-Cartesian trajectories,
-# such as radial and spiral trajectories and, in 3D, kooshball and stack-of-stars trajectories. The following figure
-# compares a Cartesian, a radial and a spiral trajectory:
+# such as radial and spiral trajectories and, in 3D, kooshball trajectories;
+# [Create a Trajectory](@ref create-trajectory) describes them. The following figure compares a Cartesian, a radial
+# and a spiral trajectory:
 
 using CairoMakie
 
