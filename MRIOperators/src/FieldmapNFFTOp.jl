@@ -73,6 +73,8 @@ including B0-inhomogeneities using time-segmented NFFTs.
 returns a new `FieldmapNFFTOp` with the time-segmentation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
 so they are not computed again. Its NFFT plans and work arrays are new: the plans are built from k-space nodes kept
 on the CPU, with the NFFT backend that was active when `op` was constructed. `op` itself is not modified.
+The backend may choose other plan defaults on the new device (NonuniformFFTs uses another window on CUDA),
+so the results can differ from those of `op` within the NFFT accuracy.
 With JLArrays the operator was tested with the NFFT.jl backend only; NonuniformFFTs does not create plans for them.
 `SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
