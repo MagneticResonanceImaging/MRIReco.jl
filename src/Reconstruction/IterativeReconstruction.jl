@@ -55,7 +55,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
     # @set scheduler = scheduler(arrayType)
     l, k = index[1], index[2]
     if encodingOps!=nothing
-      F = encodingOps[:,k]
+      F = map(op -> adapt(arrayType, op), encodingOps[:,k])
     else
       F = encodingOps_simple(acqData, reconSize, slice=k; encParams...)
     end
@@ -65,7 +65,7 @@ function reconstruction_simple( acqData::AcquisitionData{T}
         kdata = arrayType(kData(acqData,j,i,k,rep=l)).* weights[j]
         EFull = ProdOp(W, F[j])#, isWeighting=true)
         EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-        solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+        solv = adapt(arrayType, createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...))
 
         I = solve!(solv, kdata, x0=get(params,:startVector,0))
 
@@ -136,7 +136,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
     @set scheduler = scheduler
     l, i = index[1], index[2]
     if encodingOps != nothing
-      F = encodingOps[i]
+      F = adapt(arrayType, encodingOps[i])
     else
       F = encodingOp_multiEcho(acqData, reconSize, slice=i; encParams...)
     end
@@ -144,7 +144,7 @@ function reconstruction_multiEcho(acqData::AcquisitionData{T}
       kdata = arrayType(multiEchoData(acqData, j, i,rep=l)) .* vcat(weights...)
       EFull = ∘(W, F)#, isWeighting=true)
       EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+      solv = adapt(arrayType, createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...))
 
       Ireco[:,j,i,l] = Array(solve!(solv,kdata))
       # TODO circular shutter
@@ -225,7 +225,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
       @set scheduler = scheduler
       l, k, j = index[1], index[2], index[3]
       if encodingOps != nothing
-        E = encodingOps[:,k]
+        E = map(op -> adapt(arrayType, op), encodingOps[:,k])
       else
         E = encodingOps_parallel(acqData, reconSize, senseMapsUnCorr; slice=k, encParams...)
       end
@@ -238,7 +238,7 @@ function reconstruction_multiCoil(acqData::AcquisitionData{T}
 
       EFull = ∘(W, E[j])
       EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-      solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+      solv = adapt(arrayType, createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...))
       I = solve!(solv, kdata)
 
       if isCircular( trajectory(acqData, j) )
@@ -313,7 +313,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
     @set scheduler = scheduler
     l, i = index[1], index[2]
     if encodingOps != nothing
-      E = encodingOps[i]
+      E = adapt(arrayType, encodingOps[i])
     else
       E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMapsUnCorr; slice=i, encParams...)
     end
@@ -325,7 +325,7 @@ function reconstruction_multiCoilMultiEcho(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+    solv = adapt(arrayType, createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...))
 
     Ireco[:,i,l] = Array(solve!(solv, kdata))
   end
@@ -403,10 +403,10 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
     @set scheduler = scheduler
     l, i = index[1], index[2]
     if encodingOps != nothing
-      E = encodingOps[i]
+      E = adapt(arrayType, encodingOps[i])
     else
       E = encodingOp_multiEcho_parallel(acqData, reconSize, senseMaps; slice=i, encParams...)
-      subOp = SubspaceOp(params[:basis],acqData.encodingSize,numContr)
+      subOp = adapt(arrayType, SubspaceOp(params[:basis],acqData.encodingSize,numContr))
       E = ∘(E,subOp)
     end
 
@@ -414,7 +414,7 @@ function reconstruction_multiCoilMultiEcho_subspace(acqData::AcquisitionData{T}
 
     EFull = ∘(W, E)#, isWeighting=true)
     EFullᴴEFull = normalOperator(EFull; normalOpParams(arrayType)...)
-    solv = createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...)
+    solv = adapt(arrayType, createLinearSolver(solver, EFull; AHA=EFullᴴEFull, reg=reg, params...))
 
     Ireco[:,i,l] = Array(solve!(solv, kdata))
   end

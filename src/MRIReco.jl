@@ -12,6 +12,7 @@ using LinearAlgebra
 using Random
 using OhMyThreads
 using Unitful
+using Adapt
 
 
 include("Tools/Tools.jl")
