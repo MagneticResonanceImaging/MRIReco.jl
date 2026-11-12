@@ -38,6 +38,9 @@ makedocs(
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
+            "Coil Sensitivities" => [
+                "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
+            ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
             ],
