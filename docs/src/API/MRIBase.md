@@ -38,6 +38,8 @@ Private = false
 
 ## Trajectories
 
+The guide [Create a Trajectory](@ref create-trajectory) shows how to create trajectories.
+
 ```@autodocs
 Modules = [MRIBase]
 Pages = ["Trajectories/Trajectories.jl"]
