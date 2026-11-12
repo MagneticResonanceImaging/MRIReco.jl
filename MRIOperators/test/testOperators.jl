@@ -178,9 +178,10 @@ function testFieldmapFT(N=16; arrayType = Array, scheduler = DynamicScheduler())
   @test (norm(y_adj-y_adj_nfft)/norm(y_adj)) < 1e-2
 
   # copy and Adapt to Array rebuild the plans with the same NFFT backend and keep the coefficients.
-  # NonuniformFFTs uses another default window on CUDA than on the CPU, so the Array plans
-  # agree with the device plans only to the NFFT accuracy.
-  for (F, conv, rtol) in ((copy(F_nfft), arrayType, 1e-4), (adapt(Array, F_nfft), Array, 1e-3))
+  # NonuniformFFTs uses another default window on CUDA than on the CPU, so there the Array plans
+  # agree with the CUDA plans only to the NFFT accuracy.
+  rtolArray = F_nfft.backend isa NonuniformFFTs.NonuniformFFTsBackend && nameof(arrayType) == :CuArray ? 1e-3 : 1e-4
+  for (F, conv, rtol) in ((copy(F_nfft), arrayType, 1e-4), (adapt(Array, F_nfft), Array, rtolArray))
     @test F.backend === F_nfft.backend && F.scheduler === F_nfft.scheduler
     @test Array(F * conv(vec(x))) ≈ y_nfft rtol = rtol
     @test Array(adjoint(F) * conv(vec(x))) ≈ y_adj_nfft rtol = rtol
