@@ -228,7 +228,9 @@ axisvalues(image)[1]
 # | coil sensitivities of [`espirit`](@ref) | x, y, z or slice, coil |
 #
 # A k-space array in the layout of `kDataCart` can also be converted into `AcquisitionData`; if its third dimension
-# holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed. Note that the coil and contrast
+# holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed.
+# [Create AcquisitionData from Arrays](@ref acqdata-from-arrays) shows how to do this and how to create
+# `AcquisitionData` from the nodes and samples of a non-Cartesian acquisition. Note that the coil and contrast
 # dimensions are in a different order in k-space arrays and in images:
 
 size(kDataCart(acqData)), size(image)
