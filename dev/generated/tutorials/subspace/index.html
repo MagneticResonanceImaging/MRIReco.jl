@@ -1,269 +1,108 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Subspace Reconstruction · Julia MRI Package</title><meta name="title" content="Subspace Reconstruction · Julia MRI Package"/><meta property="og:title" content="Subspace Reconstruction · Julia MRI Package"/><meta property="twitter:title" content="Subspace Reconstruction · Julia MRI Package"/><meta name="description" content="Documentation for Julia MRI Package."/><meta property="og:description" content="Documentation for Julia MRI Package."/><meta property="twitter:description" content="Documentation for Julia MRI Package."/><meta property="og:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><meta property="twitter:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><link rel="canonical" href="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Julia MRI Package logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Julia MRI Package</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../gettingStarted/">Getting Started</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../direct/">Direct Reconstruction</a></li><li><a class="tocitem" href="../iterative/">Iterative Reconstruction</a></li><li><a class="tocitem" href="../multicoil/">Multi-Coil Reconstruction</a></li><li><a class="tocitem" href="../multiecho/">Multi-Echo Reconstruction</a></li><li class="is-active"><a class="tocitem" href>Subspace Reconstruction</a><ul class="internal"><li><a class="tocitem" href="#Description"><span>Description</span></a></li><li><a class="tocitem" href="#Setup-and-define-global-variable"><span>Setup and define global variable</span></a></li><li><a class="tocitem" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom"><span>simulate MESE acquisition of a shepp logan phantom</span></a></li><li><a class="tocitem" href="#Subsampling-the-kspace"><span>Subsampling the kspace</span></a></li><li><a class="tocitem" href="#Reconstruction-of-undersampled-rawdata"><span>Reconstruction of undersampled rawdata</span></a></li><li class="toplevel"><a class="tocitem" href="#Implementation-of-a-subspace-reconstruction"><span>Implementation of a subspace reconstruction</span></a></li><li><a class="tocitem" href="#Build-the-dictionary"><span>Build the dictionary</span></a></li><li><a class="tocitem" href="#Extract-the-subspace-temporal-basis"><span>Extract the subspace temporal basis</span></a></li><li><a class="tocitem" href="#Subspace-reconstruction"><span>Subspace reconstruction</span></a></li><li><a class="tocitem" href="#Coefficient-maps"><span>Coefficient maps</span></a></li><li><a class="tocitem" href="#Virtual-echo-images"><span>Virtual echo images</span></a></li><li class="toplevel"><a class="tocitem" href="#Reproducibility"><span>Reproducibility</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">How-to Guides</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-1" type="checkbox"/><label class="tocitem" for="menuitem-4-1"><span class="docs-label">Raw Data and Files</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howto/binning/">Bin Profiles into Contrasts</a></li><li><a class="tocitem" href="../../howto/extract_kspace/">Extract Cartesian k-Space</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Reconstruction</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howto/gpu/">Run a Reconstruction on the GPU</a></li></ul></li><li><a class="tocitem" href="../../../contributing/">Contribute to MRIReco.jl</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Explanations</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../explanations/architecture/">Package Architecture</a></li><li><a class="tocitem" href="../../explanations/data_model/">Data Model</a></li><li><a class="tocitem" href="../../../explanations/signal_model/">Signal Model and Encoding Operators</a></li><li><a class="tocitem" href="../../../explanations/inverse_problem/">Reconstruction as an Inverse Problem</a></li><li><a class="tocitem" href="../../../explanations/gpu/">GPU Acceleration</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-6" type="checkbox"/><label class="tocitem" for="menuitem-6"><span class="docs-label">Reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-6-1" type="checkbox"/><label class="tocitem" for="menuitem-6-1"><span class="docs-label">API</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../API/MRIReco/">MRIReco</a></li><li><a class="tocitem" href="../../../API/MRIBase/">MRIBase</a></li><li><a class="tocitem" href="../../../API/MRIOperators/">MRIOperators</a></li><li><a class="tocitem" href="../../../API/MRIFiles/">MRIFiles</a></li><li><a class="tocitem" href="../../../API/MRISampling/">MRISampling</a></li><li><a class="tocitem" href="../../../API/MRICoilSensitivities/">MRICoilSensitivities</a></li><li><a class="tocitem" href="../../../API/MRISimulation/">MRISimulation</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-7" type="checkbox"/><label class="tocitem" for="menuitem-7"><span class="docs-label">Legacy Pages</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../acquisitionData/">Acquisition Data</a></li><li><a class="tocitem" href="../../../filehandling/">File Handling</a></li><li><a class="tocitem" href="../../../trajectories/">Trajectory</a></li><li><a class="tocitem" href="../../../offresonance/">Offresonance</a></li><li><a class="tocitem" href="../../../custom/">Customize</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Subspace Reconstruction</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Subspace Reconstruction</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/docs/src/literate/tutorials/subspace.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="subspace-reconstruction"><a class="docs-heading-anchor" href="#subspace-reconstruction">Subspace Reconstruction</a><a id="subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#subspace-reconstruction" title="Permalink"></a></h1><h2 id="Description"><a class="docs-heading-anchor" href="#Description">Description</a><a id="Description-1"></a><a class="docs-heading-anchor-permalink" href="#Description" title="Permalink"></a></h2><p>This example described how to perform a subspace reconstruction for <span>$T_2$</span> mapping acceleration.</p><h2 id="Setup-and-define-global-variable"><a class="docs-heading-anchor" href="#Setup-and-define-global-variable">Setup and define global variable</a><a id="Setup-and-define-global-variable-1"></a><a class="docs-heading-anchor-permalink" href="#Setup-and-define-global-variable" title="Permalink"></a></h2><pre><code class="language-julia hljs">using CairoMakie
-using ImageUtils: shepp_logan
-using LinearAlgebra
-using  Random
-using MRIReco, MRISimulation, MRICoilSensitivities, MRISampling,MRIOperators
-using MRIReco.RegularizedLeastSquares
-color=Makie.wong_colors() # color for plots
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Multi-Coil Multi-Echo and Subspace Reconstruction · Julia MRI Package</title><meta name="title" content="Multi-Coil Multi-Echo and Subspace Reconstruction · Julia MRI Package"/><meta property="og:title" content="Multi-Coil Multi-Echo and Subspace Reconstruction · Julia MRI Package"/><meta property="twitter:title" content="Multi-Coil Multi-Echo and Subspace Reconstruction · Julia MRI Package"/><meta name="description" content="Documentation for Julia MRI Package."/><meta property="og:description" content="Documentation for Julia MRI Package."/><meta property="twitter:description" content="Documentation for Julia MRI Package."/><meta property="og:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><meta property="twitter:url" content="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><link rel="canonical" href="https://magneticresonanceimaging.github.io/MRIReco.jl/stable/generated/tutorials/subspace/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Julia MRI Package logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Julia MRI Package</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../gettingStarted/">Getting Started</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../direct/">Direct Reconstruction</a></li><li><a class="tocitem" href="../iterative/">Iterative Reconstruction</a></li><li><a class="tocitem" href="../multicoil/">Multi-Coil Reconstruction</a></li><li><a class="tocitem" href="../multiecho/">Multi-Echo Reconstruction</a></li><li class="is-active"><a class="tocitem" href>Multi-Coil Multi-Echo and Subspace Reconstruction</a><ul class="internal"><li><a class="tocitem" href="#The-Data"><span>The Data</span></a></li><li><a class="tocitem" href="#Coil-Sensitivities-and-the-First-Echo"><span>Coil Sensitivities and the First Echo</span></a></li><li><a class="tocitem" href="#Multi-Coil-Multi-Echo-Reconstruction"><span>Multi-Coil Multi-Echo Reconstruction</span></a></li><li><a class="tocitem" href="#The-Temporal-Basis"><span>The Temporal Basis</span></a></li><li><a class="tocitem" href="#Subspace-Reconstruction"><span>Subspace Reconstruction</span></a></li><li><a class="tocitem" href="#Adding-a-Locally-Low-Rank-Regularization"><span>Adding a Locally Low-Rank Regularization</span></a></li><li><a class="tocitem" href="#Computing-T-Maps"><span>Computing T₂ Maps</span></a></li><li><a class="tocitem" href="#Next-Steps"><span>Next Steps</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">How-to Guides</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-1" type="checkbox"/><label class="tocitem" for="menuitem-4-1"><span class="docs-label">Raw Data and Files</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howto/binning/">Bin Profiles into Contrasts</a></li><li><a class="tocitem" href="../../howto/extract_kspace/">Extract Cartesian k-Space</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Reconstruction</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howto/gpu/">Run a Reconstruction on the GPU</a></li></ul></li><li><a class="tocitem" href="../../../contributing/">Contribute to MRIReco.jl</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Explanations</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../explanations/architecture/">Package Architecture</a></li><li><a class="tocitem" href="../../explanations/data_model/">Data Model</a></li><li><a class="tocitem" href="../../../explanations/signal_model/">Signal Model and Encoding Operators</a></li><li><a class="tocitem" href="../../../explanations/inverse_problem/">Reconstruction as an Inverse Problem</a></li><li><a class="tocitem" href="../../../explanations/gpu/">GPU Acceleration</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-6" type="checkbox"/><label class="tocitem" for="menuitem-6"><span class="docs-label">Reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-6-1" type="checkbox"/><label class="tocitem" for="menuitem-6-1"><span class="docs-label">API</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../API/MRIReco/">MRIReco</a></li><li><a class="tocitem" href="../../../API/MRIBase/">MRIBase</a></li><li><a class="tocitem" href="../../../API/MRIOperators/">MRIOperators</a></li><li><a class="tocitem" href="../../../API/MRIFiles/">MRIFiles</a></li><li><a class="tocitem" href="../../../API/MRISampling/">MRISampling</a></li><li><a class="tocitem" href="../../../API/MRICoilSensitivities/">MRICoilSensitivities</a></li><li><a class="tocitem" href="../../../API/MRISimulation/">MRISimulation</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-7" type="checkbox"/><label class="tocitem" for="menuitem-7"><span class="docs-label">Legacy Pages</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../acquisitionData/">Acquisition Data</a></li><li><a class="tocitem" href="../../../filehandling/">File Handling</a></li><li><a class="tocitem" href="../../../trajectories/">Trajectory</a></li><li><a class="tocitem" href="../../../offresonance/">Offresonance</a></li><li><a class="tocitem" href="../../../custom/">Customize</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Multi-Coil Multi-Echo and Subspace Reconstruction</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Multi-Coil Multi-Echo and Subspace Reconstruction</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/MagneticResonanceImaging/MRIReco.jl/blob/master/docs/src/literate/tutorials/subspace.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="subspace-reconstruction"><a class="docs-heading-anchor" href="#subspace-reconstruction">Multi-Coil Multi-Echo and Subspace Reconstruction</a><a id="subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#subspace-reconstruction" title="Permalink"></a></h1><p>With several coils, the reconstruction type <code>&quot;multiCoilMultiEcho&quot;</code> reconstructs one image per echo from the data of all coils. A subspace reconstruction goes one step further. A few basis curves describe the decay curves of all tissues, so the reconstruction type <code>&quot;multiCoilMultiEchoSubspace&quot;</code> does not estimate an image for every echo, but one coefficient map for every basis curve. This tutorial reconstructs measured, highly undersampled data of a mouse brain with both types and computes <span>$T_2$</span> maps from the results.</p><p>Besides MRIReco, the tutorial needs HDF5 to read the data, MRICoilSensitivities for the coil sensitivities, LinearAlgebra for the basis, Random for reproducible results and CairoMakie for the plots. The plotting function is the one from <a href="../multiecho/#multiecho-reconstruction">Multi-Echo Reconstruction</a>.</p><pre><code class="language-julia hljs">using MRIReco, MRICoilSensitivities, HDF5, LinearAlgebra, Random, CairoMakie
+Random.seed!(1234)
 
-N = 128
-T = ComplexF32
-nCh = 4
-nEchos = 10
-TE = 7.0
-
-
-
-x = T.(shepp_logan(N))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">128×128 Matrix{ComplexF32}:
- 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
-    ⋮                             ⋱     ⋮                  
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im  …  0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im
- 0.0+0.0im  0.0+0.0im  0.0+0.0im     0.0+0.0im  0.0+0.0im  0.0+0.0im</code></pre><h2 id="simulate-MESE-acquisition-of-a-shepp-logan-phantom"><a class="docs-heading-anchor" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom">simulate MESE acquisition of a shepp logan phantom</a><a id="simulate-MESE-acquisition-of-a-shepp-logan-phantom-1"></a><a class="docs-heading-anchor-permalink" href="#simulate-MESE-acquisition-of-a-shepp-logan-phantom" title="Permalink"></a></h2><p>First we need to simulate a multi-echo spin-echo phantom. The R₂ maps is based on the value of each voxel the shepp logan phantom. For the T2 we use</p><pre><code class="language-julia hljs">rmap = 0.05*abs.(x)
-TEnum = Float64.(collect(TE:TE:TE*nEchos))
-
-coilsens = T.(birdcageSensitivity(N, nCh, 4.))
-params = Dict{Symbol,Any}()
-params[:simulation] = &quot;fast&quot;
-params[:trajName] = &quot;Cartesian&quot;
-params[:numProfiles] = floor(Int64, N)
-params[:numSamplingPerProfile] = N
-params[:r2map] = rmap
-params[:T_echo] = TEnum
-params[:seqName] = &quot;ME&quot;
-params[:refocusingAngles] = Float64.(repeat([pi], length(TEnum)))
-params[:senseMaps] = coilsens
-
-acqData = simulation(real(x), params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AcquisitionData{Float32, 2}(Dict{Symbol, Any}(), Trajectory{Float32}[Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false), Trajectory{Float32}(&quot;Cartesian&quot;, Float32[-0.5 -0.4921875 … 0.484375 0.4921875; -0.5 -0.5 … 0.4921875 0.4921875], Float32[0.0, 7.8125f-6, 1.5625f-5, 2.34375f-5, 3.125f-5, 3.9062503f-5, 4.6875f-5, 5.46875f-5, 6.25f-5, 7.0312504f-5  …  0.00092187506, 0.0009296875, 0.00093750004, 0.00094531255, 0.00095312507, 0.0009609375, 0.00096875004, 0.0009765625, 0.000984375, 0.0009921875], 0.0f0, 0.001f0, 128, 128, 1, true, false)], Matrix{ComplexF32}[[-0.061319664f0 + 0.017328978f0im -0.060168564f0 - 0.08990121f0im 0.15327841f0 - 0.0001885891f0im -0.044200927f0 + 0.1044693f0im; 0.1391058f0 - 0.33278483f0im 0.32951653f0 - 0.06908642f0im 0.086078465f0 + 0.24484226f0im -0.25467992f0 - 0.11161256f0im; … ; -0.24694104f0 - 2.078378f0im -0.19207771f0 - 1.8354936f0im -0.50140786f0 - 1.7342796f0im -0.5504198f0 - 2.0933352f0im; -0.3996853f0 - 1.7166493f0im -0.22616445f0 - 1.8982663f0im -0.11623302f0 - 1.6665901f0im -0.26682985f0 - 1.6083899f0im]; [-0.03628423f0 + 0.002153933f0im -0.047774702f0 - 0.07336438f0im 0.10886579f0 - 0.014143705f0im -0.032712057f0 + 0.05882424f0im; 0.11176962f0 - 0.267321f0im 0.25885117f0 - 0.07452323f0im 0.07931745f0 + 0.15332265f0im -0.16305697f0 - 0.10038005f0im; … ; -0.1628871f0 - 1.3709395f0im -0.12984452f0 - 1.2005951f0im -0.35099685f0 - 1.1324832f0im -0.37688065f0 - 1.3907237f0im; -0.25054026f0 - 1.313555f0im -0.1369214f0 - 1.4281361f0im -0.070114255f0 - 1.2801167f0im -0.16514441f0 - 1.2434531f0im]; … ; [0.012780843f0 - 0.054939546f0im -0.01557029f0 - 0.059982f0im 0.009564942f0 - 0.06516403f0im -0.0056816936f0 - 0.061399773f0im; 0.04361123f0 - 0.11495491f0im 0.083025634f0 - 0.08596647f0im 0.053073376f0 - 0.053875864f0im 0.02885972f0 - 0.07771118f0im; … ; -8.224696f-5 + 0.079463825f0im -0.007975087f0 + 0.09075473f0im -0.03178585f0 + 0.0916458f0im -0.01784581f0 + 0.059422687f0im; 0.037896313f0 - 0.3435375f0im 0.029270928f0 - 0.321761f0im 0.008713879f0 - 0.34047526f0im 0.023856506f0 - 0.35112906f0im]; [0.013366346f0 - 0.058309693f0im -0.013997305f0 - 0.061284862f0im 0.006546908f0 - 0.06791401f0im -0.004679367f0 - 0.06604436f0im; 0.04045318f0 - 0.108588666f0im 0.07515283f0 - 0.08527055f0im 0.05060868f0 - 0.059629127f0im 0.03289388f0 - 0.076441996f0im; … ; 0.0020978227f0 + 0.10772966f0im -0.006123252f0 + 0.11456853f0im -0.02387847f0 + 0.11414455f0im -0.010111928f0 + 0.08896665f0im; 0.04127978f0 - 0.30421877f0im 0.030340292f0 - 0.28008235f0im 0.0083987415f0 - 0.30143505f0im 0.025188185f0 - 0.3132364f0im];;;], [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  16375, 16376, 16377, 16378, 16379, 16380, 16381, 16382, 16383, 16384]], (128, 128), (0.0, 0.0, 0.0))</code></pre><h2 id="Subsampling-the-kspace"><a class="docs-heading-anchor" href="#Subsampling-the-kspace">Subsampling the kspace</a><a id="Subsampling-the-kspace-1"></a><a class="docs-heading-anchor-permalink" href="#Subsampling-the-kspace" title="Permalink"></a></h2><p>We need to subsample the data. We generate a sampling mask which is different for each TE.</p><pre><code class="language-julia hljs">mask = zeros(Int32,(N,N,length(TEnum)))
-for echo = 1:length(TEnum)
-  mask_tmp = zeros(Int32,(N,N))
-  cal_disk = sample_poissondisk((N,N),4.0;calsize = 14,seed=echo)
-
-  mask_tmp[cal_disk] .= 1
-  mask[:,:,echo] = mask_tmp
+function showimages(images, titles; columns = length(images), kwargs...)
+    fig = Figure(size = (300 * columns, 310 * cld(length(images), columns)))
+    for (i, (image, title)) in enumerate(zip(images, titles))
+        ax = Axis(fig[fldmod1(i, columns)...], title = title,
+                  aspect = DataAspect(), yreversed = true)
+        heatmap!(ax, image&#39;; colormap = :grays, kwargs...)
+        hidedecorations!(ax)
+    end
+    return fig
+end</code></pre><h2 id="The-Data"><a class="docs-heading-anchor" href="#The-Data">The Data</a><a id="The-Data-1"></a><a class="docs-heading-anchor-permalink" href="#The-Data" title="Permalink"></a></h2><p><a href="https://doi.org/10.1002/mrm.30146">Trotier et al.</a> scanned a mouse with brain metastases at 4.7 T with a 3D multi-echo spin-echo sequence: 50 echoes, 7 ms apart, four coils and 128 × 128 × 96 voxels. To shorten the scan to 25 minutes, they measured an eighth of the samples in the two phase encoding directions, with a different Poisson-disk mask for each echo and a fully sampled center. Their <a href="https://doi.org/10.5281/zenodo.10610639">dataset</a> is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p><p>To keep this tutorial fast, we use one plane of it. After a Fourier transform along the readout, plane 65 of 128 can be reconstructed on its own, with 96 × 128 voxels. We shifted the plane so that the head does not wrap around the image border, and scaled it. The file contains the samples with the dimensions samples, coils and echoes, their indices in the plane and the echo times in ms:</p><pre><code class="language-julia hljs">using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), &quot;docs&quot;, &quot;Artifacts.toml&quot;)
+datadir = ensure_artifact_installed(&quot;MRIRecoDocsData&quot;, artifacts; io = devnull)
+file = joinpath(datadir, &quot;mouse_brain_MESE_plane65.h5&quot;)
+samples = h5read(file, &quot;samples&quot;)
+indices = Int.(h5read(file, &quot;indices&quot;))
+echoTimes = h5read(file, &quot;echoTimes&quot;)
+size(samples), size(indices)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((1534, 4, 50), (1534, 50))</code></pre><p><a href="../../../API/MRIBase/#MRIBase.AcquisitionData"><code>AcquisitionData</code></a> takes one trajectory per contrast and an array of matrices, one matrix with the dimensions samples and coils for each contrast, slice and repetition. With the keyword <code>idx</code>, it also takes the indices of the measured samples for each echo. As we will need different echoes below, we write this as a function:</p><pre><code class="language-julia hljs">function measuredData(echoes)
+    tr = trajectory(Float32, &quot;Cartesian&quot;, 128, 96)
+    kdata = [samples[:, :, e] for e in echoes, slice in 1:1, repetition in 1:1]
+    return AcquisitionData(fill(tr, length(echoes)), kdata;
+                           idx = [indices[:, e] for e in echoes], encodingSize = (96, 128))
 end
-
-f=Figure()
-ax = Axis(f[1,1],title = &quot;mask TE n°1&quot;)
-heatmap!(ax,mask[:,:,1])
-ax = Axis(f[1,2],title = &quot;mask TE n°2&quot;)
-heatmap!(ax,mask[:,:,2])
-f</code></pre><img src="94067155.png" alt="Example block output" width="600" height="450"/><p>Let&#39;s subsample the k-space in 2 different ways :</p><ul><li>With the same mask along the temporal dimensions : <code>acqData_u</code></li><li>With different masks along the temporal dimensions : <code>acqData_u2</code></li></ul><pre><code class="language-julia hljs">mask_multi2 = repeat(mask[:,:,1],1,1,1,nCh,nEchos,1);# same first mask along TE
-
-kspace = kDataCart(acqData);
-kspace = kspace .* mask_multi2;
-acqData_u = AcquisitionData(kspace);
-
-mask_multi = repeat(mask,1,1,1,nCh,1,1);
-mask_multi = permutedims(mask_multi,(1,2,5,4,3,6));
-
-kspace = kDataCart(acqData);
-kspace = kspace .* mask_multi;
-acqData_u2 = AcquisitionData(kspace);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: The 3rd dimension is encoded as a Multi-Slice acquisition because keyword enc2D = true
-[ Info: The 3rd dimension is encoded as a Multi-Slice acquisition because keyword enc2D = true</code></pre><h2 id="Reconstruction-of-undersampled-rawdata"><a class="docs-heading-anchor" href="#Reconstruction-of-undersampled-rawdata">Reconstruction of undersampled rawdata</a><a id="Reconstruction-of-undersampled-rawdata-1"></a><a class="docs-heading-anchor-permalink" href="#Reconstruction-of-undersampled-rawdata" title="Permalink"></a></h2><pre><code class="language-julia hljs">params = Dict{Symbol,Any}()
-params[:reconSize] = (N, N)
+acqData = measuredData(1:50)</code></pre><p>Each echo contains 12.5 % of the samples of the plane, and together they cover 76 %:</p><pre><code class="language-julia hljs">function samplingMask(echoes)
+    mask = zeros(96, 128)
+    for e in echoes
+        mask[indices[:, e]] .= 1
+    end
+    return mask
+end
+showimages(samplingMask.([1, 2, 1:50]),
+           [&quot;Mask of echo 1&quot;, &quot;Mask of echo 2&quot;, &quot;Measured in some echo&quot;])</code></pre><img src="0535f235.png" alt="Example block output" width="900" height="310"/><p>The direct reconstruction of the undersampled data is blurred. With increasing echo time, the signal decays, and the metastases with their long <span>$T_2$</span> stand out. Each image has its own gray scale:</p><pre><code class="language-julia hljs">params = Dict{Symbol, Any}()
+params[:reco] = &quot;direct&quot;
+params[:reconSize] = (96, 128)
+rootSumOfSquares(images) = sqrt.(sum(abs2, images, dims = 5))[:, :, 1, :, 1, 1]
+directImages = rootSumOfSquares(reconstruction(acqData, params))
+shownEchoes = [2, 10, 30]
+showimages([directImages[:, :, e] for e in shownEchoes],
+           [&quot;Echo $e, $(echoTimes[e]) ms&quot; for e in shownEchoes])</code></pre><img src="c2b8e064.png" alt="Example block output" width="900" height="310"/><h2 id="Coil-Sensitivities-and-the-First-Echo"><a class="docs-heading-anchor" href="#Coil-Sensitivities-and-the-First-Echo">Coil Sensitivities and the First Echo</a><a id="Coil-Sensitivities-and-the-First-Echo-1"></a><a class="docs-heading-anchor-permalink" href="#Coil-Sensitivities-and-the-First-Echo" title="Permalink"></a></h2><p>As in <a href="../multicoil/#multicoil-reconstruction">Multi-Coil Reconstruction</a>, we estimate the coil sensitivities with <a href="../../../API/MRICoilSensitivities/#MRICoilSensitivities.espirit-Union{Tuple{AcquisitionData{T, D}}, Tuple{D}, Tuple{T}, Tuple{AcquisitionData{T, D}, NTuple{D, Int64}}, Tuple{AcquisitionData{T, D}, NTuple{D, Int64}, Int64}, Tuple{AcquisitionData{T, D}, NTuple{D, Int64}, Int64, NTuple{D, Int64}}} where {T, D}"><code>espirit</code></a> from the calibration region, here the fully sampled center of the plane with 14 × 14 samples. It uses the first echo, as Trotier et al. do:</p><pre><code class="language-julia hljs">sensitivities = espirit(acqData, (4, 4), 14, eigThresh_2 = 0)</code></pre><p>Real echo trains also contain stimulated echoes, so that the signal does not follow an exponential decay exactly. With the exponential dictionary below, Trotier et al. therefore leave out the first echo, and we do the same from now on:</p><pre><code class="language-julia hljs">acqData = measuredData(2:50)
+echoTimes = echoTimes[2:50]
+directImages = directImages[:, :, 2:50]</code></pre><h2 id="Multi-Coil-Multi-Echo-Reconstruction"><a class="docs-heading-anchor" href="#Multi-Coil-Multi-Echo-Reconstruction">Multi-Coil Multi-Echo Reconstruction</a><a id="Multi-Coil-Multi-Echo-Reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-Coil-Multi-Echo-Reconstruction" title="Permalink"></a></h2><p>The reconstruction type <code>&quot;multiCoilMultiEcho&quot;</code> combines the SENSE model of <a href="../multicoil/#multicoil-reconstruction">Multi-Coil Reconstruction</a> with one image <span>$\mathbf{x}_e$</span> per echo <span>$e$</span>:</p><p class="math-container">\[\underset{\mathbf{x}_1, \ldots, \mathbf{x}_{N_e}}{\operatorname{argmin}} \;
+\frac{1}{2}\sum_{e}\sum_{c} \lVert \mathbf{F}_e\mathbf{S}_c\mathbf{x}_e - \mathbf{b}_{e,c} \rVert_2^2
++ \mathrm{R}(\mathbf{x}_1, \ldots, \mathbf{x}_{N_e}),\]</p><p>where <span>$\mathbf{S}_c$</span> multiplies with the sensitivity of coil <span>$c$</span>, and <span>$\mathbf{F}_e$</span> and <span>$\mathbf{b}_{e,c}$</span> are the Fourier transform and the measured samples, scaled as in Multi-Echo Reconstruction. We pass the sensitivities as <code>params[:senseMaps]</code> and start with CGNR and a small <span>$\ell_2$</span> regularization. As in <a href="../iterative/#iterative-reconstruction">Iterative Reconstruction</a>, <code>MeasurementBasedNormalization</code> scales the weight λ of the regularization by the mean magnitude of the measured data. The coil dimension of the result has size 1:</p><pre><code class="language-julia hljs">params = Dict{Symbol, Any}()
 params[:reco] = &quot;multiCoilMultiEcho&quot;
-params[:reg] = L2Regularization(1.e-3)
-params[:iterations] = 1
+params[:reconSize] = (96, 128)
+params[:senseMaps] = sensitivities
 params[:solver] = CGNR
-params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
-
-im_x = reconstruction(acqData, params).data # fully reconstruction
-im_phant = abs.(im_x)
-
-im_x_u = reconstruction(acqData_u, params).data # undersampling same mask
-im_phant_u = abs.(im_x_u)
-
-im_x_u2 = reconstruction(acqData_u2, params).data # undersampling different mask along TE
-im_phant_u2 = abs.(im_x_u2)
-
-p1 = (100, 45)
-p2 = (40, 60)
-echo=1
-f = Figure()
-ax = Axis(f[1, 1], aspect=1, title=&quot;Fully&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_phant[:, :, 1, echo, 1, 1])
-scatter!(ax, p1,color=color[4])
-scatter!(ax, p2,color=color[4])
-
-ax = Axis(f[2, 1], aspect=1, title=&quot;CS same mask&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_phant_u[:, :, 1, echo, 1, 1])
-
-ax = Axis(f[3, 1], aspect=1, title=&quot;CS different masks&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_phant_u2[:, :, 1, echo, 1, 1])
-
-ax = Axis(f[:, 2],title = &quot;T2₁=$(round(1/rmap[p1...],digits=0)) | T2₂=$(round(1/rmap[p2...],digits=0)) ms&quot;,xlabel = &quot;TE [ms]&quot;,ylabel = &quot;MR signal&quot;)
-lines!(ax, im_phant[p1..., 1, :, 1, 1],color=:black,label = &quot;fully&quot;)
-lines!(ax, im_phant[p2..., 1, :, 1, 1],color=:black)
-
-lines!(ax, im_phant_u[p1..., 1, :, 1, 1],color=color[2],label = &quot;same mask&quot;)
-lines!(ax, im_phant_u[p2..., 1, :, 1, 1],color=color[2],)
-
-lines!(ax, im_phant_u2[p1..., 1, :, 1, 1],color=color[3],label = &quot;different mask&quot;)
-lines!(ax, im_phant_u2[p2..., 1, :, 1, 1],color=color[3])
-axislegend(ax)
-f</code></pre><img src="e2143428.png" alt="Example block output" width="600" height="450"/><p>When the same mask is used along the temporal dimension, we see a standard decaying exponential curve. However the rate of decrease is biased by the PSF effect of the undersampling mask, corresponding by the same sum of others weigthed pixels.</p><p>When the mask is not the same along the temporal dimension, we observed a noisy curve close to the real exponential.</p><h1 id="Implementation-of-a-subspace-reconstruction"><a class="docs-heading-anchor" href="#Implementation-of-a-subspace-reconstruction">Implementation of a subspace reconstruction</a><a id="Implementation-of-a-subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Implementation-of-a-subspace-reconstruction" title="Permalink"></a></h1><h2 id="Build-the-dictionary"><a class="docs-heading-anchor" href="#Build-the-dictionary">Build the dictionary</a><a id="Build-the-dictionary-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-dictionary" title="Permalink"></a></h2><p>We build a signal dictionary using the analytical equation :</p><p class="math-container">\[S(TE) = \frac{-TE}{T2}\]</p><p>with a range of T2 from 1:1:2000 ms</p><pre><code class="language-julia hljs">function createExpBasis(TE_vec::AbstractVector{T}, T2_vec::AbstractVector{T}) where {T&lt;:Real}
-  nTE = length(TE_vec)
-  nSimu = length(T2_vec)
-  expSignal = zeros(T, nSimu, nTE)
-
-  for (i, T2) in enumerate(T2_vec)
-    expSignal[i, :] = exp.(-TE_vec / T2_vec[i])
-  end
-
-  return expSignal
+params[:reg] = L2Regularization(1e-3)
+params[:normalizeReg] = MeasurementBasedNormalization()
+params[:iterations] = 10
+result = reconstruction(acqData, params)
+size(result)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(96, 128, 1, 49, 1, 1)</code></pre><p>From now on, we look at the echo time of 70 ms, where the metastases stand out, in a common gray scale. The result is sharper than the direct reconstruction, but with an eighth of the samples, ten iterations already amplify the noise strongly:</p><pre><code class="language-julia hljs">echoStack(images) = abs.(images[:, :, 1, :, 1, 1])
+withoutBasis = echoStack(result)
+shownEcho = findfirst(==(70), echoTimes)
+showecho(images, labels) = showimages([image[:, :, shownEcho] for image in images], labels,
+                                      colorrange = (0, 0.5))
+showecho([directImages, withoutBasis], [&quot;Direct&quot;, &quot;Without basis&quot;])</code></pre><img src="6e810f8a.png" alt="Example block output" width="600" height="310"/><h2 id="The-Temporal-Basis"><a class="docs-heading-anchor" href="#The-Temporal-Basis">The Temporal Basis</a><a id="The-Temporal-Basis-1"></a><a class="docs-heading-anchor-permalink" href="#The-Temporal-Basis" title="Permalink"></a></h2><p>We build the basis as <a href="https://doi.org/10.1002/mrm.23128">Huang et al.</a> do. A dictionary contains the signal <span>$e^{-T_E / T_2}$</span> at the echo times for a range of <span>$T_2$</span>, as in Trotier et al. from 1 ms to 2000 ms. The first right singular vectors of this dictionary are the orthonormal basis curves:</p><pre><code class="language-julia hljs">dictionary = [exp(-TE / T2) for T2 in 1.0:2000.0, TE in echoTimes]
+dictionarySVD = svd(dictionary)
+round.(dictionarySVD.S[1:8] ./ dictionarySVD.S[1], sigdigits = 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8-element Vector{Float64}:
+ 1.0
+ 0.096
+ 0.019
+ 0.0046
+ 0.0013
+ 0.00035
+ 0.0001
+ 2.9e-5</code></pre><p>The singular values fall quickly, so that few curves suffice. Huang et al. use two to four curves, <a href="https://doi.org/10.1002/mrm.26102">Tamir et al.</a> four and Trotier et al. six. Fewer curves describe the signal less exactly, but leave less noise. We use six. Most of them do not look like decays themselves, but their weighted sums do. The basis must be a complex matrix with the element type of the data, although its values are real:</p><pre><code class="language-julia hljs">basis = ComplexF32.(dictionarySVD.V[:, 1:6])
+fig = Figure(size = (560, 300))
+ax = Axis(fig[1, 1], xlabel = &quot;Echo time in ms&quot;)
+for k in 1:6
+    lines!(ax, echoTimes, real.(basis[:, k]), label = &quot;Curve $k&quot;)
 end
-
-T2_vec = (1:1:2000)
-sDict = createExpBasis(Float32.(TEnum), Float32.(T2_vec))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2000×10 Matrix{Float32}:
- 0.000911882  8.31529f-7   7.58256f-10  …  4.35961f-28  3.97545f-31
- 0.0301974    0.000911882  2.75364f-5      2.08797f-14  6.30512f-16
- 0.096972     0.00940356   0.000911882     7.58256f-10  7.35295f-11
- 0.173774     0.0301974    0.00524752      1.44498f-7   2.511f-8
- 0.246597     0.0608101    0.0149956       3.37201f-6   8.31529f-7
- 0.311403     0.096972     0.0301974    …  2.75364f-5   8.57494f-6
- 0.367879     0.135335     0.0497871       0.00012341   4.53999f-5
- 0.416862     0.173774     0.0724398       0.000380129  0.000158461
- 0.459426     0.211072     0.096972        0.000911882  0.000418942
- 0.496585     0.246597     0.122456        0.0018363    0.000911882
- ⋮                                      ⋱               
- 0.996492     0.992997     0.989513        0.968868     0.96547
- 0.996494     0.993        0.989518        0.968884     0.965487
- 0.996496     0.993004     0.989524        0.968899     0.965504
- 0.996497     0.993007     0.989529        0.968914     0.965521
- 0.996499     0.993011     0.989534     …  0.96893      0.965538
- 0.996501     0.993014     0.989539        0.968945     0.965555
- 0.996503     0.993017     0.989545        0.96896      0.965572
- 0.996504     0.993021     0.98955         0.968976     0.965589
- 0.996506     0.993024     0.989555        0.968991     0.965605</code></pre><p>For real application with stimulated echo we have to remove the 1st echo from the dictionary and the rawdata</p><h2 id="Extract-the-subspace-temporal-basis"><a class="docs-heading-anchor" href="#Extract-the-subspace-temporal-basis">Extract the subspace temporal basis</a><a id="Extract-the-subspace-temporal-basis-1"></a><a class="docs-heading-anchor-permalink" href="#Extract-the-subspace-temporal-basis" title="Permalink"></a></h2><p>Now we can perform an svd decomposition of the signal dictionnary in order to extract the temporal basis in order to use them during the reconstruction</p><pre><code class="language-julia hljs">svd_obj = svd(sDict)
-basis = Complex.(svd_obj.V)[:, 1:5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×5 Matrix{ComplexF32}:
- -0.333034+0.0im    0.593633+0.0im  …     0.378921+0.0im  -0.164077+0.0im
-  -0.32883+0.0im    0.390348+0.0im       -0.525306+0.0im   0.568116+0.0im
- -0.324832+0.0im    0.227168+0.0im       -0.342704+0.0im   -0.21721+0.0im
- -0.321005+0.0im   0.0917306+0.0im     -0.00770914+0.0im   -0.42247+0.0im
- -0.317326+0.0im  -0.0231925+0.0im        0.235677+0.0im  -0.209906+0.0im
- -0.313777+0.0im   -0.122277+0.0im  …     0.335603+0.0im   0.105223+0.0im
- -0.310345+0.0im   -0.208751+0.0im        0.297942+0.0im   0.318069+0.0im
- -0.307018+0.0im   -0.284944+0.0im        0.144373+0.0im   0.325535+0.0im
- -0.303787+0.0im   -0.352601+0.0im       -0.101427+0.0im  0.0891647+0.0im
- -0.300644+0.0im   -0.413064+0.0im       -0.418202+0.0im  -0.392987+0.0im</code></pre><p>In this example, we will use the 5 first basis.</p><pre><code class="language-julia hljs">f=Figure()
-ax = Axis(f[1,1])
-for i = 1:size(basis,2)
-  lines!(ax,real.(svd_obj.V[:,i]))
-end
-f</code></pre><img src="3e3afe33.png" alt="Example block output" width="600" height="450"/><p>Our supposition for the subspace reconstruction is that the MESE signal can be approximated by a linear combinaison of the 5 basis corresponding to the temporal curve.</p><h2 id="Subspace-reconstruction"><a class="docs-heading-anchor" href="#Subspace-reconstruction">Subspace reconstruction</a><a id="Subspace-reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Subspace-reconstruction" title="Permalink"></a></h2><p>In order to perform the subspace reconstruction we are using a dedicated pipeline name : <code>params[:reco] = &quot;multiCoilMultiEchoSubspace&quot;</code> and we also need to pass the basis <code>params[:basis] = basis</code></p><p>Here, we also have added a Wavelet spatial regularization that will be applied on the basis coefficient maps.</p><pre><code class="language-julia hljs">params = Dict{Symbol,Any}()
-params[:reconSize] = (N, N)
-params[:reco] = &quot;multiCoilMultiEchoSubspace&quot;
-
-params[:reg] = L1Regularization(0.001)
-params[:sparseTrafo] = &quot;Wavelet&quot; #sparse trafo
-params[:solver] = ADMM
-params[:senseMaps] = reshape(coilsens, N, N, 1, nCh)
+Legend(fig[1, 2], ax)
+fig</code></pre><img src="8f4e6da2.png" alt="Example block output" width="560" height="300"/><h2 id="Subspace-Reconstruction"><a class="docs-heading-anchor" href="#Subspace-Reconstruction">Subspace Reconstruction</a><a id="Subspace-Reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Subspace-Reconstruction" title="Permalink"></a></h2><p>The reconstruction type <code>&quot;multiCoilMultiEchoSubspace&quot;</code> writes each echo image as a sum over the basis curves,</p><p class="math-container">\[\mathbf{x}_e = \sum_{k} \phi_{e,k} \, \boldsymbol{\alpha}_k,\]</p><p>where <span>$\phi_{e,k}$</span> is the value of curve <span>$k$</span> at echo <span>$e$</span> and <span>$\boldsymbol{\alpha}_k$</span> is its coefficient map. It solves the problem above for the coefficient maps, with the regularization <span>$\mathrm{R}$</span> applied to these maps instead of the echo images. It takes the basis as <code>params[:basis]</code> and returns the coefficient maps in the dimension of the echoes:</p><pre><code class="language-julia hljs">params[:reco] = &quot;multiCoilMultiEchoSubspace&quot;
 params[:basis] = basis
-
-params[:iterations] = 1
-α = reconstruction(acqData, params)
-im_sub = abs.(applySubspace(α, basis))
-
+coefficients = reconstruction(acqData, params)
+size(coefficients)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(96, 128, 1, 6, 1, 1)</code></pre><p>Each map has its own gray scale. The first maps show different mixes of the tissues, and the first two hold most of the signal. The last ones hold mostly noise:</p><pre><code class="language-julia hljs">showimages([abs.(coefficients[:, :, 1, k, 1, 1]) for k in 1:6], [&quot;Map $k&quot; for k in 1:6],
+           columns = 3)</code></pre><img src="dbbe019d.png" alt="Example block output" width="900" height="620"/><p>The function <a href="../../../API/MRIReco/#MRIReco.applySubspace-Union{Tuple{T}, Tuple{AbstractArray{Complex{T}, 6}, AbstractArray{Complex{T}, 2}}} where T"><code>applySubspace</code></a> computes the echo images from the coefficient maps. In the echo image at 70 ms, the basis reduces the noise, because the part of the noise outside of the subspace does not enter the result. It also reduces the undersampling artifacts: each coefficient map takes samples from all echoes, and since the masks differ, these cover 76 % of the plane:</p><pre><code class="language-julia hljs">withBasis = echoStack(applySubspace(coefficients, basis))
+showecho([withoutBasis, withBasis], [&quot;Without basis&quot;, &quot;With basis&quot;])</code></pre><img src="f8ee5c1d.png" alt="Example block output" width="600" height="310"/><h2 id="Adding-a-Locally-Low-Rank-Regularization"><a class="docs-heading-anchor" href="#Adding-a-Locally-Low-Rank-Regularization">Adding a Locally Low-Rank Regularization</a><a id="Adding-a-Locally-Low-Rank-Regularization-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-Locally-Low-Rank-Regularization" title="Permalink"></a></h2><p>The coefficient maps are spatially correlated. Tamir et al. exploit this with a locally low-rank (LLR) regularization. As in <a href="../multiecho/#multiecho-reconstruction">Multi-Echo Reconstruction</a>, we use it with POGM and small steps. With POGM, <code>MeasurementBasedNormalization</code> uses the back-projected data. We apply the regularization to the coefficient maps and, for comparison, to the echo images of <code>&quot;multiCoilMultiEcho&quot;</code>. We chose λ empirically for each of them:</p><pre><code class="language-julia hljs">params[:solver] = POGM
+params[:rho] = 0.05
+params[:reg] = LLRRegularization(1.0, shape = (96, 128), blockSize = (8, 8))
 params[:iterations] = 100
-α = reconstruction(acqData_u, params)
-im_sub_2 = abs.(applySubspace(α, basis))
+regularizedWithBasis = echoStack(applySubspace(reconstruction(acqData, params), basis))
 
-α = reconstruction(acqData_u2, params)
-im_sub_3 = abs.(applySubspace(α, basis));</code></pre><h2 id="Coefficient-maps"><a class="docs-heading-anchor" href="#Coefficient-maps">Coefficient maps</a><a id="Coefficient-maps-1"></a><a class="docs-heading-anchor-permalink" href="#Coefficient-maps" title="Permalink"></a></h2><p>The reconstruction returns the coefficient maps :</p><pre><code class="language-julia hljs">f = Figure()
-for i = 1:size(basis,2)
-  ax = Axis(f[1,i],aspect=1,title = &quot;Basis n°$i&quot;)
-  heatmap!(abs.(α[:,:,1,i,1,1]),colormap=:plasma)
-  hidedecorations!(ax)
+params[:reco] = &quot;multiCoilMultiEcho&quot;
+delete!(params, :basis)
+params[:reg] = LLRRegularization(2.0, shape = (96, 128), blockSize = (8, 8))
+regularizedWithoutBasis = echoStack(reconstruction(acqData, params))
+showecho([regularizedWithoutBasis, regularizedWithBasis],
+         [&quot;LLR, without basis&quot;, &quot;LLR, with basis&quot;])</code></pre><img src="b02b881c.png" alt="Example block output" width="600" height="310"/><p>The regularization removes most of the noise in both cases. With the basis, it works on six maps instead of 49 images, so that, once the code is compiled, the reconstruction is clearly faster.</p><h2 id="Computing-T-Maps"><a class="docs-heading-anchor" href="#Computing-T-Maps">Computing T₂ Maps</a><a id="Computing-T-Maps-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-T-Maps" title="Permalink"></a></h2><p>We fit the <span>$T_2$</span> maps as in Multi-Echo Reconstruction. At later echoes, the signal of the brain approaches the noise level, which biases this simple fit towards longer <span>$T_2$</span>. Trotier et al. therefore fit a model with a noise term. We only use the echoes up to 140 ms, which reduces the bias. We show the maps where the first remaining echo of the LLR result with basis exceeds 15 % of its maximum:</p><pre><code class="language-julia hljs">fitEchoes = findall(&lt;=(140), echoTimes)
+function fitT2(images)
+    A = [ones(length(fitEchoes)) -echoTimes[fitEchoes]]
+    fit = A \ reshape(log.(max.(images[:, :, fitEchoes], eps(Float32))), 96 * 128, :)&#39;
+    return reshape(1 ./ fit[2, :], 96, 128)
 end
-f</code></pre><img src="f2af6ecd.png" alt="Example block output" width="600" height="450"/><h2 id="Virtual-echo-images"><a class="docs-heading-anchor" href="#Virtual-echo-images">Virtual echo images</a><a id="Virtual-echo-images-1"></a><a class="docs-heading-anchor-permalink" href="#Virtual-echo-images" title="Permalink"></a></h2><p>We need to multiply the subspace basis to the coefficient maps in order to get the virtual TE images</p><p class="math-container">\[im_{TE}(i,j) = \sum_{basis=1}^{5} \alpha(i,j) \times basis&#39;\]</p><p>which gives the following results :</p><pre><code class="language-julia hljs">begin
-p1 = (100, 45)
-p2 = (40, 60)
-echo = 1
-f = Figure()
-ax = Axis(f[1, 1], aspect=1, title=&quot;Fully standard&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_phant[:, :, 1, echo, 1, 1])
-scatter!(ax, p1,color=:red)
-scatter!(ax, p2,color=:red)
 
-ax = Axis(f[1, 2], aspect=1, title=&quot;Fully with subspace reco&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_sub[:, :, 1, echo, 1, 1])
-
-ax = Axis(f[1, 3], aspect=1, title=&quot;CS same mask&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_sub_2[:, :, 1, echo, 1, 1])
-
-ax = Axis(f[1, 4], aspect=1, title=&quot;CS different masks&quot;)
-hidedecorations!(ax)
-heatmap!(ax, im_sub_3[:, :, 1, 1, 1, 1])
-
-ax = Axis(f[2, :],title = &quot;T2₁=$(round(1/rmap[p1...],digits=0)) | T2₂=$(round(1/rmap[p2...],digits=0)) ms&quot;,xlabel = &quot;TE [ms]&quot;,ylabel = &quot;MR signal&quot;)
-function scale_T2(T2vect)
-  return T2vect/T2vect[1]
-end
-lines!(ax, scale_T2(im_phant[p1..., 1, :, 1, 1]),color=:black,label = &quot;fully&quot;)
-lines!(ax, scale_T2(im_phant[p2..., 1, :, 1, 1]),color=:black)
-
-lines!(ax, scale_T2(im_sub[p1..., 1, :, 1, 1]),color=color[1],label = &quot;fully subspace&quot;)
-lines!(ax, scale_T2(im_sub[p2..., 1, :, 1, 1]),color=color[1])
-
-lines!(ax, scale_T2(im_sub_2[p1..., 1, :, 1, 1]),color=color[2],label = &quot;same mask&quot;)
-lines!(ax, scale_T2(im_sub_2[p2..., 1, :, 1, 1]),color=color[2])
-
-lines!(ax, scale_T2(im_sub_3[p1..., 1, :, 1, 1]),color=color[3],label = &quot;different mask&quot;)
-lines!(ax, scale_T2(im_sub_3[p2..., 1, :, 1, 1]),color=color[3])
-axislegend(ax)
-f
-end</code></pre><img src="ff43f564.png" alt="Example block output" width="600" height="450"/><h1 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h1><p>This page was generated with the following version of Julia:</p><pre><code class="language-julia hljs">using InteractiveUtils
-io = IOBuffer();
-versioninfo(io);
-split(String(take!(io)), &#39;\n&#39;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">12-element Vector{SubString{String}}:
- &quot;Julia Version 1.13.4&quot;
- &quot;Commit c1ac32ab733 (2026-11-13 17:30 UTC)&quot;
- &quot;Build Info:&quot;
- &quot;  Official https://julialang.org release&quot;
- &quot;Platform Info:&quot;
- &quot;  OS: Linux (x86_64-linux-gnu)&quot;
- &quot;  CPU: 4 × AMD EPYC 9V45 96-Core Processor&quot;
- &quot;  WORD_SIZE: 64&quot;
- &quot;  LLVM: libLLVM-20.1.8 (ORCJIT, znver5)&quot;
- &quot;  GC: Built with stock GC&quot;
- &quot;Threads: 1 default, 1 interactive, 1 GC (on 4 virtual cores)&quot;
- &quot;&quot;</code></pre><p>And with the following package versions</p><pre><code class="language-julia hljs">import Pkg; Pkg.status()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/MRIReco.jl/MRIReco.jl/docs/Project.toml`
-  [39de3d68] AxisArrays v0.4.8
-  [13f3f980] CairoMakie v0.15.17
-  [e30172f5] Documenter v1.20.0
-  [7a1cc6ca] FFTW v1.10.0
-  [cd3eb016] HTTP v2.16.0
-  [8ad4436d] ImageUtils v0.2.13
-  [98b081ad] Literate v2.21.1
-  [f7771a9a] MRIBase v0.4.6 `~/work/MRIReco.jl/MRIReco.jl/MRIBase`
-  [c57eb701] MRICoilSensitivities v0.1.5 `~/work/MRIReco.jl/MRIReco.jl/MRICoilSensitivities`
-  [5a6f062f] MRIFiles v0.3.2 `~/work/MRIReco.jl/MRIReco.jl/MRIFiles`
-  [fb1137e3] MRIOperators v0.4.3 `~/work/MRIReco.jl/MRIReco.jl/MRIOperators`
-  [bdf86e05] MRIReco v0.9.2 `~/work/MRIReco.jl/MRIReco.jl`
-  [9be66c26] MRISampling v0.1.2 `~/work/MRIReco.jl/MRIReco.jl/MRISampling`
-  [8988da37] MRISimulation v0.1.4 `~/work/MRIReco.jl/MRIReco.jl/MRISimulation`
-  [c73af94c] ImageMagick_jll v7.1.2029+0
-  [b77e0a4c] InteractiveUtils v1.11.0</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../multiecho/">« Multi-Echo Reconstruction</a><a class="docs-footer-nextpage" href="../../howto/binning/">Bin Profiles into Contrasts »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Friday 13 November 2026 22:56">Friday 13 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+firstImage = regularizedWithBasis[:, :, 1]
+inside = firstImage .&gt; 0.15 * maximum(firstImage)
+results = [directImages, withoutBasis, withBasis,
+           regularizedWithoutBasis, regularizedWithBasis]
+labels = [&quot;Direct&quot;, &quot;Without basis&quot;, &quot;With basis&quot;, &quot;LLR, without basis&quot;, &quot;LLR, with basis&quot;]
+fig = showimages([fitT2(images) .* inside for images in results], labels, columns = 3,
+                 colormap = :viridis, colorrange = (0, 150))
+Colorbar(fig[:, 4], colormap = :viridis, limits = (0, 150), label = &quot;T₂ in ms&quot;)
+fig</code></pre><img src="90ecf69d.png" alt="Example block output" width="900" height="620"/><p>The direct map has little noise, but is blurred. Without the LLR term, the maps are noisy. With it, the noise is low and the metastases with their long <span>$T_2$</span> have clear borders, while the rest of the brain reads mostly between 50 and 60 ms. On fully sampled scans, Trotier et al. measure 54 ms in the brain. This dataset has no fully sampled reference, so we compare the images by eye here.</p><h2 id="Next-Steps"><a class="docs-heading-anchor" href="#Next-Steps">Next Steps</a><a id="Next-Steps-1"></a><a class="docs-heading-anchor-permalink" href="#Next-Steps" title="Permalink"></a></h2><ul><li><a href="https://github.com/CRMSB/PAPER_subspace_MESE">Subspace_MESE.jl</a> of Trotier et al. reconstructs the whole dataset, for example with a dictionary simulated with extended phase graphs, which keeps the first echo, and a wavelet regularization.</li><li><a href="../multiecho/#multiecho-reconstruction">Multi-Echo Reconstruction</a> explains the locally low-rank regularization and the role of the sampling masks.</li><li>The <a href="https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/">RegularizedLeastSquares.jl documentation</a> describes the available solvers and regularization terms.</li><li>The API reference describes <a href="../../../API/MRIReco/#MRIReco.reconstruction"><code>reconstruction</code></a> and <a href="../../../API/MRIReco/#MRIReco.applySubspace-Union{Tuple{T}, Tuple{AbstractArray{Complex{T}, 6}, AbstractArray{Complex{T}, 2}}} where T"><code>applySubspace</code></a>.</li></ul><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../multiecho/">« Multi-Echo Reconstruction</a><a class="docs-footer-nextpage" href="../../howto/binning/">Bin Profiles into Contrasts »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Friday 13 November 2026 23:03">Friday 13 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
