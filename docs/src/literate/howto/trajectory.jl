@@ -48,7 +48,7 @@ size(kspaceNodes(spiral)), numProfiles(spiral), numSamplingPerProfile(spiral)
 # ([#270](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/270)). `scale(tr, factor)` returns a copy with
 # the nodes divided by `factor`, for example to convert them from other units.
 #
-# With `cartesian = true`, the samples have to lie where `"Cartesian"` or, in 3D, `"Cartesian3D"` with the same
+# With `cartesian = true`, the samples should lie where `"Cartesian"` or, in 3D, `"Cartesian3D"` with the same
 # numbers puts them, in the same order: unless a correction map is used, the reconstruction and the default
 # simulation, `"fast"`, apply FFTs, which don't use the nodes. Set `circular = true` for a trajectory with a circular
 # field of view, as the built-in radial and spiral ones do; the reconstructions `"direct"`, `"standard"` and
@@ -104,10 +104,12 @@ fig
 #   ([#369](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/369)).
 # - `"EPI"` marks its nodes as Cartesian, although they don't lie on the grid, so that the FFTs put them at the wrong
 #   positions ([#370](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/370)).
-# - Without a correction map, the reconstruction and the default simulation place Cartesian samples by counting, not
-#   by their nodes, and fail when the trajectory has more samples, profiles or partitions than the image has points
-#   along that axis. They place them right only with one line per profile and when, along each axis, the image has as
-#   many points as the trajectory or, when the trajectory has an even number of them, a whole multiple of it
+# - Without a correction map, the reconstruction and the default simulation place Cartesian samples on the k-space
+#   grid of the image by counting along each axis, not by their nodes, and fail when the trajectory has more samples,
+#   profiles or partitions than the image has points along that axis. Unless the counted positions are the nodes, the
+#   samples end up in the wrong place. For `"Cartesian"` with the default `kmin` and `kmax` and for `"Cartesian3D"`,
+#   they are the nodes only when, along each axis, the image has as many points as the trajectory or, when the
+#   trajectory has an even number of them, a whole multiple of it
 #   ([#373](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/373)).
 # - `"Radial"` with `angleOffset = :golden`, `"SpiralVarDens"` with `angleOffset = "random"` and unknown names fail
 #   with an `UndefVarError` ([#371](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/371)). The custom
