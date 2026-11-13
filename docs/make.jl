@@ -40,6 +40,7 @@ makedocs(
             ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
+                "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
@@ -66,7 +67,6 @@ makedocs(
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
             "Offresonance" => "offresonance.md",
-            "Customize" => "custom.md",
         ],
     ],
     pagesonly = true,
