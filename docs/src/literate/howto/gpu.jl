@@ -36,7 +36,9 @@
 using MRIReco, MRIFiles, MRICoilSensitivities
 gpu = Array # with an NVIDIA GPU: using CUDA; gpu = CuArray
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 acqData = AcquisitionData(ISMRMRDFile(joinpath(datadir, "knee_3dFSE_slice170.h5")))
 
 params = Dict{Symbol, Any}()

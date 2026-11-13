@@ -29,7 +29,9 @@ nothing #hide
 # The knee data is fully sampled. Its direct reconstruction, with the coil images combined by the root sum of squares,
 # serves as the reference:
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "knee_3dFSE_slice170.h5")
 acqData = AcquisitionData(ISMRMRDFile(filename))
 
