@@ -211,10 +211,9 @@ fig
 #
 # ## Next Steps
 #
-# - [Subspace Reconstruction](@ref subspace-reconstruction) exploits the same redundancy with a fixed temporal basis
-#   and several coils.
-# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately, while
-#   `"multiCoilMultiEcho"` reconstructs one image per echo from all coils.
+# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately.
+#   [Multi-Coil Multi-Echo and Subspace Reconstruction](@ref subspace-reconstruction) reconstructs one image per echo
+#   from all coils with `"multiCoilMultiEcho"` and exploits the same redundancy with a fixed temporal basis.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
 # - The API reference describes [`reconstruction`](@ref) and
