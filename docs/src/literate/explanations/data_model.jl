@@ -14,12 +14,15 @@
 # can also be created by [`simulation`](@ref). In the diagram, functions are drawn with round ends, and arrows with
 # two heads mark conversions that work in both directions.
 #
-# The examples on this page use one slice of a knee dataset from [mridata.org](http://mridata.org), which is
-# included in the MRIReco.jl repository.
+# The examples on this page use one slice of a knee dataset from [mridata.org](http://mridata.org), which belongs to
+# the documentation data of MRIReco.jl and is downloaded from [Zenodo](https://doi.org/10.5281/zenodo.24178206) on
+# first use.
 
 using MRIReco, MRIFiles
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "knee_3dFSE_slice170.h5")
 nothing #hide
 
