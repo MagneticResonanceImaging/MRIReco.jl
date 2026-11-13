@@ -15,7 +15,9 @@
 
 using MRIReco, MRIFiles, MRISampling, MRICoilSensitivities
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 acqDataFull = AcquisitionData(ISMRMRDFile(joinpath(datadir, "knee_3dFSE_slice170.h5")))
 acqData = sample_kspace(acqDataFull, 4.0, "poisson", calsize = 30, seed = 1234)
 
