@@ -12,7 +12,9 @@
 
 using MRIReco, MRIFiles
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 file = ISMRMRDFile(joinpath(datadir, "knee_3dFSE_slice170.h5"))
 acqData = AcquisitionData(file)
 nothing #hide
@@ -99,17 +101,17 @@ acqDataLoaded.kdata == acqDataSub.kdata,
 # MRIFiles reads several files of this folder, among them `acqp`, `method`, the raw data (`fid` for ParaVision 6,
 # `rawdata.job0` for ParaVision 360) and the file `visu_pars` of a reconstruction in the subfolder `pdata`, so copy
 # the folder as a whole. A `BrukerFile` is created from the path of this folder. The data is loaded in two steps,
-# because `AcquisitionData` does not accept a `BrukerFile`. The documentation does not include a Bruker dataset, so
-# the code in this and the next section is not run here. To try it, download and unpack the example dataset
-# [brukerfileCart.zip](https://media.tuhh.de/ibi/mrireco/brukerfileCart.zip):
-# ```julia
-# file = BrukerFile("brukerfileCart")
-# rawData = RawAcquisitionData(file)
-# acqData = AcquisitionData(rawData)
-# ```
+# because `AcquisitionData` does not accept a `BrukerFile`. The example loads a Cartesian dataset that is part of the
+# documentation data:
+
+file = BrukerFile(joinpath(datadir, "brukerfileCart"))
+rawData = RawAcquisitionData(file)
+acqData = AcquisitionData(rawData)
+encodingSize(acqData), numSlices(acqData)
+
 # The data can then be reconstructed as in [Direct Reconstruction](@ref direct-reconstruction). Leave out
 # `params[:reconSize]`, which the tutorial sets to the size of the knee data. The image then has the matrix size of
-# the data, 96 × 96 for this dataset.
+# the data, here 96 × 96 for each of the 15 slices.
 #
 # MRIFiles reads Cartesian acquisitions from ParaVision 6 and ParaVision 360. The reader is tested with FLASH and
 # RARE data from ParaVision 6 and with FLASH data from ParaVision 360. MRIFiles also reads 3D UTE acquisitions from
@@ -131,10 +133,14 @@ acqDataLoaded.kdata == acqDataSub.kdata,
 #
 # ## Converting a Bruker Dataset into an ISMRMRD File
 #
-# Saving the raw data of a Bruker dataset with `save` converts the dataset into an ISMRMRD file:
-# ```julia
-# MRIFiles.save(ISMRMRDFile("brukerfileCart.h5"), rawData)
-# ```
+# Saving the raw data of a Bruker dataset with `save` converts the dataset into an ISMRMRD file, which can be read
+# like any other:
+
+brukerOutfile = joinpath(mktempdir(), "brukerfileCart.h5")
+MRIFiles.save(ISMRMRDFile(brukerOutfile), rawData)
+length(RawAcquisitionData(ISMRMRDFile(brukerOutfile)).profiles)
+
+
 # As with a file written from acquisition data, the header of this file lacks elements that the ISMRMRD schema
 # requires ([#33](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/33)). MRIFiles does not write Bruker
 # datasets.
