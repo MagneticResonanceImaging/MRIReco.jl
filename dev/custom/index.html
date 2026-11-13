@@ -34,15 +34,19 @@ end</code></pre><p>Once we have those two operations we can setup up a dictionar
           , produ
           , nothing
           , ctprodu )
-end</code></pre><p>To test our method, let us load some simulated data and subsample it</p><pre><code class="language-julia hljs"># phantom
-img = readdlm(&quot;data/mribrain100.tsv&quot;)
+end</code></pre><p>To test our method, let us load some simulated data and subsample it</p><pre><code class="language-julia hljs">using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), &quot;docs&quot;, &quot;Artifacts.toml&quot;)
+datadir = ensure_artifact_installed(&quot;MRIRecoDocsData&quot;, artifacts; io = devnull)
 
-acqData = AcquisitionData(ISMRMRDFile(&quot;data/acqDataBrainSim100.h5&quot;))
+# phantom
+img = readdlm(joinpath(datadir, &quot;mribrain100.tsv&quot;))
+
+acqData = AcquisitionData(ISMRMRDFile(joinpath(datadir, &quot;acqDataBrainSim100.h5&quot;)))
 nx,ny = acqData.encodingSize
 
 # undersample kspace data
 acqData = sample_kspace(acqData, 2.0, &quot;poisson&quot;, calsize=25,profiles=false);</code></pre><p>Now we load a pre-trained dictionary, build the sparsifying transform and perform the reconstruction</p><pre><code class="language-julia hljs"># load the dictionary
-D = ComplexF64.(readdlm(&quot;data/brainDict98.tsv&quot;))
+D = ComplexF64.(readdlm(joinpath(datadir, &quot;brainDict98.tsv&quot;)))
 
 # some parameters
 px, py = (6,6)  # patch size
@@ -63,4 +67,4 @@ params[:relTol] = 1.e-2
 img_d = reconstruction(acqData,params)</code></pre><p>For comparison, let us perform the same reconstruction as above but with a Wavelet transform</p><pre><code class="language-julia hljs">delete!(params, :sparseTrafo)
 params[:sparseTrafoName] = &quot;Wavelet&quot;
 
-img_w = reconstruction(acqData,params)</code></pre><p>The following pictures shows the wavelet based CS reconstruction on the left and the dictionary based CS reconstruction on the right:</p><p><img src="../assets/brainWavelet.png" alt="BrainWavelet"/> <img src="../assets/brainDict.png" alt="BrainDict"/></p><p>For reference, the original data is shown here:</p><p><img src="../assets/brainOrig.png" alt="BrainOrig"/></p><p>One can clearly see that the dictionary approach performs better than a simple Wavelet L1 prior.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../offresonance/">« Offresonance</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Friday 13 November 2026 13:23">Friday 13 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+img_w = reconstruction(acqData,params)</code></pre><p>The following pictures shows the wavelet based CS reconstruction on the left and the dictionary based CS reconstruction on the right:</p><p><img src="../assets/brainWavelet.png" alt="BrainWavelet"/> <img src="../assets/brainDict.png" alt="BrainDict"/></p><p>For reference, the original data is shown here:</p><p><img src="../assets/brainOrig.png" alt="BrainOrig"/></p><p>One can clearly see that the dictionary approach performs better than a simple Wavelet L1 prior.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../offresonance/">« Offresonance</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Friday 13 November 2026 22:56">Friday 13 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
