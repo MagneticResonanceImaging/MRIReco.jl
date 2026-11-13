@@ -6,15 +6,15 @@ export Trajectory, trajectory,
 import Base: string
 
 """
-struct describing a trajectory
+struct describing a trajectory with element type `T`
 
 # Fields
 * `name::String`                  - name of the trajectory
-* `nodes::Matrix{Float64}`        - sampling locations in k-space.
+* `nodes::Matrix{T}`              - sampling locations in k-space.
                                     (1.dim <-> dimensions of k-space, 2. dim <-> sampling points)
-* `times::Vector{Float64}`        - sampling times in s
-* `TE::Float64`                   - echo time in s
-* `AQ::Float64``                  - readout duration in s (per profile)
+* `times::Vector{T}`              - sampling times in s
+* `TE::T`                         - echo time in s
+* `AQ::T`                         - readout duration in s (per profile)
 * `numProfiles::Int64`            - number of profiles
 * `numSamplingPerProfile::Int64`  - number of sampling points per profile
 * `numSlices::Int64`              - number of slices (for 3d trajectories)
@@ -78,18 +78,20 @@ include("3D/StackofStars.jl")
 # This dispatches on the file extension and automatically
 # generates the correct type
 """
-    trajectory(trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, TE::Float64=0.0, AQ::Float64=1.e-3, kargs...)
+    trajectory(::Type{T}, trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int;
+               numSlices::Int64=1, TE::AbstractFloat=0.0, AQ::AbstractFloat=1.e-3, kargs...) where T
 
-is a factory method to construct a trajectory from its `name`
+is a factory method to construct a trajectory with element type `T`, for example `Float64`, from its name `trajName`
 
 # Arguments
-* `name::String`                  - name of the trajectory
-* `numProfiles::Int64`            - number of profiles
-* `numSamplingPerProfile::Int64`  - number of sampling points per profile
+* `T`                             - element type of the nodes and times
+* `trajName::AbstractString`      - name of the trajectory
+* `numProfiles::Int`              - number of profiles
+* `numSamplingPerProfile::Int`    - number of sampling points per profile
 * (`numSlices::Int64=1`)          - number of slices (for 3d trajectories)
-* (`TE::Float64=0.0`)             - echo time in s
-* (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
-* `kargs...`                      - addional keyword arguments
+* (`TE::AbstractFloat=0.0`)       - echo time in s
+* (`AQ::AbstractFloat=1.e-3`)     - readout duration in s (per profile)
+* `kargs...`                      - additional keyword arguments, passed on to the constructor of the trajectory
 """
 function trajectory(::Type{T}, trajName::AbstractString, numProfiles::Int, numSamplingPerProfile::Int; numSlices::Int64=1, 
          TE::AbstractFloat=0.0, AQ::AbstractFloat=1.e-3, kargs...) where T
@@ -138,7 +140,7 @@ echoTime(tr::Trajectory) = tr.TE
 """ `acqTimePerProfile(tr::Trajectory)` returns the acquisition time per profile of a trajectory """
 acqTimePerProfile(tr::Trajectory) = tr.AQ
 
-""" `string(tr::Trajectory)` returns the name of a trajectory """
+""" `numProfiles(tr::Trajectory)` returns the number of profiles of a trajectory """
 numProfiles(tr::Trajectory) = tr.numProfiles
 
 """ `numSamplingPerProfile(tr::Trajectory)` returns the number of samples per profile of a trajectory """
@@ -154,7 +156,7 @@ isCircular(tr::Trajectory) = tr.circular
 isCartesian(tr::Trajectory) = tr.cartesian
 
 # 2d or 3d encoding
-""" `dims(tr::Trajectory)` returns the number of dimensions of a trajectory """
+""" `ndims(tr::Trajectory)` returns the number of dimensions of a trajectory """
 Base.ndims(tr::Trajectory) = size(tr.nodes,1)
 
 """ `kspaceNodes(tr::Trajectory)` returns the kspace sampling points of a trajectory """

@@ -27,13 +27,13 @@ end
 
 
 """
-  SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1)
+    SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1)
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`
 # Arguments
 * `sensMaps`    - sensitivity maps ( 1. dim -> voxels, 2. dim-> coils)
-* `numEchoes`   - number of contrasts to which the operator will be applied
+* `numContr`    - number of contrasts to which the operator will be applied
 
 The forward operation uses `sensMaps` itself, while the adjoint uses `conj.(sensMaps)` computed
 at construction.
@@ -71,7 +71,7 @@ Adapt.adapt_structure(to, op::SensitivityOp{T}) where T =
   SensitivityOp{T}(adapt(to, getfield(op, :sensMaps)), adapt(to, getfield(op, :sensMapsC)), getfield(op, :numContr))
 
 """
-  SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)
+    SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`

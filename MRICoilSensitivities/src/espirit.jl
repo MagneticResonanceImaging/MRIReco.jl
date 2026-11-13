@@ -15,11 +15,11 @@ Where SENSE meets GRAPPA"](https://doi.org/10.1002/mrm.24751)). The matlab code 
 # Required Arguments
   * `acqData::AcquisitionData`  - AcquisitionData
   or
-  * `calibData::Array{T}`       - Center of k-space in the format `kx × ky [× kz] × coils`, where the kz dimension is optional. The type `T` of the input data determines the type of the calculated maps. Reasonable choises are in the range of `Nx = Ny [= Nz] = 24`.
+  * `calibData::Array{T}`       - Center of k-space in the format `kx × ky [× kz] × coils`, where the kz dimension is optional. The type `T` of the input data determines the type of the calculated maps. Reasonable choices are in the range of `Nx = Ny [= Nz] = 24`.
   * `imsize::NTuple{D,Int}`     - matrix size of the final maps (optional when passing acqData)
 
 # Optional Arguments
-  * `ksize::NTuple{D,Int}`      - number of calibration points in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
+  * `ksize::NTuple{D,Int}`      - size of the kernel in each dimension; the default is `(6,6)` for 2D and `(6,6,6)` for 3D.
   * `ncalib::Int`      - size of the central part corresponding to the calibration data.
 
 # Keyword Arguments
