@@ -17,6 +17,7 @@ function reconstruction_direct(acqData::AcquisitionData{T}
                                   , arrayType = Array
                                   , S = Vector{Complex{T}}) where {D,T}
 
+  Base.depwarn("The reconstruction_x methods are deprecated in favour of a `RecoPlan` based backend", :reconstruction_direct)
   encDims = ndims(trajectory(acqData))
   if encDims!=D
     error("reco-dimensionality $D and encoding-dimensionality $(encDims) do not match")
