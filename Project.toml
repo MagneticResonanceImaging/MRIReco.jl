@@ -5,6 +5,7 @@ authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 
 [deps]
 AbstractImageReconstruction = "a4b4fdbf-6459-4ec9-990d-77e1fa24a91b"
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MRIBase = "f7771a9a-6e57-4e71-863b-6e4b6a2f17df"
@@ -26,6 +27,7 @@ MRIRecoGPUArraysExt = "GPUArrays"
 
 [compat]
 AbstractImageReconstruction = "0.6.5"
+Adapt = "3, 4"
 AxisArrays = "0.4.6"
 FFTW = "1.0"
 GPUArrays = "8, 9, 10, 11"
