@@ -53,7 +53,7 @@ The factor $\mathrm{e}^{-z(\mathbf{r})\, t}$ depends on both position and time, 
 
 which turns the operator into a weighted sum of $K$ NFFTs. The parameter `:method` of the iterative reconstructions chooses how the coefficients are computed. The default `"nfft"` approximates the exponential analytically and determines $K$ from the ranges of the correction map and of the readout times, while data-driven methods such as `"leastsquare"` fit the coefficients for $K$ time segments, which the parameter `:K` sets, to the correction map. Section 2.2 of the paper gives references for these approximations.
 
-The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the field `TE` of the trajectory and so reconstruct the magnetization at that time. In MRIReco.jl, this is the time of the first sample of a readout, which for Cartesian and radial readouts comes before the center of k-space.
+The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the field `TE` of the trajectory and so reconstruct the magnetization at that time. For the built-in trajectories and custom ones without `times`, this is the time of the first sample of a readout, so for readouts that start at the edge of k-space, such as Cartesian lines and full radial spokes, it comes before the echo.
 
 ## The Normal Operator and the Toeplitz Approach
 
