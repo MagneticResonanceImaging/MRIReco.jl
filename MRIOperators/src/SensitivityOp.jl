@@ -46,7 +46,7 @@ returns a new `SensitivityOp` with a new parent operator, built from `Adapt.adap
 sensitivity maps and of their conjugates, so it applies the same forward and adjoint operation as `op` at
 the time of the call. In particular, the adjoint keeps using the conjugated maps computed when `op` was built.
 On the same backend, the maps may be shared with `op` and are only read. `op` itself is not modified.
-`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct SensitivityOp{T, O, M <: AbstractMatrix{T}, MC <: AbstractMatrix{T}} <: WrappedMRIOperator{T, O}
   op::O

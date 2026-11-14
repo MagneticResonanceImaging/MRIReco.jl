@@ -117,6 +117,35 @@ workspaceState(op) = (Array(op.Mv), Array(op.Mtu), op.nprod, op.ntprod, op.nctpr
     @test isapprox(Array(adjoint(moved) * to(y)), srcAdj; rtol = adaptRtol(T))
   end
 
+  @testset "Fourier encoding with FieldmapNFFTOp" begin
+    N = 16
+    tr = CartesianTrajectory(Float64, N, N; TE = 0.002, AQ = 0.01)
+    # times relative to the readout start and least-squares time segmentation, both not the defaults
+    src = with(nfft_backend => NFFT.backend()) do
+      fourierEncodingOp((N, N), tr, "fast"; correctionMap = im * quadraticFieldmap(N, N), echoImage = false,
+                        method = "leastsquare", K = 4, subsampleIdx = collect(1:2:N^2), S = typeof(from(ComplexF64[])))
+    end
+    F = src.B
+    @test F isa FieldmapNFFTOp && length(F.plans) > 1
+    F.cparam.C_k .*= 2 # the stored coefficients must be used, not recomputed ones
+    ref = adaptActions(src, from)
+    moved = with(nfft_backend => NonuniformFFTs.backend()) do
+      adapt(to, src)
+    end
+    G = moved.B
+    @test storageType(moved) <: to && storageType(G) <: to
+    @test all(a -> onTarget(a, to), (G.cparam.A_k, G.cparam.C_k, G.cparam.times, G.cparam.Cmap))
+    @test G.nodes == F.nodes && all(k -> k isa Matrix, G.nodes) # NFFT plans take nodes on the CPU
+    @test all(i -> i isa (to === Array ? Vector{Int} : to{Int32}), G.idx)
+    @test (G.shape, G.circTraj, G.scheduler, G.backend) === (F.shape, F.circTraj, F.scheduler, F.backend)
+    @test parentmodule(typeof(first(G.plans))) !== NonuniformFFTs
+    testAdaptActions(moved, to, src, from, 1e-4)
+    testAdaptActions(adapt(from, moved), from, src, from, 1e-4)
+    for (s, r) in zip(adaptActions(src, from), ref)
+      @test isapprox(s, r; rtol = 1e-10)
+    end
+  end
+
   @testset "MapSliceOp $T dim=$dim" for T in (Float32, ComplexF32), dim in (1, 2)
     size1, size2 = dim == 1 ? ((2, 4), (3, 4)) : ((4, 2), (4, 3))
     for trafo in (from(testData(T, 3, 2)), WeightingOp(from(testData(T, 2))))
