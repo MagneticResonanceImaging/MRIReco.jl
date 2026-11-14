@@ -336,9 +336,9 @@ function testLeastSquaresSolverParameters(arrayType=Array, T=Float64)
 
       @testset "Solver construction" begin
         n = prod(shape)
-        A = rand(Complex{T}, n, n)
+        A = arrayType(rand(Complex{T}, n, n))
         AHA = A' * A
-        x = rand(Complex{T}, n)
+        x = arrayType(rand(Complex{T}, n))
         b = A * x
 
         @testset "ADMM" begin
@@ -439,9 +439,9 @@ function testLeastSquaresSolverParameters(arrayType=Array, T=Float64)
 
       @testset "Multiple regularization terms" begin
         n = prod(shape)
-        A = rand(Complex{T}, n, n)
+        A = arrayType(rand(Complex{T}, n, n))
         AHA = A' * A
-        x = rand(Complex{T}, n)
+        x = arrayType(rand(Complex{T}, n))
         b = A * x
 
         @testset "ADMM multiple reg" begin
@@ -479,9 +479,9 @@ function testLeastSquaresSolverParameters(arrayType=Array, T=Float64)
 
       @testset "Optional parameters" begin
         n = prod(shape)
-        A = rand(Complex{T}, n, n)
+        A = arrayType(rand(Complex{T}, n, n))
         AHA = A' * A
-        x = rand(Complex{T}, n)
+        x = arrayType(rand(Complex{T}, n))
         b = A * x
 
         @testset "With custom tolerances" begin
