@@ -38,6 +38,9 @@ makedocs(
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
+            "Encoding Operators" => [
+                "Use Encoding Operators Directly" => "generated/howto/encoding_operators.md",
+            ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
             ],
