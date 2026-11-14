@@ -1,6 +1,6 @@
 # MRISampling
 
-MRISampling creates undersampling patterns and applies them to k-space data. MRISampling depends on MRIBase. It has to be loaded with `using MRISampling`, because MRIReco does not depend on it.
+MRISampling creates undersampling patterns and applies them to k-space data. MRISampling depends on MRIBase. It has to be loaded with `using MRISampling`, because MRIReco does not depend on it. The guide [Undersample k-Space](@ref undersample-kspace) shows how to use it.
 
 ## Undersampling
 

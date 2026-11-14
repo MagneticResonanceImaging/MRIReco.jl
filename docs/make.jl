@@ -40,6 +40,9 @@ makedocs(
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
                 "Create AcquisitionData from Arrays" => "generated/howto/from_arrays.md",
             ],
+            "Sampling" => [
+                "Undersample k-Space" => "generated/howto/undersample.md",
+            ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
             ],
