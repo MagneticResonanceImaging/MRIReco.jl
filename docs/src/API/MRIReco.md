@@ -23,6 +23,7 @@ MRIReco.reconstruction_multiCoilMultiEcho
 
 ```@autodocs
 Modules = [MRIReco]
-Pages = ["Tools/PreProcess.jl", "Tools/Regridding.jl", "Tools/Subspace.jl", "Tools/ErrorMeasures.jl"]
+Pages = ["Tools/PreProcess.jl", "Tools/Regridding.jl", "Tools/Subspace.jl", "Tools/ErrorMeasures.jl",
+         "Tools/NoiseDeCorr.jl"]
 Private = false
 ```
