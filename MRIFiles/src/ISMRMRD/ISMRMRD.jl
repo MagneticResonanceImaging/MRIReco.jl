@@ -8,9 +8,11 @@ struct ISMRMRDFile <: MRIFile
 end
 
 """
-    RawAcquisitionData(f::ISMRMRDFile, dataset="dataset")
+    RawAcquisitionData(f::ISMRMRDFile, dataset="dataset"; slice=nothing, repetition=nothing, contrast=nothing)
 
-reads the `ISMRMRDFile` f and stores the result in a `RawAcquisitionDataObject`
+reads the `ISMRMRDFile` f and stores the result in a `RawAcquisitionData` object. With `slice`, `repetition` or
+`contrast`, only the profiles whose encoding counter has the given value, or one of the given values, are read. The
+counters start at 0.
 """
 function MRIBase.RawAcquisitionData(f::ISMRMRDFile, dataset="dataset"; 
                                     slice=nothing, repetition=nothing, contrast=nothing)
@@ -57,7 +59,7 @@ end
 """
     AcquisitionData(f::ISMRMRDFile, dataset="dataset")
 
-reads the `ISMRMRDFile` f and stores the result in an `AcquisitionDataObject`
+reads the `ISMRMRDFile` f and stores the result in an `AcquisitionData` object
 """
 function MRIBase.AcquisitionData(f::ISMRMRDFile, dataset="dataset")
   return AcquisitionData(RawAcquisitionData(f,dataset))

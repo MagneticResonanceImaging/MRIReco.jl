@@ -46,4 +46,4 @@ The reconstruction types with coil sensitivities, which `:senseMaps` provides, c
 
 ## Noise Decorrelation
 
-The noise of different receive coils is usually correlated. If a noise measurement is given with `:noiseData`, the reconstruction type `"multiCoil"` estimates the noise covariance matrix $\mathbf{\Psi}$ from it, computes its Cholesky factorization $\mathbf{\Psi} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ and applies $\mathbf{L}^{-1}$ to the data and to the coil sensitivities. This decorrelates the noise, which the least-squares problem assumes to be uncorrelated and of equal variance in all coils.
+The noise of different receive coils is usually correlated. If a noise measurement is given with `:noiseData`, the reconstruction types `"multiCoil"` and `"multiCoilMultiEcho"` estimate the noise covariance matrix $\mathbf{\Psi}$ from it, compute its Cholesky factorization $\mathbf{\Psi} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ and apply $\mathbf{L}^{-1}$ to the data and to the coil sensitivities. This decorrelates the noise, which the least-squares problem assumes to be uncorrelated and of equal variance in all coils.

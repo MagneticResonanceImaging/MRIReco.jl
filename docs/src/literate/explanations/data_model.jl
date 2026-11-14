@@ -85,8 +85,9 @@ nothing #hide
 # ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
 #
 # Special readouts, such as noise measurements, are not filtered out and have to be removed before the conversion
-# with [`remove_raw_by_flags`](@ref). The conversion works in the other direction as well:
-# [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example from simulated data.
+# with [`remove_raw_by_flags`](@ref), as shown in [Select and Prepare Profiles](@ref prepare-profiles). The conversion
+# works in the other direction as well: [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example
+# from simulated data.
 #
 # `AcquisitionData` is defined as
 #
