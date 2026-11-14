@@ -11,13 +11,14 @@ include("IterativeReconstruction.jl")
 Performs image reconstruction of an AcquisitionData object.
 Parameters are specified in a dictionary.
 
-Reconstruction types are specified by the symbol `:reco`.
+Reconstruction types are specified by the key `:reco`.
 Valid reconstruction names are:
-* :direct - direct Fourier reconstruction
-* :standard           - iterative reconstruction for all contrasts, coils & slices independently
-* :multiEcho          - iterative joint reconstruction of all echo images
-* :multiCoil          - SENSE-type iterative reconstruction
-* :multiCoilMultiEcho - SENSE-type iterative reconstruction of all echo images
+* `"direct"`             - direct Fourier reconstruction
+* `"standard"`           - iterative reconstruction for all contrasts, coils & slices independently
+* `"multiEcho"`          - iterative joint reconstruction of all echo images
+* `"multiCoil"`          - SENSE-type iterative reconstruction
+* `"multiCoilMultiEcho"` - SENSE-type iterative reconstruction of all echo images
+* `"multiCoilMultiEchoSubspace"` - SENSE-type iterative reconstruction of the coefficient maps of a temporal basis
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   recoParams = copy(recoParams)
@@ -34,27 +35,8 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   # load reconstruction parameters
   recoParams = merge(defaultRecoParams(), recoParams)
 
-  # iterative reco
-  if recoParams[:reco] == "direct"
-    reconSize, weights, cmap, arrayType, S = setupDirectReco(acqData, recoParams)
-    return reconstruction_direct(acqData, reconSize[1:encodingDims], weights, cmap, arrayType, S)
-  else
-    setupIterativeReco!(acqData, recoParams)
-    recoParams[:reconSize] = recoParams[:reconSize][1:encodingDims]
-    if recoParams[:reco] == "standard"
-        return reconstruction_simple(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiEcho"
-        return reconstruction_multiEcho(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoil"
-        return reconstruction_multiCoil(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoilMultiEcho"
-        return reconstruction_multiCoilMultiEcho(acqData; recoParams...)
-    elseif recoParams[:reco] == "multiCoilMultiEchoSubspace"
-      return reconstruction_multiCoilMultiEcho_subspace(acqData; recoParams...)
-    else
-        @error "reco model $(recoParams[:reco]) not found"
-    end
-  end
+  plan = setupPlanReco!(acqData, recoParams)
+  return reconstruct(build(plan), acqData)
 end
 
 """

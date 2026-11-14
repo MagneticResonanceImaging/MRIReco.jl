@@ -5,12 +5,15 @@
 # image.
 #
 # The data is one slice of a knee dataset from [mridata.org](http://mridata.org), stored in the
-# [ISMRMRD](https://ismrmrd.readthedocs.io/) format. The file is included in the MRIReco.jl repository. Besides MRIReco,
-# the tutorial needs MRIFiles to read the file and CairoMakie for the plots.
+# [ISMRMRD](https://ismrmrd.readthedocs.io/) format. It belongs to the documentation data of MRIReco.jl, which
+# `ensure_artifact_installed` downloads from [Zenodo](https://doi.org/10.5281/zenodo.24178206) on first use and keeps
+# as a Julia artifact. Besides MRIReco, the tutorial needs MRIFiles to read the file and CairoMakie for the plots.
 
 using MRIReco, MRIFiles, CairoMakie
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "knee_3dFSE_slice170.h5")
 nothing #hide
 

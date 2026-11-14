@@ -14,12 +14,15 @@
 # can also be created by [`simulation`](@ref). In the diagram, functions are drawn with round ends, and arrows with
 # two heads mark conversions that work in both directions.
 #
-# The examples on this page use one slice of a knee dataset from [mridata.org](http://mridata.org), which is
-# included in the MRIReco.jl repository.
+# The examples on this page use one slice of a knee dataset from [mridata.org](http://mridata.org), which belongs to
+# the documentation data of MRIReco.jl and is downloaded from [Zenodo](https://doi.org/10.5281/zenodo.24178206) on
+# first use.
 
 using MRIReco, MRIFiles
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "knee_3dFSE_slice170.h5")
 nothing #hide
 
@@ -82,8 +85,9 @@ nothing #hide
 # ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
 #
 # Special readouts, such as noise measurements, are not filtered out and have to be removed before the conversion
-# with [`remove_raw_by_flags`](@ref). The conversion works in the other direction as well:
-# [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example from simulated data.
+# with [`remove_raw_by_flags`](@ref), as shown in [Select and Prepare Profiles](@ref prepare-profiles). The conversion
+# works in the other direction as well: [`RawAcquisitionData(::AcquisitionData)`](@ref) creates raw data, for example
+# from simulated data.
 #
 # `AcquisitionData` is defined as
 #
@@ -228,7 +232,9 @@ axisvalues(image)[1]
 # | coil sensitivities of [`espirit`](@ref) | x, y, z or slice, coil |
 #
 # A k-space array in the layout of `kDataCart` can also be converted into `AcquisitionData`; if its third dimension
-# holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed. Note that the coil and contrast
+# holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed.
+# [Create AcquisitionData from Arrays](@ref acqdata-from-arrays) shows how to do this and how to create
+# `AcquisitionData` from the nodes and samples of a non-Cartesian acquisition. Note that the coil and contrast
 # dimensions are in a different order in k-space arrays and in images:
 
 size(kDataCart(acqData)), size(image)

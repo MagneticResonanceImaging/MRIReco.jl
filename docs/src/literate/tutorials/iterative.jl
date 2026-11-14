@@ -25,10 +25,13 @@ nothing #hide
 # ## Loading the Data
 #
 # The data is a simulated single-coil dataset of a brain image with 256 × 256 pixels, fully sampled on a Cartesian
-# grid. The file is included in the MRIReco.jl repository. The direct reconstruction of the fully sampled data serves as
+# grid. The file belongs to the documentation data, which is downloaded as in
+# [Direct Reconstruction](@ref direct-reconstruction). The direct reconstruction of the fully sampled data serves as
 # the reference. Of the six dimensions of the reconstructed image, we keep x and y and take the magnitude:
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "acqDataBrainSim100.h5")
 acqData = AcquisitionData(ISMRMRDFile(filename))
 

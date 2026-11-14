@@ -1,6 +1,6 @@
 function MRIOperators.produ_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, s::vecT, sp, plan, idx, x_::vecT, p::Vector{arrT}, ::Scheduler) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
   
-  @kernel inbounds = true cpu = false function produ_inner_kernel!(indices, d, A, s)
+  @kernel inbounds = true function produ_inner_kernel!(indices, d, A, s)
     k = @index(Global, Linear)
     # Assumption: l is unique per idx[κ]
     l = indices[k]
@@ -23,14 +23,14 @@ end
 function MRIOperators.ctprodu_inner!(K, C::matT, A::matT, shape, d::Vector{vecT}, y::vecT, sp, plan, idx, x::vecT, p::Vector{arrT}, ::Scheduler) where {T, vecT <: AbstractGPUVector{T}, matT <: AbstractGPUMatrix{T}, arrT <: AbstractGPUArray{T}}
 
   
-  @kernel inbounds = true cpu = false function ctprodu_inner_1!(indices, d, A, x)
+  @kernel inbounds = true function ctprodu_inner_1!(indices, d, A, x)
     k = @index(Global, Linear)
     l = indices[k]
     d[k] = conj(A[l]) * x[l]
   end
   kernel1! = ctprodu_inner_1!(get_backend(C))
 
-  @kernel inbounds = true cpu = false function ctprodu_inner_2!(p, C, y)
+  @kernel inbounds = true function ctprodu_inner_2!(p, C, y)
     k = @index(Global, Linear)
     y[k] += conj(C[k]) * p[k]
   end

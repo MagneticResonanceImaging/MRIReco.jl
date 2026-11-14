@@ -31,16 +31,28 @@ makedocs(
             "Iterative Reconstruction" => "generated/tutorials/iterative.md",
             "Multi-Coil Reconstruction" => "generated/tutorials/multicoil.md",
             "Multi-Echo Reconstruction" => "generated/tutorials/multiecho.md",
-            "Subspace Reconstruction" => "generated/tutorials/subspace.md",
+            "Multi-Coil Multi-Echo and Subspace Reconstruction" => "generated/tutorials/subspace.md",
         ],
         "How-to Guides" => [
             "Raw Data and Files" => [
+                "Select and Prepare Profiles" => "generated/howto/prepare_profiles.md",
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
+                "Create AcquisitionData from Arrays" => "generated/howto/from_arrays.md",
+            ],
+            "Sampling" => [
+                "Undersample k-Space" => "generated/howto/undersample.md",
+            ],
+            "Coil Sensitivities" => [
+                "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
             ],
             "Reconstruction" => [
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
+                "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
+            ],
+            "Coil Sensitivities" => [
+                "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
@@ -63,10 +75,8 @@ makedocs(
             ],
         ],
         "Legacy Pages" => [
-            "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
-            "Customize" => "custom.md",
         ],
     ],
     pagesonly = true,

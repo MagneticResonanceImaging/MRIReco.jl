@@ -1,6 +1,6 @@
 # File Handling
 
-MRI [Acquisition Data](@ref) can not only be generated from simulation but also from files.
+MRI [acquisition data](@ref data-model) can not only be generated from simulation but also from files.
 Currently, MRIReco supports the ISMRMRD file format the Bruker file format (at least partially).
 
 The ISMRMRD is fully supported with proper read and write support. For the Bruker file format
