@@ -35,6 +35,7 @@ makedocs(
         ],
         "How-to Guides" => [
             "Raw Data and Files" => [
+                "Select and Prepare Profiles" => "generated/howto/prepare_profiles.md",
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
             ],
@@ -62,7 +63,6 @@ makedocs(
             ],
         ],
         "Legacy Pages" => [
-            "Acquisition Data" => "acquisitionData.md",
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
             "Offresonance" => "offresonance.md",

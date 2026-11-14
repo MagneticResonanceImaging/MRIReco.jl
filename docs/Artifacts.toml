@@ -1,9 +1,9 @@
-# Documentation data from https://zenodo.org/records/24178207. New data goes into a new version of
+# Documentation data from https://zenodo.org/records/24216538. New data goes into a new version of
 # that Zenodo record; then update the URL and both hashes here.
 [MRIRecoDocsData]
-git-tree-sha1 = "baf53e76732e83029d900547135992c932c8fb87"
+git-tree-sha1 = "b52b461ace342db577531e96a5b03d0d86346b41"
 lazy = true
 
     [[MRIRecoDocsData.download]]
-    url = "https://zenodo.org/records/24178207/files/MRIRecoDocsData.tar.gz"
-    sha256 = "879183b70ad631f2969f2faef2365e7801403267a74e2bec05b4a318ef55eaa9"
+    url = "https://zenodo.org/records/24216538/files/MRIRecoDocsData.tar.gz"
+    sha256 = "04d4e49c214997e4e3bd9cab20059048554d153b9f0f268a22810516370ef750"
