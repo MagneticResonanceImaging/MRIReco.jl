@@ -289,7 +289,9 @@ end
 """
     samplingDensity(acqData::AcquisitionData, shape::Tuple)
 
-returns the sampling density for all trajectories contained in `acqData`.
+returns the square roots of the density compensation factors of the trajectories contained in `acqData`, one vector
+for each contrast, for an image of size `shape`. For Cartesian trajectories, they are constant, `1/sqrt(prod(shape))`,
+one for each measured sample.
 """
 function samplingDensity(acqData::AcquisitionData{T}, shape::Tuple) where T
   numContr = numContrasts(acqData)

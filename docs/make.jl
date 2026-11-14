@@ -49,6 +49,9 @@ makedocs(
             "Simulation" => [
                 "Simulate k-Space Data" => "generated/howto/simulation.md",
             ],
+            "Encoding Operators" => [
+                "Use Encoding Operators Directly" => "generated/howto/encoding_operators.md",
+            ],
             "Reconstruction" => [
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",

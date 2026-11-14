@@ -41,7 +41,7 @@ With several receive coils, the image is first multiplied by the sensitivities o
 \mathbf{E} = \begin{pmatrix} \mathbf{F} & & \\ & \ddots & \\ & & \mathbf{F} \end{pmatrix} \begin{pmatrix} \mathbf{S}_1 \\ \vdots \\ \mathbf{S}_C \end{pmatrix},
 ```
 
-where $\mathbf{F}$ is the Fourier operator from above and $\mathbf{S}_c$ multiplies the image by the sensitivity of coil $c$. The block-diagonal operator is a `DiagOp`, which applies $\mathbf{F}$ to the image of each coil. This is the encoding operator of [SENSE](https://doi.org/10.1002/%28SICI%291522-2594%28199911%2942:5%3C952::AID-MRM16%3E3.0.CO;2-S), which the reconstruction types with coil sensitivities use.
+where $\mathbf{F}$ is the Fourier operator from above and $\mathbf{S}_c$ multiplies the image by the sensitivity of coil $c$. The block-diagonal operator is a `DiagOp`, which applies $\mathbf{F}$ to the image of each coil. This is the encoding operator of [SENSE](https://doi.org/10.1002/%28SICI%291522-2594%28199911%2942:5%3C952::AID-MRM16%3E3.0.CO;2-S), which the reconstruction types with coil sensitivities use. [Use Encoding Operators Directly](@ref encoding-operators) builds it and solves the reconstruction problem with it.
 
 ## Relaxation and Off-Resonance
 
