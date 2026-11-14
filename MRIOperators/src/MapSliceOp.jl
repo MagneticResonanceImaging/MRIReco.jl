@@ -28,7 +28,7 @@ returns a new `MapSliceOp` with a new parent operator, built from `Adapt.adapt(C
 LinearOperatorCollection; an operator without one is kept unchanged. On the same backend, an array `trafo` may be
 shared with `op` and is only read; an operator `trafo` kept unchanged is shared with `op`, including any internal
 state it updates when applied. `op` itself is not modified.
-`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct MapSliceOp{T, O, A, S1 <: Tuple, S2 <: Tuple} <: WrappedMRIOperator{T, O}
   op::O

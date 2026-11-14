@@ -1,10 +1,11 @@
 
 """
-    `s = estimateCoilSensitivities(I::AbstractArray{T,6})`
+    s = estimateCoilSensitivities(I::AbstractArray{T,6}, thresh = 1.e-2)
 
 Estimates the coil sensitivity based on a reconstruction where the data
 from each coil has been reconstructed individually.
-Returns a 5D array.
+Returns a 6D array of the size of `I`, which is zero where the root sum of squares over the coils is not above
+`thresh` times its maximum.
 """
 function estimateCoilSensitivities(I::AbstractArray{T,6}, thresh = 1.e-2) where {T}
   nx, ny, nz, ne, numChan = size(I)
@@ -24,7 +25,7 @@ end
 
 
 """
-    `I4 = mergeChannels(I::AbstractArray{T,6})`
+    I4 = mergeChannels(I::AbstractArray{T,6})
 
 Merge the channels of a multi-coil reconstruction.
 Returns a 6D array.

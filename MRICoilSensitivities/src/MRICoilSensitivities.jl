@@ -1,6 +1,6 @@
 module MRICoilSensitivities
 
-export estimateCoilSensitivities, mergeChannels, espirit, geometricCoilCompression
+export estimateCoilSensitivities, mergeChannels, espirit
 
 using MRIBase
 using OhMyThreads: @tasks, @local

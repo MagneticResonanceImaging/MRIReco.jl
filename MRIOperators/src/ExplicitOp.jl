@@ -45,7 +45,7 @@ returns a new `ExplicitOp` built from `Adapt.adapt(CuArray, ...)` of the k-space
 correction map of `op`, with the same `shape` and echo time offset; the trajectory is not used again.
 `adjoint(op)` is an `AdjointLinearOperator` with parent `op`, and adapting it adapts that parent.
 On the same backend, the arrays may be shared with `op` and are only read. `op` itself is not modified.
-`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 function ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Tc,D}
                         ; echoImage::Bool=false, S = Vector{Complex{T}}, kargs...) where {T, Tc <: Union{Complex{T}, T}, D}

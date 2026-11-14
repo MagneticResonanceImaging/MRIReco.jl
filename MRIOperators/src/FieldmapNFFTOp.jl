@@ -14,7 +14,7 @@ end
 
 Adapt.adapt_structure(::Type{arrT}, data::InhomogeneityData) where arrT = InhomogeneityData(adapt(arrT, data.A_k), adapt(arrT, data.C_k), adapt(arrT, data.times), adapt(arrT, data.Cmap), data.t_hat, data.z_hat, data.method)
 
-mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S} <: AbstractMRIOperator{Complex{T}}
+mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vecI, matT, vecTR, S, M, B} <: AbstractMRIOperator{Complex{T}}
   const nrow :: Int
   const ncol :: Int
   const symmetric :: Bool
@@ -33,6 +33,9 @@ mutable struct FieldmapNFFTOp{T, vecT <: AbstractVector{Complex{T}},F1,F2,D, vec
   const shape::NTuple{D,Int64}
   cparam::InhomogeneityData{T, matT, vecTR}
   const scheduler::S
+  # inputs of the NFFT plans, kept to rebuild them in copy and Adapt
+  const nodes::Vector{M}
+  const backend::B
 end
 
 LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
@@ -62,6 +65,18 @@ including B0-inhomogeneities using time-segmented NFFTs.
 * (`K=20`)                             - number of translates for LeastSquares approaches
                                          (not NFFT-approach) to time-segmentation
 * (`kargs`)                            - additional keyword arguments
+
+# Moving to another array backend
+
+    Adapt.adapt(CuArray, op::FieldmapNFFTOp)
+
+returns a new `FieldmapNFFTOp` with the time-segmentation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
+so they are not computed again. Its NFFT plans and work arrays are new: the plans are built from k-space nodes kept
+on the CPU, with the NFFT backend that was active when `op` was constructed. `op` itself is not modified.
+The backend may choose other plan defaults on the new device (NonuniformFFTs uses another window on CUDA),
+so the results can differ from those of `op` within the NFFT accuracy.
+With JLArrays the operator was tested with the NFFT.jl backend only; NonuniformFFTs does not create plans for them.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
                         correctionmap::Array{Complex{T},D};
@@ -79,8 +94,6 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   if echoImage
     times = times .- echoTime(tr)
   end
-  nrow = size(nodes,2)
-  ncol = prod(shape)
 
  # create and truncate low-rank expansion
   cparam = createInhomogeneityData_(vec(times), correctionmap; K=K, alpha=alpha, m=m, method=method, K_tol=K_tol, numSamp=numSamplingPerProfile(tr),step=step)
@@ -88,26 +101,26 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
 
   @debug "K = $K"
 
-  plans = [] # Dont fully specify type yet
-  idx = []
-  baseArrayType = stripParameters(S)
+  idx = Vector{Int}[]
+  segmentNodes = Matrix{eltype(nodes)}[]
   for κ=1:K
     posIndices = findall(x->x!=0.0, cparam.A_k[:,κ])
     if !isempty(posIndices)
       push!(idx, posIndices)
-      push!(plans, plan_nfft(baseArrayType, nodes[:,idx[κ]], shape, m=3, σ=1.25, precompute = AbstractNFFTs.POLYNOMIAL))
+      push!(segmentNodes, nodes[:,idx[κ]])
     end
   end
-  plans = identity.(plans) # This gives the vectors (more) concrete types
-  idx = identity.(idx)
-  K=length(plans)
-  
-  cparam = adapt(baseArrayType, cparam)
-  idx = adapt.(baseArrayType, idx)
 
-  if !isa(first(idx), Array)
-    idx = map(i -> Int32.(i), idx)
-  end
+  baseArrayType = stripParameters(S)
+  return FieldmapNFFTOp(S, shape, segmentNodes, adapt.(baseArrayType, idx), adapt(baseArrayType, cparam), isCircular(tr), scheduler, AbstractNFFTs.active_backend())
+end
+
+# Builds the operator from the stored nodes and time-segmentation data; used by the constructor above, copy and Adapt.
+function FieldmapNFFTOp(S, shape::NTuple{D,Int64}, nodes, idx, cparam::InhomogeneityData{T}, circTraj, scheduler, backend) where {T,D}
+  plans = [plan_nfft(backend, stripParameters(S), k, shape, m=3, σ=1.25, precompute = AbstractNFFTs.POLYNOMIAL) for k in nodes]
+  idx = map(i -> isa(i, Array) ? convert(Vector{Int}, i) : Int32.(i), idx)
+  nrow, ncol = size(cparam.A_k, 1), prod(shape)
+  K = length(plans)
 
   tmp = S(undef, 0)
   x_tmp = fill!(similar(tmp, Complex{T}, ncol), zero(Complex{T}))
@@ -116,14 +129,16 @@ function FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
   d = [fill!(similar(tmp, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
   p = [fill!(similar(tmp, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
 
-  circTraj = isCircular(tr)
-
-  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(nrow, ncol, false, false
+  return FieldmapNFFTOp{T, typeof(tmp), Nothing, Function, D, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler), eltype(nodes), typeof(backend)}(nrow, ncol, false, false
             , (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler)
             , nothing
             , (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p,scheduler), 0, 0, 0, tmp, tmp 
-            , plans, idx, circTraj, shape, cparam, scheduler)
+            , plans, idx, circTraj, shape, cparam, scheduler, nodes, backend)
 end
+
+Adapt.adapt_structure(to, op::FieldmapNFFTOp) =
+  FieldmapNFFTOp(typeof(adapt(to, LinearOperators.storage_type(op)(undef, 0))), op.shape, op.nodes, map(i -> adapt(to, i), op.idx),
+                 adapt(to, op.cparam), op.circTraj, op.scheduler, op.backend)
 
 function Base.copy(cparam::InhomogeneityData{T}) where T
 
@@ -131,35 +146,8 @@ function Base.copy(cparam::InhomogeneityData{T}) where T
 
 end
 
-function Base.copy(S::FieldmapNFFTOp{T}) where {T}
-
-  shape = S.shape
-
-  K=length(S.plans)
-  plans = [copy(S.plans[i]) for i=1:K]
-  idx = copy(S.idx)
-
-  x_tmp = fill!(similar(S.Mv, Complex{T}, S.ncol), zero(Complex{T}))
-  y_tmp = fill!(similar(S.Mv, Complex{T}, S.nrow), zero(Complex{T}))
-
-  cparam = copy(S.cparam)
-  d = [fill!(similar(S.Mv, Complex{T}, length(idx[κ])), zero(Complex{T})) for κ=1:K ]
-  p = [fill!(similar(S.Mv, Complex{T}, shape), zero(Complex{T})) for κ=1:K]
-
-  D_ = length(shape)
-  circTraj = S.circTraj
-
-  scheduler = S.scheduler
-
-  mul! = (res,x) -> produ!(res,x,x_tmp,shape,plans,idx,cparam,circTraj,d,p, scheduler)
-  ctmul! = (res,y) -> ctprodu!(res,y,y_tmp,shape,plans,idx,cparam,circTraj,d,p, scheduler)
-
-  return FieldmapNFFTOp{T, typeof(x_tmp), Nothing, Function, D_, eltype(idx), typeof(cparam.A_k), typeof(cparam.times), typeof(scheduler)}(S.nrow, S.ncol, false, false
-            , mul!
-            , nothing
-            , ctmul!, 0, 0, 0, similar(x_tmp, 0), similar(x_tmp, 0)
-            , plans, idx, circTraj, shape, cparam, scheduler)
-end
+Base.copy(S::FieldmapNFFTOp) = FieldmapNFFTOp(LinearOperators.storage_type(S), S.shape, S.nodes, S.idx, copy(S.cparam),
+                                              S.circTraj, S.scheduler, S.backend)
 
 function produ!(s::AbstractVector{T}, x::AbstractVector{T}, x_tmp::AbstractVector{T},shape::Tuple, plan,
                idx, cparam::InhomogeneityData,

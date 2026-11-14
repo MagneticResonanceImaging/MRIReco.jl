@@ -89,8 +89,8 @@ fieldmapKargs(correctionMap, kargs) = any(!iszero, correctionMap) ?
   Dict{Symbol,Any}(k => v for (k, v) in kargs if k in (:method, :K, :alpha, :m)) : Dict{Symbol,Any}()
 
 """
-simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
-              ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
+    simulation2d(tr::Trajectory, image::Array{T,3}, correctionMap=[]
+                  ; opName="fast", senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
 
 Transforms a given image to k-space Domain for a 2d Acquisition.
 The Fourier integrals can be evaluated exactly or using NFFT
@@ -101,10 +101,10 @@ Returns the demodulated signal.
 * `tr::Trajectory`             - two-dimensional Trajectory
 * `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
-* (`opName="fast")             - name of operator to use ("explicit" or "fast")
-* (`sensmaps=[]`)              - array of coil sensitivities
+* (`opName="fast"`)            - name of operator to use ("explicit" or "fast")
+* (`senseMaps=[]`)             - array of coil sensitivities
 * (`verbose=true`)             - prints the progress if true
-* `kargs...`                   - addional keyword arguments
+* `kargs...`                   - additional keyword arguments
 ...
 
 """
@@ -166,10 +166,10 @@ Returns the demodulated signal.
 * `tr::Trajectory`             - three-dimensional Trajectory
 * `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
-* (`opName="fast")             - name of operator to use ("explicit" or "fast")
-* (`sensmaps=[]`)              - array of coil sensitivities
+* (`opName="fast"`)            - name of operator to use ("explicit" or "fast")
+* (`senseMaps=[]`)             - array of coil sensitivities
 * (`verbose=true`)             - prints the progress if true
-* `kargs...`                   - addional keyword arguments
+* `kargs...`                   - additional keyword arguments
 ...
 
 """
@@ -232,10 +232,10 @@ The Fourier integrals can be evaluated exactly or using NFFT
 * (`r1map=[]`)                 - R1 map of the object (real)
 * (`r2map=[]`)                 - R2 map of the object (real) / (R2* for GRE sequences)
 * (`fmap=[]`)                  - fieldmap (real)
-* (`opName="fast")             - name of operator to use ("explicit" or "fast")
-* (`sensmaps=[]`)              - array of coil sensitivities
+* (`opName="fast"`)            - name of operator to use ("explicit" or "fast")
+* (`senseMaps=[]`)             - array of coil sensitivities
 * (`verbose=true`)             - prints the progress if true
-* `kargs...`                   - addional keyword arguments
+* `kargs...`                   - additional keyword arguments
 ...
 
 """
@@ -322,13 +322,13 @@ Returns the demodulated signal.
 
 ...
 # Arguments
-* `tr::Trajectory`             - three-dimensional Trajectory
+* `tr::Trajectory`             - two- or three-dimensional Trajectory
 * `image::Array{T,3}` - image to be transformed
 * (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
-* (`opName="fast")             - name of operator to use ("explicit" or "fast")
-* (`sensmaps=[]`)              - array of coil sensitivities
+* (`opName="fast"`)            - name of operator to use ("explicit" or "fast")
+* (`senseMaps=[]`)             - array of coil sensitivities
 * (`verbose=true`)             - prints the progress if true
-* `kargs...`                   - addional keyword arguments
+* `kargs...`                   - additional keyword arguments
 ...
 
 """
@@ -385,15 +385,15 @@ end
 
   ...
 # Arguments
-* `tr::Abstract2DTrajectory` - Two-dimensional Trajectory
+* `tr::Trajectory`           - Two-dimensional Trajectory
 * `image::Matrix`            - Image to be transformed
 * `correctionMap=[]`         - Correctionmap is summed up of the field offresonance and relaxation
 * `alpha::Float64 = 1.75`    - Oversampling factor
-* `m::Float64=4.0`           - Kenrel size
-* `K::Int64=28`              - Rank how much coefficients will be used to approx. correctionterm
+* `m::Float64=4.0`           - Kernel size
+* `K::Int64=16`              - Rank how much coefficients will be used to approx. correctionterm
 * `method="nfft"`            - Which Method used to get the approx. coefficients of correctionterm
-* (`sensmaps=[]`)            - array of coil sensitivities
-* `kargs...`                 - addional keyword arguments
+* (`senseMaps=[]`)           - array of coil sensitivities
+* `kargs...`                 - additional keyword arguments
 ...
 
 """
@@ -419,15 +419,15 @@ end
 
 ...
 # Arguments
-* `tr::Abstract2DTrajectory` - Two-dimensional Trajectory
+* `tr::Trajectory`           - Two-dimensional Trajectory
 * `image::Matrix`            - Image to be transformed
 * `correctionMap=[]`         - Correctionmap is summed up of the field offresonance and relaxation
 * `alpha::Float64 = 1.75`    - Oversampling factor
-* `m::Float64=4.0`           - Kenrel size
-* `K::Int64=28`              - Rank how much coefficients will be used to approx. correctionterm
+* `m::Float64=4.0`           - Kernel size
+* `K::Int64=16`              - Rank how much coefficients will be used to approx. correctionterm
 * `method="nfft"`            - Which Method used to get the approx. coefficients of correctionterm
-* (`sensmaps=[]`)            - array of coil sensitivities
-* `kargs...`                 - addional keyword arguments
+* (`senseMaps=[]`)           - array of coil sensitivities
+* `kargs...`                 - additional keyword arguments
 ...
 
 """

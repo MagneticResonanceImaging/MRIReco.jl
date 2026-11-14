@@ -31,10 +31,12 @@ nothing #hide
 # [A. J. Daniel](https://doi.org/10.5281/zenodo.4762380) under the
 # [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license. It has ten echoes and $96 \times 96$ voxels of 3 mm
 # in the image plane, with a slice thickness of 5 mm. The published series consists of magnitude images, not raw data.
-# The file in the MRIReco.jl repository therefore holds the Fourier transform of these images as the k-space data of one
+# The file used here therefore holds the Fourier transform of these images as the k-space data of one
 # coil, scaled so that the maximum of the first echo is 1. Its header contains the echo times in ms:
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 rawData = RawAcquisitionData(ISMRMRDFile(joinpath(datadir, "kidney_MESE_slice3.h5")))
 echoTimes = rawData.params["TE"]
 
@@ -211,10 +213,9 @@ fig
 #
 # ## Next Steps
 #
-# - [Subspace Reconstruction](@ref subspace-reconstruction) exploits the same redundancy with a fixed temporal basis
-#   and several coils.
-# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately, while
-#   `"multiCoilMultiEcho"` reconstructs one image per echo from all coils.
+# - With several coils, `"multiEcho"` reconstructs the echo images of each coil separately.
+#   [Multi-Coil Multi-Echo and Subspace Reconstruction](@ref subspace-reconstruction) reconstructs one image per echo
+#   from all coils with `"multiCoilMultiEcho"` and exploits the same redundancy with a fixed temporal basis.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
 # - The API reference describes [`reconstruction`](@ref) and

@@ -18,7 +18,7 @@ end
 
 
 """
-  SubspaceOp(basis::AbstractMatrix{T},shape::NTuple{D,Int64},numContr) where {T,D}
+    SubspaceOp(basis::AbstractMatrix{T},shape::NTuple{D,Int64},numContr) where {T,D}
 
 basis correspond to svd_object.V cropped to a certain level
 
@@ -31,7 +31,7 @@ basis type should correspond to the type of the rawdata
 returns a new `SubspaceOp` with a new parent operator, built from `Adapt.adapt(CuArray, basis)`.
 Its storage type `S` is derived from the adapted basis. On the same backend, the basis may be shared with
 `op` and is only read. `op` itself is not modified.
-`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct SubspaceOp{T, O, M <: AbstractMatrix{T}, D} <: WrappedMRIOperator{T, O}
   op::O

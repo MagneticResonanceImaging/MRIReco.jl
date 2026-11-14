@@ -27,13 +27,13 @@ end
 
 
 """
-  SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1)
+    SensitivityOp(sensMaps::AbstractMatrix{T}, numContr=1)
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`
 # Arguments
 * `sensMaps`    - sensitivity maps ( 1. dim -> voxels, 2. dim-> coils)
-* `numEchoes`   - number of contrasts to which the operator will be applied
+* `numContr`    - number of contrasts to which the operator will be applied
 
 The forward operation uses `sensMaps` itself, while the adjoint uses `conj.(sensMaps)` computed
 at construction.
@@ -46,7 +46,7 @@ returns a new `SensitivityOp` with a new parent operator, built from `Adapt.adap
 sensitivity maps and of their conjugates, so it applies the same forward and adjoint operation as `op` at
 the time of the call. In particular, the adjoint keeps using the conjugated maps computed when `op` was built.
 On the same backend, the maps may be shared with `op` and are only read. `op` itself is not modified.
-`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp`, `ExplicitOp` and `FieldmapNFFTOp` are the MRI operators that support `Adapt.adapt` so far.
 """
 struct SensitivityOp{T, O, M <: AbstractMatrix{T}, MC <: AbstractMatrix{T}} <: WrappedMRIOperator{T, O}
   op::O
@@ -71,7 +71,7 @@ Adapt.adapt_structure(to, op::SensitivityOp{T}) where T =
   SensitivityOp{T}(adapt(to, getfield(op, :sensMaps)), adapt(to, getfield(op, :sensMapsC)), getfield(op, :numContr))
 
 """
-  SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)
+    SensitivityOp(sensMaps::AbstractArray{T,4}, numContr=1)
 
 builds a `LinearOperator` which performs multiplication of a given image with
 the coil sensitivities specified in `sensMaps`

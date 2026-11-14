@@ -3,6 +3,7 @@ using NonuniformFFTs
 using LinearAlgebra, MRIOperators.LinearOperatorCollection
 using MRIOperators.OhMyThreads
 using JLArrays
+using MRIOperators.Adapt
 
 
 areTypesDefined = @isdefined arrayTypes

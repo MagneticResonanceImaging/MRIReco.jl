@@ -2,13 +2,13 @@ export MESequence, echoAmplitudes, flipAngles, numContrasts, T_echo
 
 """
 General Multi-Echo sequence with variable flip angles and TR.
------------------------
+
 The phase of the excitation pulse has a phase of -90°
 in order to fulfill CPMG conditions.
 
 For simplicity instantaneous pulses are assumed.
 
-echoes apperat at times T_echo, 2*T_echo,..., numContrasts*T_echo after the excitation pulse
+The echoes appear at the times `T_echo` after the excitation pulse.
 
 # Fields
 * `excitationAngle::Float64`            - flip angle of the excitation pulse

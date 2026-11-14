@@ -20,6 +20,8 @@ Private = false
 
 ## Sparsifying Transforms
 
+[Use a Custom Sparsifying Transform](@ref custom-transform) shows how to use these and other transforms in a reconstruction.
+
 ```@autodocs
 Modules = [MRIOperators]
 Pages = ["src/SparseOp.jl"]

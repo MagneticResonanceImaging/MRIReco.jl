@@ -41,7 +41,7 @@ With several receive coils, the image is first multiplied by the sensitivities o
 \mathbf{E} = \begin{pmatrix} \mathbf{F} & & \\ & \ddots & \\ & & \mathbf{F} \end{pmatrix} \begin{pmatrix} \mathbf{S}_1 \\ \vdots \\ \mathbf{S}_C \end{pmatrix},
 ```
 
-where $\mathbf{F}$ is the Fourier operator from above and $\mathbf{S}_c$ multiplies the image by the sensitivity of coil $c$. The block-diagonal operator is a `DiagOp`, which applies $\mathbf{F}$ to the image of each coil. This is the encoding operator of [SENSE](https://doi.org/10.1002/%28SICI%291522-2594%28199911%2942:5%3C952::AID-MRM16%3E3.0.CO;2-S), which the reconstruction types with coil sensitivities use.
+where $\mathbf{F}$ is the Fourier operator from above and $\mathbf{S}_c$ multiplies the image by the sensitivity of coil $c$. The block-diagonal operator is a `DiagOp`, which applies $\mathbf{F}$ to the image of each coil. This is the encoding operator of [SENSE](https://doi.org/10.1002/%28SICI%291522-2594%28199911%2942:5%3C952::AID-MRM16%3E3.0.CO;2-S), which the reconstruction types with coil sensitivities use. [Use Encoding Operators Directly](@ref encoding-operators) builds it and solves the reconstruction problem with it.
 
 ## Relaxation and Off-Resonance
 
@@ -53,7 +53,7 @@ The factor $\mathrm{e}^{-z(\mathbf{r})\, t}$ depends on both position and time, 
 
 which turns the operator into a weighted sum of $K$ NFFTs. The parameter `:method` of the iterative reconstructions chooses how the coefficients are computed. The default `"nfft"` approximates the exponential analytically and determines $K$ from the ranges of the correction map and of the readout times, while data-driven methods such as `"leastsquare"` fit the coefficients for $K$ time segments, which the parameter `:K` sets, to the correction map. Section 2.2 of the paper gives references for these approximations.
 
-The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the field `TE` of the trajectory and so reconstruct the magnetization at that time. In MRIReco.jl, this is the time of the first sample of a readout, which for Cartesian and radial readouts comes before the center of k-space.
+The iterative reconstructions take the correction map from the parameter `:correctionMap`. They count the times from the field `TE` of the trajectory and so reconstruct the magnetization at that time. In MRIReco.jl, this is the time of the first sample of a readout, which for Cartesian and radial readouts comes before the center of k-space. [Correct Off-Resonance](@ref correct-off-resonance) shows how to pass a field map and which sampling times the correction needs.
 
 ## The Normal Operator and the Toeplitz Approach
 

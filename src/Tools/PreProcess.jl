@@ -31,12 +31,12 @@ function remove_oversampling!(rawData)
   # Assuming all profiles have the same size
   sdim = size(rawData.profiles[1].data,1)
   sdim_out = Int(sdim / ratioFOV)
-  start = Int((sdim[1] - sdim_out) ÷ 2)
+  start = Int((sdim[1] - sdim_out) ÷ 2) # samples before the centered window (even lengths)
 
   Threads.@threads for profile in rawData.profiles
       tmp = profile.data
       tmp = ifftshift(ifft(ifftshift(tmp, 1), 1), 1)
-      @views tmp = tmp[start:start + sdim_out - 1, :]
+      @views tmp = tmp[start + 1:start + sdim_out, :]
       tmp = fftshift(fft(fftshift(tmp, 1), 1), 1)
       
       profile.data = tmp

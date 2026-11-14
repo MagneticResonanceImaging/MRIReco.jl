@@ -17,7 +17,7 @@ returns a 2d cartesian trajectory.
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 * (`kmin=(-0.5,-0.5)`)            - minimum values of the covered k-space (for partial Fourier imaging)
-* (`kmax=(-0.5,-0.5)`)            - maximum values of the covered k-space (for partial Fourier imaging)
+* (`kmax=(0.5,0.5)`)              - maximum values of the covered k-space (for partial Fourier imaging)
 """
 function CartesianTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0

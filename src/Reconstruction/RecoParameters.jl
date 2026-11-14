@@ -9,7 +9,6 @@ function defaultRecoParams()
   params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
-  params[:kwargWarning] = false
 
   return params
 end
@@ -165,6 +164,68 @@ function setupIterativeReco!(acqData::AcquisitionData{T}, recoParams::Dict) wher
   recoParams[:arrayType] = arrayType
   recoParams[:S] = S
   return recoParams
+end
+
+function setupPlanReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
+  method = pop!(recoParams, :reco)
+  # If a user provides custom inputs we need to change the underlying default plan templates
+  # for that we update the param keywords. RecoPlans are set before other keywords, i.e.
+  # if a user sets weights and we update weightingParams to be CustomWeightingParameters, the appropriate
+  # weight fields of the CustomWeightingParameters will be filled
+
+  # Weighting
+  # Custom weighting or density sampling or uniform sampling
+  if haskey(recoParams, :weights)
+    recoParams[:weightingParams] = RecoPlan(CustomWeightingParameters)
+  elseif !get(recoParams, :densityWeighting, true)
+    recoParams[:weightingParams] = RecoPlan(UniformWeightingParameters)
+  end
+
+  # Regularization needs no specific setup
+
+  # SparseTrafos: Just strings or custom ones
+  if haskey(recoParams, :sparseTrafo)
+    trafo = recoParams[:sparseTrafo]
+    if !(trafo isa String || (trafo isa AbstractVector && all(t -> t isa Union{String, Nothing}, trafo)))
+      recoParams[:sparsityParams] = RecoPlan(CustomSparsityParameters)
+    end
+  end
+
+  # EncodingOps: Custom or not
+  if haskey(recoParams, :encodingOps)
+    recoParams[:encodingParams] = RecoPlan(CustomEncodingParameters)
+  end
+
+  # Default behaviour of all other parameters from setupIterative and setupDirect should be
+  # encoded in the actual parameter behaviour
+
+  plan = MRIRecoPlan(method)
+  structural = filter(kv -> isstructural(last(kv)), recoParams)
+  setAll!(plan; structural...)
+
+  # The dict carries keys the chosen reconstruction does not use, at least the defaults for
+  # iterative solvers. Like the keyword interface before, skip them without a warning.
+  known = planProperties(plan)
+  values = filter(kv -> !isstructural(last(kv)) && first(kv) in known, recoParams)
+  ignored = setdiff(keys(recoParams), keys(structural), keys(values))
+  isempty(ignored) || @debug "Parameters not used by reconstruction \"$method\"" ignored
+  setAll!(plan; values...)
+  return plan
+end
+
+isstructural(value) = value isa Union{AbstractImageReconstructionAlgorithm, AbstractImageReconstructionParameters, AbstractRecoPlan}
+
+function planProperties(plan::AbstractRecoPlan, names = Set{Symbol}())
+  for name in propertynames(plan)
+    push!(names, name)
+    value = getproperty(plan, name)
+    if value isa AbstractRecoPlan
+      planProperties(value, names)
+    elseif value isa AbstractArray{<:AbstractRecoPlan}
+      foreach(p -> planProperties(p, names), value)
+    end
+  end
+  return names
 end
 
 

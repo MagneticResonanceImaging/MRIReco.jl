@@ -1,5 +1,13 @@
 export applySubspace
 """
+    applySubspace(I, basis)
+
+computes the echo images from the coefficient maps `I` of the reconstruction type `"multiCoilMultiEchoSubspace"`, by
+multiplying the dimension of the coefficient maps with `basis'`.
+
+`I` has the dimensions x, y, z, coefficient maps, coils and repetitions. `basis` is the matrix passed as `:basis`, with
+one row per echo and one column per coefficient map, and has the element type of `I`. The result has the dimensions of
+`I`, with the echoes instead of the coefficient maps.
 """
 function applySubspace(I::AbstractArray{Complex{T},6}, basis::AbstractMatrix{Complex{T}}) where {T}
   sx,sy,sz,numEchoes,numCoils,numReps = size(I)
