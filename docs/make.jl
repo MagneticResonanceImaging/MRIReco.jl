@@ -45,6 +45,7 @@ makedocs(
             ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
+                "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
             ],
             "Coil Sensitivities" => [
                 "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
@@ -73,7 +74,6 @@ makedocs(
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
             "Offresonance" => "offresonance.md",
-            "Customize" => "custom.md",
         ],
     ],
     pagesonly = true,
