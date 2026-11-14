@@ -38,6 +38,7 @@ makedocs(
                 "Select and Prepare Profiles" => "generated/howto/prepare_profiles.md",
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
+                "Create a Trajectory" => "generated/howto/trajectory.md",
                 "Create AcquisitionData from Arrays" => "generated/howto/from_arrays.md",
             ],
             "Sampling" => [
@@ -80,7 +81,6 @@ makedocs(
         ],
         "Legacy Pages" => [
             "File Handling" => "filehandling.md",
-            "Trajectory" => "trajectories.md",
         ],
     ],
     pagesonly = true,
