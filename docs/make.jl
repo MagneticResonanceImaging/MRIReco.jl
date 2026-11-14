@@ -38,6 +38,7 @@ makedocs(
                 "Select and Prepare Profiles" => "generated/howto/prepare_profiles.md",
                 "Bin Profiles into Contrasts" => "generated/howto/binning.md",
                 "Extract Cartesian k-Space" => "generated/howto/extract_kspace.md",
+                "Create AcquisitionData from Arrays" => "generated/howto/from_arrays.md",
             ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
