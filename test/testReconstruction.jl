@@ -293,6 +293,30 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = 
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 2e-1
 end
 
+# Encoding operators built on the CPU and passed with encodingOps are adapted to arrayType
+function testCSRecoEncodingOps(N=32; arrayType = Array)
+  x = ComplexF32.(shepp_logan(N))
+  sensMaps = zeros(ComplexF32, N*N, 2, 1)
+  sensMaps[1:div(N*N, 2), 1, 1] .= 1
+  sensMaps[div(N*N, 2)+1:end, 2, 1] .= 1
+  senseMaps = reshape(sensMaps, N, N, 1, 2)
+
+  params = Dict{Symbol, Any}(:simulation => "fast", :trajName => "Cartesian", :numProfiles => N,
+                             :numSamplingPerProfile => N, :senseMaps => senseMaps)
+  acqData = simulation(x, params)
+  Random.seed!(1234)
+  acqData = sample_kspace(acqData, 1.1, "poisson", calsize=5)
+
+  params = Dict{Symbol, Any}(:reconSize => (N, N), :solver => CGNR, :reg => L2Regularization(1.f-3), :iterations => 5)
+  for params in (merge(params, Dict(:reco => "standard", :encodingOps => reshape(encodingOps_simple(acqData, (N, N)), :, 1))),
+                 merge(params, Dict(:reco => "multiCoil", :senseMaps => senseMaps,
+                                    :encodingOps => reshape(encodingOps_parallel(acqData, (N, N), senseMaps), :, 1))))
+    x_cpu = reconstruction(acqData, merge(params, Dict(:arrayType => Array)))
+    x_approx = reconstruction(acqData, merge(params, Dict(:arrayType => arrayType)))
+    @test Array(x_approx) ≈ Array(x_cpu) rtol = 2f-4
+  end
+end
+
 function testOffresonanceReco(N = 128; accelMethod="nfft",arrayType = Array)
 
   I = shepp_logan(N)
@@ -731,6 +755,7 @@ function testReco(N=32;arrayType = Array)
             @testset "Sense 3D" testCSSenseReco3d(;arrayType)
             @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF64;arrayType)
             @testset "Multi Coil CGNR" testCSRecoMultiCoilCGNR(type = ComplexF32;arrayType)
+            @testset "Encoding Ops" testCSRecoEncodingOps(;arrayType)
         end
 
         @testset "off-resonance" begin

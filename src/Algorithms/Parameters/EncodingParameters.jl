@@ -64,7 +64,7 @@ Parameters with user-provided encoding operators.
 - `encodingOps::E` - Pre-computed encoding operators
 
 # Callable Interface
-    (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int)
+    (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
 
 # Returns
 - The encoding operators for the given slice
@@ -102,7 +102,7 @@ function (ep::EncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int
   return encodingOps_simple(acqData, reconSize; slice=slice, encParams...)
 end
 
-function (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int)
+function (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
   return ep.encodingOps[:, slice]
 end
 

@@ -194,6 +194,10 @@ function setupPlanReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
   # EncodingOps: Custom or not
   if haskey(recoParams, :encodingOps)
     recoParams[:encodingParams] = RecoPlan(CustomEncodingParameters)
+    arrayType = get(recoParams, :arrayType, Array)
+    if arrayType != Array
+      recoParams[:encodingOps] = map(op -> adapt(arrayType, op), recoParams[:encodingOps])
+    end
   end
 
   # Default behaviour of all other parameters from setupIterative and setupDirect should be
