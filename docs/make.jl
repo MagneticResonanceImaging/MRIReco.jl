@@ -47,6 +47,7 @@ makedocs(
                 "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
             ],
             "Reconstruction" => [
+                "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
                 "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
             ],
@@ -76,7 +77,6 @@ makedocs(
         "Legacy Pages" => [
             "File Handling" => "filehandling.md",
             "Trajectory" => "trajectories.md",
-            "Offresonance" => "offresonance.md",
         ],
     ],
     pagesonly = true,
