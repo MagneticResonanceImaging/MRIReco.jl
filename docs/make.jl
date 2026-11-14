@@ -46,6 +46,9 @@ makedocs(
             "Coil Sensitivities" => [
                 "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
             ],
+            "Simulation" => [
+                "Simulate k-Space Data" => "generated/howto/simulation.md",
+            ],
             "Reconstruction" => [
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
