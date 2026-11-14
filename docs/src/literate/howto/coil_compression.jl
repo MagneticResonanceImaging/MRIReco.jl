@@ -36,7 +36,9 @@ nothing #hide
 # As in the other tutorials, the reference is the direct reconstruction with the coil images combined by the root sum
 # of squares:
 
-datadir = joinpath(pkgdir(MRIReco), "docs", "src", "examples", "data")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 filename = joinpath(datadir, "knee_3dFSE_slice170.h5")
 acqData = AcquisitionData(ISMRMRDFile(filename))
 

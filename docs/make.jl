@@ -45,6 +45,7 @@ makedocs(
             ],
             "Coil Sensitivities" => [
                 "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
+                "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
             ],
             "Simulation" => [
                 "Simulate k-Space Data" => "generated/howto/simulation.md",
@@ -56,9 +57,6 @@ makedocs(
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
                 "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
-            ],
-            "Coil Sensitivities" => [
-                "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
