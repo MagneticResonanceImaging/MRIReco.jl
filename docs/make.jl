@@ -43,6 +43,9 @@ makedocs(
             "Sampling" => [
                 "Undersample k-Space" => "generated/howto/undersample.md",
             ],
+            "Coil Sensitivities" => [
+                "Estimate Coil Sensitivities with ESPIRiT" => "generated/howto/espirit.md",
+            ],
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
                 "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
