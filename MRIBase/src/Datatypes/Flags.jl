@@ -95,8 +95,8 @@ const ACQ_USER8                               = 1b64 << ( 64 - 1 )
 """
     FLAGS::Dict{String, Int}
 
-A dictionary mapping string keys (representing flag names) to bitmask values.
-Flags are used to indicate specific attributes of the corresponding Profile. Example flag names include "ACQ_FIRST_IN_ENCODE_STEP1", "ACQ_LAST_IN_SLICE", etc.
+A dictionary mapping string keys (representing flag names) to bit positions, counting from 1 for the least significant bit.
+Flags are used to indicate specific attributes of the corresponding `Profile`. Example flag names include `"ACQ_FIRST_IN_ENCODE_STEP1"`, `"ACQ_LAST_IN_SLICE"`, etc.
 """
 FLAGS = Dict(
     "ACQ_FIRST_IN_ENCODE_STEP1"                => 1,
@@ -368,8 +368,9 @@ Filters the profiles in a `RawAcquisitionData` object based on specified flags.
 
 # Examples
 ```julia
-# Assuming `rawData` is a RawAcquisitionData object and `flags` is a vector of flag names
-filteredData = filter_raw_by_flags(rawData, ["ACQ_IS_PHASECORR", "ACQ_IS_NOISEADJSCAN"])
+# Assuming `rawData` is a RawAcquisitionData object
+filteredData = filter_raw_by_flags(rawData, ["ACQ_IS_NOISE_MEASUREMENT"])
+```
 """
 function filter_raw_by_flags(rawData::RawAcquisitionData, flags::Union{T,Vector{T}}) where T <: Union{Int, AbstractString}
   filteredProfiles = Profile[]

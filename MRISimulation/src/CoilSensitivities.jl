@@ -30,25 +30,6 @@ function birdcageSensitivity(N::Int64,
  return out
 end
 
-"""
-    measured2DSensitivity(N::Int64, ncoils::Int64)
-
-Computes 2D coil sensitivity maps in image space
-from actually measured coil profiles.
-The code was originally implemented in the
-Berkeley Advanced Reconstruction Toolbox (BART) by
-
-  M. Uecker et al. Software toolbox and programming library for compressed sens-
-  ing and parallel imaging. In: ISMRM Workshop on Data Sampling and
-  Image Reconstruction, Sedona, 2013.
-
-Checkout the original file:
-
-  https://github.com/mrirecon/bart/blob/master/src/simu/sens.c
-
-for more information.
-"""
-
 function get_sens_coeff(kx::Int,
                         ky::Int,
                         c::Int)
@@ -126,6 +107,25 @@ function xsens(c::Int64,
 end
 
 
+"""
+    measured2DSensitivity(N::Int64, ncoils::Int64; T::Type{<:Complex{<:AbstractFloat}} = ComplexF32)
+
+Computes 2D coil sensitivity maps in image space
+from actually measured coil profiles, as an array of size `(N, N, 1, ncoils)`
+with element type `T`. At most eight coils are available.
+The code was originally implemented in the
+Berkeley Advanced Reconstruction Toolbox (BART) by
+
+  M. Uecker et al. Software toolbox and programming library for compressed sens-
+  ing and parallel imaging. In: ISMRM Workshop on Data Sampling and
+  Image Reconstruction, Sedona, 2013.
+
+Checkout the original file:
+
+  https://github.com/mrirecon/bart/blob/master/src/simu/sens.c
+
+for more information.
+"""
 function measured2DSensitivity(N::Int64,
                                ncoils::Int64;
                                T::Type{<:Complex{<:AbstractFloat}} = ComplexF32)

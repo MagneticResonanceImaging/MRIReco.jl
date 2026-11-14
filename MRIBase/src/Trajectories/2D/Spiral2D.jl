@@ -1,11 +1,12 @@
 export SpiralTrajectory, spiralNodes, spiralDensity
 
 """
-    SpiralTrajectory(numProfiles, numSamplingPerProfile
+    SpiralTrajectory(T, numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Real= 6.25
-                  , angleOffset= :equispaced
+                  , kmax::Real=0.5
+                  , angleOffset::String="equispaced"
                   , kargs...)
 
 returns a 2d spiral trajectory.
@@ -16,7 +17,8 @@ returns a 2d spiral trajectory.
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 * (`windings::Real= 6.25`)        - number of windings of the spiral profiles
-* (`angleOffset= :equispaced`)    - spacing of profile angles (`:equispaced` sampling, `:golden` angle sampling or `:random` sampling)
+* (`kmax::Real=0.5`)              - distance of the last sample of each profile from the center of k-space
+* (`angleOffset::String="equispaced"`) - spacing of profile angles (`"equispaced"` sampling, `"golden"` angle sampling or `"random"` sampling)
 """
 function SpiralTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0

@@ -1,12 +1,13 @@
 export SpiralTrajectoryDualDensity
 
 """
-    SpiralTrajectoryDualDensity(numProfiles, numSamplingPerProfile
+    SpiralTrajectoryDualDens(T, numProfiles, numSamplingPerProfile
                   ; TE::Float64=0.0
                   , AQ::Float64=1.e-3
                   , windings::Real= 6.25
-                  , angleOffset= :equispaced
-                  , densityFactor=2.0
+                  , kmax::Real=0.5
+                  , angleOffset::String="equispaced"
+                  , densityFactor::Float64=2.0
                   , kargs...)
 
 returns a 2d spiral trajectory.
@@ -17,7 +18,8 @@ returns a 2d spiral trajectory.
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
 * (`windings::Real= 6.25`)        - number of windings of the spiral profiles
-* (`angleOffset= :equispaced`)    - spacing of profile angles (`:equispaced` sampling, `:golden` angle sampling or `:random` sampling)
+* (`kmax::Real=0.5`)              - distance of the last sample of each profile from the center of k-space
+* (`angleOffset::String="equispaced"`) - spacing of profile angles (`"equispaced"` sampling, `"golden"` angle sampling or `"random"` sampling)
 """
 function SpiralTrajectoryDualDens(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0
