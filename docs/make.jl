@@ -46,6 +46,9 @@ makedocs(
             "Reconstruction" => [
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
             ],
+            "Coil Sensitivities" => [
+                "Compress Multi-Coil Data" => "generated/howto/coil_compression.md",
+            ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
         "Explanations" => [
