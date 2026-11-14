@@ -1,86 +1,82 @@
-#---------------------------------------------------------
 # # [Extract Cartesian k-Space](@id extract-kspace)
-#---------------------------------------------------------
+#
+# For Cartesian data, [`kDataCart`](@ref) returns the k-space of an [`AcquisitionData`](@ref) object as an array on
+# the Cartesian grid, and `AcquisitionData` turns such an array back into acquisition data. In between, the k-space
+# can be processed like any other array, for example transformed with FFTW.jl, undersampled or passed to other
+# software, such as BART through [BartIO.jl](https://github.com/MagneticResonanceImaging/BartIO.jl).
+#
+# ## Extracting the k-Space
+#
+# The example simulates the k-space of a phantom with 128 × 96 pixels along a Cartesian trajectory and extracts it:
 
-
-#=
-## Description
-
-This example described how to extract kspace from cartesian datasets,
-undersample the data and create back and AcquisitionData structure that can be used for reconstruction.
-
-This possibility can be easily combined with the [BartIO](https://github.com/MagneticResonanceImaging/BartIO.jl) package to reconstruct the kspace.
-=#
-
-# ## Setup
-using CairoMakie
+using MRIReco, MRISimulation, FFTW, CairoMakie
 using ImageUtils: shepp_logan
-using FFTW: ifft, ifftshift
-using MRIReco, MRISimulation
-using InteractiveUtils: versioninfo
 
-function plot_im2D(im2D;title::String="")
-    f = Figure()
-    ax = Axis(f[1, 1],aspect = DataAspect(), yreversed = true, title = title)
-    image!(ax, im2D')
-    hidedecorations!(ax, grid = false)
-    f
-end
-
-# Let's create a non-square AcquisitionData structure and perform a standard reconstruction
-N = 128
-N2 = 96
-
-# image
-x = shepp_logan(N)
-
-# simulation
+image = shepp_logan(128)[:, 1:96]
 params = Dict{Symbol, Any}()
-params[:simulation] = "fast"
 params[:trajName] = "Cartesian"
-params[:numSamplingPerProfile] = N
-params[:numProfiles] = floor(Int64, N2)
+params[:numSamplingPerProfile] = 128
+params[:numProfiles] = 96
+acqData = simulation(image, params)
 
-acqData = simulation(x[1:N,1:N2], params)
-
-params[:reco] = "direct"
-params[:reconSize] = (N,N2)
-
-x_approx = reconstruction(acqData, params);
-
-# let's show the results for first bin
-plot_im2D(abs.(x_approx[:,:,1,1,1,1]),title = "Reco from AcquisitionData")
-
-
-# We can extract the cartesian kspace (works for 2D or 3D) with the function `kDataCart`
 kspace = kDataCart(acqData)
 size(kspace)
 
-# Dimensions of the kspace are : kx, ky, kz, Channels, Echoes, Repetitions
+# The array has six dimensions: x, the readout direction, y, and z or the slices, followed by the coils, the contrasts
+# and the repetitions. `kDataCart` puts each sample at its position in the grid of the encoding size and fills the
+# positions that were not measured with zeros.
+#
+# ## Reconstructing with an Inverse FFT
+#
+# The k-space follows the convention of the centered Fourier transform, with the center of k-space at index
+# `N ÷ 2 + 1` of a dimension of length `N`. An inverse FFT along x and y, and for a 3D volume also along z, therefore
+# returns the image, while the coils and the other dimensions stay apart:
 
-# Let's see a standard reconstruction with the `ifft` function works :
-x_approx2 = ifftshift(ifft(ifftshift(kspace)))
-plot_im2D(abs.(x_approx2[:,:,1,1,1,1]),title = "Reco from extracted kspace")
+imageFFT = fftshift(ifft(ifftshift(kspace, 1:2), 1:2), 1:2)
+imageFFT[:, :, 1, 1, 1, 1] ≈ image
 
-# We can create create and apply a mask on the kspace
-mask = ones(eltype(kspace),size(kspace))
-mask[1:2:end,:,:,:,:,:] .= 0
-acq_u = AcquisitionData(kspace .* mask)
-params[:reco] = "direct"
-params[:reconSize] = (N,N2)
+# This is what the direct reconstruction of the acquisition data computes, but its result has the contrasts in the
+# fourth and the coils in the fifth dimension:
 
-x_u = reconstruction(acq_u, params)
-plot_im2D(abs.(x_u[:,:,1,1,1,1]),title = "Reco from undersampled AcquisitionData")
+recoParams = Dict{Symbol, Any}()
+recoParams[:reco] = "direct"
+recoParams[:reconSize] = (128, 96)
+reconstruction(acqData, recoParams) ≈ permutedims(imageFFT, (1, 2, 3, 5, 4, 6))
 
-# ## Reproducibility
+# ## Undersampling and Going Back to Acquisition Data
+#
+# To undersample the data, set the samples that are not measured to zero. The example keeps every second line in the
+# phase encoding direction y, with a mask of `Bool`s, which keeps the element type of the data:
 
-# This page was generated with the following version of Julia:
+mask = falses(size(kspace))
+mask[:, 1:2:end, :, :, :, :] .= true
+acqUnder = AcquisitionData(kspace .* mask)
+length(acqUnder.subsampleIndices[1])
 
-using InteractiveUtils
-io = IOBuffer();
-versioninfo(io);
-split(String(take!(io)), '\n')
+# `AcquisitionData` interprets the array as follows:
+#
+# - It leaves out the samples that are zero in the first coil and the first repetition of each contrast and, for 2D
+#   data, in the first slice. The sampling pattern can therefore differ between the contrasts, but not between the
+#   coils, slices and repetitions, and a measured sample that happens to be exactly zero there is left out as well
+#   ([#348](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/348)).
+# - It takes a third dimension longer than 1 as the second phase encoding direction of a 3D acquisition. For the
+#   slices of a 2D acquisition, pass `enc2D = true`; otherwise, it treats the slices as the partitions of a volume.
+# - The array holds neither the field of view nor the sampling times, so `acqUnder.fov`, which sets the spacing of the
+#   image axes, and all sampling times are zero. `acqUnder.fov = acqData.fov` restores the field of view.
+#
+# The direct reconstruction of the undersampled data shows the phantom and a copy shifted by half the field of view in
+# y, horizontally in the figure, both with half the intensity, because the missing lines alias the image. The figure
+# shows the magnitude of the extracted k-space on a logarithmic scale and the two reconstructions:
 
-# And with the following package versions
+xUnder = reconstruction(acqUnder, recoParams)
 
-import Pkg; Pkg.status()
+panels = [log10.(abs.(kspace[:, :, 1, 1, 1, 1]) .+ 1e-3) => "k-space, logarithmic",
+          abs.(imageFFT[:, :, 1, 1, 1, 1]) => "Inverse FFT",
+          abs.(xUnder[:, :, 1, 1, 1, 1]) => "Every second line in y"]
+fig = Figure(size = (940, 330))
+for (i, (data, title)) in enumerate(panels)
+    ax = Axis(fig[1, i], title = title, aspect = DataAspect(), yreversed = true)
+    heatmap!(ax, data', colormap = :grays)
+    hidedecorations!(ax)
+end
+fig
