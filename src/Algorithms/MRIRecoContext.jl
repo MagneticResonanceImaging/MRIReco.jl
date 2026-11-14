@@ -9,6 +9,8 @@ reconstruction pipeline. Uses a ScopedValue for task-local access.
 * `arrayType::A` - Array type for computation (Array, JLArray, etc.)
 * `S::S` - Storage type for operators
 * `acqData::Acq` - Acquisition data (optional), provides metadata like trajectory info
+* `red3d::Bool` - `true` if 3D-encoded data was converted to 2D slices and the user gave a 3D `reconSize`;
+  user-supplied volumes (e.g. sensitivity maps) are then in 3D order and need to be permuted
 
 # Usage
 ```julia
@@ -36,15 +38,16 @@ struct MRIRecoContext{D, arrT, S, Acq <: Union{Nothing, AcquisitionData}}
   arrayType::Type{arrT}
   storageType::Type{S}
   acqData::Acq
-  
-    function MRIRecoContext(reconSize::NTuple{D, Int64}, arrayType::Type{arrT}, storageType::Type{S}, acqData::Acq) where {D, arrT, S, Acq}
-    return new{D, arrT, S, Acq}(reconSize, arrayType, storageType, acqData)
+  red3d::Bool
+
+  function MRIRecoContext(reconSize::NTuple{D, Int64}, arrayType::Type{arrT}, storageType::Type{S}, acqData::Acq, red3d::Bool = false) where {D, arrT, S, Acq}
+    return new{D, arrT, S, Acq}(reconSize, arrayType, storageType, acqData, red3d)
   end
 end
 
-function MRIRecoContext(reconSize::NTuple{D, Int64}, acqData::AcquisitionData{T}, arrayType::Type{arrT} = Array) where {D, T, arrT}
+function MRIRecoContext(reconSize::NTuple{D, Int64}, acqData::AcquisitionData{T}, arrayType::Type{arrT} = Array; red3d::Bool = false) where {D, T, arrT}
   storageType = typeof(arrayType{Complex{T}}(undef, 0))  
-  return MRIRecoContext(reconSize, arrayType, storageType, acqData)
+  return MRIRecoContext(reconSize, arrayType, storageType, acqData, red3d)
 end
 function MRIRecoContext(reconSize::NTuple{D, Int64}, eltype::Type{T}, arrayType::Type{arrT} = Array) where {D, T <: Real, arrT}
   storageType = typeof(arrayType{Complex{T}}(undef, 0))  
@@ -55,7 +58,7 @@ MRIRecoContext(acqData::AcquisitionData{T}, arrayType::Type{arrT} = Array) where
 const MRIRECO_CONTEXT = ScopedValue{MRIRecoContext}()
 
 export MRIRECO_CONTEXT, MRIRecoContext
-export ctx_reconSize, ctx_arrayType, ctx_storageType, ctx_acqData
+export ctx_reconSize, ctx_arrayType, ctx_storageType, ctx_acqData, ctx_red3d
 
 """
     ctx_reconSize() -> NTuple
@@ -85,3 +88,11 @@ Get the acquisition data from the current MRI reconstruction context.
 Returns nothing if not set.
 """
 ctx_acqData() = MRIRECO_CONTEXT[].acqData
+
+"""
+    ctx_red3d() -> Bool
+
+Return `true` if the current reconstruction treats 3D-encoded data that was converted to 2D slices
+with a 3D `reconSize`.
+"""
+ctx_red3d() = MRIRECO_CONTEXT[].red3d

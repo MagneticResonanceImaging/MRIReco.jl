@@ -9,7 +9,6 @@ function defaultRecoParams()
   params[:rho] = 5.e-2
   params[:iterations] = 30
   params[:arrayType] = Array
-  #params[:kwargWarning] = false
 
   return params
 end
@@ -185,9 +184,11 @@ function setupPlanReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
   # Regularization needs no specific setup
 
   # SparseTrafos: Just strings or custom ones
-  if haskey(recoParams, :sparseTrafos) && 
-    !(recoParams[:sparseTrafos] isa String || recoParams[:sparseTrafos] isa Vector{String})
-    recoParams[:sparsityParams] = RecoPlan(CustomSparsityParameters)
+  if haskey(recoParams, :sparseTrafo)
+    trafo = recoParams[:sparseTrafo]
+    if !(trafo isa String || (trafo isa AbstractVector && all(t -> t isa Union{String, Nothing}, trafo)))
+      recoParams[:sparsityParams] = RecoPlan(CustomSparsityParameters)
+    end
   end
 
   # EncodingOps: Custom or not
@@ -198,8 +199,33 @@ function setupPlanReco!(acqData::AcquisitionData{T}, recoParams::Dict) where T
   # Default behaviour of all other parameters from setupIterative and setupDirect should be
   # encoded in the actual parameter behaviour
 
-  plan = MRIRecoPlan(method; recoParams...)
+  plan = MRIRecoPlan(method)
+  structural = filter(kv -> isstructural(last(kv)), recoParams)
+  setAll!(plan; structural...)
+
+  # The dict carries keys the chosen reconstruction does not use, at least the defaults for
+  # iterative solvers. Like the keyword interface before, skip them without a warning.
+  known = planProperties(plan)
+  values = filter(kv -> !isstructural(last(kv)) && first(kv) in known, recoParams)
+  ignored = setdiff(keys(recoParams), keys(structural), keys(values))
+  isempty(ignored) || @debug "Parameters not used by reconstruction \"$method\"" ignored
+  setAll!(plan; values...)
   return plan
+end
+
+isstructural(value) = value isa Union{AbstractImageReconstructionAlgorithm, AbstractImageReconstructionParameters, AbstractRecoPlan}
+
+function planProperties(plan::AbstractRecoPlan, names = Set{Symbol}())
+  for name in propertynames(plan)
+    push!(names, name)
+    value = getproperty(plan, name)
+    if value isa AbstractRecoPlan
+      planProperties(value, names)
+    elseif value isa AbstractArray{<:AbstractRecoPlan}
+      foreach(p -> planProperties(p, names), value)
+    end
+  end
+  return names
 end
 
 

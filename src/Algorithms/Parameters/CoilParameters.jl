@@ -18,13 +18,10 @@ CoilParameters(::Nothing, ::Nothing) = throw(ArgumentError("Cannot construct Coi
 
 function (params::CoilParameters)(::Type{<:AbstractIterativeMRIRecoAlgorithm})
   acqData = ctx_acqData()
-  reconSize = ctx_reconSize()
   arrayType = ctx_arrayType()
 
-  red3d = ndims(trajectory(acqData, 1)) == 2 && length(reconSize) == 3
-
   senseMaps = arrayType(params.senseMaps)
-  if red3d && !isempty(senseMaps)
+  if ctx_red3d() && !isempty(senseMaps)
     senseMaps = permutedims(senseMaps, [2, 3, 1, 4])
   end
 

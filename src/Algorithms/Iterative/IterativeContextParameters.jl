@@ -86,7 +86,7 @@ function setupIterativeReconSize(acqData::AcquisitionData, reconSize::NTuple)
     reconSize = (reconSize[2], reconSize[3])
   end
   
-  return reconSize
+  return reconSize, red3d
 end
 
 get_scheduler(::Nothing, arrayType) = scheduler(arrayType)
@@ -94,14 +94,14 @@ get_scheduler(scheduler, arrayType) = scheduler
 
 # Serial implementation
 function (params::SerialIterativeMRIRecoContextParameter{P})(algo::AbstractIterativeMRIRecoAlgorithm, acqData::AcquisitionData) where P <: AbstractIterativeRecoParameters
-  reconSize = setupIterativeReconSize(acqData, params.reconSize)
+  reconSize, red3d = setupIterativeReconSize(acqData, params.reconSize)
   
   encDims = ndims(trajectory(acqData))
   if encDims != length(reconSize)
     error("reco-dimensionality $(length(reconSize)) and encoding-dimensionality $(encDims) do not match")
   end
   
-  with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
+  with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType; red3d)) do
     # Allocation - call algorithm parameter (returns Ireco, indices, weights, extra...)
     Ireco, indices, extra... = params.parameter(algo, reconSize)
     
@@ -117,7 +117,7 @@ end
 
 # Threaded implementation
 function (params::ThreadedIterativeMRIRecoContextParameter{P})(algo::AbstractIterativeMRIRecoAlgorithm, acqData::AcquisitionData) where P <: AbstractIterativeRecoParameters
-  reconSize = setupIterativeReconSize(acqData, params.reconSize)
+  reconSize, red3d = setupIterativeReconSize(acqData, params.reconSize)
   
   encDims = ndims(trajectory(acqData))
   if encDims != length(reconSize)
@@ -126,7 +126,7 @@ function (params::ThreadedIterativeMRIRecoContextParameter{P})(algo::AbstractIte
   
   sched = get_scheduler(params.scheduler, params.arrayType)
   
-  with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType)) do
+  with(MRIRECO_CONTEXT => MRIRecoContext(reconSize, acqData, params.arrayType; red3d)) do
     # Allocation - call algorithm parameter (returns Ireco, indices, weights, extra...)
     Ireco, indices, weights, extra... = params.parameter(algo, reconSize)
     

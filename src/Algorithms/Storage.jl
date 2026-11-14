@@ -69,7 +69,7 @@ Ireco = reconstruct("standard", acqData; kwargs...)
 """
 function AbstractImageReconstruction.reconstruct(name::AbstractString, acqData::AcquisitionData; modules = getMRIRecoPlanModules(), kwargs...)
   plan = loadRecoPlan(name, modules; kwargs...)
-  return AbstractImageReconstruction.reconstruct(build(plan), data)
+  return AbstractImageReconstruction.reconstruct(build(plan), acqData)
 end
 # Load plan from a .toml file
 function loadRecoPlan(name::AbstractString, modules; kwargs...)
@@ -99,11 +99,5 @@ export MRIRecoPlan
 Load a `RecoPlan` and set the keyword arguments if applicable. Value can be the name of a plan or path to plan file.
 """
 function MRIRecoPlan(value::AbstractString, modules = getMRIRecoPlanModules(); kwargs...)
-  if isfile(value) && endswith(value, ".toml")
-    return loadRecoPlan(value, modules; kwargs...)
-  elseif isfile(value)
-    return MRIRecoPlan(MDFFile(value), modules; kwargs...)
-  else
-    return loadRecoPlan(planpath(value), modules; kwargs...)
-  end
+  return loadRecoPlan(planpath(value), modules; kwargs...)
 end
