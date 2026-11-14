@@ -70,6 +70,59 @@ function test_kdataWithCorrection(N::Int64=32)
 
 end
 
+function test_kdataExplicit(N::Int64=16)
+    @info "Testing that the explicit simulation evaluates the encoding operator exactly"
+    I = ComplexF64.(shepp_logan(N))
+    cmap = 1im*quadraticFieldmap(N,N,125*2pi)[:,:,1]
+    tr = SpiralTrajectory(Float64, N,2*N,TE=0.0,AQ=32e-3)
+    E = fourierEncodingOp((N,N),tr,"explicit";correctionMap=reshape(cmap,N,N,1),echoImage=false)
+    kdata = E*vec(I)
+    @test vec(simulation_explicit(tr,I,cmap).kdata[1]) ≈ kdata
+    @test vec(simulation(tr,I,cmap,opName="explicit").kdata[1]) ≈ kdata
+
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "explicit"
+    params[:trajName] = "Spiral"
+    params[:numProfiles] = N
+    params[:numSamplingPerProfile] = 2*N
+    params[:AQ] = 32e-3
+    params[:correctionMap] = cmap
+    @test vec(simulation(I,params).kdata[1]) ≈ kdata
+
+    sh = ComplexF64.(shepp_logan(8))
+    I3 = cat(sh,0.5*sh,dims=3)
+    tr3 = KooshballTrajectory(Float64, 16,16)
+    E3 = fourierEncodingOp((8,8,2),tr3,"explicit";correctionMap=zeros(ComplexF64,8,8,2),echoImage=false)
+    @test vec(simulation(tr3,I3,opName="explicit").kdata[1]) ≈ E3*vec(I3)
+end
+
+function test_kdataFieldmapOptions(N::Int64=16)
+    @info "Testing that the simulation passes the options of the field map approximation on"
+    I = ComplexF64.(shepp_logan(N))
+    cmap = 1im*quadraticFieldmap(N,N,125*2pi)[:,:,1]
+    tr = SpiralTrajectory(Float64, N,2*N,TE=0.0,AQ=32e-3)
+    # alpha and m are only used by the method "nfft"
+    for (method, K, alpha, m) in (("leastsquare", 8, 1.75, 4.0), ("nfft", 8, 1.5, 3.0))
+        F = fourierEncodingOp((N,N),tr,"fast";correctionMap=reshape(cmap,N,N,1),echoImage=false,
+                              method=method,K=K,alpha=alpha,m=m)
+        @test vec(simulation_fast(tr,I,cmap;method=method,K=K,alpha=alpha,m=m).kdata[1]) ≈ F*vec(I)
+    end
+
+    # in the parameter dictionary, :alpha is the exponent of the variable-density spiral
+    params = Dict{Symbol, Any}()
+    params[:simulation] = "fast"
+    params[:trajName] = "SpiralVarDens"
+    params[:numProfiles] = 1
+    params[:numSamplingPerProfile] = N*N
+    params[:windings] = div(N,2)
+    params[:AQ] = 3.0e-2
+    params[:alpha] = 3
+    params[:correctionMap] = cmap
+    tr = trajectory(Float64,"SpiralVarDens",1,N*N;windings=div(N,2),AQ=3.0e-2,alpha=3)
+    F = fourierEncodingOp((N,N),tr,"fast";correctionMap=reshape(cmap,N,N,1),echoImage=false)
+    @test vec(simulation(I,params).kdata[1]) ≈ F*vec(I)
+end
+
 function test_kdataMultiEcho(N=32)
     # image
     I = ComplexF64.(shepp_logan(N))
@@ -165,6 +218,8 @@ function testSimulation()
     test_kdataMultipleSlices()
     test_kdata3d()
     test_kdataWithCorrection(16)
+    test_kdataExplicit()
+    test_kdataFieldmapOptions()
     test_kdataMultiEcho()
     test_noise()
     test_changeEncodingSize(32)

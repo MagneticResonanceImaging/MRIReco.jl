@@ -187,14 +187,18 @@ function GeneralParameters(xdoc::XMLDocument)
       addToDict!(params, e[1], "echo_spacing", Float64)
     end
 
-    # waveformInformation
+    # waveformInformation — up to 32 entries per spec (maxOccurs="32")
     e = get_elements_by_tagname(LightXML.root(xdoc),"waveformInformation")
     if !isempty(e)
-      addToDict!(params, e[1], "waveformName", Float64)
-      addToDict!(params, e[1], "waveformType", Float64)
-
-      if !isempty(e[1]["userParameters"])
-          d = e[1]["userParameters"]
+      waveforms = Vector{Dict{String,Any}}()
+      for wi in e
+        w = Dict{String,Any}()
+        n = wi["waveformName"]
+        if !isempty(n); w["waveformName"] = content(n[1]); end
+        t = wi["waveformType"]
+        if !isempty(t); w["waveformType"] = content(t[1]); end
+        if !isempty(wi["userParameters"])
+          d = wi["userParameters"]
           y = Dict{String,Any}()
           for q in d["userParameterLong"]
             y[content(q["name"][1])] = parse(Int,content(q["value"][1]))
@@ -205,8 +209,11 @@ function GeneralParameters(xdoc::XMLDocument)
           for q in d["userParameterString"]
             y[content(q["name"][1])] = content(q["value"][1])
           end
-          params["waveformUserParameters"] = y
+          w["userParameters"] = y
+        end
+        push!(waveforms, w)
       end
+      params["waveformInformation"] = waveforms
     end
 
     # UserParameters
@@ -394,8 +401,14 @@ function GeneralParametersToXML(params::Dict{String,Any})
   p = ["TR", "TE", "TI", "flipAngle_deg", "sequence_type", "echo_spacing"]
   generateGroup(params, p, xroot, "sequenceParameters")
 
-  p = ["waveformName", "waveformType", "waveformUserParameters"]
-  generateGroup(params, p, xroot, "waveformInformation")
+  if haskey(params, "waveformInformation")
+    for w in params["waveformInformation"]
+      xs = new_child(xroot, "waveformInformation")
+      if haskey(w, "waveformName"); insertNode(xs, "waveformName", w["waveformName"]); end
+      if haskey(w, "waveformType"); insertNode(xs, "waveformType", w["waveformType"]); end
+      if haskey(w, "userParameters"); insertNode(xs, "userParameters", w["userParameters"]); end
+    end
+  end
 
   p = ["userParameters"]
   generateGroup(params, p, xroot, "userParameters")

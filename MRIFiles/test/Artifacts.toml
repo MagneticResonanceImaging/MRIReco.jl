@@ -4,4 +4,4 @@ lazy = true
 
     [[MRIRecoTestData.download]]
     sha256 = "c5a421aab7f3ea3fb20c469704db33c17b659861d9d77dbd29e353db2d5c8fc7"
-    url = "http://media.tuhh.de/ibi/mrireco/MRIRecoTestData.tar.gz"
+    url = "https://zenodo.org/records/24178207/files/MRIRecoTestData.tar.gz"

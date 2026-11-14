@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# # [Extract k-space](@id 01-extractKspace)
+# # [Extract Cartesian k-Space](@id extract-kspace)
 #---------------------------------------------------------
 
 
@@ -15,6 +15,7 @@ This possibility can be easily combined with the [BartIO](https://github.com/Mag
 # ## Setup
 using CairoMakie
 using ImageUtils: shepp_logan
+using FFTW: ifft, ifftshift
 using MRIReco, MRISimulation
 using InteractiveUtils: versioninfo
 

@@ -61,10 +61,14 @@ end
 
 To test our method, let us load some simulated data and subsample it
 ```julia
-# phantom
-img = readdlm("data/mribrain100.tsv")
+using Pkg.Artifacts
+artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
+datadir = ensure_artifact_installed("MRIRecoDocsData", artifacts; io = devnull)
 
-acqData = AcquisitionData(ISMRMRDFile("data/acqDataBrainSim100.h5"))
+# phantom
+img = readdlm(joinpath(datadir, "mribrain100.tsv"))
+
+acqData = AcquisitionData(ISMRMRDFile(joinpath(datadir, "acqDataBrainSim100.h5")))
 nx,ny = acqData.encodingSize
 
 # undersample kspace data
@@ -74,7 +78,7 @@ acqData = sample_kspace(acqData, 2.0, "poisson", calsize=25,profiles=false);
 Now we load a pre-trained dictionary, build the sparsifying transform and perform the reconstruction
 ```julia
 # load the dictionary
-D = ComplexF64.(readdlm("data/brainDict98.tsv"))
+D = ComplexF64.(readdlm(joinpath(datadir, "brainDict98.tsv")))
 
 # some parameters
 px, py = (6,6)  # patch size

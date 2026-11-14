@@ -2,7 +2,7 @@ using Test, MRIBase, MRIOperators, MRISimulation, MRIOperators.NFFT, MRIOperator
 using NonuniformFFTs
 using LinearAlgebra, MRIOperators.LinearOperatorCollection
 using MRIOperators.OhMyThreads
-#using JLArrays
+using JLArrays
 
 
 areTypesDefined = @isdefined arrayTypes
@@ -15,5 +15,8 @@ arrayTypes = areTypesDefined ? arrayTypes : [Array] # , JLArray]
         include("testOperators.jl")
       end
     end
+  end
+  @testset "Adapt" begin
+    include("testAdapt.jl")
   end
 end

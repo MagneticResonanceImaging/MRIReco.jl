@@ -129,6 +129,22 @@ function testUndersampledFourierOp(N=16; arrayType = Array)
   @test x1 ≈ x2   rtol = 1e-2
 end
 
+## test ExplicitOp with more samples than voxels and with the default storage type
+function testExplicitOp(N=8; arrayType = Array)
+  for (shape, tr) in [((N,N), RadialTrajectory(Float64, 2*N, 2*N)), ((N÷2,N÷2,N÷2), KooshballTrajectory(Float64, 2*N, N))]
+    x = rand(ComplexF64, shape)
+    cmap = zeros(ComplexF64, shape)
+    xop = arrayType(vec(x))
+    F_ref = ExplicitOp(shape, tr, cmap)
+    F = ExplicitOp(shape, tr, cmap; S = typeof(xop))
+    @test size(F_ref, 1) > size(F_ref, 2)
+
+    y = F_ref*vec(x)
+    @test Array(F*xop) ≈ y
+    @test Array(adjoint(F)*arrayType(y)) ≈ adjoint(F_ref)*y
+  end
+end
+
 ## test FieldmapNFFTOp
 function testFieldmapFT(N=16; arrayType = Array, scheduler = DynamicScheduler())
   # random image
@@ -205,6 +221,48 @@ function testCopySizes(N=16; arrayType = Array)
 
 end
 
+## test fourierEncodingOp without a correction map
+function testFourierEncodingOpWithoutCorrectionMap(N=16; arrayType = Array)
+  x = rand(ComplexF64,N,N)
+  xop = arrayType(vec(x))
+
+  # explicit operator, the same as with a zero correction map
+  tr = CartesianTrajectory(Float64,N,N)
+  F = fourierEncodingOp((N,N), tr, "explicit"; S = typeof(xop))
+  F_zero = fourierEncodingOp((N,N), tr, "explicit"; correctionMap = zeros(ComplexF64,N,N,1), S = typeof(xop))
+  @test Array(F*xop) ≈ Array(F_zero*xop)
+
+  # NFFT operator, which ignores the options of the field map approximation
+  tr = RadialTrajectory(Float64,N,2*N)
+  F_nfft = fourierEncodingOp((N,N), tr, "fast"; S = typeof(xop))
+  for correctionMap in (ComplexF64[], zeros(ComplexF64,N,N,1))
+    F = fourierEncodingOp((N,N), tr, "fast"; correctionMap, method = "leastsquare", K = 10, K_tol = 1.e-3, S = typeof(xop))
+    @test Array(F*xop) ≈ Array(F_nfft*xop)
+  end
+end
+
+## test lrEncodingOp, which applies the basis with a MapSliceOp
+function testLowRankEncodingOp()
+  # K = 1: for K > 1, lrEncodingOp repeats one Fourier operator in a parallel DiagOp,
+  # which is not thread-safe (JuliaImageRecon/LinearOperatorCollection.jl#44)
+  shape, numContr, K = (4, 4), 3, 1
+  N = prod(shape)
+  tr = CartesianTrajectory(Float64, 4, 4)
+  idx = [[1, 2, 5, 7, 8, 11, 12, 16], [2, 3, 4, 6, 9, 10, 13, 15], [1, 3, 6, 8, 10, 12, 14, 16]]
+  kdata = Array{Matrix{ComplexF64}, 3}(undef, numContr, 1, 1)
+  for c in 1:numContr; kdata[c, 1, 1] = zeros(ComplexF64, length(idx[c]), 1); end
+  acqData = AcquisitionData(tr, kdata; idx, encodingSize = shape)
+  phi = reshape(rand(ComplexF64, numContr, K), numContr, K, 1)
+  E = lrEncodingOp(acqData, shape, Dict{Symbol, Any}(:phi => phi); numContr)
+
+  ft = fourierEncodingOp(shape, tr, "fast")
+  E_ref = SamplingOp(ComplexF64; pattern = hcat(idx...), shape = (N, numContr, 1)) ∘
+          (MapSliceOp(phi[:, :, 1], 2, (N, K, 1), (N, numContr, 1)) ∘ DiagOp(ft))
+  x, y = rand(ComplexF64, N * K), rand(ComplexF64, size(E_ref, 1))
+  @test E * x ≈ E_ref * x ≈ vcat([phi[c, 1, 1] .* (ft * x)[idx[c]] for c in 1:numContr]...)
+  @test adjoint(E) * y ≈ adjoint(E_ref) * y
+end
+
 function testOperators(arrayType = Array)
   @testset "MRI Linear Operator: $arrayType" begin
     @testset "FT" testFT(;arrayType)
@@ -213,10 +271,13 @@ function testOperators(arrayType = Array)
       @testset "FieldmapFT" testFieldmapFT(;arrayType,scheduler)
     end
     @testset "Undersampled Fourier Op" testUndersampledFourierOp(;arrayType)
+    @testset "Explicit Op" testExplicitOp(;arrayType)
     @testset "Sparse Op F32 2D" testSparseOp(Float32,(128,80,1);arrayType)
     @testset "Sparse Op F64 2D" testSparseOp(Float64,(128,80,1);arrayType)
     @testset "Sparse Op F32 3D" testSparseOp(Float32,(128,128,80);arrayType)
     @testset "Sparse Op F64 3D" testSparseOp(Float64,(128,128,80);arrayType)
+    @testset "Fourier Encoding Op without Correction Map" testFourierEncodingOpWithoutCorrectionMap(;arrayType)
+    arrayType == Array && @testset "Low-rank Encoding Op" testLowRankEncodingOp()
   end
 end
 

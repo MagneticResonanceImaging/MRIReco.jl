@@ -23,9 +23,21 @@ end
 basis correspond to svd_object.V cropped to a certain level
 
 basis type should correspond to the type of the rawdata
+
+# Moving to another array backend
+
+    Adapt.adapt(CuArray, op::SubspaceOp)
+
+returns a new `SubspaceOp` with a new parent operator, built from `Adapt.adapt(CuArray, basis)`.
+Its storage type `S` is derived from the adapted basis. On the same backend, the basis may be shared with
+`op` and is only read. `op` itself is not modified.
+`SensitivityOp`, `SubspaceOp`, `MapSliceOp` and `ExplicitOp` are the MRI operators that support `Adapt.adapt` so far.
 """
-struct SubspaceOp{T, O} <: WrappedMRIOperator{T, O}
+struct SubspaceOp{T, O, M <: AbstractMatrix{T}, D} <: WrappedMRIOperator{T, O}
   op::O
+  basis::M
+  shape::NTuple{D, Int}
+  numContr::Int
   function SubspaceOp(basis::AbstractMatrix{T},shape::NTuple{D,Int64},numContr, S = LinearOperators.storage_type(basis)) where {T,D}
       numVox = prod(shape)
       numBasis = size(basis,2)
@@ -34,7 +46,10 @@ struct SubspaceOp{T, O} <: WrappedMRIOperator{T, O}
                            nothing,
                            (res,x) -> ctprod_subspace!(res,basis,x,numVox,numContr,numBasis),
                            S = S)
-      return new{T, typeof(op)}(op)
+      return new{T, typeof(op), typeof(basis), D}(op, basis, shape, numContr)
   end
 end
 parent(op::SubspaceOp) = getfield(op, :op)
+
+Adapt.adapt_structure(to, op::SubspaceOp) =
+  SubspaceOp(adapt(to, getfield(op, :basis)), getfield(op, :shape), getfield(op, :numContr))
