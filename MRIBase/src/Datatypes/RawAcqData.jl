@@ -19,7 +19,9 @@ Base.@kwdef mutable struct EncodingCounters
 end
 
 """
-Encoding counters used in each Profile of a RawAcquisitionData object.
+Header of a profile of a `RawAcquisitionData` object, with the fields of the acquisition header of the ISMRMRD
+format, for example the number of samples `number_of_samples`, the time between two samples `sample_time_us` in µs,
+the position and orientation of the slice and the encoding counters `idx`.
 """
 Base.@kwdef mutable struct AcquisitionHeader
   version::UInt16 = 0

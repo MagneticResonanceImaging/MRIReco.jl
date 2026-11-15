@@ -59,16 +59,22 @@ numRepetitions(acqData::AcquisitionData) = size(acqData.kdata,3)
 
 """
     AcquisitionData(tr::K,kdata::Array{Matrix{Complex{T}},3}; seqInfo=Dict{Symbol,Any}()
-                        , idx=nothing, encodingSize=Int64[0,0,0], fov=Float64[0,0,0]
-                        , kargs...) where {K <: Union{Trajectory,Vector{Trajectory}},T <: AbstractFloat}
+                        , idx=nothing, encodingSize=ntuple(d->0, ndims(tr)), fov=(0.0, 0.0, 0.0)
+                        , kargs...) where {T <: AbstractFloat, K <: Union{Trajectory,Vector{Trajectory{T}}}}
 
 constructor for `AcquisitionData`
 
 # Arguments
-* `tr <: Union{Trajectory,Vector{Trajectory}}` - trajectories
-* `kdata::Array{Matrix{Complex{<:AbstractFloat}},3}` - k-space data
+* `tr` - a `Trajectory{T}`, or a `Vector{Trajectory{T}}` with one trajectory per contrast
+* `kdata::Array{Matrix{Complex{T}},3}` - k-space data, a matrix of samples × coils for each contrast, slice and
+  repetition
+* (`seqInfo=Dict{Symbol,Any}()`) - stored in the field `sequenceInfo`
+* (`idx=nothing`) - sampled indices of each contrast (`subsampleIndices`), by default all nodes
+* (`encodingSize`) - size of the underlying image matrix, by default zeros; pass it for a vector of trajectories,
+  for which the default has only one entry
+* (`fov=(0.0, 0.0, 0.0)`) - field of view in mm
 
-the other fields of `AcquisitionData` can be passed as keyword arguments.
+Other keyword arguments are ignored.
 """
 function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
                         ; seqInfo = Dict{Symbol,Any}()
@@ -93,14 +99,14 @@ function AcquisitionData(tr::K, kdata::Array{Matrix{Complex{T}},3}
 end
 
 """
-    AcquistionData(kdata::Array{T,6})
+    AcquisitionData(kspace::Array{Complex{T},6}; enc2D=false)
 
 Returns an AcquisitionData struct created from a zero-filled kspace with 6 dimensions :
     [x,y,z or slices,channels,echoes,repetitions]
 
 Different undersampling patterns can be handled **only** along the echo dimension.
 
-This methods assumes the data to correspond to a single volume
+This method assumes the data to correspond to a single volume
 encoded with a 3d Cartesian sequence or in 2D multi-slice with keyword `enc2D = true`
 
 ## Keywords : 
@@ -214,7 +220,7 @@ function multiCoilData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::
 end
 
 """
-    multiCoilMultiEchoData(acqData::AcquisitionData, echo::Int64, slice::Int64;rep::Int64=1)
+    multiCoilMultiEchoData(acqData::AcquisitionData, slice::Int64; rep=1)
 
 returns the k-space contained in `acqData` for all coils, echoes and given `slice` and `rep`(etition).
 """
@@ -315,10 +321,11 @@ end
 # convert acqData for a reconstruction with a encodingSize (resolution)
 #########################################################################
 """
-    changeEncodingSize2D(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+    changeEncodingSize2D(acqData::AcquisitionData, newEncodingSize::NTuple{2,Int64})
 
-changes the encoding size of 2d encoded `acqData` to `newEncodingSize`.
-Returns a new `AcquisitionData` object.
+changes the encoding size of 2d encoded `acqData` to `newEncodingSize` by rescaling the k-space positions and
+removing the samples outside of the new size; the field `encodingSize` keeps its old value. Returns a new
+`AcquisitionData` object.
 """
 function changeEncodingSize2D(acqData::AcquisitionData, newEncodingSize::NTuple{D,Int64}) where D
   dest = deepcopy(acqData)
@@ -326,7 +333,7 @@ function changeEncodingSize2D(acqData::AcquisitionData, newEncodingSize::NTuple{
 end
 
 """
-    changeEncodingSize2D!(acqData::AcquisitionData,newEncodingSize::Vector{Int64})
+    changeEncodingSize2D!(acqData::AcquisitionData, newEncodingSize::NTuple{2,Int64})
 
 does the same thing as `changeEncodingSize2D` but acts in-place on `acqData`.
 """

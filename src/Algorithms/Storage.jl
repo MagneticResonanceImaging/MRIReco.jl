@@ -5,7 +5,10 @@ const recoPlanPaths = AbstractString[DEFAULT_PLANS_PATH]
 """
     addMRIRecoPlanPath(path)
 
-Add all `RecoPlans` within the given directory as potential 
+Add the folder `path` to the folders in which `MRIRecoPlan`, `reconstruct` and `reconstruction` look for plan files.
+Added folders are searched before the folder `reco_plans` of MRIReco, the last added first, so a plan file with the
+name of a built-in plan, for example `standard.toml`, replaces it. A folder is added only once and only for the
+current Julia session.
 """
 addMRIRecoPlanPath(path) = !(path in recoPlanPaths) ? pushfirst!(recoPlanPaths, path) : nothing
 """
@@ -26,9 +29,10 @@ end
 export addMRIRecoPlanModule, getMRIRecoPlanModules
 const recoPlanModules::Vector{Module} = [AbstractImageReconstruction, MRIOperators, MRIBase, MRIReco, RegularizedLeastSquares]
 """
-    addMRIRecoPlanPath(mod::Module)
+    addMRIRecoPlanModule(mod::Module)
 
-Add the `mod` module to the list of modules which are used for plan loading 
+Add the `mod` module to the list of modules which are used for plan loading, so that plan files can use the types
+that `mod` exports.
 """
 addMRIRecoPlanModule(mod::Module) = !(mod in recoPlanModules) ? push!(recoPlanModules, mod) : nothing
 """
@@ -56,11 +60,12 @@ export reconstruct
 """
     reconstruct(name::AbstractString, acqData::AcquisitionData; modules = getMRIRecoPlanModules(), kwargs...)
 
-Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`.
-Additional keyword arguments can be passed to the reconstruction plan.
+Perform a reconstruction of `acqData` with the `RecoPlan` specified by `name`.
+Additional keyword arguments can be passed to the reconstruction plan. `modules` are the modules whose types the plan
+file can use, see `addMRIRecoPlanModule`.
 
-`RecoPlans` can be stored in the in the MRIReco package config folder or in a custom folder. New folder can be added with `addMRIRecoPlanPath`. The first plan found is used.
-Alternatively, name can be a path to specific plan file.
+The plan is looked up as the file `name.toml` in the folders added with `addMRIRecoPlanPath`, the last added first,
+and then in the folder `reco_plans` of MRIReco. Alternatively, `name` can be the path of a plan file.
 
 # Examples
 ```julia

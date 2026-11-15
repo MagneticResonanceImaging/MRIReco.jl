@@ -18,14 +18,15 @@ include("Incoherence.jl")
 """
     sample(shape::NTuple{N,Int64}, redFac, patFunc::String; kargs...)
 
-generates a `Vector{Int64}` of indices to sample an Array of of size `shape` with
-a reduction factor `redFac`.
+generates the indices of the samples of an Array of size `shape` for a reduction factor `redFac`.
+An unknown `patFunc` logs an error and returns `nothing`.
 
 # Arguments
 * `shape::NTuple{N,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * `patFunc::String`        - name of the sampling function
-                            ("random, "regular", "lines", "poisson" or "vdPoisson")
+                            ("random", "regular", "lines", "poisson" or "vdPoisson"; in one dimension all but
+                            "lines", in three dimensions only "regular" and "lines")
 * `kargs...`               - additional keyword arguments of the sampling function,
                             for example `rng` and `seed`
 """
@@ -59,8 +60,9 @@ and returns both the subsampled Array (as a vector) and the sampled indices (as 
 * `data::AbstractArray`    - array to be sampled
 * `redFac::Float64`        - subsampling factor
 * `patFunc::String`        - name of the sampling function
-                            ("random, "regular", "lines", "poisson" or "vdPoisson")
-* `kargs...`               - addional keyword arguments
+                            ("random", "regular", "lines", "poisson" or "vdPoisson"; for a vector all but "lines",
+                            for a 3D array only "regular" and "lines")
+* `kargs...`               - additional keyword arguments
 """
 function sample_kspace(data::AbstractArray, redFac, patFunc::AbstractString;kargs...)
   patOut = sample(size(data),redFac,patFunc;kargs...)
@@ -77,15 +79,17 @@ subsamples the data in `acqData` with reduction factor `redFac`
 and returns a new `AcquisitionData` object.
 
 # Arguments
-* `acqData::AcquisitionDatay` - AcquisitionData to be sampled
+* `acqData::AcquisitionData`  - AcquisitionData to be sampled
 * `redFac::Float64`           - subsampling factor
 * `patFunc::String`           - name of the sampling function
-                                ("random, "regular", "lines", "poisson" or "vdPoisson")
+                                ("random", "regular", "lines", "poisson" or "vdPoisson";
+                                with 2D data and `profiles=true` all but "lines", with 3D data and
+                                `profiles=false` only "regular" and "lines")
 * (`rand=true`)               - use different patterns for the different contrasts
 * (`profiles=true`)           - sample complete profiles
 * (`rng=Random.default_rng()`) - random number generator
 * (`seed=nothing`)            - seed for `rng`; with `nothing`, `rng` is used in its current state
-* `kargs...`                  - addional keyword arguments
+* `kargs...`                  - additional keyword arguments
 """
 function sample_kspace(acqData::AcquisitionData, redFac,
                        patFunc::AbstractString; rand=true, profiles=true,
@@ -96,7 +100,7 @@ function sample_kspace(acqData::AcquisitionData, redFac,
 end
 
 """
-    sample_kspace(acqData::AcquisitionData,redFac::Float64,
+    sample_kspace!(acqData::AcquisitionData,redFac::Float64,
                 patFunc::AbstractString; rand=true, profiles=true,
                 rng = Random.default_rng(), seed = nothing, kargs...)
 
