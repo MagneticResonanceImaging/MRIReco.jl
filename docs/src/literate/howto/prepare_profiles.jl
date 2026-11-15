@@ -74,9 +74,9 @@ Colorbar(fig[1, 2], hm)
 fig
 
 # The longer dwell time of the noise readout lowers its noise variance per sample compared with the image data, but
-# does not change the correlation between the coils. The reconstruction types `"multiCoil"` and `"multiCoilMultiEcho"`
-# use these samples to decorrelate the coils when they are passed as `params[:noiseData]`, see
-# [Noise Decorrelation](@ref).
+# does not change the correlation between the coils. The reconstruction types `"multiCoil"`, `"multiCoilMultiEcho"`
+# and `"multiCoilMultiEchoSubspace"` use these samples to decorrelate the coils when they are passed as
+# `params[:noiseData]`, see [Noise Decorrelation](@ref).
 #
 # ## Removing Profiles That Are Not Image Data
 #
