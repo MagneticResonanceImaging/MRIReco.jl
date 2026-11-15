@@ -126,10 +126,12 @@ fig
 # For `AcquisitionData` converted from `RawAcquisitionData`, as for ISMRMRD and Bruker files, the times of a
 # non-Cartesian trajectory start at zero at the beginning of each readout and follow the sampling interval in the
 # profile headers, and the echo time is zero. For a Cartesian trajectory, the times are placeholders that span 1 ms
-# per profile. If they don't match the acquisition, set the fields `times` and `TE` of the trajectories, one per
-# contrast and in seconds, for example for 2D Cartesian data with one profile per excitation and the sampling interval
-# `dt`: `for tr in acqData.traj; tr.times .= repeat(dt .* (0:numSamplingPerProfile(tr)-1), numProfiles(tr)); end`. In
-# a gradient-echo train, such as EPI, the times continue from one profile to the next.
+# per profile. `AcquisitionData` created from a k-space array, as in
+# [Create AcquisitionData from Arrays](@ref acqdata-from-arrays), gives every sample the time zero. If the times
+# don't match the acquisition, set the fields `times` and `TE` of the trajectories, one per contrast and in seconds,
+# for example for 2D Cartesian data with one profile per excitation and the sampling interval `dt`:
+# `for tr in acqData.traj; tr.times .= repeat(dt .* (0:numSamplingPerProfile(tr)-1), numProfiles(tr)); end`. In a
+# gradient-echo train, such as EPI, the times continue from one profile to the next.
 #
 # ## Limits
 #
@@ -139,3 +141,6 @@ fig
 #   NaN for this slice, and the other methods fail, except `"leastsquare"` for a constant other than zero
 #   ([#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360)). A map that is zero in every slice is
 #   not used at all.
+# - If all samples have the same time, as for `AcquisitionData` created from a k-space array, `"nfft"` returns NaN
+#   for the whole image, `"leastsquare"` and `"hist"` fail, and `"svd"` fails in some runs
+#   ([#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360)).
