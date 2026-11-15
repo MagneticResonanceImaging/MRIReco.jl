@@ -17,6 +17,9 @@
 # `CUDA.functional()` returns `true` if CUDA.jl can use the GPU, and `CUDA.versioninfo()` lists the GPUs and the
 # versions of the libraries.
 #
+# For AMD GPUs, the GPU package is [AMDGPU.jl](https://amdgpu.juliagpu.org/stable/), and its array type `ROCArray`
+# takes the place of `CuArray` below.
+#
 # ## Choosing the Array Type
 #
 # The parameter `arrayType` sets the type of the arrays that the reconstruction computes with. The default `Array`
@@ -82,10 +85,9 @@ typeof(acqData)
 # - With several Julia threads, `"multiCoil"` and `"multiCoilMultiEcho"` give wrong results on the GPU
 #   ([#317](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/317)). Start Julia with one thread, which is
 #   the default, for these reconstructions.
-# - Noise decorrelation with `:noiseData` fails on the GPU with Julia 1.12 and 1.13, and for `"multiCoilMultiEcho"`
-#   also with Julia 1.10 ([#319](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/319)).
+# - Noise decorrelation with `:noiseData` fails on the GPU with Julia 1.12 and 1.13. With Julia 1.10 and 1.11, it runs
+#   with a wrong decorrelation matrix ([#319](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/319)).
 # - `"multiCoilMultiEchoSubspace"` fails on the GPU
 #   ([#320](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/320)).
-# - The GPU code is not specific to CUDA.jl, but with AMD GPUs and [AMDGPU.jl](https://amdgpu.juliagpu.org/stable/),
-#   the iterative reconstructions currently fail
-#   ([#318](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/318)).
+# - With AMD GPUs, encoding operators that are built on the CPU and passed with `:encodingOps` can crash Julia
+#   ([#393](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/393)).
