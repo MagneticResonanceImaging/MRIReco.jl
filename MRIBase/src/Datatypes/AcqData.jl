@@ -4,18 +4,18 @@ export AcquisitionData, kData, kDataCart, kdataSingleSlice, convertUndersampledD
        encodingSize, fieldOfView, multiCoilData, multiCoilMultiEchoData, multiEchoData
 
 """
-struct describing MRI acquisition data.
+struct describing MRI acquisition data with floating point precision `T` and `D` encoding dimensions (2 or 3).
 
 # Fields
 * `sequenceInfo::Dict{Symbol,Any}`          - additional information on the pulse sequence
-* `traj::Vector{Trajectory}`                - trajectories for each echo/contrast
-* `kdata::Array{Matrix{Complex{<:AbstractFloat}},3}`      - each matrix contains data for one trajectory
+* `traj::Vector{Trajectory{T}}`             - trajectories for each echo/contrast
+* `kdata::Array{Matrix{Complex{T}},3}`      - each matrix contains data for one trajectory
                                               (1. dim k-space nodes, 2. dim coils)
                                               the outer dims describe:
                                               1. dim echoes, 2. dim slices, 3. dim repetitions
-* `subsampleIndices::Vector{Array{Int64}}`  - indices sampled for each echo/contrast
-* `encodingSize::Vector{Int64}`             - size of the underlying image matrix
-* `fov::Vector{Float64}`                    - field of view in mm
+* `subsampleIndices::Vector{Vector{Int64}}` - indices sampled for each echo/contrast
+* `encodingSize::NTuple{D,Int64}`           - size of the underlying image matrix
+* `fov::NTuple{3,Float64}`                  - field of view in mm
 """
 mutable struct AcquisitionData{T <: AbstractFloat, D}
   sequenceInfo::Dict{Symbol,Any}
@@ -26,7 +26,20 @@ mutable struct AcquisitionData{T <: AbstractFloat, D}
   fov::NTuple{3,Float64}
 end
 
+"""
+    fieldOfView(acq::AcquisitionData)
+
+returns the field of view of `acq` in mm, a tuple with three entries that are zero for data without this
+information
+"""
 fieldOfView(acq::AcquisitionData) = acq.fov
+
+"""
+    encodingSize(acq::AcquisitionData)
+
+returns the size of the image grid that `acq` encodes, which the reconstruction uses as the default image size
+(zeros if it was not given when `acq` was created)
+"""
 encodingSize(acq::AcquisitionData) = acq.encodingSize
 
 """

@@ -34,6 +34,33 @@ mutable struct Trajectory{T}
   circular::Bool
 end
 
+"""
+    Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile;
+               times=nothing, TE=0.0, AQ=1.e-3, numSlices::Int64=1,
+               cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
+
+creates a trajectory named `"Custom"` from the k-space positions `nodes`, a `Matrix{T}` with one row per dimension
+and one column per sample, ordered profile by profile and, in a stacked 3d trajectory, partition by partition.
+Without `times`, the samples of each profile are spread over the readout duration `AQ`, starting at `TE`.
+
+# Arguments
+* `nodes::Matrix{T}`          - k-space positions between -0.5 and 0.5 (other matrix types, such as a transpose,
+                                have to be converted with `Matrix` first)
+* `numProfiles::Int64`        - number of profiles per partition
+* `numSamplingPerProfile`     - number of sampling points per profile
+* (`times=nothing`)           - sampling times in s, a `Vector{T}` with one time per node
+* (`TE=0.0`)                  - echo time in s
+* (`AQ=1.e-3`)                - readout duration in s (per profile)
+* (`numSlices::Int64=1`)      - number of partitions (slices) of a stacked 3d trajectory
+* (`cartesian::Bool=false`)   - true if the nodes lie on the cartesian grid in the order of `CartesianTrajectory`
+                                (`CartesianTrajectory3D` in 3d): without a correction map, the reconstruction and
+                                the default simulation then use FFTs, which ignore the nodes
+* (`circular::Bool=false`)    - true if the nodes cover a circular region of k-space, as in radial and spiral
+                                trajectories: the reconstructions `"direct"`, `"standard"` and `"multiCoil"` then set
+                                the image outside a circle (a sphere in 3d) whose diameter is the largest side of the
+                                image to zero, and with a correction map, the encoding operator ignores the image
+                                outside it
+"""
 function Trajectory(nodes::AbstractMatrix{T}, numProfiles::Int64, numSamplingPerProfile;
                     times=nothing, TE=0.0, AQ=1.e-3, numSlices::Int64=1,
                     cartesian::Bool=false, circular::Bool=false) where T <: AbstractFloat
@@ -54,6 +81,12 @@ Base.vec(tr::Trajectory) = [tr]
 Base.vec(tr::Vector{Trajectory}) = tr
 Base.size(tr::Trajectory) = size(kspaceNodes(tr))
 Base.size(tr::Trajectory,i::Int) = size(kspaceNodes(tr),i)
+
+"""
+    scale(tr::Trajectory, factor::Real)
+
+returns a copy of `tr` with the nodes divided by `factor`
+"""
 function scale(tr::Trajectory, factor::Real)
   trC = deepcopy(tr)
   trC.nodes ./= factor

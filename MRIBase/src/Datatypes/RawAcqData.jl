@@ -414,6 +414,16 @@ function uniqueidx(x::Matrix{T}) where T
   idxs
 end
 
+"""
+    minimalHeader(encodingSize, fov::NTuple{3,AbstractFloat};
+                  f_res::Integer=1, tr_name::AbstractString="cartesian", numChannels::Int=1)
+
+returns a parameter dictionary for `RawAcquisitionData` with the entries `"encodedSize"` and `"encodedFOV"`, which
+hold `encodingSize` and `fov` (in mm) as vectors, `"trajectory"` (`tr_name`), `"receiverChannels"` (`numChannels`)
+and `"H1resonanceFrequency_Hz"` (`f_res`). `encodingSize` is the size of the encoded grid, for example
+`(256, 256, 1)` for 2D data. These entries suffice to convert raw data with Cartesian profiles into
+`AcquisitionData`.
+"""
 function minimalHeader(encodingSize, fov::NTuple{3,AbstractFloat};
                       f_res::Integer=1, tr_name::AbstractString="cartesian", numChannels::Int=1)
 
@@ -430,17 +440,38 @@ end
 # The following three structs will be contained in the parameter dictionary when reading a full
 # ISMRMRD file
 
+"""
+    Limit(minimum, maximum, center)
+
+Minimum, maximum and center of one of the encoding limits in the ISMRMRD header, for example of the phase encoding
+steps. When an ISMRMRD file is read, the limits of the k-space encoding steps, averages, slices, contrasts, phases,
+repetitions, sets and segments in the header are stored in `params` with the prefix `enc_lim_`, for example
+`params["enc_lim_kspace_encoding_step_1"]`.
+"""
 struct Limit
   minimum::Int
   maximum::Int
   center::Int
 end
 
+"""
+    MeasurementDependency(dependencyType, measurementID)
+
+Measurement that the data depends on, from the ISMRMRD header, for example a noise measurement with the
+`dependencyType` `"Noise"`. When an ISMRMRD file is read, it is stored in `params["measurementDependency"]`, as a
+vector if there are several.
+"""
 struct MeasurementDependency
   dependencyType::String
   measurementID::String
 end
 
+"""
+    CoilDescription(number, name)
+
+Number and name of a receive coil from the element `coilLabel` of the ISMRMRD header. When an ISMRMRD file is read,
+the coils are stored in `params["coilLabel"]`, as a vector if there are several.
+"""
 struct CoilDescription
   number::Int
   name::String

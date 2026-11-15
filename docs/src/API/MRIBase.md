@@ -9,6 +9,9 @@ MRIBase.RawAcquisitionData
 MRIBase.Profile
 MRIBase.AcquisitionHeader
 MRIBase.EncodingCounters
+MRIBase.Limit
+MRIBase.MeasurementDependency
+MRIBase.CoilDescription
 MRIBase.RawAcquisitionData(::AcquisitionData)
 MRIBase.AcquisitionData(::RawAcquisitionData)
 ```
@@ -21,6 +24,10 @@ Private = false
 ```
 
 ## Flags
+
+The guide [Select and Prepare Profiles](@ref prepare-profiles) shows how to use the flags. Each name in
+[`FLAGS`](@ref) is also exported as a `UInt64` bit mask, for example `ACQ_IS_NOISE_MEASUREMENT`, for working with
+`head.flags` directly.
 
 ```@autodocs
 Modules = [MRIBase]
@@ -51,6 +58,7 @@ Private = false
 ```@autodocs
 Modules = [MRIBase]
 Pages = ["2D/Cartesian2D.jl", "2D/EPI.jl", "2D/Radial2D.jl", "2D/Spiral2D.jl", "2D/Spiral2DVariableDens.jl",
-         "3D/Cartesian3D.jl", "3D/Kooshball.jl", "3D/StackofStars.jl"]
+         "2D/OneLine2D.jl", "2D/Spiral2DDualDens.jl", "2D/Spiral2DPerturbed.jl", "3D/Cartesian3D.jl",
+         "3D/Kooshball.jl", "3D/StackofStars.jl"]
 Private = false
 ```

@@ -10,7 +10,7 @@ export SpiralTrajectoryDualDensity
                   , densityFactor::Float64=2.0
                   , kargs...)
 
-returns a 2d spiral trajectory.
+returns a 2d spiral trajectory with two densities.
 
 # Arguments
 * `numProfiles::Int64`            - number of profiles
@@ -20,6 +20,9 @@ returns a 2d spiral trajectory.
 * (`windings::Real= 6.25`)        - number of windings of the spiral profiles
 * (`kmax::Real=0.5`)              - distance of the last sample of each profile from the center of k-space
 * (`angleOffset::String="equispaced"`) - spacing of profile angles (`"equispaced"` sampling, `"golden"` angle sampling or `"random"` sampling)
+* (`densityFactor::Float64=2.0`)  - the first half of the turns lies `densityFactor` times closer together than in
+                                    `SpiralTrajectory`, the second half `2 - 1/densityFactor` times farther apart, so
+                                    that the last sample lies at `kmax`
 """
 function SpiralTrajectoryDualDens(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0

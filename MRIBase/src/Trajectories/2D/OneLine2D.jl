@@ -7,14 +7,15 @@ export OneLine2Trajectory, oneLine2dNodes, oneLine2dDensity
                   , angle::Float64=0.0
                   , kargs...)
 
-returns a trajectory consisting of one arbitrarily rotated profile.
+returns a 2d trajectory whose profiles all lie on the same line through the center of k-space; consecutive
+profiles run in opposite directions.
 
 # Arguments
 * `numProfiles::Int64`            - number of profiles
 * `numSamplingPerProfile::Int64`  - number of sampling points per profile
 * (`TE::Float64=0.0`)             - echo time in s
 * (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
-* (`angle::Float64=0.0`)          - angle of the profile (with respect to the x-axis) in radians
+* (`angle::Float64=0.0`)          - angle of the line (with respect to the x-axis) in radians
 """
 function OneLine2dTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0
