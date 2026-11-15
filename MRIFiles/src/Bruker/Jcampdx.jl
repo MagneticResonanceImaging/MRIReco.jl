@@ -26,6 +26,21 @@ end
 const JCVAL = Union{AbstractString,Number,Bool,Array,Tuple,Nothing}
 const HTSS = Dict{AbstractString,JCVAL}
 
+"""
+    JcampdxFile()
+
+empty set of parameters from files in the JCAMP-DX format, which Bruker ParaVision uses for its parameter files, for
+example `acqp`, `method` and `visu_pars`. `read(j, filename)` adds the parameters of a file to `j` and returns `j`,
+and `read(j, filename, keylist)` adds only the parameters named in `keylist`. Reading a file stops before the
+parameter `VisuAcqFrameTime`, so it and the parameters after it are missing.
+
+`j[name]`, `haskey(j, name)` and `get(j, name, default)` work as for a dictionary. A value is a string for a single
+value and an array of strings for an array, whose dimensions are those of the file in reverse order; for an array of
+tuples, each entry is a vector of the values of a tuple, with numbers as `Float64`. A string in angle brackets on the
+line of its name keeps the brackets, for example `"<Bruker:RARE>"`, while an array of strings in angle brackets is
+read as its first string only, without the brackets. [`BrukerFile`](@ref) reads its parameter files with
+`JcampdxFile`.
+"""
 mutable struct JcampdxFile
   dict::HTSS
 end

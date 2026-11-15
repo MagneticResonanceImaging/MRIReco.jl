@@ -137,6 +137,14 @@ function RawAcquisitionDataFid(b::BrukerFile)
 end
 
 
+"""
+    RawAcquisitionData_3DUTE(b::BrukerFile)
+
+reads a 3D UTE scan of ParaVision 6 from the files `fid` and `traj` of the Bruker dataset `b` into a
+`RawAcquisitionData` object with the trajectory `"custom"`. Each profile holds one center-out radial spoke together
+with its k-space positions. `RawAcquisitionData(b)` calls this function for scans whose `ACQ_protocol_name` is
+`UTE3D`; call it directly for 3D UTE scans of ParaVision 6 with another protocol name.
+"""
 function RawAcquisitionData_3DUTE(b::BrukerFile)
     T = Complex{acqDataType(b)}
 

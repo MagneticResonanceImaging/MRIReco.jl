@@ -3,6 +3,20 @@ export ISMRMRDFile, AcquisitionHeaderImmutable, EncodingCountersImmutable
 include("HDF5Types.jl")
 include("Parameters.jl")
 
+"""
+    ISMRMRDFile(filename::String)
+
+reference to the file `filename` in the [ISMRMRD](https://ismrmrd.readthedocs.io/) format, an HDF5 file with an XML
+header and the acquired profiles. Creating an `ISMRMRDFile` does not open the file. `RawAcquisitionData` and
+`AcquisitionData` read the file, and `MRIFiles.save` writes it.
+
+# Examples
+```julia
+f = ISMRMRDFile("scan.h5")
+raw = RawAcquisitionData(f)
+MRIFiles.save(ISMRMRDFile("copy.h5"), raw)
+```
+"""
 struct ISMRMRDFile <: MRIFile
   filename::String
 end
@@ -69,7 +83,11 @@ end
 """
     AcquisitionData(f::ISMRMRDFile, dataset="dataset")
 
-reads the `ISMRMRDFile` f and stores the result in an `AcquisitionData` object
+reads the `ISMRMRDFile` f and converts the result into an `AcquisitionData` object, as
+`AcquisitionData(RawAcquisitionData(f, dataset))` does. All profiles are read, also noise measurements, which can
+then take the place of image profiles in the k-space data, see [Select and Prepare Profiles](@ref prepare-profiles).
+To select or remove profiles before the conversion, for example with `remove_raw_by_flags`, or to pass keyword
+arguments to the conversion, read the file with `RawAcquisitionData` first.
 """
 function MRIBase.AcquisitionData(f::ISMRMRDFile, dataset="dataset")
   return AcquisitionData(RawAcquisitionData(f,dataset))
@@ -102,6 +120,16 @@ function read_header(h)
 end
 
 
+"""
+    save(f::ISMRMRDFile, acq::RawAcquisitionData, dataset="dataset")
+
+writes the raw data `acq` to the ISMRMRD file `f`: the header parameters `acq.params` as the XML header and the
+profiles as the acquisitions of the HDF5 group `dataset`. An existing file is replaced as a whole, together with its
+other groups. Header parameters that MRIFiles does not know are left out, and elements that the ISMRMRD schema
+requires, such as `reconSpace` and `encodingLimits`, are written only if `acq.params` has their values, which raw data
+from a Bruker dataset doesn't. MRIFiles does not export `save`, a function of FileIO, so call it as `MRIFiles.save`.
+To save `AcquisitionData`, convert it with `RawAcquisitionData` first.
+"""
 function FileIO.save(f::ISMRMRDFile, acq::RawAcquisitionData, dataset="dataset")
   h5open(f.filename, "w") do file
     headerStr = GeneralParametersToXML(acq.params)

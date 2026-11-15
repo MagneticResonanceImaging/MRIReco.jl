@@ -15,6 +15,37 @@ function latin1toutf8(str::Nothing)
   error("Can not convert noting to UTF8!")
 end
 
+"""
+    BrukerFile(path::String; maxEntriesAcqp=2000)
+
+reference to a Bruker ParaVision dataset, the folder `path` of one scan. The folder contains the parameter files
+`acqp` and `method`, the raw data (`fid` for ParaVision 6, `rawdata.job0` for ParaVision 360) and the reconstructions
+of the scanner in the subfolder `pdata`. Creating a `BrukerFile` reads nothing.
+
+`b[name]` returns the parameter `name` as [`JcampdxFile`](@ref) reads it, for example a string or an array of strings,
+or an empty string if the parameter is not found. If the file of the parameter was not read yet, it is read first:
+`acqp` for names starting with `ACQ` or `GO` and for `NA`, `NR`, `NI`, `NSLICES` and `SW`, the file `visu_pars` of the
+first reconstruction for names starting with `Visu`, `mpi.par` for names starting with `CONFIG`, and `method` for
+other names. Other parameters of `acqp`, such as `SW_h`, are therefore found only after `acqp` was read, and other
+names with fewer than three characters, such as `RG`, throw a `BoundsError` until then. Only the first
+`maxEntriesAcqp - 1` parameters of `acqp` are read.
+
+`b[name, procno]` returns a parameter of the reconstruction `pdata/procno`, read from its file `visu_pars` for names
+starting with `Visu`, from `reco` for names starting with `reco` in any case and from `methreco` for names starting
+with `PVM`. The parameters of all reconstructions read so far are kept together: a parameter that `pdata/procno`
+lacks, or a `procno` without `visu_pars`, returns the value of a reconstruction read before, and only a parameter that
+none of them has throws a `KeyError`. `reco`, of which only the first 12 parameters are read, and `methreco` are read
+only for the first `procno` asked for.
+
+Read the raw data with `RawAcquisitionData` and the images of the scanner with [`recoData`](@ref).
+
+# Examples
+```julia
+b = BrukerFile("study/12")
+b["PVM_Matrix"]       # matrix size, for example ["128", "128"]
+raw = RawAcquisitionData(b)
+```
+"""
 mutable struct BrukerFile <: MRIFile
   path::String
   params::JcampdxFile
@@ -187,11 +218,10 @@ pvmTrajKy(b::BrukerFile) = parse.(Float32,b["PVM_TrajKy"])
 
 visuExperimentNumber(b::BrukerFile) = isempty(b["VisuExperimentNumber"]) ? 0 : parse(Int64,b["VisuExperimentNumber"])
 """
-brukerParams(b::BrukerFile)
+    brukerParams(b::BrukerFile)
 
-Generate a standard parameter dictionary from Bruker acquistion
-Some fields needs to be filled outside lik
-
+returns the header parameters of the Bruker dataset `b`, read from its parameter files, as a dictionary for
+`RawAcquisitionData`.
 """
 function brukerParams(b::BrukerFile)
   params = Dict{String,Any}()
@@ -251,6 +281,20 @@ function acqWordSize(b::BrukerFile)
   return Int8
 end
 
+"""
+    RawAcquisitionData(b::BrukerFile)
+
+reads the raw data of the Bruker dataset `b` into a `RawAcquisitionData` object. Data from ParaVision 360 is read with
+[`RawAcquisitionDataFid_360`](@ref). From other versions, such as ParaVision 6, scans whose `ACQ_protocol_name` is
+`UTE3D` are read with [`RawAcquisitionData_3DUTE`](@ref) and other scans as Cartesian data from the file `fid`.
+Scans whose `ACQ_protocol_name` is `SPIRAL` are not supported: for them, the function returns the contents of
+`rawdata.job0` as an array. The header parameters, such as the matrix size and the field of view, come from the
+parameter files, also from `visu_pars`, so the subfolder `pdata` has to exist. For Cartesian data of ParaVision 6, the
+encoded size is the acquired size from `ACQ_size`, which can be smaller than the image size `PVM_Matrix` of the
+scanner's reconstruction. Each profile holds one readout of all receive channels.
+
+`AcquisitionData` does not accept a `BrukerFile`; convert the result with `AcquisitionData(RawAcquisitionData(b))`.
+"""
 function MRIBase.RawAcquisitionData(b::BrukerFile)
   protocolName = acqProtocolName(b)
   @info "Bruker protocol name : $protocolName"
@@ -270,6 +314,18 @@ end
 
 
 ##### Reco
+"""
+    recoData(f::BrukerFile, procno::Int=1)
+
+reads the images that the scanner reconstructed from the file `pdata/procno/2dseq` of the Bruker dataset `f` and
+returns them as an `Array{Float32}` of size `(VisuCoreSize..., VisuCoreFrameCount)`. The values are returned as
+stored, without the scaling of each frame by `f["VisuCoreDataSlope", procno]` and `f["VisuCoreDataOffs", procno]`
+(value = stored value × slope + offset). The frames are in the order of the file, with the first frame group of
+`VisuFGOrderDesc` varying fastest: for a complex reconstruction with the frame groups `FG_COIL` and `FG_COMPLEX`, all
+real frames come first. `VisuCoreDiskSliceOrder` is not applied, so the slices can be in reverse order, and the
+dimensions follow the layout of `2dseq`, which can differ from the order of `PVM_Matrix`. If the file does not
+exist, `recoData` logs an error and returns `nothing`.
+"""
 function recoData(f::BrukerFile,procno::Int=1)
   recoFilename = joinpath(f.path,"pdata", string(procno), "2dseq")
   if !isfile(recoFilename) @error "file : $recoFilename does not exist"; return end

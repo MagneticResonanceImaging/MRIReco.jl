@@ -1,5 +1,13 @@
 export CFLFile
 
+"""
+    CFLFile(filenameBase::String)
+
+reference to an array stored in the format of the [BART](https://mrirecon.github.io/bart/) toolbox: the file
+`filenameBase.hdr` holds the dimensions and `filenameBase.cfl` the complex values in single precision.
+`MRIFiles.load(CFLFile(filenameBase))` reads the array and returns an `Array{ComplexF64}` with all dimensions listed
+in the header. MRIFiles does not write this format.
+"""
 struct CFLFile
   filenameBase::String
 end
