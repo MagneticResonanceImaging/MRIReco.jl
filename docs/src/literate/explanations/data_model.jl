@@ -31,9 +31,9 @@ nothing #hide
 # `RawAcquisitionData` closely follows the [ISMRMRD](https://ismrmrd.readthedocs.io/) format, an open standard for
 # MRI raw data. It has two fields: `params`, a dictionary with the information from the XML header of an ISMRMRD
 # file, and `profiles`, a vector with one [`Profile`](@ref) for each readout. MRIFiles reads ISMRMRD files and data
-# from Bruker scanners into this type and writes it to ISMRMRD files. Data from other vendors can be converted into
-# ISMRMRD files with the converters of the ISMRMRD project, such as
-# [`siemens_to_ismrmrd`](https://github.com/ismrmrd/siemens_to_ismrmrd).
+# from Bruker scanners into this type and writes it to ISMRMRD files, as shown in
+# [Load and Save Raw Data](@ref load-save). Data from other vendors can be converted into ISMRMRD files with the
+# converters of the ISMRMRD project, such as [`siemens_to_ismrmrd`](https://github.com/ismrmrd/siemens_to_ismrmrd).
 
 rawData = RawAcquisitionData(ISMRMRDFile(filename))
 nothing #hide
