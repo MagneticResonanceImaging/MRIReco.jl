@@ -1,5 +1,12 @@
 export defaultRecoParams
 
+"""
+    defaultRecoParams() -> Dict{Symbol, Any}
+
+Return the default parameters of [`reconstruction`](@ref), into which it merges the given dictionary:
+`:reco => "direct"`, `:reg => L1Regularization(0.0)`, `:normalizeReg => NoNormalization()`, `:solver => ADMM`,
+`:rho => 5e-2`, `:iterations => 30` and `:arrayType => Array`.
+"""
 function defaultRecoParams()
   params = Dict{Symbol,Any}()
   params[:reco] = "direct"

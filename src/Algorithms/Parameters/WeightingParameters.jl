@@ -5,7 +5,9 @@ export DensityWeightingParameters, UniformWeightingParameters, CustomWeightingPa
     AbstractMRIRecoWeightingParameters <: AbstractMRIRecoParameters
 
 Abstract base type for weighting parameters used in MRI reconstruction.
-Subtypes define how weights are computed for the reconstruction.
+Subtypes define how weights are computed for the reconstruction. In the parameter dictionary of
+[`reconstruction`](@ref), `:densityWeighting => false` selects [`UniformWeightingParameters`](@ref) and `:weights`
+selects [`CustomWeightingParameters`](@ref).
 """
 abstract type AbstractMRIRecoWeightingParameters <: AbstractMRIRecoParameters end
 
@@ -23,13 +25,7 @@ reconstructions.
     (wp::DensityWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
 
 # Returns
-- `Vector{Vector{Complex{T}}}` - One weight vector per contrast
-
-# Example
-```julia
-wp = DensityWeightingParameters()
-weights = wp(AbstractIterativeMRIRecoAlgorithm)
-```
+- `Vector{Vector{Complex{T}}}` - One weight vector per contrast, from [`samplingDensity`](@ref)
 """
 @parameter struct DensityWeightingParameters <: AbstractMRIRecoWeightingParameters
 end
@@ -47,12 +43,6 @@ Assigns uniform weight `1/sqrt(prod(reconSize))` to each k-space sample.
 
 # Returns
 - `Vector{Vector{Complex{T}}}` - One weight vector per contrast
-
-# Example
-```julia
-wp = UniformWeightingParameters()
-weights = wp(AbstractIterativeMRIRecoAlgorithm)
-```
 """
 @parameter struct UniformWeightingParameters <: AbstractMRIRecoWeightingParameters  
 end
@@ -70,7 +60,7 @@ Weighting parameters that use user-provided custom weights.
 
 # Description
 Allows explicit specification of weighting vectors. The weights should be
-provided as a vector of vectors, one per contrast.
+provided as a vector of vectors, one per contrast, in the form that [`samplingDensity`](@ref) returns.
 
 # Callable Interface
     (wp::CustomWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
@@ -86,7 +76,6 @@ acquisition data structure (same number of contrasts and samples).
 ```julia
 weights = [[1.0+0im, 2.0+0im], [3.0+0im, 4.0+0im]]
 wp = CustomWeightingParameters(; weights=weights)
-result = wp(AbstractIterativeMRIRecoAlgorithm)
 ```
 """
 @parameter struct CustomWeightingParameters{W} <: AbstractMRIRecoWeightingParameters

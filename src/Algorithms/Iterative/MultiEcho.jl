@@ -4,6 +4,15 @@ export MultiEchoIterativeParameters
 
 abstract type AbstractMultiEchoParameters <: AbstractIterativeRecoParameters end
 
+"""
+    MultiEchoReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
+
+The reconstruction type `"multiEcho"`: an iterative image reconstruction which reconstructs all contrasts jointly.
+Different slices and coil images are reconstructed independently.
+
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref), in the stored plans a
+[`ThreadedIterativeMRIRecoContextParameter`](@ref), that holds [`MultiEchoIterativeParameters`](@ref).
+"""
 @reconstruction mutable struct MultiEchoReconstruction{P<:AbstractMultiEchoParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
 end
@@ -43,10 +52,10 @@ end
 """
     MultiEchoIterativeParameters{E, W, S} <: AbstractMultiEchoParameters
 
-Performs a iterative image reconstruction jointly for all contrasts. Different slices and coil images
+Performs an iterative image reconstruction jointly for all contrasts. Different slices and coil images
 are reconstructed independently.
 
-# Arguments
+# Fields
 - `encodingParams::E` - Encoding operator parameters
 - `weightingParams::W` - Sampling weighting parameters
 - `solverParams::S` - Least squares solver parameters

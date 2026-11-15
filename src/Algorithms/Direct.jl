@@ -9,6 +9,15 @@ Performs a direct Fourier-based image reconstruction.
 abstract type AbstractDirectMRIRecoParameters <: AbstractMRIRecoParameters end
 
 export DirectMRIReco
+
+"""
+    DirectMRIReco{P} <: AbstractDirectMRIRecoAlgorithm
+
+The reconstruction type `"direct"`: a direct image reconstruction which applies the adjoint of the encoding operator
+to the density-compensated k-space data.
+
+Its parameter is a [`DirectMRIRecoParameter`](@ref).
+"""
 @reconstruction mutable struct DirectMRIReco{P <: AbstractDirectMRIRecoParameters} <: AbstractDirectMRIRecoAlgorithm
   @parameter parameter::P
 end
@@ -20,10 +29,12 @@ export DirectMRIRecoParameter
 
 Performs a direct Fourier-based image reconstruction of AcquisitionData.
 
-# Arguments
+# Fields
 - `reconSize::S` - Size of image to reconstruct (defaults to encoding size if nothing)
-- `cmap::C` - Fieldmap for correction of off-resonance effects (optional)
-- `weights::W` - Sampling density of the trajectories in acqData (optional)
+- `cmap::C` - Complex correction map for off-resonance and relaxation (optional), always approximated with `"nfft"`;
+  in the parameter dictionary of [`reconstruction`](@ref), its key is `:cmap`, not `:correctionMap`
+- `weights::W` - Has to stay `nothing`: the reconstruction then uses the square roots of the density compensation
+  factors from [`samplingDensity`](@ref); custom weights are not supported
 - `arrayType::Type{arrT}` - Array type to use for reconstruction (defaults to Array)
 """
 @parameter struct DirectMRIRecoParameter{

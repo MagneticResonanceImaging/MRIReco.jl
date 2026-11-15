@@ -6,6 +6,7 @@ MRIReco provides the image reconstruction of the framework. Of the packages in t
 
 ```@docs
 MRIReco.reconstruction
+MRIReco.defaultRecoParams
 ```
 
 ## Reconstruction Plans

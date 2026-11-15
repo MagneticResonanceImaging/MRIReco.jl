@@ -1,14 +1,14 @@
 """
-    MRIRecoContext
+    MRIRecoContext{D, arrT, S, Acq}
 
 Container for reconstruction context parameters that are used throughout the 
 reconstruction pipeline. Uses a ScopedValue for task-local access.
 
 # Fields
-* `reconSize::R` - Size of the reconstructed image (NTuple)
-* `arrayType::A` - Array type for computation (Array, JLArray, etc.)
-* `S::S` - Storage type for operators
-* `acqData::Acq` - Acquisition data (optional), provides metadata like trajectory info
+* `reconSize::NTuple{D, Int64}` - Size of the reconstructed image
+* `arrayType::Type{arrT}` - Array type for computation (Array, JLArray, etc.)
+* `storageType::Type{S}` - Storage type for operators
+* `acqData::Acq` - Acquisition data or `nothing`, provides metadata like trajectory info
 * `red3d::Bool` - `true` if 3D-encoded data was converted to 2D slices and the user gave a 3D `reconSize`;
   user-supplied volumes (e.g. sensitivity maps) are then in 3D order and need to be permuted
 

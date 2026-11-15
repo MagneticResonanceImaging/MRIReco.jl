@@ -9,7 +9,7 @@ Abstract base type for sparsity/transformation operators used in regularized rec
 abstract type AbstractSparsityParameters <: AbstractMRIRecoParameters end
 
 """
-    SolverParameters <: AbstractImageReconstructionParameters
+    SolverParameters <: AbstractMRIRecoParameters
 
 Abstract base type for solver parameters in MRIReco. Subtypes define how linear solvers
 are configured for iterative reconstruction.
@@ -17,19 +17,21 @@ are configured for iterative reconstruction.
 abstract type SolverParameters <: AbstractMRIRecoParameters end
 
 """
-    SimpleSparsityParameters{S <: Union{Nothing, String, Vector{String}}} <: AbstractSparsityParameters
+    SimpleSparsityParameters{S} <: AbstractSparsityParameters
 
-Parameters specifying sparsifying transforms via strings.
+Parameters specifying sparsifying transforms by name, see [`SparseOp`](@ref).
 
 # Fields
-* `sparsity::S` - String or vector of strings specifying the transform (e.g., "Wavelet", "nothing").
-                  Empty string or "" defaults to identity transformation.
+* `sparseTrafo::S` - Transform of the first regularization term: `"Wavelet"`, `"nothing"` for the identity, or a
+                     vector with one entry per term. With `""`, the default, or `nothing`, no term has a transform; in
+                     a vector, `nothing` or a missing entry leaves that term without one. A term without a transform
+                     applies to the image itself.
 
 # Examples
 ```julia
-SimpleSparsityParameters("Wavelet")           # single wavelet transform
-SimpleSparsityParameters(["Wavelet", "nothing"])  # two transforms
-SimpleSparsityParameters("")                  # identity (no transform)
+SimpleSparsityParameters("Wavelet")                # wavelet transform for the first term
+SimpleSparsityParameters(["Wavelet", "nothing"])   # one transform per term
+SimpleSparsityParameters()                         # no transform
 ```
 """
 @parameter struct SimpleSparsityParameters{S <: Union{Nothing, String, Vector{<:Union{String, Nothing}}}} <: AbstractSparsityParameters
@@ -37,24 +39,14 @@ SimpleSparsityParameters("")                  # identity (no transform)
 end
 
 """
-    (sparsity::SimpleSparsityParameters)(reconSize, T) -> Vector
+    (sparsity::SimpleSparsityParameters)(algo, numTerms::Int64) -> Vector
 
-Build sparse transformation operators from the sparsity specification.
-
-# Arguments
-- `T::Type{<:Complex}` - Complex number type
-
-# Returns
-Vector of transformation operators
-
-# Behavior
-- Empty string or "" returns identity operator (`opEye`)
-- Single string creates single SparseOp
-- Vector of strings creates multiple SparseOps
+Build the transforms of `numTerms` regularization terms: a [`SparseOp`](@ref) for each name and `nothing` for each
+term without a transform. Reconstructions that solve for all contrasts or basis functions at once repeat each
+transform for every contrast or basis function.
 
 # Note
-- Gets reconSize from MRIRECO_CONTEXT ScopedValue
-- Gets storage type S from MRIRECO_CONTEXT ScopedValue
+- Gets reconSize and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 """
 function (sparsity::SimpleSparsityParameters)(::Type{<:AbstractMRIRecoAlgorithm}, numTerms::Int64)
   reconSize = ctx_reconSize()
@@ -83,17 +75,18 @@ end
 """
     CustomSparsityParameters{L} <: AbstractSparsityParameters
 
-Parameters specifying custom sparsifying LinearOperators or any applicable transform.
+Parameters specifying custom sparsifying transforms, see [Use a Custom Sparsifying Transform](@ref custom-transform).
 
 # Fields
-* `trafo::L` - A transform operator, vector of operators, or nothing.
+* `sparseTrafo::L` - Transform of the first regularization term, a linear operator or a name as for
+                     [`SimpleSparsityParameters`](@ref), or a vector with one entry per term (default: `nothing`).
+                     With `nothing` or a missing entry, a term has no transform.
 
 # Examples
 ```julia
-CustomSparsityParameters(wavelet_op)              # single custom operator
-CustomSparsityParameters([op1, op2])              # multiple operators
-CustomSparsityParameters(nothing)                 # identity (default)
-CustomSparsityParameters(some_matrix)             # matrix as transform
+CustomSparsityParameters(op)                # op for the first term
+CustomSparsityParameters([op, nothing])     # op for the first term, none for the second
+CustomSparsityParameters()                  # no transform
 ```
 """
 @parameter struct CustomSparsityParameters{L} <: AbstractSparsityParameters
@@ -101,26 +94,14 @@ CustomSparsityParameters(some_matrix)             # matrix as transform
 end
 
 """
-    (sparsity::CustomSparsityParameters)(T) -> Vector
+    (sparsity::CustomSparsityParameters)(algo, numTerms::Int64) -> Vector
 
-Build transformation operators from custom sparsity specification.
-
-# Arguments
-- `T::Type{<:Complex}` - Complex number type
-
-# Returns
-Vector of transformation operators
-
-# Behavior
-- nothing returns nothing (to be filled later)
-- Single operator returns single-element vector
-- String gets converted to SparseOp
-- Iterable of operators returns collected vector
-- Supports mixed vectors like [op, nothing, op]
+Build the transforms of `numTerms` regularization terms: the given operators, a [`SparseOp`](@ref) for each name
+and `nothing` for each term without a transform. Reconstructions that solve for all contrasts or basis functions at
+once repeat each transform for every contrast or basis function, so an operator has to act on a single image.
 
 # Note
-- Gets reconSize from MRIRECO_CONTEXT ScopedValue
-- Gets storage type S from MRIRECO_CONTEXT ScopedValue
+- Gets reconSize and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 """
 function (sparsity::CustomSparsityParameters{L})(::Type{<:AbstractIterativeMRIRecoAlgorithm}, numTerms::Int64) where L
   reconSize = ctx_reconSize()
@@ -170,26 +151,20 @@ Parameters specifying regularization terms and their sparsity transforms.
 * `S` - Sparsity parameters type
 
 # Fields
-* `reg::R` - Regularization term(s). Can be nothing, a single term, or a vector.
-* `sparsity::S` - Sparsity transform specification.
-
-# Callable Interface
-```julia
-(params::RegularizationParameters)(::Type{<:AbstractLinearSolver}, reconSize, T) -> reg | (reg, regTrafo)
-```
-
-Transforms the regularization for a specific solver. Returns either:
-- A `regularization term` or a `TransformedRegularization` (for proximal gradient solvers like FISTA)
-- A tuple `(reg, regTrafo)` (for primal-dual solvers like ADMM)
+* `reg::R` - Regularization term(s). Can be nothing, a single term, or a vector (default: nothing). `nothing` stands
+             for `L1Regularization(0)`, which doesn't regularize and which CGNR doesn't accept.
+* `sparsityParams::S` - Sparsifying transforms of the terms, see [`SimpleSparsityParameters`](@ref) and
+                        [`CustomSparsityParameters`](@ref) (default: `SimpleSparsityParameters()`).
 
 # Examples
 ```julia
 # L1 with wavelet
-RegularizationParameters(reg=L1Regularization(1e-3), sparsity="Wavelet")
+RegularizationParameters(reg = L1Regularization(1e-3),
+                         sparsityParams = SimpleSparsityParameters("Wavelet"))
 
 # Multiple terms
-RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)], 
-                         sparsity=["Wavelet", "nothing"])
+RegularizationParameters(reg = [L1Regularization(1e-3), L2Regularization(1e-4)],
+                         sparsityParams = SimpleSparsityParameters(["Wavelet", "nothing"]))
 ```
 """
 @parameter struct RegularizationParameters{
@@ -201,23 +176,24 @@ RegularizationParameters(reg=[L1Regularization(1e-3), L2Regularization(1e-4)],
 end
 
 """
-    (params::RegularizationParameters)(::AbstractIterativeMRIRecoAlgorithm}, ::Type{<:AbstractLinearSolver}) -> reg | (reg, regTrafo)
+    (params::RegularizationParameters)(algo, solver::Type{<:AbstractLinearSolver})
 
 Transform the regularization parameters for a specific solver type.
 
 # Arguments
-- `::Type{<:AbstractLinearSolver}` - The solver type (e.g., ADMM, FISTA)
+- `algo::AbstractIterativeMRIRecoAlgorithm` - The reconstruction algorithm
+- `solver::Type{<:AbstractLinearSolver}` - The solver type (e.g., ADMM, FISTA)
 
 # Returns
-- For proximal gradient solvers (FISTA, POGM, OptISTA): `TransformedRegularization` or raw regularization
-- For primal-dual solvers (ADMM, SplitBregman): Tuple `(reg, regTrafo)`
+- For ADMM and SplitBregman, which take the transforms separately: the tuple `(reg, regTrafo)` with one transform
+  per term, the identity for a term without a transform
+- For the other solvers: the vector of terms, each term with a transform as a `TransformedRegularization`
 
-# Throws
-- Error if proximal gradient solver is used without regularization
-- Error if multiple regularization terms are used with proximal gradient solvers
+ADMM and SplitBregman take several terms, FISTA, POGM and OptISTA one term and CGNR one `L2Regularization`; the last
+four also take projection terms such as `PositiveRegularization`.
 
 # Note
-- Gets reconSize from MRIRECO_CONTEXT ScopedValue
+- Gets reconSize and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 """
 function (params::RegularizationParameters)(
     algo::AbstractIterativeMRIRecoAlgorithm,
@@ -274,59 +250,49 @@ end
 
 
 """
-    LeastSquaresSolverParameters{SL, R} <: SolverParameters
+    LeastSquaresSolverParameter{SL, R, T} <: SolverParameters
 
 Parametric solver parameters for iterative MRI reconstruction using RegularizedLeastSquares.
 
 # Type Parameters
-* `SL` - Solver type (ADMM, FISTA, SplitBregman, POGM, OptISTA, CGNR, etc.)
+* `SL` - Solver type: ADMM, CGNR, FISTA, OptISTA, POGM or SplitBregman
 * `R` - RegularizationParameters type
+* `T` - Floating-point type of `rho` and the tolerances
 
 # Fields
-* `solver::Type{SL}`       - Solver type (default: ADMM)
-* `regularization::R`      - Regularization configuration
-* `normalizeReg`           - Regularization normalization (default: NoNormalization())
-* `iterations::Int`        - Maximum iterations (default: 30)
-* `iterationsInner::Int`   - Inner iterations for ADMM/SplitBregman (default: 10)
-* `iterationsCG::Int`      - CG iterations for ADMM/SplitBregman (default: 10)
-* `rho::Real`              - Penalty parameter (default: 5e-2)
-* `absTol::Real`           - Absolute tolerance (default: eps(Float64))
-* `relTol::Real`           - Relative tolerance (default: eps(Float64))
-* `tolInner::Real`         - Inner CG tolerance (default: 1e-5)
-* `verbose::Bool`          - Print progress (default: false)
-* `restart::Symbol`        - FISTA restart strategy: :none or :gradient (default: :none)
-* `vary_rho::Symbol`       - ADMM rho adaptation: :none, :balance, :PnP (default: :none)
-
-# Callable Interface
-
-    (params::LeastSquaresSolverParameter)(solverType, b, A, AHA)
-    (params::LeastSquaresSolverParameter)(solverType, A, AHA)
-
-Solve an inverse problem or get a configured solver. Uses MRIRECO_CONTEXT ScopedValue
-for reconSize and storage type.
-
-    solver = params(ADMM, A, AHA)
-    x = solve!(solver, b)
-    # or directly:
-    x = params(ADMM, b, A, AHA)
+Except for `solver` and `regParams`, a field is passed to the solver as the keyword argument of the same name, but
+only if it is not `nothing` and the solver takes that keyword; otherwise the solver uses its own default.
+* `solver::Type{SL}` - Solver type (default: ADMM)
+* `regParams::R` - Regularization terms and their transforms (default: `RegularizationParameters()`)
+* `normalizeReg::AbstractRegularizationNormalization` - Regularization normalization (default: `NoNormalization()`)
+* `iterations::Int` - Maximum iterations (default: 30)
+* `rho::T` - Penalty parameter of ADMM, weight of the constraint in SplitBregman and step size of FISTA, POGM and
+             OptISTA (default: 5e-2). It is always passed, so these three don't determine the step size themselves.
+* `iterationsInner::Union{Int, Nothing}` - Inner iterations of SplitBregman (default: nothing)
+* `iterationsCG::Union{Int, Nothing}` - CG iterations of ADMM and SplitBregman (default: nothing)
+* `absTol::Union{T, Nothing}` - Absolute tolerance of ADMM and SplitBregman (default: nothing)
+* `relTol::Union{T, Nothing}` - Relative tolerance (default: nothing)
+* `tolInner::Union{T, Nothing}` - Tolerance of the CG iterations of ADMM and SplitBregman (default: nothing)
+* `verbose::Bool` - Print progress, all solvers except CGNR (default: false)
+* `restart::Symbol` - Restart of FISTA and POGM: :none or :gradient (default: :none)
+* `vary_rho::Symbol` - ADMM rho adaptation: :none, :balance, :PnP (default: :none)
 
 # Examples
 ```julia
-# Inside MRIRECO_CONTEXT
 # With L1 + Wavelet regularization
-params = LeastSquaresSolverParameter(solver = FISTA
-  regularization = RegularizationParameters(
+params = LeastSquaresSolverParameter(solver = FISTA,
+  regParams = RegularizationParameters(
     reg = L1Regularization(1e-3),
-    sparsity = "Wavelet"
+    sparsityParams = SimpleSparsityParameters("Wavelet")
   ),
   iterations = 100
 )
 
 # Multiple regularization terms (ADMM)
-params = LeastSquaresSolverParameter(solver = ADMM
-  regularization = RegularizationParameters(
+params = LeastSquaresSolverParameter(solver = ADMM,
+  regParams = RegularizationParameters(
     reg = [L1Regularization(1e-3), L2Regularization(1e-4)],
-    sparsity = ["Wavelet", "nothing"]
+    sparsityParams = SimpleSparsityParameters(["Wavelet", "nothing"])
   ),
   rho = 1e-1
 )
@@ -390,12 +356,12 @@ function LeastSquaresSolverParameter(;
   return params
 end
 """
-    (params::LeastSquaresSolverParameter)(algoT, b::AbstractVector, A, AHA=normalOperator(A))
+    (params::LeastSquaresSolverParameter)(algo, b::AbstractVector, A, AHA=normalOperator(A))
 
 Solve an inverse problem using the configured solver.
 
 # Arguments
-- `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
+- `algo::AbstractIterativeMRIRecoAlgorithm` - The reconstruction algorithm
 - `b::AbstractVector` - k-space data
 - `A` - Forward operator
 - `AHA` - Normal operator (optional, computed from A if not provided)
@@ -403,11 +369,8 @@ Solve an inverse problem using the configured solver.
 # Returns
 Reconstructed image vector
 
-# Example
-```julia
-params = LeastSquaresSolverParameter(ADMM; iterations=50)
-x = params(IterativeMRIReco, kdata, A)  # Gets reconSize from MRIRECO_CONTEXT
-```
+# Note
+- Gets reconSize and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
     algo::AbstractIterativeMRIRecoAlgorithm,
@@ -420,12 +383,12 @@ function (params::LeastSquaresSolverParameter{SL, R, T})(
 end
 
 """
-    (params::LeastSquaresSolverParameter)(algoT, A, AHA=normalOperator(A)) where SL
+    (params::LeastSquaresSolverParameter)(algo, A, AHA=normalOperator(A))
 
 Create a configured solver for the given problem.
 
 # Arguments
-- `algoT::Type{<:AbstractIterativeMRIRecoAlgorithm}` - Algorithm type
+- `algo::AbstractIterativeMRIRecoAlgorithm` - The reconstruction algorithm
 - `A` - Forward operator
 - `AHA` - Normal operator (optional, computed from A if not provided)
 
@@ -433,17 +396,7 @@ Create a configured solver for the given problem.
 A configured `AbstractLinearSolver` ready for use with `solve!`
 
 # Note
-- Gets reconSize from MRIRECO_CONTEXT ScopedValue
-
-# Example
-```julia
-params = LeastSquaresSolverParameter(ADMM; iterations=50)
-solver = params(IterativeMRIReco, A, AHA)
-x = solve!(solver, kdata)
-
-# Reuse solver for different data
-x2 = solve!(solver, kdata2)
-```
+- Gets reconSize and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 """
 function (params::LeastSquaresSolverParameter{SL, R, T})(
     algo::AbstractIterativeMRIRecoAlgorithm,

@@ -42,29 +42,39 @@ LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
 
 """
     FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
-                        correctionmap::Array{ComplexF64,D};
+                        correctionmap::Array{Complex{T},D};
                         method::String="nfft",
                         echoImage::Bool=true,
-                        alpha::Float64=1.75,
-                        m::Float64=3.0,
+                        alpha::Float64=1.25,
+                        m::Float64=2.0,
                         K=20,
-                        kargs...) where D
+                        K_tol::Float64=1.e-3,
+                        step::Int64=10,
+                        S = Vector{Complex{T}},
+                        scheduler = DynamicScheduler(),
+                        kargs...) where {T,D}
 
 generates a `FieldmapNFFTOp` which evaluates the MRI Fourier signal encoding operator,
-including B0-inhomogeneities using time-segmented NFFTs.
+including off-resonance and relaxation, using time-segmented NFFTs.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`             - size of image to encode/reconstruct
 * `tr::Trajectory`                     - Trajectory with the kspace nodes to sample
-* `correctionmap::Array{ComplexF64,D}` - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)            - method to use for time-segmentation when correctio field inhomogeneities
-* (`echoImage::Bool=false`)            - if true sampling times will only be considered relative to the echo time
-                                         this results in complex valued image even for real-valued input.
-* (`alpha::Float64=1.75`)              - oversampling factor for interpolation
-* (`m::Float64=3.0`)                   - truncation size of interpolation kernel
-* (`K=20`)                             - number of translates for LeastSquares approaches
-                                         (not NFFT-approach) to time-segmentation
-* (`kargs`)                            - additional keyword arguments
+* `correctionmap::Array{Complex{T},D}` - complex correction map `z` for off-resonance and relaxation
+* (`method::String="nfft"`)            - approximation of `exp(-z t)` with the sampling times `t`: `"nfft"`,
+                                         `"leastsquare"`, `"hist"` or `"svd"`
+* (`echoImage::Bool=true`)             - if true, the sampling times are taken relative to the echo time, which
+                                         gives a complex-valued image even for real-valued input
+* (`alpha::Float64=1.25`)              - oversampling factor of the `"nfft"` approximation
+* (`m::Float64=2.0`)                   - kernel size of the `"nfft"` approximation
+* (`K=20`)                             - number of terms of `"leastsquare"` and `"hist"` and maximum number of terms
+                                         of `"svd"`; `"nfft"` determines the number itself
+* (`K_tol::Float64=1.e-3`)             - tolerance with which `"svd"` chooses the number of terms
+* (`step::Int64=10`)                   - `"svd"` fits its coefficients to every `step`-th sample of a readout
+* (`S = Vector{Complex{T}}`)           - storage vector type, for example `CuVector{ComplexF32}` on a GPU
+* (`scheduler = DynamicScheduler()`)   - scheduler of the parallel loop over the time segments
+* (`kargs`)                            - additional keyword arguments; NFFT options such as `oversamplingFactor`
+                                         have no effect
 
 # Moving to another array backend
 
