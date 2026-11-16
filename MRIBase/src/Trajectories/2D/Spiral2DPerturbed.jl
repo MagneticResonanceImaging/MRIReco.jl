@@ -1,5 +1,31 @@
 export SpiralPerturbedTrajectory, spiralPerturbedTrajectoryNodes
 
+"""
+    SpiralPerturbedTrajectory(T, numProfiles, numSamplingPerProfile
+                  ; TE::Float64=0.0
+                  , AQ::Float64=1.e-3
+                  , windings::Real= 6.25
+                  , alpha::Real=2.0
+                  , kmax::Real=0.5
+                  , angleOffset::String="equispaced"
+                  , kargs...)
+
+returns a 2d spiral trajectory with variable density, whose radius at the `k`-th sample of each profile is that of
+`SpiralTrajectoryVarDens` with the same arguments times `(1 + 0.025 cos(0.1 k)) (kmax - 0.025) / kmax`. Each
+coordinate is limited to the interval [-0.5, 0.5), which changes the nodes only for `kmax` above about 0.51.
+
+# Arguments
+* `numProfiles::Int64`            - number of profiles
+* `numSamplingPerProfile::Int64`  - number of sampling points per profile
+* (`TE::Float64=0.0`)             - echo time in s
+* (`AQ::Float64=1.e-3`)           - readout duration in s (per profile)
+* (`windings::Real= 6.25`)        - number of windings of the spiral profiles
+* (`alpha::Real=2.0`)             - exponent describing the evolution of the magnitude of the sampling points
+                                    along the profiles
+* (`kmax::Real=0.5`)              - the sampling points lie within this distance from the center of k-space
+* (`angleOffset::String="equispaced"`) - spacing of profile angles (`"equispaced"` sampling, `"golden"` angle
+                                    sampling or `"random"` sampling)
+"""
 function SpiralPerturbedTrajectory(::Type{T}, numProfiles, numSamplingPerProfile
                   ; TE=0.0
                   , AQ=1.e-3
