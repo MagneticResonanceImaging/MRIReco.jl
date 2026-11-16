@@ -51,9 +51,9 @@ function LinearOperators.hcat(A::AbstractLinearOperator, n::Int)
 end
 
 """
-    hcat(A::AbstractLinearOperator, n::Int)
+    vcat(A::AbstractLinearOperator, n::Int)
 
-vertically concatenates alinear operator `A` n times
+vertically concatenates a linear operator `A` n times
 """
 function LinearOperators.vcat(A::AbstractLinearOperator, n::Int)
   op = A
