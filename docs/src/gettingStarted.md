@@ -9,7 +9,7 @@ using Pkg
 Pkg.add("MRIReco")
 ```
 
-`using MRIReco` also loads MRIBase, MRIOperators and [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), which provides the solvers. The other packages are installed in the same way when you need them, for example `Pkg.add("MRIFiles")` to read raw data files. The examples in this documentation also use [CairoMakie](https://docs.makie.org/stable/) for plots and [ImageUtils](https://github.com/IBIResearch/ImageUtils.jl) for test images.
+`using MRIReco` also loads MRIBase, MRIOperators, [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), which provides the solvers, and [AbstractImageReconstruction.jl](https://juliaimagerecon.github.io/AbstractImageReconstruction.jl/dev/), which provides the functions for reconstruction plans. The other packages are installed in the same way when you need them, for example `Pkg.add("MRIFiles")` to read raw data files. The examples in this documentation also use [CairoMakie](https://docs.makie.org/stable/) for plots and [ImageUtils](https://github.com/IBIResearch/ImageUtils.jl) for test images.
 
 ### Development Version
 
