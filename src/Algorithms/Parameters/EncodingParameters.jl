@@ -14,23 +14,25 @@ abstract type AbstractMRIRecoEncodingParameters <: AbstractMRIRecoParameters end
 Parameters for computing encoding operators from acquisition data.
 
 # Type Parameters
-- `C` - The type of the correctionMap (Union{AbstractArray{Complex}, Nothing})
+- `C` - Type of `correctionMap`, an `AbstractArray{<:Complex}` or `Nothing`
 
 # Fields
 All fields are `nothing` by default, and the operator then uses its own default given below.
 - `correctionMap::C` - Complex correction map `z` for off-resonance and relaxation, in the precision of the data, see
   [Correct Off-Resonance](@ref correct-off-resonance) (default: none)
-- `method::Union{String, Nothing}` - Approximation of the term `exp(-z t)` with the sampling times `t`: `"nfft"`
-  (default), `"leastsquare"`, `"hist"` or `"svd"`, see [`FieldmapNFFTOp`](@ref)
-- `toeplitz::Union{Bool, Nothing}` - Whether the normal operator uses the Toeplitz approach (default: false)
+- `method::Union{String, Nothing}` - Approximation of `exp(-z t)`, where `t` is the sampling time: `"nfft"`,
+  `"leastsquare"`, `"hist"` or `"svd"` (default: `"nfft"`), see [`FieldmapNFFTOp`](@ref) and, for current failures,
+  [#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360) and
+  [#363](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/363)
+- `toeplitz::Union{Bool, Nothing}` - Whether the normal operator uses the Toeplitz approach (default: `false`)
 - `oversamplingFactor::Union{Float64, Nothing}` - NFFT oversampling factor (default: 1.25)
 - `kernelSize::Union{Int, Nothing}` - NFFT kernel size (default: 3)
 - `K::Union{Int, Nothing}` - Number of terms of `"leastsquare"` and `"hist"` and maximum number of terms of `"svd"`
   (default: 20); `"nfft"` determines the number itself
 - `K_tol::Union{Float64, Nothing}` - Tolerance with which `"svd"` chooses the number of terms (default: 1e-3)
 
-`method`, `K` and `K_tol` only apply with a correction map; `toeplitz`, `oversamplingFactor` and `kernelSize` only
-change non-Cartesian data without a correction map.
+`method`, `K` and `K_tol` only take effect with a correction map, and `toeplitz`, `oversamplingFactor` and
+`kernelSize` only for non-Cartesian data without a correction map.
 
 # Callable Interface
     (ep::EncodingParameters)(algo, slice::Int)
@@ -38,7 +40,7 @@ change non-Cartesian data without a correction map.
 
 # Returns
 - The encoding operators of the given slice: one per contrast for the reconstructions that treat the contrasts
-  separately, one for all contrasts for the others. The second form, used by the reconstructions with coil
+  separately, and otherwise one for all contrasts. The second form, used by the reconstructions with coil
   sensitivities, includes the sensitivities.
 
 # Note
@@ -72,10 +74,11 @@ Parameters with user-provided encoding operators.
 - `E` - The type of the encoding operators
 
 # Fields
-- `encodingOps::E` - Pre-computed encoding operators of `"standard"` and `"multiCoil"`, a matrix with one row per
-  contrast and one column per slice; for `"multiCoil"`, they include the coil sensitivities, as those of
-  [`encodingOps_parallel`](@ref). `"multiCoil"` still needs its [`CoilParameters`](@ref), and with `noiseData`, it
-  decorrelates the data but not these operators.
+- `encodingOps::E` - Pre-computed encoding operators of `"standard"` and `"multiCoil"` as a matrix with one row per
+  contrast and one column per slice; the other iterative reconstructions currently fail with them
+  ([#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)). For `"multiCoil"`, the operators
+  include the coil sensitivities, like those of [`encodingOps_parallel`](@ref), and the reconstruction still needs
+  its [`CoilParameters`](@ref); with `noiseData`, it decorrelates the data but not these operators.
 
 # Callable Interface
     (ep::CustomEncodingParameters)(algo, slice::Int, args...)
@@ -130,7 +133,8 @@ Encoding parameters with subspace projection for dimensionality reduction.
 
 # Fields
 - `inner::E` - Inner encoding parameters
-- `basis::B` - Subspace basis matrix with one row per contrast and one column per basis function
+- `basis::B` - Subspace basis matrix with one row per contrast and one column per basis function, in the precision
+  of the data
 
 # Callable Interface
     (ep::SubspaceEncodingParameters)(algo, slice::Int, args...)

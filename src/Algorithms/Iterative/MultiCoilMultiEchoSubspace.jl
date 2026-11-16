@@ -14,12 +14,15 @@ abstract type AbstractSubspaceParameters <: AbstractIterativeRecoParameters end
     MultiCoilMultiEchoSubspaceReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
 
 The reconstruction type `"multiCoilMultiEchoSubspace"`: a SENSE-type iterative image reconstruction which
-reconstructs all contrasts jointly using a subspace basis. Its result holds one coefficient image per basis
+reconstructs all contrasts jointly using a subspace basis. Its result holds one coefficient map per basis
 function. Different slices are reconstructed independently.
+With ADMM, the default solver, and SplitBregman, a regularization term without a transform, as in the defaults,
+currently fails for more than one basis function; the transform `"nothing"` avoids this
+([#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
 
-Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref), in the stored plans a
-[`ThreadedIterativeMRIRecoContextParameter`](@ref), that holds [`MultiCoilIterativeParameters`](@ref) with
-[`SubspaceEncodingParameters`](@ref), which hold the basis.
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`MultiCoilIterativeParameters`](@ref), whose field `encodingParams` has to be a [`SubspaceEncodingParameters`](@ref)
+with the basis; its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
 """
 @reconstruction mutable struct MultiCoilMultiEchoSubspaceReconstruction{
     P<:AbstractMultiCoilParameters, 

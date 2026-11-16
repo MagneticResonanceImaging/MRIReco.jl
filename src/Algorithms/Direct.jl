@@ -27,15 +27,16 @@ export DirectMRIRecoParameter
 """
     DirectMRIRecoParameter{S, C, W, arrT} <: AbstractDirectMRIRecoParameters
 
-Performs a direct Fourier-based image reconstruction of AcquisitionData.
+Parameters of the direct reconstruction [`DirectMRIReco`](@ref).
 
 # Fields
-- `reconSize::S` - Size of image to reconstruct (defaults to encoding size if nothing)
-- `cmap::C` - Complex correction map for off-resonance and relaxation (optional), always approximated with `"nfft"`;
-  in the parameter dictionary of [`reconstruction`](@ref), its key is `:cmap`, not `:correctionMap`
-- `weights::W` - Has to stay `nothing`: the reconstruction then uses the square roots of the density compensation
-  factors from [`samplingDensity`](@ref); custom weights are not supported
-- `arrayType::Type{arrT}` - Array type to use for reconstruction (defaults to Array)
+- `reconSize::S` - Size of the image to reconstruct (default: `nothing`, the encoding size)
+- `cmap::C` - Complex correction map for off-resonance and relaxation in the precision of the data, always
+  approximated with `"nfft"` (default: `nothing`); in the parameter dictionary of [`reconstruction`](@ref), its key
+  is `:cmap`, not `:correctionMap` ([#296](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/296))
+- `weights::W` - Has to stay `nothing`: the reconstruction then weights the data with the density compensation
+  factors, the squares of the weights from [`samplingDensity`](@ref)
+- `arrayType::Type{arrT}` - Array type of the reconstruction (default: `Array`)
 """
 @parameter struct DirectMRIRecoParameter{
     S <: Union{Nothing, NTuple{D, Int64} where D},   # User supplied or default recon size

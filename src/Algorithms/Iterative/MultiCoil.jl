@@ -11,8 +11,8 @@ abstract type AbstractMultiCoilParameters <: AbstractIterativeRecoParameters end
 The reconstruction type `"multiCoil"`: a SENSE-type iterative image reconstruction. Different slices and contrasts
 are reconstructed independently.
 
-Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref), in the stored plans a
-[`ThreadedIterativeMRIRecoContextParameter`](@ref), that holds [`MultiCoilIterativeParameters`](@ref).
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`MultiCoilIterativeParameters`](@ref); its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
 """
 @reconstruction mutable struct MultiCoilReconstruction{P<:AbstractMultiCoilParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
@@ -32,8 +32,7 @@ end
     MultiCoilIterativeParameters{E, W, S, C} <: AbstractMultiCoilParameters
 
 Parameters of the SENSE-type iterative reconstructions [`MultiCoilReconstruction`](@ref),
-[`MultiCoilMultiEchoReconstruction`](@ref) and [`MultiCoilMultiEchoSubspaceReconstruction`](@ref). Different slices
-are reconstructed independently.
+[`MultiCoilMultiEchoReconstruction`](@ref) and [`MultiCoilMultiEchoSubspaceReconstruction`](@ref).
 
 # Fields
 - `encodingParams::E` - Encoding operator parameters

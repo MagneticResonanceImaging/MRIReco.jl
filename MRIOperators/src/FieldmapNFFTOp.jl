@@ -55,16 +55,20 @@ LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
                         kargs...) where {T,D}
 
 generates a `FieldmapNFFTOp` which evaluates the MRI Fourier signal encoding operator,
-including off-resonance and relaxation, using time-segmented NFFTs.
+including off-resonance and relaxation, as a weighted sum of NFFTs.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`             - size of image to encode/reconstruct
 * `tr::Trajectory`                     - Trajectory with the kspace nodes to sample
-* `correctionmap::Array{Complex{T},D}` - complex correction map `z` for off-resonance and relaxation
-* (`method::String="nfft"`)            - approximation of `exp(-z t)` with the sampling times `t`: `"nfft"`,
-                                         `"leastsquare"`, `"hist"` or `"svd"`
-* (`echoImage::Bool=true`)             - if true, the sampling times are taken relative to the echo time, which
-                                         gives a complex-valued image even for real-valued input
+* `correctionmap::Array{Complex{T},D}` - complex correction map `z` with the relaxation rate R₂* in 1/s as its real
+                                         part and the off-resonance frequency in rad/s as its imaginary part
+* (`method::String="nfft"`)            - approximation of `exp(-z t)`, where `t` is the sampling time: `"nfft"`,
+                                         `"leastsquare"`, `"hist"` or `"svd"`; for current failures, see
+                                         [#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360) and
+                                         [#363](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/363)
+* (`echoImage::Bool=true`)             - if true, the sampling times are counted from the echo time `TE` of the
+                                         trajectory, so the image is the magnetization at that time, which with
+                                         off-resonance is complex-valued even for a real-valued object
 * (`alpha::Float64=1.25`)              - oversampling factor of the `"nfft"` approximation
 * (`m::Float64=2.0`)                   - kernel size of the `"nfft"` approximation
 * (`K=20`)                             - number of terms of `"leastsquare"` and `"hist"` and maximum number of terms
@@ -72,15 +76,15 @@ including off-resonance and relaxation, using time-segmented NFFTs.
 * (`K_tol::Float64=1.e-3`)             - tolerance with which `"svd"` chooses the number of terms
 * (`step::Int64=10`)                   - `"svd"` fits its coefficients to every `step`-th sample of a readout
 * (`S = Vector{Complex{T}}`)           - storage vector type, for example `CuVector{ComplexF32}` on a GPU
-* (`scheduler = DynamicScheduler()`)   - scheduler of the parallel loop over the time segments
-* (`kargs`)                            - additional keyword arguments; NFFT options such as `oversamplingFactor`
-                                         have no effect
+* (`scheduler = DynamicScheduler()`)   - scheduler of the parallel loop over the terms
+* (`kargs`)                            - further keyword arguments, which are ignored, so NFFT options such as
+                                         `oversamplingFactor` have no effect
 
 # Moving to another array backend
 
     Adapt.adapt(CuArray, op::FieldmapNFFTOp)
 
-returns a new `FieldmapNFFTOp` with the time-segmentation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
+returns a new `FieldmapNFFTOp` with the approximation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
 so they are not computed again. Its NFFT plans and work arrays are new: the plans are built from k-space nodes kept
 on the CPU, with the NFFT backend that was active when `op` was constructed. `op` itself is not modified.
 The backend may choose other plan defaults on the new device (NonuniformFFTs uses another window on CUDA),

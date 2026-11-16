@@ -20,14 +20,19 @@ Valid reconstruction names are:
 * `"multiCoilMultiEcho"` - SENSE-type iterative reconstruction of all echo images
 * `"multiCoilMultiEchoSubspace"` - SENSE-type iterative reconstruction of the coefficient maps of a temporal basis
 
-The dictionary is merged into [`defaultRecoParams`](@ref), and `:reconSize` defaults to the encoding size of
-`acqData`. `reconstruction` then loads the plan of the reconstruction type with [`MRIRecoPlan`](@ref), sets the
-parameters of the same name as the other keys, for example `iterations` of [`LeastSquaresSolverParameter`](@ref)
-for `:iterations`, and runs the plan. Keys that the plan doesn't have are ignored without a warning; with
-`ENV["JULIA_DEBUG"] = "MRIReco"`, `reconstruction` lists them. For the iterative reconstructions, a few keys also
-choose the type of a parameter: `:densityWeighting => false`, `:weights`, a `:sparseTrafo` given as an operator and
-`:encodingOps`; `"direct"` warns about these keys and ignores them, except `:weights` given as a single vector,
-which makes it fail.
+The dictionary is merged into the defaults of [`defaultRecoParams`](@ref), and `:reconSize` defaults to the encoding
+size of `acqData`. `reconstruction` then loads the plan of the reconstruction type with [`MRIRecoPlan`](@ref). For the
+iterative reconstructions, a few keys first select the type of a parameter: `:densityWeighting => false` selects
+[`UniformWeightingParameters`](@ref), `:weights` selects [`CustomWeightingParameters`](@ref), `:encodingOps` selects
+[`CustomEncodingParameters`](@ref), and a `:sparseTrafo` with an operator selects
+[`CustomSparsityParameters`](@ref); `"direct"` does not support these keys and warns that it cannot set the
+parameter they select. `reconstruction` then sets the parameters of the same name as the other keys, for example
+`iterations` of [`LeastSquaresSolverParameter`](@ref) for `:iterations`, and runs the plan.
+
+Other keys that the plan does not have are ignored. If the value of such a key is a parameter object such as
+`UniformWeightingParameters()`, an algorithm or a plan, `reconstruction` warns; with
+`ENV["JULIA_DEBUG"] = "MRIReco"`, it lists the remaining keys that the plan does not have, `:densityWeighting`
+included.
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict)
   recoParams = copy(recoParams)
@@ -49,12 +54,12 @@ function reconstruction(acqData::AcquisitionData, recoParams::Dict)
 end
 
 """
-    reconstruction(acqData::AcquisitionData, recoParams::Dict,filename::String; force=false)
+    reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;
+                   force=false)
 
-Performs the same image reconstruction as `reconstruction(acqData::AcquisitionData, recoParams::Dict)` and is meant
-to save the image in a file with name `filename` or, if `force=false` and the file exists, to load the image from
-it. Since the functions it calls to load and save the image are no longer part of MRIReco, it throws an
-`UndefVarError`, after the reconstruction if the file doesn't exist
+This method is meant to save the result of `reconstruction(acqData, recoParams)` in the file `filename`, or to load
+it from there if `force=false` and the file exists. The functions it calls for this are no longer part of MRIReco,
+so it throws an `UndefVarError`: right away if `force=false` and the file exists, otherwise after the reconstruction
 ([#295](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/295)).
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;

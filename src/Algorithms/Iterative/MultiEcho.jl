@@ -9,9 +9,13 @@ abstract type AbstractMultiEchoParameters <: AbstractIterativeRecoParameters end
 
 The reconstruction type `"multiEcho"`: an iterative image reconstruction which reconstructs all contrasts jointly.
 Different slices and coil images are reconstructed independently.
+With ADMM, the default solver, and SplitBregman, a regularization term without a transform, as in the defaults,
+currently fails for more than one contrast; the transform `"nothing"` avoids this
+([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/392),
+[#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
 
-Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref), in the stored plans a
-[`ThreadedIterativeMRIRecoContextParameter`](@ref), that holds [`MultiEchoIterativeParameters`](@ref).
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`MultiEchoIterativeParameters`](@ref); its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
 """
 @reconstruction mutable struct MultiEchoReconstruction{P<:AbstractMultiEchoParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
@@ -52,8 +56,7 @@ end
 """
     MultiEchoIterativeParameters{E, W, S} <: AbstractMultiEchoParameters
 
-Performs an iterative image reconstruction jointly for all contrasts. Different slices and coil images
-are reconstructed independently.
+Parameters of the iterative reconstruction [`MultiEchoReconstruction`](@ref).
 
 # Fields
 - `encodingParams::E` - Encoding operator parameters

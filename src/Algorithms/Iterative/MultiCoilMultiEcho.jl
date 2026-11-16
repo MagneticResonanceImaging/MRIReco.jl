@@ -5,9 +5,13 @@ export MultiCoilMultiEchoReconstruction
 
 The reconstruction type `"multiCoilMultiEcho"`: a SENSE-type iterative image reconstruction which reconstructs all
 contrasts jointly. Different slices are reconstructed independently.
+With ADMM, the default solver, and SplitBregman, a regularization term without a transform, as in the defaults,
+currently fails for more than one contrast; the transform `"nothing"` avoids this
+([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/392),
+[#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
 
-Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref), in the stored plans a
-[`ThreadedIterativeMRIRecoContextParameter`](@ref), that holds [`MultiCoilIterativeParameters`](@ref).
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`MultiCoilIterativeParameters`](@ref); its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
 """
 @reconstruction mutable struct MultiCoilMultiEchoReconstruction{P<:AbstractMultiCoilParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
