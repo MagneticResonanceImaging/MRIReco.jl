@@ -18,12 +18,13 @@ Parameters for computing encoding operators from acquisition data.
 
 # Fields
 All fields are `nothing` by default, and the operator then uses its own default given below.
-- `correctionMap::C` - Complex correction map `z` for off-resonance and relaxation, in the precision of the data, see
-  [Correct Off-Resonance](@ref correct-off-resonance) (default: none)
-- `method::Union{String, Nothing}` - Approximation of `exp(-z t)`, where `t` is the sampling time: `"nfft"`,
-  `"leastsquare"`, `"hist"` or `"svd"` (default: `"nfft"`), see [`FieldmapNFFTOp`](@ref) and, for current failures,
-  [#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360) and
-  [#363](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/363)
+- `correctionMap::C` - Complex correction map `z` of two-dimensional data for off-resonance and relaxation, in the
+  precision of the data, see [Correct Off-Resonance](@ref correct-off-resonance) (default: none)
+- `method::Union{String, Nothing}` - Approximation of `exp(-z t)`, where `t` is the sampling time, for a map that
+  varies within each slice and sampling times that are not all equal: `"nfft"`, `"leastsquare"`, `"hist"`, which
+  works for a map with only an off-resonance part, or `"svd"`, which works for double-precision data, a map with a
+  spatially varying off-resonance part and profiles with the same sampling times and about ten or more samples per
+  term (default: `"nfft"`), see [`FieldmapNFFTOp`](@ref)
 - `toeplitz::Union{Bool, Nothing}` - Whether the normal operator uses the Toeplitz approach (default: `false`)
 - `oversamplingFactor::Union{Float64, Nothing}` - NFFT oversampling factor (default: 1.25)
 - `kernelSize::Union{Int, Nothing}` - NFFT kernel size (default: 3)
@@ -75,10 +76,9 @@ Parameters with user-provided encoding operators.
 
 # Fields
 - `encodingOps::E` - Pre-computed encoding operators of `"standard"` and `"multiCoil"` as a matrix with one row per
-  contrast and one column per slice; the other iterative reconstructions currently fail with them
-  ([#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)). For `"multiCoil"`, the operators
-  include the coil sensitivities, like those of [`encodingOps_parallel`](@ref), and the reconstruction still needs
-  its [`CoilParameters`](@ref); with `noiseData`, it decorrelates the data but not these operators.
+  contrast and one column per slice. For `"multiCoil"`, the operators include the coil sensitivities, like those of
+  [`encodingOps_parallel`](@ref), and the reconstruction still needs its [`CoilParameters`](@ref); with `noiseData`,
+  it decorrelates the data but not these operators.
 
 # Callable Interface
     (ep::CustomEncodingParameters)(algo, slice::Int, args...)

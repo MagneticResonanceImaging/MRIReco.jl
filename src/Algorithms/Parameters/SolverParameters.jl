@@ -181,9 +181,7 @@ end
 
 Transform the regularization parameters for a specific solver type. ADMM and SplitBregman take several terms; FISTA,
 POGM and OptISTA take one term; CGNR takes one `L2Regularization` and ignores its transform. FISTA, POGM, OptISTA and
-CGNR also take the projections `PositiveRegularization` and `RealRegularization`; ADMM and SplitBregman currently fail
-with them ([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/392),
-[#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
+CGNR also take the projections `PositiveRegularization` and `RealRegularization`.
 
 # Arguments
 - `algo::AbstractIterativeMRIRecoAlgorithm` - The reconstruction algorithm
@@ -191,11 +189,7 @@ with them ([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/
 
 # Returns
 - For ADMM and SplitBregman, which take the transforms separately: the tuple `(reg, regTrafo)` with one transform
-  per term, the identity of one image for a term without a transform. `"multiEcho"` and `"multiCoilMultiEcho"`
-  with more than one contrast and `"multiCoilMultiEchoSubspace"` with more than one basis function therefore
-  currently fail for such a term with these solvers; the transform `"nothing"` avoids this
-  ([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/392),
-  [#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396))
+  per term, the identity of one image for a term without a transform
 - For the other solvers: the vector of terms, each term with a transform as a `TransformedRegularization`
 
 # Note
@@ -274,8 +268,7 @@ only if it is not `nothing` and the solver takes that keyword; otherwise the sol
   `MeasurementBasedNormalization()` or `SystemMatrixBasedNormalization()` (default: `NoNormalization()`)
 * `iterations::Int` - Maximum iterations; for SplitBregman, the outer iterations (default: 30)
 * `rho::T` - Penalty parameter of ADMM and SplitBregman and step size of FISTA, POGM and OptISTA (default: 5e-2).
-             FISTA, POGM and OptISTA always receive it, so they do not determine the step size themselves
-             ([#305](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/305)).
+             FISTA, POGM and OptISTA always receive it, so they do not determine the step size themselves.
 * `iterationsInner::Union{Int, Nothing}` - Inner iterations of SplitBregman (default: `nothing`)
 * `iterationsCG::Union{Int, Nothing}` - CG iterations of ADMM and SplitBregman (default: `nothing`)
 * `absTol::Union{T, Nothing}` - Absolute tolerance of ADMM and SplitBregman (default: `nothing`)

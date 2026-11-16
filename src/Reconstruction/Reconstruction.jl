@@ -59,8 +59,7 @@ end
 
 This method is meant to save the result of `reconstruction(acqData, recoParams)` in the file `filename`, or to load
 it from there if `force=false` and the file exists. The functions it calls for this are no longer part of MRIReco,
-so it throws an `UndefVarError`: right away if `force=false` and the file exists, otherwise after the reconstruction
-([#295](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/295)).
+so it throws an `UndefVarError`: right away if `force=false` and the file exists, otherwise after the reconstruction.
 """
 function reconstruction(acqData::AcquisitionData, recoParams::Dict, filename::String;
                         force=false)

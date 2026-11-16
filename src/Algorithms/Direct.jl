@@ -31,9 +31,10 @@ Parameters of the direct reconstruction [`DirectMRIReco`](@ref).
 
 # Fields
 - `reconSize::S` - Size of the image to reconstruct (default: `nothing`, the encoding size)
-- `cmap::C` - Complex correction map for off-resonance and relaxation in the precision of the data, always
-  approximated with `"nfft"` (default: `nothing`); in the parameter dictionary of [`reconstruction`](@ref), its key
-  is `:cmap`, not `:correctionMap` ([#296](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/296))
+- `cmap::C` - Complex correction map of two-dimensional data for off-resonance and relaxation, in the precision of
+  the data, always approximated with `"nfft"`, which works for a map that varies within each slice and sampling
+  times that are not all equal (default: `nothing`); in the parameter dictionary of [`reconstruction`](@ref), its
+  key is `:cmap`, not `:correctionMap`
 - `weights::W` - Has to stay `nothing`: the reconstruction then weights the data with the density compensation
   factors, the squares of the weights from [`samplingDensity`](@ref)
 - `arrayType::Type{arrT}` - Array type of the reconstruction (default: `Array`)

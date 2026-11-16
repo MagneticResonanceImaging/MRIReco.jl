@@ -34,10 +34,7 @@ end
 Weighting parameters that use uniform weights for all k-space samples.
 
 # Description
-Assigns uniform weight `1/sqrt(prod(reconSize))` to each k-space sample. For data with several coils, the
-reconstructions currently fail with these weights
-([#392](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/392),
-[#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
+For data with one coil, assigns uniform weight `1/sqrt(prod(reconSize))` to each k-space sample.
 
 # Callable Interface
     (wp::UniformWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
@@ -60,10 +57,8 @@ Weighting parameters that use user-provided custom weights.
 - `weights::W` - User-provided weights
 
 # Description
-Allows explicit specification of weighting vectors. The weights should be
-provided as a vector of vectors, one per contrast, in the form that [`samplingDensity`](@ref) returns; for data
-with several coils, the reconstructions currently reject them
-([#396](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/396)).
+Allows explicit specification of weighting vectors for data with one coil: a vector of vectors, one per contrast, in
+the form that [`samplingDensity`](@ref) returns.
 
 # Callable Interface
     (wp::CustomWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})

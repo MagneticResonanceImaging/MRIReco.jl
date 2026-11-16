@@ -54,7 +54,7 @@ LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
                         scheduler = DynamicScheduler(),
                         kargs...) where {T,D}
 
-generates a `FieldmapNFFTOp` which evaluates the MRI Fourier signal encoding operator,
+generates a `FieldmapNFFTOp` for two-dimensional images, which evaluates the MRI Fourier signal encoding operator,
 including off-resonance and relaxation, as a weighted sum of NFFTs.
 
 # Arguments:
@@ -62,10 +62,12 @@ including off-resonance and relaxation, as a weighted sum of NFFTs.
 * `tr::Trajectory`                     - Trajectory with the kspace nodes to sample
 * `correctionmap::Array{Complex{T},D}` - complex correction map `z` with the relaxation rate R₂* in 1/s as its real
                                          part and the off-resonance frequency in rad/s as its imaginary part
-* (`method::String="nfft"`)            - approximation of `exp(-z t)`, where `t` is the sampling time: `"nfft"`,
-                                         `"leastsquare"`, `"hist"` or `"svd"`; for current failures, see
-                                         [#360](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/360) and
-                                         [#363](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/363)
+* (`method::String="nfft"`)            - approximation of `exp(-z t)`, where `t` is the sampling time, for a map
+                                         that is not spatially constant and sampling times that are not all equal:
+                                         `"nfft"`, `"leastsquare"`, `"hist"`, which works for a map with only an
+                                         off-resonance part, or `"svd"`, which works for a double-precision map with
+                                         a spatially varying off-resonance part; see
+                                         [Correct Off-Resonance](@ref correct-off-resonance)
 * (`echoImage::Bool=true`)             - if true, the sampling times are counted from the echo time `TE` of the
                                          trajectory, so the image is the magnetization at that time, which with
                                          off-resonance is complex-valued even for a real-valued object
@@ -74,7 +76,10 @@ including off-resonance and relaxation, as a weighted sum of NFFTs.
 * (`K=20`)                             - number of terms of `"leastsquare"` and `"hist"` and maximum number of terms
                                          of `"svd"`; `"nfft"` determines the number itself
 * (`K_tol::Float64=1.e-3`)             - tolerance with which `"svd"` chooses the number of terms
-* (`step::Int64=10`)                   - `"svd"` fits its coefficients to every `step`-th sample of a readout
+* (`step::Int64=10`)                   - `"svd"` takes its functions of time from the first profile, fits its
+                                         coefficients to every `step`-th sample of it and uses the functions for
+                                         all profiles, so it works for profiles with the same sampling times and
+                                         about `step` or more samples per function
 * (`S = Vector{Complex{T}}`)           - storage vector type, for example `CuVector{ComplexF32}` on a GPU
 * (`scheduler = DynamicScheduler()`)   - scheduler of the parallel loop over the terms
 * (`kargs`)                            - further keyword arguments, which are ignored, so NFFT options such as
