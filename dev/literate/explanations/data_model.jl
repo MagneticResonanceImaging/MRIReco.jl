@@ -230,7 +230,7 @@ axisvalues(image)[1]
 # | `kdata` of `AcquisitionData` | contrast, slice, repetition; each matrix: sample, coil |
 # | k-space array of [`kDataCart`](@ref) | x, y, z or slice, coil, contrast, repetition |
 # | reconstructed image | x, y, z or slice, contrast, coil, repetition |
-# | coil sensitivities of [`espirit`](@ref) | x, y, z or slice, coil |
+# | coil sensitivities of [`espirit`](@ref) for `AcquisitionData` and `nmaps = 1` | x, y, z or slice, coil |
 #
 # A k-space array in the layout of `kDataCart` can also be converted into `AcquisitionData`; if its third dimension
 # holds the slices of a 2D acquisition, the keyword `enc2D = true` is needed.
