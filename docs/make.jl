@@ -70,6 +70,7 @@ makedocs(
             "GPU Acceleration" => "explanations/gpu.md",
         ],
         "Reference" => [
+            "Reconstruction Parameters" => "reference/parameters.md",
             "API" => [
                 "MRIReco" => "API/MRIReco.md",
                 "MRIBase" => "API/MRIBase.md",
