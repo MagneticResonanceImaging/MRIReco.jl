@@ -26,8 +26,6 @@ MRIReco.jl consists of several packages that are developed in the same repositor
 - The explanations describe the design of the packages and the concepts behind them.
 - The reference lists the API of each package.
 
-The pages under "Legacy Pages" come from the previous version of this documentation and are being rewritten.
-
 ## Citing MRIReco.jl
 
 If you use MRIReco.jl in your work, please cite

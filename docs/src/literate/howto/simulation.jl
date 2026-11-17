@@ -118,11 +118,12 @@ fig
 #
 # ## Limits
 #
-# - A `Float32` image needs `ComplexF32` coil sensitivities, for a single coil
-#   `ones(ComplexF32, size(image, 1), size(image, 2), size(image, 3), 1)`, and, if given, a `ComplexF32` correction
-#   map and a `Float32` `:fmap`. For a `Float32` image, a correction map or `:fmap` in double precision makes the
+# - A `Float32` image needs coil sensitivities in single precision, for a single coil
+#   `ones(ComplexF32, size(image, 1), size(image, 2), size(image, 3), 1)`, and, if given, a correction map and
+#   `:fmap` in single precision. For a `Float32` image, a correction map or `:fmap` in double precision makes the
 #   simulation fail with a `MethodError`. Missing or double-precision coil sensitivities do so too, except with
-#   `"fast"` along a non-Cartesian trajectory without a correction map applied during the readout
+#   `"fast"` without a correction map applied during the readout, along a non-Cartesian trajectory or a Cartesian
+#   one with fewer points than the image along x or y, or along z for a 3D trajectory
 #   ([#366](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/366)).
 # - If the part of the correction map that the simulation applies during the readout is not zero, `"fast"` with the
 #   default `:method` returns NaN in every slice in which this part is spatially constant, zero included, and in all
