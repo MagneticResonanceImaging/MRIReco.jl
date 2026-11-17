@@ -23,13 +23,7 @@ reconstructions.
     (wp::DensityWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
 
 # Returns
-- `Vector{Vector{Complex{T}}}` - One weight vector per contrast
-
-# Example
-```julia
-wp = DensityWeightingParameters()
-weights = wp(AbstractIterativeMRIRecoAlgorithm)
-```
+- `Vector{Vector{Complex{T}}}` - One weight vector per contrast, from [`samplingDensity`](@ref)
 """
 @parameter struct DensityWeightingParameters <: AbstractMRIRecoWeightingParameters
 end
@@ -40,19 +34,13 @@ end
 Weighting parameters that use uniform weights for all k-space samples.
 
 # Description
-Assigns uniform weight `1/sqrt(prod(reconSize))` to each k-space sample.
+For data with one coil, assigns uniform weight `1/sqrt(prod(reconSize))` to each k-space sample.
 
 # Callable Interface
     (wp::UniformWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
 
 # Returns
 - `Vector{Vector{Complex{T}}}` - One weight vector per contrast
-
-# Example
-```julia
-wp = UniformWeightingParameters()
-weights = wp(AbstractIterativeMRIRecoAlgorithm)
-```
 """
 @parameter struct UniformWeightingParameters <: AbstractMRIRecoWeightingParameters  
 end
@@ -69,8 +57,8 @@ Weighting parameters that use user-provided custom weights.
 - `weights::W` - User-provided weights
 
 # Description
-Allows explicit specification of weighting vectors. The weights should be
-provided as a vector of vectors, one per contrast.
+Allows explicit specification of weighting vectors for data with one coil: a vector of vectors, one per contrast, in
+the form that [`samplingDensity`](@ref) returns.
 
 # Callable Interface
     (wp::CustomWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
@@ -86,7 +74,6 @@ acquisition data structure (same number of contrasts and samples).
 ```julia
 weights = [[1.0+0im, 2.0+0im], [3.0+0im, 4.0+0im]]
 wp = CustomWeightingParameters(; weights=weights)
-result = wp(AbstractIterativeMRIRecoAlgorithm)
 ```
 """
 @parameter struct CustomWeightingParameters{W} <: AbstractMRIRecoWeightingParameters

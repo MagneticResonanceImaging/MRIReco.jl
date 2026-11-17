@@ -42,35 +42,54 @@ LinearOperators.storage_type(::FieldmapNFFTOp{T, vecT}) where {T, vecT} = vecT
 
 """
     FieldmapNFFTOp(shape::NTuple{D,Int64}, tr::Trajectory,
-                        correctionmap::Array{ComplexF64,D};
+                        correctionmap::Array{Complex{T},D};
                         method::String="nfft",
                         echoImage::Bool=true,
-                        alpha::Float64=1.75,
-                        m::Float64=3.0,
+                        alpha::Float64=1.25,
+                        m::Float64=2.0,
                         K=20,
-                        kargs...) where D
+                        K_tol::Float64=1.e-3,
+                        step::Int64=10,
+                        S = Vector{Complex{T}},
+                        scheduler = DynamicScheduler(),
+                        kargs...) where {T,D}
 
-generates a `FieldmapNFFTOp` which evaluates the MRI Fourier signal encoding operator,
-including B0-inhomogeneities using time-segmented NFFTs.
+generates a `FieldmapNFFTOp` for two-dimensional images, which evaluates the MRI Fourier signal encoding operator,
+including off-resonance and relaxation, as a weighted sum of NFFTs.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`             - size of image to encode/reconstruct
 * `tr::Trajectory`                     - Trajectory with the kspace nodes to sample
-* `correctionmap::Array{ComplexF64,D}` - fieldmap for the correction of off-resonance effects
-* (`method::String="nfft"`)            - method to use for time-segmentation when correctio field inhomogeneities
-* (`echoImage::Bool=false`)            - if true sampling times will only be considered relative to the echo time
-                                         this results in complex valued image even for real-valued input.
-* (`alpha::Float64=1.75`)              - oversampling factor for interpolation
-* (`m::Float64=3.0`)                   - truncation size of interpolation kernel
-* (`K=20`)                             - number of translates for LeastSquares approaches
-                                         (not NFFT-approach) to time-segmentation
-* (`kargs`)                            - additional keyword arguments
+* `correctionmap::Array{Complex{T},D}` - complex correction map `z` with the relaxation rate R₂* in 1/s as its real
+                                         part and the off-resonance frequency in rad/s as its imaginary part
+* (`method::String="nfft"`)            - approximation of `exp(-z t)`, where `t` is the sampling time, for a map
+                                         that is not spatially constant and sampling times that are not all equal:
+                                         `"nfft"`, `"leastsquare"`, `"hist"`, which works for a map with only an
+                                         off-resonance part, or `"svd"`, which works for a double-precision map with
+                                         a spatially varying off-resonance part; see
+                                         [Correct Off-Resonance](@ref correct-off-resonance)
+* (`echoImage::Bool=true`)             - if true, the sampling times are counted from the echo time `TE` of the
+                                         trajectory, so the image is the magnetization at that time, which with
+                                         off-resonance is complex-valued even for a real-valued object
+* (`alpha::Float64=1.25`)              - oversampling factor of the `"nfft"` approximation
+* (`m::Float64=2.0`)                   - kernel size of the `"nfft"` approximation
+* (`K=20`)                             - number of terms of `"leastsquare"` and `"hist"` and maximum number of terms
+                                         of `"svd"`; `"nfft"` determines the number itself
+* (`K_tol::Float64=1.e-3`)             - tolerance with which `"svd"` chooses the number of terms
+* (`step::Int64=10`)                   - `"svd"` takes its functions of time from the first profile, fits its
+                                         coefficients to every `step`-th sample of it and uses the functions for
+                                         all profiles, so it works for profiles with the same sampling times and
+                                         about `step` or more samples per function
+* (`S = Vector{Complex{T}}`)           - storage vector type, for example `CuVector{ComplexF32}` on a GPU
+* (`scheduler = DynamicScheduler()`)   - scheduler of the parallel loop over the terms
+* (`kargs`)                            - further keyword arguments, which are ignored, so NFFT options such as
+                                         `oversamplingFactor` have no effect
 
 # Moving to another array backend
 
     Adapt.adapt(CuArray, op::FieldmapNFFTOp)
 
-returns a new `FieldmapNFFTOp` with the time-segmentation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
+returns a new `FieldmapNFFTOp` with the approximation coefficients of `op` moved by `Adapt.adapt(CuArray, ...)`,
 so they are not computed again. Its NFFT plans and work arrays are new: the plans are built from k-space nodes kept
 on the CPU, with the NFFT backend that was active when `op` was constructed. `op` itself is not modified.
 The backend may choose other plan defaults on the new device (NonuniformFFTs uses another window on CUDA),

@@ -9,36 +9,50 @@ Abstract base type for encoding operator parameters used in MRI reconstruction.
 abstract type AbstractMRIRecoEncodingParameters <: AbstractMRIRecoParameters end
 
 """
-    EncodingParameters{T} <: AbstractMRIRecoEncodingParameters
+    EncodingParameters{C} <: AbstractMRIRecoEncodingParameters
 
 Parameters for computing encoding operators from acquisition data.
 
 # Type Parameters
-- `C` - The type of the correctionMap (Union{AbstractArray{Complex}, Nothing})
+- `C` - Type of `correctionMap`, an `AbstractArray{<:Complex}` or `Nothing`
 
 # Fields
-- `correctionMap::C` - Fieldmap for off-resonance correction
-- `method::Union{String, Nothing}` - Encoding method (typically "fast" for NFFT)
-- `toeplitz::Union{Bool, Nothing}` - Enable Toeplitz
-- `oversamplingFactor::Union{Float64, Nothing}` - NFFT oversampling factor
-- `kernelSize::Union{Int, Nothing}` - NFFT kernel size
-- `K::Union{Int, Nothing}` - Number of translates for time-segmentation
-- `K_tol::Union{Float64, Nothing}` - Tolerance for LS approach
+All fields are `nothing` by default, and the operator then uses its own default given below.
+- `correctionMap::C` - Complex correction map `z` of two-dimensional data for off-resonance and relaxation, in the
+  precision of the data, see [Correct Off-Resonance](@ref correct-off-resonance) (default: none)
+- `method::Union{String, Nothing}` - Approximation of `exp(-z t)`, where `t` is the sampling time, for a map that
+  varies within each slice and sampling times that are not all equal: `"nfft"`, `"leastsquare"`, `"hist"`, which
+  works for a map with only an off-resonance part, or `"svd"`, which works for double-precision data, a map with a
+  spatially varying off-resonance part and profiles with the same sampling times and about ten or more samples per
+  term (default: `"nfft"`), see [`FieldmapNFFTOp`](@ref)
+- `toeplitz::Union{Bool, Nothing}` - Whether the normal operator uses the Toeplitz approach (default: `false`)
+- `oversamplingFactor::Union{Float64, Nothing}` - NFFT oversampling factor (default: 1.25)
+- `kernelSize::Union{Int, Nothing}` - NFFT kernel size (default: 3)
+- `K::Union{Int, Nothing}` - Number of terms of `"leastsquare"` and `"hist"` and maximum number of terms of `"svd"`
+  (default: 20); `"nfft"` determines the number itself
+- `K_tol::Union{Float64, Nothing}` - Tolerance with which `"svd"` chooses the number of terms (default: 1e-3)
+
+`method`, `K` and `K_tol` only take effect with a correction map, and `toeplitz`, `oversamplingFactor` and
+`kernelSize` only for non-Cartesian data without a correction map.
 
 # Callable Interface
-    (ep::EncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int)
+    (ep::EncodingParameters)(algo, slice::Int)
+    (ep::EncodingParameters)(algo, slice::Int, senseMaps)
 
 # Returns
-- Vector of encoding operators for the given slice
+- The encoding operators of the given slice: one per contrast for the reconstructions that treat the contrasts
+  separately, and otherwise one for all contrasts. The second form, used by the reconstructions with coil
+  sensitivities, includes the sensitivities.
+
+# Note
+- Gets the data, the reconstruction size and the storage type from the [`MRIRecoContext`](@ref) of the reconstruction
 
 # Example
 ```julia
 ep = EncodingParameters()
-encOps = ep(AbstractIterativeMRIRecoAlgorithm, 1)
 
-# With fieldmap correction
-ep = EncodingParameters(; correctionMap=fieldmap)
-encOps = ep(AbstractIterativeMRIRecoAlgorithm, 1)
+# With a correction map
+ep = EncodingParameters(; correctionMap = cmap, method = "leastsquare", K = 10)
 ```
 """
 @parameter struct EncodingParameters{C <: Union{AbstractArray{<:Complex}, Nothing}} <: AbstractMRIRecoEncodingParameters
@@ -61,18 +75,20 @@ Parameters with user-provided encoding operators.
 - `E` - The type of the encoding operators
 
 # Fields
-- `encodingOps::E` - Pre-computed encoding operators
+- `encodingOps::E` - Pre-computed encoding operators of `"standard"` and `"multiCoil"` as a matrix with one row per
+  contrast and one column per slice. For `"multiCoil"`, the operators include the coil sensitivities, like those of
+  [`encodingOps_parallel`](@ref), and the reconstruction still needs its [`CoilParameters`](@ref); with `noiseData`,
+  it decorrelates the data but not these operators.
 
 # Callable Interface
-    (ep::CustomEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
+    (ep::CustomEncodingParameters)(algo, slice::Int, args...)
 
 # Returns
-- The encoding operators for the given slice
+- The encoding operators for the given slice, `encodingOps[:, slice]`
 
 # Example
 ```julia
 ep = CustomEncodingParameters(; encodingOps=myEncodingOps)
-encOps = ep(AbstractIterativeMRIRecoAlgorithm, 1)
 ```
 """
 @parameter struct CustomEncodingParameters{E} <: AbstractMRIRecoEncodingParameters
@@ -117,18 +133,18 @@ Encoding parameters with subspace projection for dimensionality reduction.
 
 # Fields
 - `inner::E` - Inner encoding parameters
-- `basis::B` - Subspace basis matrix
+- `basis::B` - Subspace basis matrix with one row per contrast and one column per basis function, in the precision
+  of the data
 
 # Callable Interface
-    (ep::SubspaceEncodingParameters)(::Type{<:AbstractMRIRecoAlgorithm}, slice::Int, args...)
+    (ep::SubspaceEncodingParameters)(algo, slice::Int, args...)
 
 # Returns
-- Encoding operator composed with SubspaceOp
+- Encoding operator of `inner` composed with a [`SubspaceOp`](@ref) of the basis
 
 # Example
 ```julia
 ep = SubspaceEncodingParameters(; inner=EncodingParameters(), basis=basisMatrix)
-encOp = ep(MultiCoilMultiEchoSubspaceReconstruction, 1, senseMaps)
 ```
 """
 @parameter struct SubspaceEncodingParameters{

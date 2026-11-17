@@ -5,6 +5,15 @@ export AbstractStandardParameters
 
 abstract type AbstractStandardParameters <: AbstractIterativeRecoParameters end
 
+"""
+    StandardReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
+
+The reconstruction type `"standard"`: an iterative image reconstruction which reconstructs the data of all coils,
+contrasts and slices independently.
+
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`StandardIterativeParameters`](@ref); its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
+"""
 @reconstruction mutable struct StandardReconstruction{P<:AbstractStandardParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
 end
@@ -12,10 +21,9 @@ end
 """
     StandardIterativeParameters{E, W, S} <: AbstractStandardParameters
 
-Performs iterative image reconstruction independently for the data of all coils,
-contrasts and slices.
+Parameters of the iterative reconstruction [`StandardReconstruction`](@ref).
 
-# Arguments
+# Fields
 - `encodingParams::E` - Encoding operator parameters
 - `weightingParams::W` - Sampling weighting parameters
 - `solverParams::S` - Least squares solver parameters

@@ -3,6 +3,21 @@ export CoilParameters
 
 abstract type AbstractCoilParameters <: AbstractMRIRecoParameters end
 
+"""
+    CoilParameters{T, S, N} <: AbstractCoilParameters
+    CoilParameters(; senseMaps = nothing, noiseData = nothing)
+
+Coil sensitivities and noise data of the SENSE-type reconstructions `"multiCoil"`, `"multiCoilMultiEcho"` and
+`"multiCoilMultiEchoSubspace"`, as complex arrays in the precision of the data. The constructor needs at least one
+of the two, and the reconstructions with [`EncodingParameters`](@ref) need `senseMaps`.
+
+# Fields
+* `senseMaps::S` - Coil sensitivities with the dimensions x, y, z or slice, and coil, as `espirit` returns them when
+                   called on an `AcquisitionData` with `nmaps = 1`, see
+                   [Estimate Coil Sensitivities with ESPIRiT](@ref estimate-coil-sensitivities)
+* `noiseData::N` - Noise samples as a matrix of samples × coils; if given, the k-space data and the coil
+                   sensitivities are decorrelated, see [Noise Decorrelation](@ref)
+"""
 @parameter constructor = false struct CoilParameters{
     T,
     S <: AbstractArray{Complex{T}},

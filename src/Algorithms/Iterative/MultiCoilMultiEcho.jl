@@ -3,10 +3,14 @@ export MultiCoilMultiEchoReconstruction
 """
     MultiCoilMultiEchoReconstruction{P, C} <: AbstractIterativeMRIRecoAlgorithm
 
-Performs a SENSE-type iterative image reconstruction which reconstructs all contrasts jointly.
-Different slices are reconstructed independently.
+The reconstruction type `"multiCoilMultiEcho"`: a SENSE-type iterative image reconstruction which reconstructs all
+contrasts jointly. Different slices are reconstructed independently.
+For more than one contrast, with ADMM, the default solver, or with SplitBregman, give every regularization term a
+transform, also the default term used without `:reg`; `"nothing"` is the identity, for example
+`:sparseTrafo => "nothing"` for one term or `:sparseTrafo => ["nothing", "nothing"]` for two.
 
-Uses `MultiCoilIterativeParameters` for parameters.
+Its parameter is an [`AbstractIterativeMRIRecoContextParameter`](@ref) that holds
+[`MultiCoilIterativeParameters`](@ref); its stored plan uses a [`ThreadedIterativeMRIRecoContextParameter`](@ref).
 """
 @reconstruction mutable struct MultiCoilMultiEchoReconstruction{P<:AbstractMultiCoilParameters, C <: AbstractIterativeMRIRecoContextParameter{P}} <: AbstractIterativeMRIRecoAlgorithm
   @parameter parameter::C
