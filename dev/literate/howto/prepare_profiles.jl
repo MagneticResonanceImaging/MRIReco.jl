@@ -161,7 +161,7 @@ fig
 #
 # When MRIFiles reads an ISMRMRD file, it can also select profiles by their counters: the keywords `slice`,
 # `repetition` and `contrast` of
-# [`RawAcquisitionData(::ISMRMRDFile)`](../../API/MRIFiles.md#MRIBase.RawAcquisitionData) keep the profiles whose
+# [`RawAcquisitionData(::ISMRMRDFile)`](@ref MRIBase.RawAcquisitionData(::ISMRMRDFile, ::Any)) keep the profiles whose
 # counters have the given value or one of the given values, counted from 0. The file here was made in this way, with
 # `repetition = 0`, from `simple_gre.h5`, which holds ten repetitions. Data without the first slice or repetition is
 # not converted correctly yet, see [#382](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/382).
