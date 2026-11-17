@@ -7,6 +7,7 @@ MRIReco.jl is a family of packages that are developed together in one repository
 Julia's package manager installs the dependencies of a package automatically, which makes it cheap to divide functionality between packages. MRIReco.jl uses this to implement only the parts that are specific to MRI and relies on general-purpose packages for the rest. The most important ones are
 
 - [RegularizedLeastSquares.jl](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/), which provides the iterative solvers, such as CGNR, FISTA and ADMM, and the regularization terms, such as ℓ1, ℓ2 and total variation,
+- [AbstractImageReconstruction.jl](https://juliaimagerecon.github.io/AbstractImageReconstruction.jl/dev/), which provides the interface for reconstruction algorithms, their parameters and the reconstruction plans from which MRIReco.jl builds its reconstructions, see [Configure a Reconstruction with Plans](@ref configure-plans),
 - [LinearOperatorCollection.jl](https://juliaimagerecon.github.io/LinearOperatorCollection.jl/stable/), which provides general linear operators, for example Fourier and wavelet operators,
 - [NFFT.jl](https://juliamath.github.io/NFFT.jl/stable/), which computes the non-uniform fast Fourier transform needed for non-Cartesian trajectories, and
 - [AxisArrays.jl](https://github.com/JuliaArrays/AxisArrays.jl), which stores reconstructed images together with their physical axes.
@@ -30,7 +31,7 @@ The repository contains seven packages, which are registered separately. In the 
 
 ## What `using MRIReco` Loads
 
-MRIReco re-exports MRIBase, MRIOperators and RegularizedLeastSquares.jl, and MRIOperators in turn re-exports LinearOperatorCollection.jl. After `using MRIReco`, the data types, the encoding operators, the general linear operators and the solvers are therefore all available. The other four packages are independent of MRIReco and have to be loaded explicitly, for example
+MRIReco re-exports MRIBase, MRIOperators, RegularizedLeastSquares.jl and AbstractImageReconstruction.jl, and MRIOperators in turn re-exports LinearOperatorCollection.jl. After `using MRIReco`, the data types, the encoding operators, the general linear operators, the solvers and the functions for reconstruction plans are therefore all available. The other four packages are independent of MRIReco and have to be loaded explicitly, for example
 
 ```julia
 using MRIReco, MRIFiles, MRICoilSensitivities

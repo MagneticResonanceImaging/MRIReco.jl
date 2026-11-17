@@ -56,6 +56,7 @@ makedocs(
                 "Use Encoding Operators Directly" => "generated/howto/encoding_operators.md",
             ],
             "Reconstruction" => [
+                "Configure a Reconstruction with Plans" => "generated/howto/plans.md",
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
                 "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
