@@ -1,101 +1,86 @@
-#---------------------------------------------------------
 # # [Bin Profiles into Contrasts](@id binning)
-#---------------------------------------------------------
+#
+# Self-gated acquisitions derive a gating signal from data recorded after every excitation, for example a navigator
+# echo, the free induction decay or the center of k-space in each readout, and sort the profiles afterwards. In the
+# cardiac cine imaging of [Trotier et al.](https://doi.org/10.1002/jmri.25150), the profiles are sorted into bins of
+# the cardiac cycle, and each bin is reconstructed as an image of its own;
+# [Ribot et al.](https://doi.org/10.1002/jmri.24688) discard the profiles acquired during breathing instead. In
+# MRIReco.jl, the bins become the contrasts of the data, usually with different numbers of profiles. This guide
+# assigns the profiles of raw data to bins and reconstructs each bin. [Data Model](@ref data-model) explains how
+# [`RawAcquisitionData`](@ref) and [`AcquisitionData`](@ref) store the contrasts.
+#
+# ## Raw Data
+#
+# This guide bins raw data, in which every profile has its own header. Data that is already sorted into bins in
+# arrays can instead be passed with one trajectory per bin, as in
+# [Create AcquisitionData from Arrays](@ref acqdata-from-arrays). The example simulates 400 radial profiles of a
+# phantom with 256 samples each and converts the result into raw data:
 
-
-#=
-## Description
-
-This example described how to perform data binning with different number of profiles
-which is generaly used for self-gating acquisition
-in order to reconstruct images along the cardiac/respiratory cycle :
-1. Trotier AJ, Castets CR, Lefrançois W, et al. USPIO-enhanced 3D-cine self-gated cardiac MRI based on a stack-of-stars golden angle short echo time sequence: Application on mice with acute myocardial infarction. Journal of Magnetic Resonance Imaging 2016;44:355–365 doi: 10.1002/jmri.25150.
-2. Ribot EJ, Duriez TJ, Trotier AJ, Thiaudiere E, Franconi J-M, Miraux S. Self-gated bSSFP sequences to detect iron-labeled cancer cells and/or metastases in vivo in mouse liver at 7 Tesla. Journal of Magnetic Resonance Imaging 2015;41:1413–1421 doi: 10.1002/jmri.24688.
-
-
-Here, we will create a simulated 2D radial acquisition and split the projections in 2 parts along the contrast dimension.
-The number of projection into each bin will be different to show how MRIReco handle that case.
-=#
-
-# ## Setup
-using CairoMakie
+using MRIReco, MRISimulation, CairoMakie
 using ImageUtils: shepp_logan
-using MRIReco, MRISimulation
 
-function plot_im2D(im2D;title::String="")
-    f = Figure()
-    ax = Axis(f[1, 1],aspect = DataAspect(), yreversed = true, title = title)
-    image!(ax, im2D')
-    hidedecorations!(ax, grid = false)
-    f
+N = 256
+image = shepp_logan(N)
+params = Dict{Symbol, Any}()
+params[:trajName] = "Radial"
+params[:numProfiles] = 400
+params[:numSamplingPerProfile] = N
+acqData = simulation(image, params)
+rawData = RawAcquisitionData(acqData)
+length(rawData.profiles)
+
+# ## Assigning the Bins
+#
+# The counter `contrast` in the header of each profile, counting from 0, assigns the profile to a bin. The ISMRMRD
+# format also has a counter `phase` for cardiac phases, but the conversion into `AcquisitionData` does not use it, so
+# bins stored in `phase` have to be copied into `contrast`. In a self-gated acquisition, the gating signal decides;
+# here, every fourth profile goes into the first bin and the others into the second, so that the bins hold 100 and 300
+# profiles:
+
+for (i, profile) in enumerate(rawData.profiles)
+    profile.head.idx.contrast = mod(i, 4) == 0 ? 0 : 1
 end
 
-# ## Simulate a radial acquisition
-N = 256
-x = shepp_logan(N)
+# The conversion creates one trajectory per contrast. Unless the trajectory name is `"cartesian"`, it takes the
+# k-space positions from the profiles: with the name `"custom"`, it collects the profiles of each contrast in their
+# order. With the name `"Radial"` that the simulation stored, it would place them by their phase encoding counters
+# instead, so that the trajectory of each bin would have all 400 profiles, those of the other bin at the center of
+# k-space, and the reconstruction would fail.
 
-params = Dict{Symbol, Any}()
-params[:simulation] = "fast"
-params[:trajName] = "Radial"
-params[:numProfiles] = round(Int64,400)
-params[:numSamplingPerProfile] = round(Int64,N)
+rawData.params["trajectory"] = "custom"
+acqBinned = AcquisitionData(rawData)
+[numProfiles(trajectory(acqBinned, contrast)) for contrast in 1:2]
 
-acqRad = simulation(x, params)
-rawRad = RawAcquisitionData(acqRad)
+# ## Reconstructing the Bins
+#
+# The reconstruction returns one image per contrast, in the fourth dimension:
 
-# For real acquisition we first create the RawAcquisitionData structure
-# and then convert into the AcquisitionData.
+recoParams = Dict{Symbol, Any}()
+recoParams[:reco] = "direct"
+recoParams[:reconSize] = (N, N)
+images = reconstruction(acqBinned, recoParams)
+size(images)
 
-# ## Binning Data
-rawRad2 = deepcopy(rawRad)
-for i in 1:length(rawRad.profiles)
-    if  mod(i,4) == 0
-        rawRad2.profiles[i].head.idx.contrast = 0
-    else
-        rawRad2.profiles[i].head.idx.contrast = 1
-    end
-end;
+# The figure shows both bins in the same gray scale, cut at a quarter of the maximum to make the streaks visible. The
+# first bin, with a quarter of the profiles, shows more streaks than the second:
 
-# We need to tell to MRIReco that our trajectory is a custom one :
-rawRad2.params["trajectory"] = "custom";
+m = maximum(abs.(images))
+fig = Figure(size = (640, 340))
+for (i, title) in enumerate(["Bin 1, 100 profiles", "Bin 2, 300 profiles"])
+    ax = Axis(fig[1, i], title = title, aspect = DataAspect(), yreversed = true)
+    heatmap!(ax, abs.(images[:, :, 1, i, 1, 1])', colormap = :grays, colorrange = (0, m / 4))
+    hidedecorations!(ax)
+end
+fig
 
-# ## Reconstruction
-
-# To perform the reconstruction we need to convert the RawAcquisitionData into and AcquisitionData structure.
-
-acqRad2 = AcquisitionData(rawRad2)
-# We can also plot the number of projection for both bin :
-nPro1 = Int32(length(acqRad2.kdata[1,1,1])/N)
-nPro2 = Int32(length(acqRad2.kdata[2,1,1])/N)
-println("Number of projection in : \n
-- Bin 1 = $nPro1\n
-- Bin 2 = $nPro2")
-
-# Now we can perform a standard reconstruction
-params = Dict{Symbol, Any}()
-params[:reco] = "direct"
-params[:reconSize] = (N,N)
-
-Ireco = reconstruction(acqRad2, params)
-size(Ireco)
-
-# let's show the results for first bin
-plot_im2D(abs.(Ireco[:,:,1,1]),title = "First bin")
-
-# and the second bin
-plot_im2D(abs.(Ireco[:,:,1,2]),title = "Second bin")
-
-# As expected we have more streaking artifacts on the first bin because we reconstruct the image with less projections.
-
-# ## Reproducibility
-
-# This page was generated with the following version of Julia:
-
-using InteractiveUtils
-io = IOBuffer();
-versioninfo(io);
-split(String(take!(io)), '\n')
-
-# And with the following package versions
-
-import Pkg; Pkg.status()
+# ## Limits
+#
+# - `AcquisitionData` has one trajectory per contrast for all slices and repetitions, so bins that hold different
+#   profiles in different slices or repetitions need one `AcquisitionData` per slice and repetition.
+# - The conversion of a custom trajectory only works for one slice, repetition and average. With several slices or
+#   repetitions, it counts the profiles of a bin in all of them and adds profiles of zeros, which changes the result
+#   without an error, and several averages are kept as separate profiles instead of being averaged
+#   ([#331](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/331)).
+#
+# In both cases, convert each slice and repetition on its own: keep only its profiles, set their counters `slice` and
+# `repetition` to 0, and convert and reconstruct them as above.
