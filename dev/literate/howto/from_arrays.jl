@@ -47,6 +47,9 @@ image[:, :, 1, 1, 1, 1] ≈ phantom
 #   axes of the image. If they are needed, set the field of view in millimeters, for example
 #   `acqData.fov = (220.0, 220.0, 5.0)`. The image axes use the third entry as the distance between the slices of
 #   2D data and as the extent of a 3D volume.
+# - The array does not contain the sampling times either, so every sample gets the time zero. A reconstruction with
+#   a correction map needs the times of the acquisition, which can be set as described in
+#   [Correct Off-Resonance](@ref correct-off-resonance).
 #
 # ## Non-Cartesian Nodes and Samples
 #
