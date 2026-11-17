@@ -24,18 +24,23 @@ end
 LinearOperators.storage_type(::ExplicitOp{T, vecT}) where {T, vecT} = vecT
 
 """
-    ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory, correctionmap::Array{ComplexF64,D}
-            ; echoImage::Bool=false, kargs...) where D
+    ExplicitOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, correctionmap::AbstractArray{Complex{T},D}
+            ; echoImage::Bool=false, S = Vector{Complex{T}}, kargs...) where {T,D}
 
-generates a `ExplicitOp` which explicitely evaluates the MRI Fourier signal encoding operator.
+generates an `ExplicitOp`, which evaluates the MRI Fourier signal encoding operator explicitly, including
+off-resonance and relaxation.
 
 # Arguments:
 * `shape::NTuple{D,Int64}`             - size of image to encode/reconstruct
 * `tr::Trajectory`                     - Trajectory with the kspace nodes to sample
-* `correctionmap::Array{ComplexF64,D}` - fieldmap for the correction of off-resonance effects
-* `echoImage::Bool=false`              - if true sampling times will only be considered relative to the echo time
-                                         this results in complex valued image even for real-valued input.
-* `kargs`                              - additional keyword arguments
+* `correctionmap::AbstractArray{Complex{T},D}` - complex correction map with the relaxation rate R₂* in 1/s
+                                         as its real part and the off-resonance frequency in rad/s as its
+                                         imaginary part, in the precision of the trajectory
+* (`echoImage::Bool=false`)            - if true, the sampling times are counted from the echo time `TE` of the
+                                         trajectory, so the image is the magnetization at that time, which with
+                                         off-resonance is complex-valued even for a real-valued object
+* (`S = Vector{Complex{T}}`)           - storage vector type, for example `CuVector{ComplexF32}` on a GPU
+* (`kargs`)                            - further keyword arguments, which are ignored
 
 # Moving to another array backend
 

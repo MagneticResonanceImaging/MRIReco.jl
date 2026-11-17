@@ -51,10 +51,13 @@ function simulation(image::Array{Complex{T},3}, simParams::Dict) where T<:Abstra
 end
 
 """
-    simulation(image::Array{T,3}, simParams::Dict, filename::String) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
+    simulation(image::Array{T,3}, simParams::Dict, filename::String;
+               force=false) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
 
-Performs the same simulation as `simulation(image, simParams)` and saves the result in
-a file with name `filename`
+This method is meant to save the result of `simulation(image, simParams)` in the file `filename`, or to load it
+from there if `force=false` and the file exists. The functions it calls for this belong to MRIFiles, which
+MRISimulation does not depend on, so it throws an `UndefVarError`, also after `using MRIFiles`: right away if
+`force=false` and the file exists, otherwise after the simulation.
 """
 function simulation(image::Array{T,3}, simParams::Dict, filename::String;
                         force=false) where T<:Union{Complex{<:AbstractFloat},AbstractFloat}
@@ -312,25 +315,30 @@ function simulation(seq::AbstractSequence, tr::Vector{Trajectory{T}}
 end
 
 """
-    simulation(tr::Trajectory, image::Array{T}, correctionMap = []; opName="fast"
-              , senseMaps=[], verbose=true, kargs...) where T<:Complex{<:AbstractFloat}
+    simulation(tr::Trajectory{T}, image::Array{Complex{T}}, correctionMap::Array{Complex{T}} = Complex{T}[];
+               opName = "fast", senseMaps = [], verbose = true, kargs...) where T<:AbstractFloat
 
-Transforms a given image to k-space Domain.
-Dispatches whether the trajectory is 2d or 3d
-The Fourier integrals can be evaluated exactly or using NFFT
-Returns the demodulated signal.
+simulates the k-space data of `image` on the trajectory `tr` with the operator that [`fourierEncodingOp`](@ref)
+builds for `opName` with `echoImage=false`, so the sampling times count from the excitation; slice by slice for a
+two-dimensional trajectory and at once for a three-dimensional one.
+Returns an `AcquisitionData`.
 
-...
 # Arguments
-* `tr::Trajectory`             - two- or three-dimensional Trajectory
-* `image::Array{T,3}` - image to be transformed
-* (`correctionMap=[]`)         - sum of the field offresonance (imaginary) map and relaxation map (real)
-* (`opName="fast"`)            - name of operator to use ("explicit" or "fast")
-* (`senseMaps=[]`)             - array of coil sensitivities
-* (`verbose=true`)             - prints the progress if true
-* `kargs...`                   - additional keyword arguments
-...
-
+* `tr::Trajectory`             - two- or three-dimensional trajectory
+* `image::Array{Complex{T}}`   - image to be transformed, with two or three dimensions
+* (`correctionMap`)            - complex correction map of the size of `image` with the relaxation rate R₂* in 1/s
+                                 as its real part and the off-resonance frequency in rad/s as its imaginary part
+* (`opName="fast"`)            - `"fast"` or `"explicit"`; [Simulate k-Space Data](@ref simulate-kspace) lists the
+                                 cases in which only `"explicit"` works, such as a three-dimensional trajectory
+                                 with a correction map that is not zero
+* (`senseMaps=[]`)             - coil sensitivities of size `(nx, ny, nz, number of coils)`, with `nz = 1` for a
+                                 two-dimensional image; without them, one coil with sensitivity 1 in double
+                                 precision. For a `Float32` trajectory, give them in single precision, for one
+                                 coil `ones(ComplexF32, nx, ny, nz, 1)`
+* (`verbose=true`)             - shows a progress bar
+* (`kargs`)                    - the options `alpha`, `m`, `K` and `method` of the approximation that
+                                 [`FieldmapNFFTOp`](@ref) uses for a correction map that is not zero; other keyword
+                                 arguments are ignored
 """
 function simulation(tr::Trajectory{T}
                     , image::Array{Complex{T}}
@@ -381,21 +389,27 @@ function simulateTempSubspace(seq::AbstractSequence
 end
 
 """
-  Getting (simulated) k-data with the help of NFFTs with lower computational effort
+    simulation_fast(tr::Trajectory{T}, image::Matrix, correctionMap::Array{Complex{T}} = Complex{T}[];
+                    alpha::Float64 = 1.75, m::Float64 = 4.0, K::Int64 = 16, method = "nfft",
+                    senseMaps = [], kargs...) where T
 
-  ...
+simulates the k-space data of `image` on the trajectory `tr` with the operator that [`fourierEncodingOp`](@ref)
+builds for `"fast"` with `echoImage=false`: an FFT or an NFFT, or a [`FieldmapNFFTOp`](@ref) for a correction map
+that is not zero.
+Returns an `AcquisitionData`.
+
 # Arguments
-* `tr::Trajectory`           - Two-dimensional Trajectory
-* `image::Matrix`            - Image to be transformed
-* `correctionMap=[]`         - Correctionmap is summed up of the field offresonance and relaxation
-* `alpha::Float64 = 1.75`    - Oversampling factor
-* `m::Float64=4.0`           - Kernel size
-* `K::Int64=16`              - Rank how much coefficients will be used to approx. correctionterm
-* `method="nfft"`            - Which Method used to get the approx. coefficients of correctionterm
-* (`senseMaps=[]`)           - array of coil sensitivities
-* `kargs...`                 - additional keyword arguments
-...
-
+* `tr::Trajectory`              - two-dimensional trajectory
+* `image::Matrix`               - image to be transformed
+* (`correctionMap`)             - complex correction map of the size of `image` with the relaxation rate R₂* in 1/s
+                                  as its real part and the off-resonance frequency in rad/s as its imaginary part
+* (`alpha`, `m`, `K`, `method`) - options of the approximation that [`FieldmapNFFTOp`](@ref) uses for a correction
+                                  map that is not zero; without such a map, they have no effect
+* (`senseMaps=[]`)              - coil sensitivities of size `(size(image)..., 1, number of coils)`; without them,
+                                  one coil with sensitivity 1 in double precision. For a `Float32` trajectory,
+                                  give them in single precision, for one coil `ones(ComplexF32, size(image)..., 1, 1)`
+* (`kargs`)                     - passed on to [`simulation`](@ref) with a trajectory, for example `verbose=false`
+                                  to turn off the progress bar
 """
 function simulation_fast(tr::Trajectory{T}
                         , image::Matrix
@@ -415,21 +429,24 @@ function simulation_fast(tr::Trajectory{T}
 end
 
 """
-  Getting (simulated) k-data using an explicit evaluation of the encoding operator
+    simulation_explicit(tr::Trajectory{T}, image::Matrix, correctionMap::Array{Complex{T}} = Complex{T}[];
+                        alpha::Float64 = 1.75, m::Float64 = 4.0, K::Int64 = 16, method = "nfft",
+                        senseMaps = [], kargs...) where T
 
-...
+simulates the k-space data of `image` on the trajectory `tr` with an [`ExplicitOp`](@ref).
+Returns an `AcquisitionData`.
+
 # Arguments
-* `tr::Trajectory`           - Two-dimensional Trajectory
-* `image::Matrix`            - Image to be transformed
-* `correctionMap=[]`         - Correctionmap is summed up of the field offresonance and relaxation
-* `alpha::Float64 = 1.75`    - Oversampling factor
-* `m::Float64=4.0`           - Kernel size
-* `K::Int64=16`              - Rank how much coefficients will be used to approx. correctionterm
-* `method="nfft"`            - Which Method used to get the approx. coefficients of correctionterm
-* (`senseMaps=[]`)           - array of coil sensitivities
-* `kargs...`                 - additional keyword arguments
-...
-
+* `tr::Trajectory`              - two-dimensional trajectory
+* `image::Matrix`               - image to be transformed
+* (`correctionMap`)             - complex correction map of the size of `image` with the relaxation rate R₂* in 1/s
+                                  as its real part and the off-resonance frequency in rad/s as its imaginary part
+* (`alpha`, `m`, `K`, `method`) - have no effect on the `ExplicitOp`
+* (`senseMaps=[]`)              - coil sensitivities of size `(size(image)..., 1, number of coils)`; without them,
+                                  one coil with sensitivity 1 in double precision. For a `Float32` trajectory,
+                                  give them in single precision, for one coil `ones(ComplexF32, size(image)..., 1, 1)`
+* (`kargs`)                     - passed on to [`simulation`](@ref) with a trajectory, for example `verbose=false`
+                                  to turn off the progress bar
 """
 function simulation_explicit(tr::Trajectory{T}
                         , image::Matrix

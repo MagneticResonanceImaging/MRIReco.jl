@@ -22,7 +22,7 @@ end
 
 """
     encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                              , senseMaps::Array{Complex{T}}
+                              , senseMaps::AbstractArray{Complex{T},4}
                               ; kargs...) where {T,D}
 
 generates an Array of LinearOperators which describe signal encoding of the individual
@@ -32,7 +32,7 @@ in terms of their sensitivities
 # Arguments
 * `acqData::AcquisitionData{T,D}`       - AcquisitionData object
 * `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
-* `senseMaps::Array{Complex{T}}`        - coil sensitivities
+* `senseMaps::AbstractArray{Complex{T},4}` - coil sensitivities with the coils in the fourth dimension
 """
 function encodingOps_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                                 , senseMaps::AbstractArray{Complex{T},4}
@@ -68,7 +68,7 @@ end
 
 """
     encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
-                                          , senseMaps::Array{Complex{T}}
+                                          , senseMaps::AbstractArray{Complex{T}}
                                           ; kargs...) where {T,D}
 
 generates a LinearOperator which describe combined signal encoding of all
@@ -77,8 +77,8 @@ in terms of their sensitivities
 
 # Arguments
 * `acqData::AcquisitionData{T,D}`       - AcquisitionData object
-* `shape::NTuple{2,Int64}`              - size of image to be encoded/reconstructed
-* `senseMaps::Array{Complex{T}}`        - coil sensitivities
+* `shape::NTuple{D,Int64}`              - size of image to be encoded/reconstructed
+* `senseMaps::AbstractArray{Complex{T}}` - coil sensitivities with the coils in the fourth dimension
 """
 function encodingOp_multiEcho_parallel(acqData::AcquisitionData{T,D}, shape::NTuple{D,Int64}
                                           , senseMaps::AbstractArray{Complex{T}}
@@ -132,10 +132,34 @@ function lrEncodingOp(acqData::AcquisitionData, shape, params::Dict; numContr::I
 end
 
 """
-return Fourier encoding operator (either Explicit or NFFT)
-  * `opname` : "explicit" or "fast"
-  * `slice` : slice to which the operator will be applied
-  echoImage : calculate signal evolution relative to the echo time
+    fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
+                      subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1,
+                      correctionMap::Array{Complex{T}}=Complex{T}[], echoImage::Bool=true,
+                      S = Vector{Complex{T}}, kargs...) where {T,D}
+
+returns the Fourier encoding operator of the trajectory `tr` for images of size `shape`.
+
+# Arguments
+* `shape::NTuple{D,Int64}`          - size of image to encode/reconstruct
+* `tr::Trajectory`                  - trajectory with the k-space nodes to sample
+* `opName::String`                  - `"explicit"` for an [`ExplicitOp`](@ref), or `"fast"` for a
+                                      [`FieldmapNFFTOp`](@ref) if the correction map is not zero (two-dimensional
+                                      images only), otherwise an `NFFTOp` for non-Cartesian trajectories and, for
+                                      Cartesian trajectories with no more samples, profiles or slices than `shape`,
+                                      an `FFTOp`, with a `SamplingOp` if they have fewer; other names throw an error
+* (`subsampleIdx::Vector{Int64}`)   - for Cartesian trajectories, the indices of the sampled nodes; unless the
+                                      vector is empty or equals `1:N` for the `N` nodes of `tr`, a `SamplingOp`
+                                      selects them after the transform
+* (`slice::Int64=1`)                - for two-dimensional images, the slice of the correction map, along its third
+                                      dimension, that the operator uses
+* (`correctionMap`)                 - complex correction map with the relaxation rate R₂* in 1/s as its real part and
+                                      the off-resonance frequency in rad/s as its imaginary part, in the precision
+                                      of the trajectory
+* (`echoImage::Bool=true`)          - passed to `ExplicitOp` and `FieldmapNFFTOp`
+* (`S = Vector{Complex{T}}`)        - storage vector type, for example `CuVector{ComplexF32}` on a GPU
+* (`kargs`)                         - options of the approximation for `FieldmapNFFTOp`, and NFFT options such as
+                                      `oversamplingFactor` and `kernelSize` for `NFFTOp`, which also takes an
+                                      integer `m` as its kernel size; `ExplicitOp` and `FFTOp` ignore them
 """
 function fourierEncodingOp(shape::NTuple{D,Int64}, tr::Trajectory{T}, opName::String;
           subsampleIdx::Vector{Int64}=Int64[], slice::Int64=1, correctionMap::Array{Complex{T}}=Complex{T}[],
