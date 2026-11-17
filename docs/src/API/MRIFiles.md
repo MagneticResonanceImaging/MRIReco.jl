@@ -4,7 +4,28 @@ MRIFiles handles raw data files, for example ISMRMRD files (`ISMRMRDFile`) and B
 
 ## ISMRMRD Files
 
-```@autodocs
-Modules = [MRIFiles]
-Pages = ["ISMRMRD/ISMRMRD.jl"]
+```@docs
+ISMRMRDFile
+MRIBase.RawAcquisitionData(::ISMRMRDFile, ::Any)
+MRIBase.AcquisitionData(::ISMRMRDFile, ::Any)
+MRIFiles.save(::ISMRMRDFile, ::RawAcquisitionData)
+```
+
+## Bruker Datasets
+
+```@docs
+BrukerFile
+MRIBase.RawAcquisitionData(::BrukerFile)
+RawAcquisitionDataFid_360
+RawAcquisitionData_3DUTE
+recoData
+JcampdxFile
+```
+
+## Other Formats
+
+```@docs
+CFLFile
+DFFile
+readRawSiemens
 ```

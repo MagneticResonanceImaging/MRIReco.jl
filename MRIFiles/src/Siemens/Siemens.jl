@@ -11,6 +11,14 @@ function MRIBase.RawAcquisitionData(f::SiemensFile)
 end
 
 export readRawSiemens
+"""
+    readRawSiemens(filename)
+
+unfinished reader of Siemens raw data files: it reads only the first eight bytes of the file and no data and returns
+`nothing`, and it throws an error for files of the older VB format. Convert
+Siemens raw data with [`siemens_to_ismrmrd`](https://github.com/ismrmrd/siemens_to_ismrmrd) and read the result with
+[`ISMRMRDFile`](@ref) instead.
+"""
 function readRawSiemens(filename)
 
   # See https://github.com/ismrmrd/siemens_to_ismrmrd/blob/master/main.cpp

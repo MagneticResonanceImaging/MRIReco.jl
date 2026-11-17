@@ -1,5 +1,13 @@
 export RawAcquisitionDataFid_360
 
+"""
+    RawAcquisitionDataFid_360(b::BrukerFile)
+
+reads Cartesian raw data of ParaVision 360 from the file `rawdata.job0` of the Bruker dataset `b` into a
+`RawAcquisitionData` object. The matrix size is `PVM_Matrix` times `PVM_AntiAlias`, and the k-space position of each
+profile is taken from `PVM_EncGenSteps1` and `PVM_EncGenSteps2`, so scans with undersampled phase encoding are read as
+well. `RawAcquisitionData(b)` calls this function for all ParaVision 360 datasets.
+"""
 function RawAcquisitionDataFid_360(b::BrukerFile)
   T = Complex{MRIFiles.acqWordSize(b)}
   filename = joinpath(b.path, "rawdata.job0")

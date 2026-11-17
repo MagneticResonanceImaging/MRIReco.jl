@@ -1,6 +1,18 @@
 
 export DFFile
 
+"""
+    DFFile(datafilename::String, trajfilename::String)
+
+reference to 2D non-Cartesian data stored in two binary files, `trajfilename` with the k-space nodes and
+`datafilename` with the samples. Both files start with four `Int32` values. In the trajectory file, the second and
+third are the number of samples per profile and the number of profiles, followed by the nodes as `Float32` values
+(2 × samples × profiles). In the data file, the second to fourth are the numbers of samples per profile, profiles and
+slices, followed by the samples as `ComplexF32` values.
+
+`trajectory(f)` returns the trajectory, and keyword arguments are passed on to `Trajectory`. `MRIFiles.rawdata(f)`
+returns the samples as an `Array{ComplexF64,3}`, and `MRIFiles.rawdata(f, slice)` those of one slice.
+"""
 struct DFFile <: MRIFile
   datafilename::String
   trajfilename::String
