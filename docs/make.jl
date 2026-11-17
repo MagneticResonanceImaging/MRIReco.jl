@@ -59,6 +59,7 @@ makedocs(
                 "Correct Off-Resonance" => "generated/howto/offresonance.md",
                 "Run a Reconstruction on the GPU" => "generated/howto/gpu.md",
                 "Use a Custom Sparsifying Transform" => "generated/howto/custom_transform.md",
+                "Use a Plug-and-Play Prior" => "generated/howto/plug_and_play.md",
             ],
             "Contribute to MRIReco.jl" => "contributing.md",
         ],
