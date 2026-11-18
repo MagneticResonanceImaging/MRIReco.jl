@@ -35,7 +35,7 @@ The iterative reconstruction types build their encoding operator from the data a
 ## Weighting
 
 - `:densityWeighting` – iterative types: whether the data term is weighted with the square roots of the density compensation factors, by default `true`, or with a constant, see [Density Compensation](@ref).
-- `:weights` – iterative types: weights to use instead of the density compensation, a vector with one vector per contrast and one weight per sample, in the form that [`samplingDensity`](@ref) returns.
+- `:weights` – iterative types: weights to use instead of the density compensation, a vector with one vector per contrast and one weight per sample, in the form that [`samplingDensity`](@ref) returns. To compute the weights from the data with your own code, see [Implementing a Part of Your Own](@ref).
 
 ## Coil Sensitivities and Noise
 
