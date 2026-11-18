@@ -1,0 +1,177 @@
+name: Documentation Preview
+
+# Publishes the documentation that "All Packages (latest)" builds for a pull request to
+# previews/PR<number>/ on gh-pages and links it in a comment, and deletes the previews of closed
+# pull requests. It only copies the uploaded build and never runs code from the pull request, so it
+# also works for pull requests from forks.
+on:
+  workflow_run:
+    workflows: ["All Packages (latest)"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish the preview
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    # Documenter's deploy and the previews push to gh-pages one at a time
+    concurrency:
+      group: gh-pages
+      queue: max
+    steps:
+      - name: Find the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD: ${{ github.event.workflow_run.head_repository.owner.login }}:${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          # Runs of pull requests from forks don't list their pull request
+          if [ -z "$NUMBER" ]; then
+            NUMBER=$(gh api -X GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f head="$HEAD" \
+                       --jq 'map(select(.head.sha == env.SHA))[0].number // empty')
+          fi
+          if [ -z "$NUMBER" ]; then
+            echo "No open pull request for $HEAD at $SHA"
+            exit 0
+          fi
+          state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq '.state + " " + .head.sha')
+          if [ "$state" != "open $SHA" ]; then
+            echo "#$NUMBER is closed or has newer commits"
+            exit 0
+          fi
+          files=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/files" --jq '.[].filename')
+          if ! grep -q -E '^(docs/|CONTRIBUTING\.md$)' <<< "$files"; then
+            echo "#$NUMBER doesn't change the documentation"
+            exit 0
+          fi
+          artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" \
+                       --jq '.artifacts[] | select(.name == "documentation" and (.expired | not)) | .id')
+          if [ -z "$artifact" ]; then
+            echo "The documentation of #$NUMBER wasn't built"
+            exit 0
+          fi
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Download and check the documentation
+        if: steps.pr.outputs.number != ''
+        working-directory: ${{ runner.temp }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name documentation --dir documentation
+          # The build comes from the pull request, so only plain output like Documenter's is published
+          if [ "$(du -sm documentation | cut -f1)" -gt 100 ] || [ -n "$(find documentation -name .git)" ]; then
+            echo "::error::The documentation build is larger than 100 MB or contains .git"
+            exit 1
+          fi
+          # GitHub Pages builds gh-pages with Jekyll, which renders Markdown files and files with front
+          # matter, and a broken one would stop the deployment of the whole site
+          rendered=$(find documentation \( -iname '*.md' -o -iname '*.markdown' -o -type f -size +0 \
+                       -exec awk 'NR == 1 { exit !/^---[[:space:]]*$/ }' {} \; \) -print)
+          if [ -n "$rendered" ]; then
+            echo "::error::The documentation build contains files that Jekyll would render: $rendered"
+            exit 1
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: steps.pr.outputs.number != ''
+        with:
+          ref: gh-pages
+          sparse-checkout: previews/PR${{ steps.pr.outputs.number }}
+
+      - name: Push the preview to gh-pages
+        if: steps.pr.outputs.number != ''
+        env:
+          NUMBER: ${{ steps.pr.outputs.number }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          rm -rf "previews/PR$NUMBER"
+          mkdir -p previews
+          cp -R "$RUNNER_TEMP/documentation" "previews/PR$NUMBER"
+          git add -A "previews/PR$NUMBER"
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -q -m "Preview the documentation of pull request $NUMBER at ${SHA:0:7}"
+            git push -q origin HEAD:gh-pages
+          fi
+
+      - name: Link the preview in the pull request
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          MARKER: "<!-- documentation preview -->"
+        run: |
+          url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/previews/PR$NUMBER/"
+          body="$MARKER
+          Documentation preview: $url (built from ${SHA:0:7})"
+          comment=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" \
+                      --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith(env.MARKER))) | .id' |
+                      head -n 1)
+          if [ -z "$comment" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" -f body="$body" > /dev/null
+          else
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment" -f body="$body" > /dev/null
+          fi
+
+  # pull_request_target, which closing a pull request triggers, is blocked by default in public
+  # repositories from December 2026, so the previews are deleted after the next run of the CI
+  delete:
+    name: Delete the previews of closed pull requests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: gh-pages
+      queue: max
+    steps:
+      - name: Find the previews of closed pull requests
+        id: closed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tree=$(gh api "repos/$GITHUB_REPOSITORY/git/trees/gh-pages" --jq '.tree[] | select(.path == "previews") | .sha')
+          if [ -z "$tree" ]; then
+            exit 0
+          fi
+          previews=$(gh api "repos/$GITHUB_REPOSITORY/git/trees/$tree" \
+                       --jq '.tree[] | select(.type == "tree" and (.path | test("^PR[0-9]+$"))) | .path')
+          {
+            echo "paths<<EOF"
+            for preview in $previews; do
+              if [ "$(gh api "repos/$GITHUB_REPOSITORY/pulls/${preview#PR}" --jq .state)" = closed ]; then
+                echo "previews/$preview"
+              fi
+            done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: steps.closed.outputs.paths != ''
+        with:
+          ref: gh-pages
+          sparse-checkout: ${{ steps.closed.outputs.paths }}
+
+      - name: Delete them from gh-pages
+        if: steps.closed.outputs.paths != ''
+        env:
+          PREVIEWS: ${{ steps.closed.outputs.paths }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r -q $PREVIEWS
+          git commit -q -m "Delete the documentation previews of closed pull requests"
+          git push -q origin HEAD:gh-pages
