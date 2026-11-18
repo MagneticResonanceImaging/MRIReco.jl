@@ -3,9 +3,10 @@
 # [`reconstruction`](@ref) builds every reconstruction from a reconstruction plan of
 # [AbstractImageReconstruction.jl](https://juliaimagerecon.github.io/AbstractImageReconstruction.jl/dev/), as
 # described in [Reconstruction Parameters](@ref reconstruction-parameters). The plan itself shows all parameters of a
-# reconstruction type, and with it, a configured reconstruction can be run on several datasets, and its structure can
-# be saved as a new reconstruction type. This guide shows how. MRIReco re-exports the functions for plans, such as
-# `setAll!` and `build`; the documentation of AbstractImageReconstruction.jl explains plans in general.
+# reconstruction type, and with it, a configured reconstruction can be run on several datasets, its structure can be
+# saved as a new reconstruction type, and a part of it can be replaced by another built-in part or by one of your own.
+# This guide shows how. MRIReco re-exports the functions for plans, such as `setAll!` and `build`; the documentation
+# of AbstractImageReconstruction.jl explains plans in general.
 #
 # ## Configuring a Plan
 #
@@ -90,3 +91,63 @@ reconstruct("uniformStandard", acqData; reconSize = (N, N), solver = CGNR,
 # can be saved and loaded yet, for example the solver, the regularization terms and `reconSize`
 # ([#397](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/397)), and `reconstruction` replaces
 # stored values such as `:iterations` with its defaults.
+#
+# ## Implementing a Part of Your Own
+#
+# The parts of a plan are what AbstractImageReconstruction.jl calls parameters: callable objects that each carry out
+# one step of the reconstruction, as its documentation describes under
+# [Interface](https://juliaimagerecon.github.io/AbstractImageReconstruction.jl/dev/generated/example/1_interface/).
+#
+# A weighting of the iterative reconstruction types is a subtype of [`AbstractMRIRecoWeightingParameters`](@ref),
+# defined with `@parameter`, with a method `(weighting::MyWeighting)(::Type{<:AbstractMRIRecoAlgorithm})`. The
+# reconstruction calls the method and expects one vector per contrast with one weight per sample, the same for all
+# coils, in the form that [`samplingDensity`](@ref) returns. The vectors must have the type that
+# [`ctx_storageType`](@ref) returns, complex and in the precision of the data. The reconstruction weights the encoding
+# operator and the data with them, so the weights take the place of the square roots of the density compensation
+# factors, not of the factors themselves, see [Density Compensation](@ref). Their scale matters as well: with the
+# default `:normalizeReg`, weights `c` times larger scale the data term by `c^2` relative to the regularization.
+#
+# The following weighting has one field: with `exponent = 1`, the default, it returns the weights of
+# `DensityWeightingParameters`, with `exponent = 0` the constant weight of `UniformWeightingParameters`, and with a
+# value in between it applies the density compensation only in part, with weights between those of the two.
+# [`ctx_acqData`](@ref) and [`ctx_reconSize`](@ref) give its method the data and the image size of the
+# running reconstruction:
+
+@parameter struct PartialDensityWeightingParameters <: AbstractMRIRecoWeightingParameters
+    exponent::Float64 = 1.0
+end
+
+function (weighting::PartialDensityWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
+    exponent = weighting.exponent
+    uniformWeight = 1 / sqrt(prod(ctx_reconSize()))
+    return map(samplingDensity(ctx_acqData(), ctx_reconSize())) do densityWeights
+        weights = uniformWeight^(1 - exponent) .* densityWeights .^ exponent
+        ctx_storageType()(weights)
+    end
+end
+
+# With the default, the reconstruction computes the same image as with the density weighting above:
+
+ownPlan = MRIRecoPlan("standard"; reconSize = (N, N), solver = CGNR,
+                      reg = L2Regularization(1e-3), iterations = 10,
+                      weightingParams = RecoPlan(PartialDensityWeightingParameters))
+reconstruct(build(ownPlan), acqData) ≈ image
+
+# The field of the type is a parameter of the plan, which `setAll!` sets like the built-in ones, so it needs a name
+# that no other parameter of the plan has:
+
+setAll!(ownPlan; exponent = 0.5)
+ownPlan.parameter.parameter.weightingParams
+
+# `reconstruction` takes an object of the type as `:weightingParams`. `:densityWeighting = false` from above would
+# replace it and is removed first. Both ways compute the same image, which now differs from the one with the density
+# weighting:
+
+delete!(params, :densityWeighting)
+params[:weightingParams] = PartialDensityWeightingParameters(exponent = 0.5)
+partial = reconstruct(build(ownPlan), acqData)
+(partial ≈ reconstruction(acqData, params), partial ≈ image)
+
+# For weights that are fixed numbers, the key `:weights` is enough, currently only for data with one coil; a type
+# computes them for the data that the plan is applied to. A plan with the type is saved like the one above and, for a
+# type that a script defines, loads after `addMRIRecoPlanModule(Main)`.
