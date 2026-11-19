@@ -83,7 +83,7 @@ The steps of these workflows are in `.github/workflows/`, so you can also run th
 
 ## Building the Documentation
 
-The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/), and the scripts in `docs/src/literate` are converted into pages with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
+The documentation is built with [Documenter.jl](https://documenter.juliadocs.org/stable/) and [DocumenterVitepress.jl](https://luxdl.github.io/DocumenterVitepress.jl/stable/), and the scripts in `docs/src/literate` are converted into pages with [Literate.jl](https://fredrikekre.github.io/Literate.jl/v2/). To build it locally, develop all packages into the `docs` environment, as the CI does:
 
 ```julia
 using Pkg
@@ -95,7 +95,9 @@ Pkg.develop([PackageSpec(path = "."), PackageSpec(path = "MRIBase"),
 Pkg.instantiate()
 ```
 
-Then run `julia --project=docs docs/make.jl` from the repository root and open `docs/build/index.html`. The build runs all examples, so it takes several minutes. Don't commit the changes that `Pkg.develop` makes to `docs/Project.toml`.
+Then run `julia --project=docs docs/make.jl` from the repository root. The build runs all examples, so it takes several minutes. Don't commit the changes that `Pkg.develop` makes to `docs/Project.toml`.
+
+DocumenterVitepress uses its own Node.js to install VitePress into `docs/node_modules` and writes the site to `docs/build/1`. Open the site through a local web server, for example with `LiveServer.serve(dir = "docs/build/1")` from [LiveServer.jl](https://github.com/JuliaDocs/LiveServer.jl), and navigate from its home page; opened as files, the pages load without their styles and scripts. On Windows, DocumenterVitepress currently skips the VitePress build, so no site is written; [LuxDL/DocumenterVitepress.jl#396](https://github.com/LuxDL/DocumenterVitepress.jl/issues/396) describes workarounds.
 
 ## Changing Several Packages
 

@@ -9,3 +9,4 @@ Manifest.toml
 .vscode
 docs/src/generated/
 docs/src/contributing.md
+docs/node_modules/

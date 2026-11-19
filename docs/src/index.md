@@ -1,6 +1,39 @@
-# MRIReco.jl
+```@raw html
+---
+layout: home
 
-*Magnetic Resonance Imaging Reconstruction in Julia*
+hero:
+  name: MRIReco.jl
+  tagline: Magnetic Resonance Imaging Reconstruction in Julia
+  image:
+    src: /logo.png
+    alt: MRIReco.jl
+  actions:
+    - theme: brand
+      text: Getting Started
+      link: /gettingStarted
+    - theme: alt
+      text: Tutorials
+      link: /generated/tutorials/direct
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/MagneticResonanceImaging/MRIReco.jl
+
+features:
+  - title: Raw Data and Files
+    details: Read and write ISMRMRD files, read Bruker datasets and prepare raw data for reconstruction.
+    link: /generated/howto/load_save
+  - title: Iterative Reconstruction
+    details: Reconstruct undersampled data with the solvers and regularization terms of RegularizedLeastSquares.jl.
+    link: /generated/tutorials/iterative
+  - title: Parallel Imaging
+    details: Estimate coil sensitivities with ESPIRiT and reconstruct one image from the data of all coils, also combined with compressed sensing.
+    link: /generated/tutorials/multicoil
+  - title: GPU Acceleration
+    details: Run reconstructions on a GPU by setting the reconstruction parameter <code>arrayType</code>.
+    link: /generated/howto/gpu
+---
+```
 
 MRIReco.jl is a framework for MRI image reconstruction written in Julia. It provides data types for raw data and for k-space data prepared for reconstruction, encoding operators, and direct as well as iterative reconstruction methods, including parallel imaging and compressed sensing. Further packages read and write raw data files, generate sampling patterns, estimate coil sensitivities and simulate data.
 
