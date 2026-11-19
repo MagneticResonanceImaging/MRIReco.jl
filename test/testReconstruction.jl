@@ -19,6 +19,20 @@ function testGriddingReco(N=32;arrayType = Array)
 
   x_approx = reconstruction(acqData, params)
   @test (norm(vec(x)-vec(x_approx))/norm(vec(x))) < 1e-2
+
+
+  # shuffle profile + direct reconstruction
+  raw = RawAcquisitionData(acqData)
+  raw_shuffle = deepcopy(raw)
+  raw_shuffle.profiles = shuffle(raw.profiles)
+  acqData_shuffle = AcquisitionData(raw_shuffle)
+ 
+  params[:reco] = "direct"
+  params[:reconSize] = (N,N)
+  params[:arrayType] = arrayType
+
+  x_approx_2 = reconstruction(acqData_shuffle, params)
+  @test (norm(vec(x_approx_2)-vec(x_approx))/norm(vec(x_approx))) < 1e-2
 end
 
 # test gridding reco
