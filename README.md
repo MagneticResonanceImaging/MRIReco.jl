@@ -22,7 +22,7 @@ The repository contains several packages, which are registered individually. The
 
 | Package | Purpose | Depends on |
 |:---|:---|:---|
-| [MRIReco](https://magneticresonanceimaging.github.io/MRIReco.jl/dev/API/MRIReco/) | Image reconstruction | MRIBase, MRIOperators |
+| [MRIReco](https://magneticresonanceimaging.github.io/MRIReco.jl/dev/API/MRIReco) | Image reconstruction | MRIBase, MRIOperators |
 | [MRIBase](https://github.com/MagneticResonanceImaging/MRIReco.jl/tree/master/MRIBase) | Data types for raw data, acquisition data and trajectories | — |
 | [MRIOperators](https://github.com/MagneticResonanceImaging/MRIReco.jl/tree/master/MRIOperators) | Encoding operators | MRIBase |
 | [MRIFiles](https://github.com/MagneticResonanceImaging/MRIReco.jl/tree/master/MRIFiles) | Reading and writing raw data files | MRIBase |
@@ -37,7 +37,7 @@ using Pkg
 Pkg.add("MRIReco")
 ```
 
-`using MRIReco` also loads MRIBase and MRIOperators. The other packages are added and loaded separately, for example MRIFiles to read raw data files. [Getting Started](https://magneticresonanceimaging.github.io/MRIReco.jl/dev/gettingStarted/) runs a first reconstruction.
+`using MRIReco` also loads MRIBase and MRIOperators. The other packages are added and loaded separately, for example MRIFiles to read raw data files. [Getting Started](https://magneticresonanceimaging.github.io/MRIReco.jl/dev/gettingStarted) runs a first reconstruction.
 
 ## How to give credit
 If you use this package please acknowledge us by citing:
