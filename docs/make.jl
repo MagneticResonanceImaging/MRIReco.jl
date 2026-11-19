@@ -87,6 +87,18 @@ makedocs(
     checkdocs = :exports,
 )
 
+# VitePress copies only the pages and the files they reference into the site, so copy the notebooks that
+# generate.jl writes next to the Literate pages into each built site
+generated = joinpath(@__DIR__, "src", "generated")
+for site in readdir(joinpath(@__DIR__, "build"); join = true)
+    (isdir(site) && all(isdigit, basename(site))) || continue
+    for (root, _, files) in walkdir(generated), file in filter(endswith(".ipynb"), files)
+        target = joinpath(site, "generated", relpath(root, generated))
+        mkpath(target)
+        cp(joinpath(root, file), joinpath(target, file); force = true)
+    end
+end
+
 # Pull requests are not deployed. For those from this repository,
 # DocumenterVitepress.deploydocs would still post a status that links to a preview.
 if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
