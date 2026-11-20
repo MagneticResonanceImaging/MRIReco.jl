@@ -252,4 +252,5 @@ fig
 #   of the sampling masks.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
-# - The API reference describes [`reconstruction`](@ref) and [`applySubspace`](@ref).
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref) and [`applySubspace`](@ref).

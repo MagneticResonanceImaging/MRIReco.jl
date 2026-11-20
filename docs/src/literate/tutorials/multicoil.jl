@@ -146,7 +146,13 @@ showimages([image[detail...] for image in images],
 # ## Next Steps
 #
 # - [Iterative Reconstruction](@ref iterative-reconstruction) shows how the weight λ changes the result.
+# - [Signal Model and Encoding Operators](@ref signal-model) explains how the coil sensitivities enter the encoding
+#   operator.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
-# - The API reference describes [`reconstruction`](@ref), [`espirit`](@ref) and
+# - [Estimate Coil Sensitivities with ESPIRiT](@ref estimate-coil-sensitivities) shows how to choose the calibration
+#   region and mask voxels without signal, [Compress Multi-Coil Data](@ref coil-compression) how to reduce the number
+#   of coils, and [Run a Reconstruction on the GPU](@ref gpu-reconstruction) how to move the reconstruction to a GPU.
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref), [`espirit`](@ref) and
 #   [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)).

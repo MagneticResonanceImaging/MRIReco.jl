@@ -1,6 +1,6 @@
 # MRIOperators
 
-MRIOperators implements the encoding operators used in MRI reconstruction: Fourier encoding with and without field inhomogeneity correction, coil sensitivities and sparsifying transforms. It builds on [LinearOperatorCollection.jl](https://juliaimagerecon.github.io/LinearOperatorCollection.jl/stable/) and re-exports its operators, such as `FFTOp`, `NFFTOp`, `WaveletOp`, `DiagOp` and `normalOperator`, which are documented there. MRIOperators depends on MRIBase. MRIReco re-exports MRIOperators, so `using MRIReco` makes all names on this page available.
+MRIOperators implements the encoding operators used in MRI reconstruction: Fourier encoding with and without field inhomogeneity correction, coil sensitivities and sparsifying transforms. It builds on [LinearOperatorCollection.jl](https://juliaimagerecon.github.io/LinearOperatorCollection.jl/stable/) and re-exports its operators, such as `FFTOp`, `NFFTOp`, `WaveletOp`, `DiagOp` and `normalOperator`, which are documented there. MRIOperators depends on MRIBase. MRIReco re-exports MRIOperators, so `using MRIReco` makes all names on this page available. [Signal Model and Encoding Operators](@ref signal-model) explains the operators, and the guide [Use Encoding Operators Directly](@ref encoding-operators) shows how to build and apply them.
 
 ## Encoding Operators
 

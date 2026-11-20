@@ -151,3 +151,7 @@ partial = reconstruct(build(ownPlan), acqData)
 # For weights that are fixed numbers, the key `:weights` is enough, currently only for data with one coil; a type
 # computes them for the data that the plan is applied to. A plan with the type is saved like the one above and, for a
 # type that a script defines, loads after `addMRIRecoPlanModule(Main)`.
+#
+# Other parts take objects of your own without a new type: an operator as `:sparseTrafo`, see
+# [Use a Custom Sparsifying Transform](@ref custom-transform), and a denoiser in `PnPRegularization` as `:reg`, see
+# [Use a Plug-and-Play Prior](@ref plug-and-play).
