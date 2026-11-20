@@ -98,7 +98,7 @@ showimages([abs.(sensitivities[:, :, 1, c]) for c in 1:8],
 # ```
 # Solving this problem with the conjugate gradient method is known as CG-SENSE. We pass the sensitivities as
 # `params[:senseMaps]` and, as in [Iterative Reconstruction](@ref iterative-reconstruction), use CGNR with a small
-# $\ell_2$ regularization. With `MeasurementBasedNormalization`, λ is scaled by the mean magnitude of the measured data:
+# $\ell_2$ regularization. With `MeasurementBasedNormalization`, λ is scaled with the magnitude of the data:
 
 params = Dict{Symbol, Any}()
 params[:reco] = "multiCoil"

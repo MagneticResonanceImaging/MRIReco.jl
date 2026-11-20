@@ -101,8 +101,8 @@ showimages([referenceImage, directImage, imageL2],
 # images that consist of regions with constant intensity, like this simulated brain. We solve the problem with ADMM,
 # which is also the default solver. So that ADMM converges within 50 iterations for every λ used below, we let it
 # adapt its penalty parameter `rho` with `vary_rho = :balance` and use more inner iterations for the TV term than by
-# default, `iterationsTV = 50`. With `MeasurementBasedNormalization`, λ is scaled by the mean magnitude of the
-# measured data, so that the same value works for data of different scale:
+# default, `iterationsTV = 50`. With `MeasurementBasedNormalization`, λ is scaled with the magnitude of the data,
+# so that the same value works for data of different scale:
 
 params[:solver] = ADMM
 params[:vary_rho] = :balance
