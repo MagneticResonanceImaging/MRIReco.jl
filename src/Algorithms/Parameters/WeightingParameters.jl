@@ -5,7 +5,18 @@ export DensityWeightingParameters, UniformWeightingParameters, CustomWeightingPa
     AbstractMRIRecoWeightingParameters <: AbstractMRIRecoParameters
 
 Abstract base type for weighting parameters used in MRI reconstruction.
-Subtypes define how weights are computed for the reconstruction.
+Subtypes define how weights are computed for the reconstruction. The iterative reconstructions multiply the encoding
+operator and the data by them, so they take the place of the square roots of the density compensation factors.
+
+# Required Callable Interface
+    (wp::AbstractMRIRecoWeightingParameters)(::Type{<:AbstractMRIRecoAlgorithm})
+
+A subtype must implement this method for `Type{<:AbstractMRIRecoAlgorithm}`. [`ctx_acqData`](@ref) and
+[`ctx_reconSize`](@ref) give it the data and the image size of the running reconstruction.
+
+# Returns
+- `Vector{S}` with `S = ctx_storageType()` - One weight vector per contrast with one weight per sample, the same for
+  all coils, complex and in the precision of the data, in the form that [`samplingDensity`](@ref) returns
 """
 abstract type AbstractMRIRecoWeightingParameters <: AbstractMRIRecoParameters end
 

@@ -87,10 +87,10 @@ acqDataLoaded.kdata == acqDataSub.kdata,
 # - The loaded `"Custom"` trajectory is always marked as circular. If the original trajectory was not,
 #   reconstructions such as the direct one now set the corners of the image to zero. The `subsampleIndices` of the
 #   loaded data can differ as well, which is one reason why converting such data into raw data again can fail.
-# - After loading, the echo time is zero, `sequenceInfo` is empty and the readout duration returned by
-#   `acqTimePerProfile` is the default of 1 ms. The sampling times of a non-Cartesian trajectory are rebuilt from the
-#   original readout duration, those of a Cartesian trajectory from the default. This matters if the reconstruction
-#   uses these times, for example for an off-resonance correction.
+# - After loading, the field `TE` of the trajectories is zero, `sequenceInfo` is empty and the readout duration
+#   returned by `acqTimePerProfile` is the default of 1 ms. The sampling times of a non-Cartesian trajectory are
+#   rebuilt from the original readout duration, those of a Cartesian trajectory from the default. This matters if the
+#   reconstruction uses these times, for example for an off-resonance correction.
 # - The header has only five entries, among them the matrix size and the field of view. Elements that the ISMRMRD
 #   schema requires, such as `reconSpace` and `encodingLimits`, are missing, so other ISMRMRD software may not accept
 #   the file ([#33](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/33)).

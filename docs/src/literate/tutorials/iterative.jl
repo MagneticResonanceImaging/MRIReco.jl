@@ -101,8 +101,8 @@ showimages([referenceImage, directImage, imageL2],
 # images that consist of regions with constant intensity, like this simulated brain. We solve the problem with ADMM,
 # which is also the default solver. So that ADMM converges within 50 iterations for every λ used below, we let it
 # adapt its penalty parameter `rho` with `vary_rho = :balance` and use more inner iterations for the TV term than by
-# default, `iterationsTV = 50`. With `MeasurementBasedNormalization`, λ is scaled by the mean magnitude of the
-# measured data, so that the same value works for data of different scale:
+# default, `iterationsTV = 50`. With `MeasurementBasedNormalization`, λ is scaled with the magnitude of the data,
+# so that the same value works for data of different scale:
 
 params[:solver] = ADMM
 params[:vary_rho] = :balance
@@ -135,7 +135,9 @@ showimages(images, ["λ = $λ, NRMSD $(deviation(image))"
 #
 # ## Next Steps
 #
-# - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
+# - [Reconstruction as an Inverse Problem](@ref inverse-problem) explains the problem in more detail, with the weighting
+#   of the samples and the normalization of λ, and the
+#   [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
 # - With several coils, `"standard"` reconstructs the image of each coil separately.
 #   [Multi-Coil Reconstruction](@ref multicoil-reconstruction) shows how the reconstruction type `"multiCoil"`
@@ -143,5 +145,9 @@ showimages(images, ["λ = $λ, NRMSD $(deviation(image))"
 # - With several echoes, `"standard"` reconstructs each echo on its own.
 #   [Multi-Echo Reconstruction](@ref multiecho-reconstruction) shows how the reconstruction type `"multiEcho"`
 #   reconstructs them jointly.
-# - The API reference describes [`reconstruction`](@ref) and
+# - [Undersample k-Space](@ref undersample-kspace) shows how to choose and reproduce a sampling pattern, and
+#   [Use a Custom Sparsifying Transform](@ref custom-transform) how to apply the regularization to other transforms
+#   of the image.
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref) and
 #   [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)).

@@ -37,6 +37,8 @@ Private = false
 
 ## AcquisitionData
 
+The guide [Create AcquisitionData from Arrays](@ref acqdata-from-arrays) shows how to create it from arrays, and [Data Model](@ref data-model) explains its fields.
+
 ```@autodocs
 Modules = [MRIBase]
 Pages = ["Datatypes/AcqData.jl"]

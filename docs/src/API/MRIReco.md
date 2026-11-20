@@ -4,6 +4,8 @@ MRIReco provides the image reconstruction of the framework. Of the packages in t
 
 ## Reconstruction
 
+[Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary.
+
 ```@docs
 MRIReco.reconstruction
 MRIReco.defaultRecoParams
@@ -15,6 +17,7 @@ MRIReco.defaultRecoParams
 [AbstractImageReconstruction.jl](https://github.com/JuliaImageRecon/AbstractImageReconstruction.jl) and runs it.
 A plan for each reconstruction type is stored in `reco_plans/` and can be loaded with `MRIRecoPlan`, e.g.
 `MRIRecoPlan("multiCoil")`, or run directly with `reconstruct("multiCoil", acqData; kwargs...)`.
+[Configure a Reconstruction with Plans](@ref configure-plans) shows how to use them.
 
 ```@autodocs
 Modules = [MRIReco]

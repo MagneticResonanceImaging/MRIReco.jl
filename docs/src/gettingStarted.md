@@ -71,5 +71,6 @@ fig
 ## Next Steps
 
 - The tutorials walk through complete reconstructions step by step, starting with [Direct Reconstruction](@ref direct-reconstruction) and [Iterative Reconstruction](@ref iterative-reconstruction).
-- The how-to guides show how to solve specific tasks, such as [loading and saving raw data](@ref load-save), [binning profiles](@ref binning), [extracting Cartesian k-space data](@ref extract-kspace) or [running a reconstruction on the GPU](@ref gpu-reconstruction).
-- The API reference lists the functions and types of each package.
+- The how-to guides show how to solve specific tasks, such as [simulating k-space data](@ref simulate-kspace), [loading and saving raw data](@ref load-save), [binning profiles](@ref binning), [extracting Cartesian k-space data](@ref extract-kspace) or [running a reconstruction on the GPU](@ref gpu-reconstruction).
+- The explanations describe the design of the packages and the concepts behind them, for example the [data model](@ref data-model) and [reconstruction as an inverse problem](@ref inverse-problem).
+- [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys that [`reconstruction`](@ref) takes, and [Configure a Reconstruction with Plans](@ref configure-plans) shows the reconstruction plans that it fills with them. The API reference describes the functions and types of each package.

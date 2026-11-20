@@ -119,13 +119,15 @@ fig
 # ## Sampling Times
 #
 # The correction uses the sampling times of the trajectory of each contrast, for example
-# `readoutTimes(trajectory(acqData, 1))` for the first one, and counts them from its echo time,
-# `echoTime(trajectory(acqData, 1))`. It therefore reconstructs the magnetization at the echo time. In the example,
-# times that are 10 % too small or too large raise the NRMSD of the corrected image from 0.027 to 0.04.
+# `readoutTimes(trajectory(acqData, 1))` for the first one, and counts them from the field `TE` of the trajectory,
+# `echoTime(trajectory(acqData, 1))`. It therefore reconstructs the magnetization at this time. For the built-in
+# trajectories, `TE` is the time of the first sample of each profile, so it is the echo time only for readouts that
+# start in the center of k-space, such as the spiral here, see [Create a Trajectory](@ref create-trajectory). In the
+# example, times that are 10 % too small or too large raise the NRMSD of the corrected image from 0.027 to 0.04.
 #
 # For `AcquisitionData` converted from `RawAcquisitionData`, as for ISMRMRD and Bruker files, the times of a
 # non-Cartesian trajectory start at zero at the beginning of each readout and follow the sampling interval in the
-# profile headers, and the echo time is zero. For a Cartesian trajectory, the times are placeholders that span 1 ms
+# profile headers, and the field `TE` is zero. For a Cartesian trajectory, the times are placeholders that span 1 ms
 # per profile. `AcquisitionData` created from a k-space array, as in
 # [Create AcquisitionData from Arrays](@ref acqdata-from-arrays), gives every sample the time zero. If the times
 # don't match the acquisition, set the fields `times` and `TE` of the trajectories, one per contrast and in seconds,
