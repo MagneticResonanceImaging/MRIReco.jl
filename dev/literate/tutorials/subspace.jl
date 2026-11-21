@@ -114,7 +114,7 @@ nothing #hide
 # Fourier transform and the measured samples, scaled as in Multi-Echo Reconstruction. We pass the sensitivities as
 # `params[:senseMaps]` and start with CGNR and a small $\ell_2$ regularization. As in
 # [Iterative Reconstruction](@ref iterative-reconstruction), `MeasurementBasedNormalization` scales the weight λ of the
-# regularization by the mean magnitude of the measured data. The coil dimension of the result has size 1:
+# regularization with the magnitude of the data. The coil dimension of the result has size 1:
 
 params = Dict{Symbol, Any}()
 params[:reco] = "multiCoilMultiEcho"
@@ -252,4 +252,5 @@ fig
 #   of the sampling masks.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
-# - The API reference describes [`reconstruction`](@ref) and [`applySubspace`](@ref).
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref) and [`applySubspace`](@ref).

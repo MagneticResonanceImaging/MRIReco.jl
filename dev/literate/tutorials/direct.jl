@@ -81,5 +81,11 @@ showimages([combinedImage[:, :, 1, 1, 1, 1]], ["Root sum of squares"])
 # - [Iterative Reconstruction](@ref iterative-reconstruction) shows how to reconstruct undersampled data.
 # - [Multi-Coil Reconstruction](@ref multicoil-reconstruction) uses the coil sensitivities to reconstruct a single
 #   image from the undersampled data of all coils.
-# - The API reference describes [`reconstruction`](@ref) and the functions for reading files in
+# - [Data Model](@ref data-model) explains what `RawAcquisitionData` and `AcquisitionData` contain and how k-space
+#   data and images are laid out.
+# - [Select and Prepare Profiles](@ref prepare-profiles) shows how to remove noise and calibration readouts from raw
+#   data before the conversion, and [Create AcquisitionData from Arrays](@ref acqdata-from-arrays) how to reconstruct
+#   data that MRIFiles cannot read.
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref) and the functions for reading files in
 #   [MRIFiles](../../API/MRIFiles.md).

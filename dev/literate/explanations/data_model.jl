@@ -165,7 +165,7 @@ fig
 using MRISampling
 
 acqDataRegular = sample_kspace(acqData, 4.0, "regular")
-acqDataPoisson = sample_kspace(acqData, 4.0, "poisson", calsize = 30)
+acqDataPoisson = sample_kspace(acqData, 4.0, "poisson", calsize = 30, seed = 1234)
 
 fig = Figure()
 for (i, (name, data)) in

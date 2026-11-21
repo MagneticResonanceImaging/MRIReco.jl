@@ -87,11 +87,11 @@ size(nodes), size(samples)
 
 # A [`Trajectory`](@ref) holds the nodes together with the number of profiles and the number of samples per profile.
 # Their product has to be the number of nodes, and nodes that are not organized in profiles can be passed as a single
-# profile. `circular = true` marks a trajectory that covers a circular region of k-space, like the predefined
-# non-Cartesian trajectories of MRIBase. Several reconstruction types, among them `"direct"`, `"standard"` and
-# `"multiCoil"`, then set the corners of the image to zero. The default is `false`. The k-space data is passed as a
-# three-dimensional array of matrices with the dimensions contrast, slice and repetition, which has a single entry
-# here:
+# profile. `circular = true` marks a trajectory that covers a circular region of k-space, like the
+# [built-in non-Cartesian trajectories](@ref create-trajectory) of MRIBase. Several reconstruction types, among them
+# `"direct"`, `"standard"` and `"multiCoil"`, then set the corners of the image to zero. The default is `false`. The
+# k-space data is passed as a three-dimensional array of matrices with the dimensions contrast, slice and
+# repetition, which has a single entry here:
 
 tr = Trajectory(nodes, 200, N; circular = true)
 kdata = fill(samples, 1, 1, 1)

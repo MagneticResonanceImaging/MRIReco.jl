@@ -33,8 +33,8 @@ nothing #hide
 
 # ## Loading the Data
 #
-# As in the other tutorials, the reference is the direct reconstruction with the coil images combined by the root sum
-# of squares:
+# As in [Multi-Coil Reconstruction](@ref multicoil-reconstruction), the reference is the direct reconstruction with the
+# coil images combined by the root sum of squares:
 
 using Pkg.Artifacts
 artifacts = joinpath(pkgdir(MRIReco), "docs", "Artifacts.toml")
@@ -169,7 +169,7 @@ fig
 # per coil. After compression, the data belong to virtual coils, so the sensitivities must be those of the virtual
 # coils. We undersample the data as in that tutorial and reconstruct with all 8 coils for comparison:
 
-acqDataSub = sample_kspace(acqData, 4.0, "poisson", calsize = 30)
+acqDataSub = sample_kspace(acqData, 4.0, "poisson", calsize = 30, seed = 1234)
 sensitivities = espirit(acqDataSub, (6, 6), 30, eigThresh_2 = 0)
 
 paramsSENSE = Dict{Symbol, Any}()

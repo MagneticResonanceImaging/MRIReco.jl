@@ -44,7 +44,9 @@ nothing #hide
 
 # ## An Operator of Your Own
 #
-# The operator takes the image as a vector of length `prod(params[:reconSize])`.
+# The operator takes the image as a vector of length `prod(params[:reconSize])`. A matrix `M` becomes such an
+# operator with `LinearOperator(M)`; passed as it is, it gives a wrong image or an error
+# ([#406](https://github.com/MagneticResonanceImaging/MRIReco.jl/issues/406)).
 # `LinearOperator(T, nrows, ncols, symmetric, hermitian, prod!, tprod!, ctprod!)` builds one from functions that
 # compute the product and the product with the adjoint in place. As an example, the 2D discrete cosine transform of
 # FFTW.jl gives the same result as `DCTOp` of LinearOperatorCollection.jl:
