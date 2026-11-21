@@ -46,11 +46,12 @@ algo = build(plan)
 image = reconstruct(algo, acqData)
 size(image)
 
-# `reconstruction` with the same keys computes the same image:
+# `reconstruction` with the same keys computes the same image, up to rounding errors that can vary between runs with
+# several Julia threads:
 
 params = Dict{Symbol, Any}(:reco => "standard", :reconSize => (N, N), :solver => CGNR,
                            :reg => L2Regularization(1e-3), :iterations => 10)
-image == reconstruction(acqData, params)
+image ≈ reconstruction(acqData, params)
 
 # The algorithm reconstructs further data with the same settings, for example `reconstruct(algo, otherData)`.
 # [`reconstruct`](@ref) with the name of a reconstruction type, `reconstruct("standard", acqData; kwargs...)`, loads,
@@ -62,12 +63,13 @@ image == reconstruction(acqData, params)
 # the reconstruction works. With a plan of `UniformWeightingParameters`, all samples have the same weight, as with
 # `:densityWeighting = false` in `reconstruction`; like that key, it currently works only for data with one coil, see
 # the limits in [Reconstruction Parameters](@ref reconstruction-parameters). The part is set as a plan, not as
-# `UniformWeightingParameters()`, so that it stays when the plan is cleared below:
+# `UniformWeightingParameters()`, so that it stays when the plan is cleared below. With uniform weights, the
+# differences between runs are larger, so this comparison and the one below use the relative tolerance `rtol = 1e-6`:
 
 setAll!(plan; weightingParams = RecoPlan(UniformWeightingParameters))
 uniform = reconstruct(build(plan), acqData)
 params[:densityWeighting] = false
-uniform == reconstruction(acqData, params)
+isapprox(uniform, reconstruction(acqData, params); rtol = 1e-6)
 
 # ## Saving a Plan as a Reconstruction Type
 #
@@ -80,8 +82,9 @@ clear!(plan)
 dir = mktempdir()
 savePlan(joinpath(dir, "uniformStandard.toml"), plan)
 addMRIRecoPlanPath(dir)
-reconstruct("uniformStandard", acqData; reconSize = (N, N), solver = CGNR,
-            reg = L2Regularization(1e-3), iterations = 10) == uniform
+uniformLoaded = reconstruct("uniformStandard", acqData; reconSize = (N, N), solver = CGNR,
+                            reg = L2Regularization(1e-3), iterations = 10)
+isapprox(uniformLoaded, uniform; rtol = 1e-6)
 
 # `reconstruction` takes the name as `:reco` as well, and the path of the file works without `addMRIRecoPlanPath`.
 # Added folders are searched first, the last one added first, and stay added until Julia is restarted, so a plan file
@@ -151,3 +154,7 @@ partial = reconstruct(build(ownPlan), acqData)
 # For weights that are fixed numbers, the key `:weights` is enough, currently only for data with one coil; a type
 # computes them for the data that the plan is applied to. A plan with the type is saved like the one above and, for a
 # type that a script defines, loads after `addMRIRecoPlanModule(Main)`.
+#
+# Other parts take objects of your own without a new type: an operator as `:sparseTrafo`, see
+# [Use a Custom Sparsifying Transform](@ref custom-transform), and a denoiser in `PnPRegularization` as `:reg`, see
+# [Use a Plug-and-Play Prior](@ref plug-and-play).

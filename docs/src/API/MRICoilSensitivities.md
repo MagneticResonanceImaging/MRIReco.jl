@@ -1,6 +1,6 @@
 # MRICoilSensitivities
 
-MRICoilSensitivities estimates coil sensitivity maps, for example with ESPIRiT, and compresses multi-channel data to fewer virtual coils. MRICoilSensitivities depends on MRIBase. It has to be loaded with `using MRICoilSensitivities`, because MRIReco does not depend on it. The guide [Estimate Coil Sensitivities with ESPIRiT](@ref estimate-coil-sensitivities) shows how to use `espirit`.
+MRICoilSensitivities estimates coil sensitivity maps, for example with ESPIRiT, and compresses multi-channel data to fewer virtual coils. MRICoilSensitivities depends on MRIBase. It has to be loaded with `using MRICoilSensitivities`, because MRIReco does not depend on it. The guide [Estimate Coil Sensitivities with ESPIRiT](@ref estimate-coil-sensitivities) shows how to use `espirit`, and [Compress Multi-Coil Data](@ref coil-compression) how to reduce the number of coils.
 
 ## Coil Sensitivities
 

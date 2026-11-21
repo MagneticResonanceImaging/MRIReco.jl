@@ -106,7 +106,8 @@ fig
 # contrast per echo. The extended phase graph method computes the amplitudes of the echoes from the relaxation rates
 # `params[:r2map]`, or the real part of the correction map, and `params[:r1map]`, and from the flip angles
 # `params[:excitationAngle]`, by default π/2, and `params[:refocusingAngles]`, a vector with one angle per echo, by
-# default π. All contrasts share the trajectory of the parameters, so their echo time does not follow `:T_echo`.
+# default π. All contrasts share the trajectory of the parameters, so the field `TE` of this trajectory does not
+# follow `:T_echo`.
 #
 # ## Simulating along a Given Trajectory
 #

@@ -1,4 +1,4 @@
-The MRIFiles.jl package is licensed under the MIT "Expat" License:
+The MRIOperators.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2022: Tobias Knopp and Contributors
 >

@@ -218,5 +218,6 @@ fig
 #   from all coils with `"multiCoilMultiEcho"` and exploits the same redundancy with a fixed temporal basis.
 # - The [RegularizedLeastSquares.jl documentation](https://juliaimagerecon.github.io/RegularizedLeastSquares.jl/stable/)
 #   describes the available solvers and regularization terms.
-# - The API reference describes [`reconstruction`](@ref) and
+# - [Reconstruction Parameters](@ref reconstruction-parameters) lists the keys of the parameter dictionary, and the API
+#   reference describes [`reconstruction`](@ref) and
 #   [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)).
