@@ -1,4 +1,4 @@
-using Documenter, Literate
+using Documenter, DocumenterVitepress, Literate
 using MRIBase, MRIFiles, MRICoilSensitivities, MRIOperators, MRISampling, MRISimulation, MRIReco
 
 # Generates examples
@@ -14,14 +14,13 @@ write(joinpath(@__DIR__, "src", "contributing.md"),
 
 makedocs(
     modules = [MRIReco, MRIBase, MRIOperators, MRIFiles, MRISampling, MRICoilSensitivities, MRISimulation],
-    sitename = "Julia MRI Package",
+    sitename = "MRIReco.jl",
     authors = "Tobias Knopp, Mirco Grosser, and Co-Authors",
     repo = Remotes.GitHub("MagneticResonanceImaging", "MRIReco.jl"),
-    format = Documenter.HTML(
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://magneticresonanceimaging.github.io/MRIReco.jl/stable/",
-        assets = String[],
-        collapselevel = 1,
+    format = DocumenterVitepress.MarkdownVitepress(
+        repo = "github.com/MagneticResonanceImaging/MRIReco.jl",
+        devbranch = "master",
+        devurl = "dev",
     ),
     pages = [
         "Home" => "index.md",
@@ -88,7 +87,24 @@ makedocs(
     checkdocs = :exports,
 )
 
-deploydocs(
-    repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git",
-    devbranch = "master",
-)
+# VitePress copies only the pages and the files they reference into the site, so copy the notebooks that
+# generate.jl writes next to the Literate pages into each built site
+generated = joinpath(@__DIR__, "src", "generated")
+for site in readdir(joinpath(@__DIR__, "build"); join = true)
+    (isdir(site) && all(isdigit, basename(site))) || continue
+    for (root, _, files) in walkdir(generated), file in filter(endswith(".ipynb"), files)
+        target = joinpath(site, "generated", relpath(root, generated))
+        mkpath(target)
+        cp(joinpath(root, file), joinpath(target, file); force = true)
+    end
+end
+
+# Pull requests are not deployed. For those from this repository,
+# DocumenterVitepress.deploydocs would still post a status that links to a preview.
+if get(ENV, "GITHUB_EVENT_NAME", "") != "pull_request"
+    DocumenterVitepress.deploydocs(
+        repo = "github.com/MagneticResonanceImaging/MRIReco.jl.git",
+        target = joinpath(@__DIR__, "build"),
+        devbranch = "master",
+    )
+end

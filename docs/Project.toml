@@ -2,6 +2,7 @@
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterVitepress = "4710194d-e776-4893-9690-8d956a29c365"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 ImageMagick_jll = "c73af94c-d91f-53ed-93a7-00f77d67a9d7"
@@ -19,4 +20,5 @@ Wavelets = "29a6e085-ba6d-5f35-a997-948ac2efa89a"
 
 [compat]
 Documenter = "1"
+DocumenterVitepress = "0.3.9"
 ImageMagick_jll = "7.1.2002"
