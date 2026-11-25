@@ -251,7 +251,7 @@ function testCSSenseReco(N=32,redFac=1.1;arrayType = Array)
   @test (norm(vec(x)-x_approx)/norm(vec(x))) < 1e-1
 end
 
-function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = Array)
+function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = Array,lambda = 1.e-3)
   x = shepp_logan(N)
 
   # coil sensitivites
@@ -279,7 +279,7 @@ function testCSRecoMultiCoilCGNR(;N=32,redFac=1.1,type = ComplexF32,arrayType = 
   params[:reco] = "multiCoil"
   params[:reconSize] = (N,N)
   params[:senseMaps] = reshape(sensMaps,N,N,1,2)
-  params[:reg] = L2Regularization(1.e-3)       # regularization
+  params[:reg] = L2Regularization(lambda)       # regularization
   params[:solver] = CGNR
   params[:iterations] = 1
   params[:rho] = 1.0e-1
