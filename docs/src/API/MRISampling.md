@@ -14,7 +14,8 @@ Private = false
 
 ```@autodocs
 Modules = [MRISampling]
-Pages = ["src/Regular.jl", "src/Random.jl", "src/Lines.jl", "src/PoissonDisk.jl", "src/VDPoissonDisk.jl"]
+Pages = ["src/Regular.jl", "src/Random.jl", "src/Lines.jl", "src/PoissonDisk.jl", "src/VDPoissonDisk.jl",
+         "src/VDPoissonBART.jl", "src/VDPoissonGrid.jl"]
 Private = false
 ```
 
