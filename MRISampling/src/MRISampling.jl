@@ -1,7 +1,7 @@
 module MRISampling
 
 export sample, sample_kspace, sample_random, sample_regular, sample_lines,
-       sample_poissondisk, sample_vdpoisson
+       sample_poissondisk, sample_vdpoisson, sample_vdpoisson_bart, sample_vdpoisson_grid
 
 using MRIBase
 using Random
@@ -11,6 +11,8 @@ include("Random.jl")
 include("Lines.jl")
 include("PoissonDisk.jl")
 include("VDPoissonDisk.jl")
+include("VDPoissonBART.jl")
+include("VDPoissonGrid.jl")
 include("CalibrationArea.jl")
 include("PointSpreadFunction.jl")
 include("Incoherence.jl")
@@ -25,8 +27,9 @@ An unknown `patFunc` logs an error and returns `nothing`.
 * `shape::NTuple{N,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * `patFunc::String`        - name of the sampling function
-                            ("random", "regular", "lines", "poisson" or "vdPoisson"; in one dimension all but
-                            "lines", in three dimensions only "regular" and "lines")
+                            ("random", "regular", "lines", "poisson", "vdPoisson", "vdPoissonBART" or
+                            "vdPoissonGrid"; in one dimension all but "lines", in three dimensions only "regular" and
+                            "lines")
 * `kargs...`               - additional keyword arguments of the sampling function,
                             for example `rng` and `seed`
 """
@@ -45,6 +48,10 @@ function sample(shape::NTuple{N,Int64}, redFac, patFunc::String; kargs...) where
     return sample_poissondisk(shape,redFac;kargs...)
   elseif patFunc == "vdPoisson"
     return sample_vdpoisson(shape,redFac;kargs...)
+  elseif patFunc == "vdPoissonBART"
+    return sample_vdpoisson_bart(shape,redFac;kargs...)
+  elseif patFunc == "vdPoissonGrid"
+    return sample_vdpoisson_grid(shape,redFac;kargs...)
   else
     @error "Sample function $(patFunc) not found."
   end
@@ -60,8 +67,8 @@ and returns both the subsampled Array (as a vector) and the sampled indices (as 
 * `data::AbstractArray`    - array to be sampled
 * `redFac::Float64`        - subsampling factor
 * `patFunc::String`        - name of the sampling function
-                            ("random", "regular", "lines", "poisson" or "vdPoisson"; for a vector all but "lines",
-                            for a 3D array only "regular" and "lines")
+                            ("random", "regular", "lines", "poisson", "vdPoisson", "vdPoissonBART" or
+                            "vdPoissonGrid"; for a vector all but "lines", for a 3D array only "regular" and "lines")
 * `kargs...`               - additional keyword arguments
 """
 function sample_kspace(data::AbstractArray, redFac, patFunc::AbstractString;kargs...)
@@ -82,8 +89,8 @@ and returns a new `AcquisitionData` object.
 * `acqData::AcquisitionData`  - AcquisitionData to be sampled
 * `redFac::Float64`           - subsampling factor
 * `patFunc::String`           - name of the sampling function
-                                ("random", "regular", "lines", "poisson" or "vdPoisson";
-                                with 2D data and `profiles=true` all but "lines", with 3D data and
+                                ("random", "regular", "lines", "poisson", "vdPoisson", "vdPoissonBART" or
+                                "vdPoissonGrid"; with 2D data and `profiles=true` all but "lines", with 3D data and
                                 `profiles=false` only "regular" and "lines")
 * (`rand=true`)               - use different patterns for the different contrasts
 * (`profiles=true`)           - sample complete profiles

@@ -46,10 +46,11 @@ nothing #hide
 # To simulate an acquisition that is three times faster,
 # [`sample_kspace`](@ref sample_kspace(::AcquisitionData, ::Any, ::AbstractString)) keeps about a third of the
 # profiles. They are chosen by variable-density Poisson-disk sampling, which samples the center of k-space more densely
-# than the outer parts, and the seed makes this random choice reproducible. The result is a new `AcquisitionData`
-# object that stores the indices of the kept samples in `subsampleIndices`:
+# than the outer parts and always keeps the 24 central profiles (`calsize`), and the seed makes this random choice
+# reproducible. The result is a new `AcquisitionData` object that stores the indices of the kept samples in
+# `subsampleIndices`:
 
-acqDataSub = sample_kspace(acqData, 3.0, "vdPoisson", seed = 1234)
+acqDataSub = sample_kspace(acqData, 3.0, "vdPoissonGrid", calsize = 24, seed = 1234)
 
 samplingMask = zeros(256, 256)
 samplingMask[acqDataSub.subsampleIndices[1]] .= 1

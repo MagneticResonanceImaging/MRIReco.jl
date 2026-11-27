@@ -11,7 +11,7 @@ generates a pattern to sample complete lines of an Array of size `shape` with a 
 * `shape::Tuple{Int64,Int64}` - size of the Array to be sampled
 * `redFac::Float64`        - subsampling factor
 * `sampleFunc="random"`        - name of the sampling function
-                            ("random", "regular", "poisson" or "vdPoisson")
+                            ("random", "regular", "poisson", "vdPoisson", "vdPoissonBART" or "vdPoissonGrid")
 * `kargs...`               - additional keyword arguments
 """
 function sample_lines(shape::Tuple{Int64,Int64}, redFac; sampleFunc="random",kargs...)
